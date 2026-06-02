@@ -1,0 +1,56 @@
+name: PR checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    paths-ignore:
+      - .github
+      - .idea
+      - .vscode
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+
+#jobs:
+#  run:
+#    if: github.event.pull_request.draft == false
+#    uses: rees46/workflow/.github/workflows/reusable-flutter-js-checks.yaml@master
+#    with:
+#      app-id: ${{ vars.VERSIONER_ID }}
+#    secrets:
+#      private-key: ${{ secrets.VERSIONER_SECRET }}
+
+jobs:
+  check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Analyze code
+        run: flutter analyze --fatal-infos --fatal-warnings
+      
+      - name: Run tests
+        run: flutter test --coverage
+      
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+      
+      - name: Build (verify)
+        run: flutter build apk --debug

@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch: 
+
+jobs:
+  publish:
+    name: Publish to pub.dev
+    runs-on: ubuntu-latest
+    
+    if: github.repository_owner == 'rees46'
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      
+      - name: Check version change
+        id: version_check
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "Current version: $VERSION"
+          
+          if flutter pub deps | grep -q "$VERSION"; then
+            echo "Version $VERSION already published, skipping"
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Publish to pub.dev
+        if: steps.version_check.outputs.should_publish == 'true'
+        run: |
+          # Создаём файл с credentials (берём из секретов)
+          echo "${{ secrets.PUB_DEV_CREDENTIALS }}" > ~/.pub-cache/credentials.json
+          
+          # Публикуем без интерактивного подтверждения
+          flutter pub publish --force
+        env:
+          PUB_DEV_CREDENTIALS: ${{ secrets.PUB_DEV_CREDENTIALS }}
