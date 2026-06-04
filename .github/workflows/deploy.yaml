@@ -35,8 +35,14 @@ jobs:
             echo "should_publish=true" >> $GITHUB_OUTPUT
           fi
       
+      # Publishing is gated behind the ENABLE_PUBLISH repo variable so the
+      # Deploy workflow still runs and succeeds (which is what sync.yaml's
+      # workflow_run trigger needs) while we test repo sync + branding.
+      # To start publishing for real: set repo variable ENABLE_PUBLISH=true.
       - name: Publish to pub.dev
-        if: steps.version_check.outputs.should_publish == 'true'
+        if: >-
+          vars.ENABLE_PUBLISH == 'true' &&
+          steps.version_check.outputs.should_publish == 'true'
         run: |
           # Создаём файл с credentials (берём из секретов)
           echo "${{ secrets.PUB_DEV_CREDENTIALS }}" > ~/.pub-cache/credentials.json

@@ -1,0 +1,40 @@
+name: Repository synchronization
+
+on:
+  workflow_run:
+    workflows:
+      - Deploy
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    if: |
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.workflow_run.conclusion == 'success') &&
+      !contains(github.repository_owner, 'personaclick')
+    runs-on: ubuntu-latest
+    outputs:
+      replacements: ${{ steps.getReplacementsStep.outputs.replacements }}
+    steps:
+      - uses: rees46/workflow/.github/actions/sync/read-replacements@master
+        id: getReplacementsStep
+        with:
+          appId: ${{ vars.PUBLIVERSIONER_ID }}
+          appSecret: ${{ secrets.PUBLIVERSIONER_SECRET }}
+          replacementsRepo: rees46/workflow
+          repositoryOwner: rees46
+          replacementsPath: github/repo-sync-replacements/flutter-sdk.yml
+
+  repoSync:
+    needs: prepare
+    uses: rees46/workflow/.github/workflows/reusable-repo-sync.yml@master
+    secrets:
+      appSecret: ${{ secrets.PERSONACLICK_COURIER_SECRET }}
+    with:
+      appId: ${{ vars.PERSONACLICK_COURIER_ID }}
+      replacements: ${{ needs.prepare.outputs.replacements }}
+      repositoryOwner: personaclick
+      targetRepository: personaclick/flutter-sdk
+      reviewerUsername: ${{ vars.REVIEWER_USERNAME }}
