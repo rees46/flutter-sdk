@@ -1,0 +1,46 @@
+PODS:
+  - CocoaAsyncSocket (7.6.5)
+  - Flutter (1.0.0)
+  - integration_test (0.0.1):
+    - Flutter
+  - patrol (0.0.1):
+    - CocoaAsyncSocket (~> 7.6)
+    - Flutter
+    - FlutterMacOS
+  - personalization_flutter_sdk (0.0.1):
+    - Flutter
+    - REES46 (= 3.23.0)
+  - REES46 (3.23.0)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - patrol (from `.symlinks/plugins/patrol/darwin`)
+  - personalization_flutter_sdk (from `.symlinks/plugins/personalization_flutter_sdk/ios`)
+
+SPEC REPOS:
+  trunk:
+    - CocoaAsyncSocket
+    - REES46
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  integration_test:
+    :path: ".symlinks/plugins/integration_test/ios"
+  patrol:
+    :path: ".symlinks/plugins/patrol/darwin"
+  personalization_flutter_sdk:
+    :path: ".symlinks/plugins/personalization_flutter_sdk/ios"
+
+SPEC CHECKSUMS:
+  CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
+  patrol: cea8074f183a2a4232d0ebd10569ae05149ada42
+  personalization_flutter_sdk: 296eed2fbff082c9697c96d2176b023c173bb375
+  REES46: 48ad09f18e2d75a730728c7e10f0328ffac69b08
+
+PODFILE CHECKSUM: b6e248ac4c1eff5807c8b044b39b8bc326af3f5f
+
+COCOAPODS: 1.16.2
