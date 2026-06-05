@@ -52,5 +52,8 @@ jobs:
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
       
+      # This is a plugin package: the buildable app lives in example/,
+      # so build there (the repo root has no lib/main.dart).
       - name: Build (verify)
+        working-directory: example
         run: flutter build apk --debug
