@@ -1,7 +1,9 @@
 name: personalization_flutter_sdk
-description: "Flutter plugin wrapper around REES46/PersonaClick native SDKs."
+description: "Flutter plugin wrapping the REES46 native personalization SDKs for Android and iOS."
 version: 0.0.1
-homepage:
+homepage: https://github.com/rees46/flutter-sdk
+repository: https://github.com/rees46/flutter-sdk
+issue_tracker: https://github.com/rees46/flutter-sdk/issues
 
 environment:
   sdk: ^3.11.1
