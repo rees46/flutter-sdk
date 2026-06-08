@@ -16,12 +16,12 @@ dependencies:
 ### Initialize
 
 ```dart
-import 'package:personaclick_flutter_sdk/personaclick_flutter_sdk.dart';
+import 'package:personalization_flutter_sdk/personalization_flutter_sdk.dart';
 
-final sdk = Rees46FlutterSdk();
+final sdk = PersonalizationSdk();
 
 await sdk.initialize(
-  const Rees46InitConfig(
+  const SdkInitConfig(
     shopId: 'YOUR_SHOP_ID',
     apiDomain: 'api.rees46.ru',
     // stream defaults to 'ios' on iOS and 'android' on Android if omitted.
@@ -35,11 +35,14 @@ await sdk.initialize(
 );
 ```
 
-### API structure (core + wrappers)
+### API structure
 
-- **Core (private-ish)**: `PersonalizationSdk` and `SdkInitConfig` live in `lib/src/`.
-- **REES46 wrapper**: `Rees46FlutterSdk` + `Rees46InitConfig` in `lib/rees46_flutter_sdk.dart`.
-- **PersonaClick wrapper**: `PersonaclickFlutterSdk` + `PersonaclickInitConfig` in `lib/personaclick_flutter_sdk.dart` (primary entrypoint in PersonaClick repo).
+The public API is exported from
+`package:personalization_flutter_sdk/personalization_flutter_sdk.dart`:
+
+- **`PersonalizationSdk`** — the SDK entrypoint (tracking, search,
+  recommendations, profile).
+- **`SdkInitConfig`** — initialization config passed to `initialize()`.
 
 ### Run demo app
 
