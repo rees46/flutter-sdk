@@ -23,6 +23,21 @@ jobs:
         with:
           channel: 'stable'
 
+      # Publishing self-activates: it runs only once the PUB_DEV_CREDENTIALS
+      # secret is set. Until then the step is skipped, so Deploy stays green
+      # and the sync workflow (gated on Deploy success) keeps working.
+      - name: Resolve publish readiness
+        id: pubready
+        env:
+          PUB_DEV_CREDENTIALS: ${{ secrets.PUB_DEV_CREDENTIALS }}
+        run: |
+          if [ -n "$PUB_DEV_CREDENTIALS" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "PUB_DEV_CREDENTIALS not set — skipping publish"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Decide whether this version is already on pub.dev. Package name and
       # version are read from pubspec.yaml so the workflow stays brand-agnostic.
       - name: Check version change
@@ -46,7 +61,9 @@ jobs:
       # by running `flutter pub publish` once locally with the publishing
       # account. Only written when we actually intend to publish.
       - name: Write pub credentials
-        if: steps.version_check.outputs.should_publish == 'true'
+        if: >-
+          steps.pubready.outputs.ready == 'true' &&
+          steps.version_check.outputs.should_publish == 'true'
         env:
           PUB_DEV_CREDENTIALS: ${{ secrets.PUB_DEV_CREDENTIALS }}
         run: |
@@ -56,5 +73,7 @@ jobs:
       # Publish whenever pubspec carries a version not yet on pub.dev.
       # Pushes that don't bump the version are skipped by version_check above.
       - name: Publish to pub.dev
-        if: steps.version_check.outputs.should_publish == 'true'
+        if: >-
+          steps.pubready.outputs.ready == 'true' &&
+          steps.version_check.outputs.should_publish == 'true'
         run: flutter pub publish --force

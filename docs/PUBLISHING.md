@@ -26,10 +26,14 @@ publish.
 2. Содержимое файла → **Secret** `PUB_DEV_CREDENTIALS`.
 
 `deploy.yaml` на каждый push в master:
+- **самовключение**: публикация выполняется только если задан секрет
+  `PUB_DEV_CREDENTIALS`. Пока его нет — publish-шаг скипается, Deploy остаётся
+  зелёным, и sync (завязанный на успех Deploy) продолжает работать;
 - читает имя и версию из `pubspec.yaml`;
 - проверяет через pub.dev API, не опубликована ли уже эта версия;
-- если версия новая — пишет credentials в `~/.config/dart/pub-credentials.json`
-  и публикует `flutter pub publish --force`. Пуши без бампа версии — скип.
+- если версия новая (и секрет задан) — пишет credentials в
+  `~/.config/dart/pub-credentials.json` и публикует `flutter pub publish --force`.
+  Пуши без бампа версии — скип.
 
 ## Релиз
 
