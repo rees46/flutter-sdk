@@ -1,4 +1,4 @@
-name: personalization_flutter_sdk
+name: rees46_sdk
 description: "Flutter plugin wrapping the REES46 native personalization SDKs for Android and iOS."
 version: 0.0.1
 homepage: https://github.com/rees46/flutter-sdk

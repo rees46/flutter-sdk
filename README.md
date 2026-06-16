@@ -10,13 +10,13 @@ Add dependency in your app:
 
 ```yaml
 dependencies:
-  personalization_flutter_sdk: ^0.0.1
+  rees46_sdk: ^0.0.1
 ```
 
 ### Initialize
 
 ```dart
-import 'package:personalization_flutter_sdk/personalization_flutter_sdk.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
 
 final sdk = PersonalizationSdk();
 
@@ -38,7 +38,7 @@ await sdk.initialize(
 ### API structure
 
 The public API is exported from
-`package:personalization_flutter_sdk/personalization_flutter_sdk.dart`:
+`package:rees46_sdk/rees46_sdk.dart`:
 
 - **`PersonalizationSdk`** — the SDK entrypoint (tracking, search,
   recommendations, profile).

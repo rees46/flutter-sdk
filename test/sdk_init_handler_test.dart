@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personalization_flutter_sdk/src/init/sdk_init_handler.dart';
-import 'package:personalization_flutter_sdk/src/pigeon/personalization_api.g.dart'
-    as pigeon;
-import 'package:personalization_flutter_sdk/src/sdk_init_config.dart';
+import 'package:rees46_sdk/src/init/sdk_init_handler.dart';
+import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
+import 'package:rees46_sdk/src/sdk_init_config.dart';
 
 const _initChannel =
     'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.initialize';

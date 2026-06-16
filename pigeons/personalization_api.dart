@@ -2,6 +2,9 @@ import 'package:pigeon/pigeon.dart';
 
 @ConfigurePigeon(
   PigeonOptions(
+    // Internal pigeon channel namespace. Kept decoupled from the pub package
+    // name on purpose: it is baked into generated channel names and the tests
+    // that mock them, so renaming the package must not churn it.
     dartPackageName: 'personalization_flutter_sdk',
     dartOut: 'lib/src/pigeon/personalization_api.g.dart',
     kotlinOut:

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personalization_flutter_sdk/src/push/push_notification_callbacks.dart';
+import 'package:rees46_sdk/src/push/push_notification_callbacks.dart';
 
 void main() {
   group('PushNotificationCallbacks', () {

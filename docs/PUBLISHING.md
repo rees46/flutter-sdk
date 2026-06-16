@@ -1,6 +1,6 @@
 # Публикация на pub.dev
 
-Пакет `personalization_flutter_sdk` публикуется на pub.dev из этого
+Пакет `rees46_sdk` публикуется на pub.dev из этого
 репозитория (`rees46/flutter-sdk`).
 
 Схема — **token-based на push в master**: merge в master → `Deploy` →
