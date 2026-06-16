@@ -4,50 +4,76 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   publish:
     name: Publish to pub.dev
     runs-on: ubuntu-latest
-    
+
+    # Publish only from the canonical repository owner.
     if: github.repository_owner == 'rees46'
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      
+
+      # Publishing self-activates: it runs only once the PUB_DEV_CREDENTIALS
+      # secret is set. Until then the step is skipped, so Deploy stays green
+      # and the sync workflow (gated on Deploy success) keeps working.
+      - name: Resolve publish readiness
+        id: pubready
+        env:
+          PUB_DEV_CREDENTIALS: ${{ secrets.PUB_DEV_CREDENTIALS }}
+        run: |
+          if [ -n "$PUB_DEV_CREDENTIALS" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "PUB_DEV_CREDENTIALS not set — skipping publish"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Decide whether this version is already on pub.dev. Package name and
+      # version are read from pubspec.yaml so the workflow stays brand-agnostic.
       - name: Check version change
         id: version_check
         run: |
+          NAME=$(grep '^name:' pubspec.yaml | awk '{print $2}')
           VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
-          echo "Current version: $VERSION"
-          
-          if flutter pub deps | grep -q "$VERSION"; then
-            echo "Version $VERSION already published, skipping"
-            echo "should_publish=false" >> $GITHUB_OUTPUT
+          echo "Package: $NAME@$VERSION"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+            "https://pub.dev/api/packages/$NAME/versions/$VERSION")
+          if [ "$CODE" = "200" ]; then
+            echo "$NAME@$VERSION already published, skipping"
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
           else
-            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "$NAME@$VERSION not yet published"
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
           fi
-      
-      # Publishing is gated behind the ENABLE_PUBLISH repo variable so the
-      # Deploy workflow still runs and succeeds (which is what sync.yaml's
-      # workflow_run trigger needs) while we test repo sync + branding.
-      # To start publishing for real: set repo variable ENABLE_PUBLISH=true.
-      - name: Publish to pub.dev
+
+      # Modern pub reads credentials from ~/.config/dart/pub-credentials.json.
+      # PUB_DEV_CREDENTIALS must hold the full contents of that file, produced
+      # by running `flutter pub publish` once locally with the publishing
+      # account. Only written when we actually intend to publish.
+      - name: Write pub credentials
         if: >-
-          vars.ENABLE_PUBLISH == 'true' &&
+          steps.pubready.outputs.ready == 'true' &&
           steps.version_check.outputs.should_publish == 'true'
-        run: |
-          # Создаём файл с credentials (берём из секретов)
-          echo "${{ secrets.PUB_DEV_CREDENTIALS }}" > ~/.pub-cache/credentials.json
-          
-          # Публикуем без интерактивного подтверждения
-          flutter pub publish --force
         env:
           PUB_DEV_CREDENTIALS: ${{ secrets.PUB_DEV_CREDENTIALS }}
+        run: |
+          mkdir -p ~/.config/dart
+          printf '%s' "$PUB_DEV_CREDENTIALS" > ~/.config/dart/pub-credentials.json
+
+      # Publish whenever pubspec carries a version not yet on pub.dev.
+      # Pushes that don't bump the version are skipped by version_check above.
+      - name: Publish to pub.dev
+        if: >-
+          steps.pubready.outputs.ready == 'true' &&
+          steps.version_check.outputs.should_publish == 'true'
+        run: flutter pub publish --force

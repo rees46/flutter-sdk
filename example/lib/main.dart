@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:personalization_flutter_sdk/personalization_flutter_sdk.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
 
 void main() => runApp(const App());
 
@@ -33,7 +33,7 @@ class _InitPageState extends State<InitPage> {
   final _sdk = PersonalizationSdk();
 
   // Hardcoded demo credentials — the demo does not need editable init inputs.
-  static const _shopId = '357382bf66ac0ce2f1722677c59511';
+  static const _shopId = 'c1140c8254976de297c3caf971701a';
   static const _apiDomain = 'api.rees46.ru';
   final _stream = defaultTargetPlatform == TargetPlatform.android
       ? 'android'

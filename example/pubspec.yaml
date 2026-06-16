@@ -1,5 +1,5 @@
-name: personalization_flutter_sdk_example
-description: "Demonstrates how to use the personalization_flutter_sdk plugin."
+name: rees46_sdk_example
+description: "Demonstrates how to use the rees46_sdk plugin."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -17,9 +17,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-  personalization_flutter_sdk:
+  rees46_sdk:
     # When depending on this package from a real application you should use:
-    #   personalization_flutter_sdk: ^x.y.z
+    #   rees46_sdk: ^x.y.z
     # See https://dart.dev/tools/pub/dependencies#version-constraints
     # The example app is bundled with the plugin so we use a path dependency on
     # the parent directory to use the current plugin's version.
@@ -44,7 +44,7 @@ dev_dependencies:
   patrol: ^4.5.0
 
 patrol:
-  app_name: personalization_flutter_sdk_example
+  app_name: rees46_sdk_example
   test_directory: integration_test
   android:
     package_name: com.rees46.rees46_flutter_sdk_example

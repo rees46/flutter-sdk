@@ -2,9 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personalization_flutter_sdk/personalization_flutter_sdk.dart';
-import 'package:personalization_flutter_sdk/src/pigeon/personalization_api.g.dart'
-    as pigeon;
+import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
 // Channel names from generated Pigeon code.
 const _trackEventChannel =

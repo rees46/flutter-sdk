@@ -1,6 +1,6 @@
 import 'package:patrol/patrol.dart';
 
-import 'package:personalization_flutter_sdk_example/main.dart' as app;
+import 'package:rees46_sdk_example/main.dart' as app;
 
 void main() {
   patrolTest('app launches and all key sections are visible', ($) async {

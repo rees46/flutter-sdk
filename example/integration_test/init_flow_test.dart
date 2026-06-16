@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:patrol/patrol.dart';
 
-import 'package:personalization_flutter_sdk_example/main.dart' as app;
+import 'package:rees46_sdk_example/main.dart' as app;
 
 void main() {
   patrolTest('auto-initializes on startup with hardcoded config', ($) async {
