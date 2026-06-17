@@ -30,8 +30,8 @@
 
 Автотегировщику (`deploy.yaml`) нужен токен GitHub App для пуша тега — тег от
 `GITHUB_TOKEN` по дизайну не триггерит другой workflow. Задать в репозитории:
-- **Variable** `RELEASE_APP_ID`
-- **Secret** `RELEASE_APP_PRIVATE_KEY`
+- **Variable** `VERSIONER_ID`
+- **Secret** `VERSIONER_SECRET`
 
 (источник — versioner-app). Пока они не заданы, автотегирование скипается, а
 `Deploy` остаётся зелёным (sync продолжает работать).
