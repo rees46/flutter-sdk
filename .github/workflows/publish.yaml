@@ -1,0 +1,51 @@
+name: Publish
+
+# pub.dev automated publishing is OIDC-based and only allowed when the workflow
+# is triggered by pushing a git tag (see deploy.yaml for the auto-tagger).
+# No long-lived secret is needed — the owner authorizes this repository once on
+# pub.dev (Admin -> Automated publishing, tag pattern v{{version}}).
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  publish:
+    name: Publish to pub.dev
+    runs-on: ubuntu-latest
+
+    # Publish only from the canonical repository owner.
+    if: github.repository_owner == 'rees46'
+
+    permissions:
+      id-token: write # OIDC authentication to pub.dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      # Guard so a tag on an already-published version is a no-op success
+      # (e.g. right after the manual first publish that reserved the name).
+      - name: Check if already published
+        id: check
+        run: |
+          NAME=$(grep '^name:' pubspec.yaml | awk '{print $2}')
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+            "https://pub.dev/api/packages/$NAME/versions/$VERSION")
+          if [ "$CODE" = "200" ]; then
+            echo "$NAME@$VERSION already published — skipping"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        if: steps.check.outputs.skip != 'true'
+        run: flutter pub publish --force

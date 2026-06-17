@@ -1,49 +1,49 @@
 # Публикация на pub.dev
 
-Пакет `rees46_sdk` публикуется на pub.dev из этого
-репозитория (`rees46/flutter-sdk`).
+Пакет `rees46_sdk` публикуется на pub.dev из этого репозитория
+(`rees46/flutter-sdk`).
 
-Схема — **token-based на push в master**: merge в master → `Deploy` →
-publish.
+Схема — **OIDC (automated publishing)**: pub.dev доверяет этому GitHub-репо,
+долгоживущие секреты/токены публикации не нужны. Официальная дока:
+<https://dart.dev/tools/pub/automated-publishing>.
 
-## Один раз: аккаунты и первый релиз
+Ключевое из доки: публикация по OIDC разрешена, только когда workflow запущен
+**push'ем git-тега**, и автопубликацию можно включить лишь для **уже
+существующего** пакета (первую версию заливают вручную).
 
-1. (Рекомендуется) Создать verified publisher `rees46.com` и сделать его
-   владельцем пакета. pub.dev → Create publisher → подтверждение домена
-   через DNS TXT.
-2. Застолбить имя первым ручным релизом (автопубликацию pub.dev можно
-   включить только для уже существующего пакета):
+## Один раз: со стороны владельца pub.dev-аккаунта
+
+1. (По желанию) Verified publisher: подтвердить домен `rees46.com` в Google
+   Search Console (DNS TXT) и создать publisher на pub.dev. Для самой
+   публикации не обязательно. См. <https://dart.dev/tools/pub/verified-publishers>.
+2. Застолбить имя первым ручным релизом (локальный логин, ничего никому не
+   передаётся):
    ```bash
-   flutter pub publish --dry-run   # 0 ошибок по метаданным
-   flutter pub publish             # интерактивный логин Google
+   flutter pub publish        # создаст пакет rees46_sdk
    ```
    `example/` не публикуется (`publish_to: none`).
+3. Включить автопубликацию: pub.dev → пакет → Admin → Automated publishing →
+   GitHub Actions; **Repository:** `rees46/flutter-sdk`; **Tag pattern:**
+   `v{{version}}`.
 
-## Настройка CI
+## Один раз: со стороны репозитория (CI)
 
-1. Локально получить credentials публикующего аккаунта: один раз
-   `flutter pub publish` → файл `~/.config/dart/pub-credentials.json`.
-2. Содержимое файла → **Secret** `PUB_DEV_CREDENTIALS`.
+Автотегировщику (`deploy.yaml`) нужен токен GitHub App для пуша тега — тег от
+`GITHUB_TOKEN` по дизайну не триггерит другой workflow. Задать в репозитории:
+- **Variable** `RELEASE_APP_ID`
+- **Secret** `RELEASE_APP_PRIVATE_KEY`
 
-`deploy.yaml` на каждый push в master:
-- **самовключение**: публикация выполняется только если задан секрет
-  `PUB_DEV_CREDENTIALS`. Пока его нет — publish-шаг скипается, Deploy остаётся
-  зелёным, и sync (завязанный на успех Deploy) продолжает работать;
-- читает имя и версию из `pubspec.yaml`;
-- проверяет через pub.dev API, не опубликована ли уже эта версия;
-- если версия новая (и секрет задан) — пишет credentials в
-  `~/.config/dart/pub-credentials.json` и публикует `flutter pub publish --force`.
-  Пуши без бампа версии — скип.
+(источник — versioner-app). Пока они не заданы, автотегирование скипается, а
+`Deploy` остаётся зелёным (sync продолжает работать).
 
-## Релиз
+## Как работает релиз
 
-1. Поднять `version:` в `pubspec.yaml`, обновить `CHANGELOG.md`.
-2. PR → merge в master.
-3. `Deploy` видит новую версию (нет на pub.dev) → публикует пакет.
+1. Поднять `version:` в `pubspec.yaml`, обновить `CHANGELOG.md`, смержить в
+   master.
+2. `Deploy` (`deploy.yaml`) видит новую версию → создаёт и пушит тег
+   `v<version>` app-токеном.
+3. Тег запускает `publish.yaml` → `flutter pub publish --force` по OIDC.
+   Если версия уже на pub.dev — шаг пропускается (no-op).
 
-## Альтернатива: OIDC (на будущее)
-
-Безопаснее (без долгоживущих секретов), но требует релизов по git-тегам:
-pub.dev → пакет → Admin → Automated publishing → GitHub Actions, репозиторий +
-tag pattern `v{{version}}`; в CI — workflow с `permissions: id-token: write` и
-триггером `on: push: tags`.
+Тег всегда выводится из версии в pubspec, поэтому версия и тег синхронизированы
+по построению; pub.dev дополнительно проверяет их совпадение.

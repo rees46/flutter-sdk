@@ -6,74 +6,61 @@ on:
       - master
   workflow_dispatch:
 
+# Auto-tags a release when the pubspec version is new. The tag is pushed with a
+# GitHub App token (not GITHUB_TOKEN, which by design would not trigger other
+# workflows) so that publish.yaml fires and publishes to pub.dev via OIDC.
+# The job always completes successfully, so the sync workflow (gated on Deploy
+# success) keeps working even before tagging is configured.
 jobs:
-  publish:
-    name: Publish to pub.dev
+  tag:
+    name: Tag release on version bump
     runs-on: ubuntu-latest
 
-    # Publish only from the canonical repository owner.
+    # Publish/tag only from the canonical repository owner.
     if: github.repository_owner == 'rees46'
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      # Publishing self-activates: it runs only once the PUB_DEV_CREDENTIALS
-      # secret is set. Until then the step is skipped, so Deploy stays green
-      # and the sync workflow (gated on Deploy success) keeps working.
-      - name: Resolve publish readiness
-        id: pubready
+      # Self-activates once RELEASE_APP_ID / RELEASE_APP_PRIVATE_KEY are set.
+      # Until then tagging is skipped, but the job stays green.
+      - name: Resolve tagging readiness
+        id: ready
         env:
-          PUB_DEV_CREDENTIALS: ${{ secrets.PUB_DEV_CREDENTIALS }}
+          APP_ID: ${{ vars.RELEASE_APP_ID }}
         run: |
-          if [ -n "$PUB_DEV_CREDENTIALS" ]; then
+          if [ -n "$APP_ID" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
-            echo "PUB_DEV_CREDENTIALS not set — skipping publish"
+            echo "RELEASE_APP_ID not set — skipping auto-tagging"
             echo "ready=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Decide whether this version is already on pub.dev. Package name and
-      # version are read from pubspec.yaml so the workflow stays brand-agnostic.
-      - name: Check version change
-        id: version_check
+      - name: Mint app token
+        id: app-token
+        if: steps.ready.outputs.ready == 'true'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        if: steps.ready.outputs.ready == 'true'
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Tag if version is new
+        if: steps.ready.outputs.ready == 'true'
         run: |
-          NAME=$(grep '^name:' pubspec.yaml | awk '{print $2}')
           VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
-          echo "Package: $NAME@$VERSION"
-          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
-            "https://pub.dev/api/packages/$NAME/versions/$VERSION")
-          if [ "$CODE" = "200" ]; then
-            echo "$NAME@$VERSION already published, skipping"
-            echo "should_publish=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "$NAME@$VERSION not yet published"
-            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" \
+              >/dev/null 2>&1; then
+            echo "$TAG already exists — nothing to do"
+            exit 0
           fi
-
-      # Modern pub reads credentials from ~/.config/dart/pub-credentials.json.
-      # PUB_DEV_CREDENTIALS must hold the full contents of that file, produced
-      # by running `flutter pub publish` once locally with the publishing
-      # account. Only written when we actually intend to publish.
-      - name: Write pub credentials
-        if: >-
-          steps.pubready.outputs.ready == 'true' &&
-          steps.version_check.outputs.should_publish == 'true'
-        env:
-          PUB_DEV_CREDENTIALS: ${{ secrets.PUB_DEV_CREDENTIALS }}
-        run: |
-          mkdir -p ~/.config/dart
-          printf '%s' "$PUB_DEV_CREDENTIALS" > ~/.config/dart/pub-credentials.json
-
-      # Publish whenever pubspec carries a version not yet on pub.dev.
-      # Pushes that don't bump the version are skipped by version_check above.
-      - name: Publish to pub.dev
-        if: >-
-          steps.pubready.outputs.ready == 'true' &&
-          steps.version_check.outputs.should_publish == 'true'
-        run: flutter pub publish --force
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "Pushed $TAG"
