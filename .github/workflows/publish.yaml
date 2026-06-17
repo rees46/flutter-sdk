@@ -23,6 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Configures the pub.dev OIDC credential from the workflow's id-token.
+      # Without this step `flutter pub publish` falls back to interactive
+      # OAuth and hangs in CI.
+      - uses: dart-lang/setup-dart@v1
+
+      # Flutter is needed to resolve the plugin's `sdk: flutter` dependency.
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
