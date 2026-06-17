@@ -1,3 +1,7 @@
+## 0.0.3
+
+* Fix automated publishing (configure pub.dev OIDC credential in CI).
+
 ## 0.0.2
 
 * Add MIT license.
