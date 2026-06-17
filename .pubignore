@@ -1,0 +1,37 @@
+# NOTE: when a .pubignore exists, pub ignores the .gitignore in the same
+# directory, so this file must also exclude the build/tooling artifacts that
+# the root .gitignore covers — otherwise they leak into the published archive.
+
+# Dart/Flutter build & tooling artifacts
+.dart_tool/
+.build/
+build/
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+.symlinks/
+**/Pods/
+.swiftpm/
+migrate_working_dir/
+**/doc/api/
+
+# IDE / OS
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+*.log
+*.swp
+
+# Library packages don't ship a lockfile.
+/pubspec.lock
+
+# --- Kept in git, excluded from the published package ---
+# Maintainer's Firebase project config: needed by the example build in CI, but
+# must not ship in the package (also avoids pub's "API key leak" check).
+/example/android/app/google-services.json
+/example/ios/Runner/GoogleService-Info.plist
+# Maintainer-only release docs, not part of the public API.
+/doc/
+/docs/
