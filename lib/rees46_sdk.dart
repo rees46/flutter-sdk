@@ -1,4 +1,5 @@
 export 'src/personalization_sdk.dart';
+export 'src/loyalty/loyalty_response.dart';
 export 'src/profile/profile_params.dart';
 export 'src/recommendation/recommendation_params.dart';
 export 'src/recommendation/recommendation_response.dart';

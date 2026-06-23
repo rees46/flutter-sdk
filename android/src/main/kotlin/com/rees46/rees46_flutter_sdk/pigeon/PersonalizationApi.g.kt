@@ -131,12 +131,15 @@ data class InitConfig (
 }
 
 /**
- * Wire format for one purchase line (maps to native [PurchaseItemRequest]; quantity not exposed).
+ * Wire format for one purchase line (maps to native `PurchaseItemRequest`).
+ * [amount] is the canonical line quantity; native's redundant `quantity` alias
+ * is intentionally not exposed.
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
 data class PurchaseLineItemWire (
   val id: String,
+  /** Number of units of this product in the order (the line quantity). */
   val amount: Long,
   val price: Double,
   val lineId: String? = null,
@@ -355,6 +358,20 @@ interface PersonalizationHostApi {
    * Dart layer parses the result into [SearchFullResponse].
    */
   fun searchFull(query: String, paramsJson: String?, callback: (Result<String>) -> Unit)
+  /**
+   * Joins the loyalty program (`loyalty/members/join`) and returns the
+   * response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
+   * The shop is identified by the SDK's configured `shop_id`; [phone] is required.
+   * Dart layer parses the result into [LoyaltyJoinResponse].
+   */
+  fun joinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, callback: (Result<String>) -> Unit)
+  /**
+   * Returns the loyalty membership status (`loyalty/members/status`) as a JSON
+   * string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
+   * [identifier] is the member identifier (phone).
+   * Dart layer parses the result into [LoyaltyStatusResponse].
+   */
+  fun getLoyaltyStatus(identifier: String, callback: (Result<String>) -> Unit)
   /** [customJson] and [recommendedSourceJson] are JSON object strings or null. */
   fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, callback: (Result<Unit>) -> Unit)
 
@@ -597,6 +614,49 @@ interface PersonalizationHostApi {
             val queryArg = args[0] as String
             val paramsJsonArg = args[1] as String?
             api.searchFull(queryArg, paramsJsonArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.joinLoyalty$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val phoneArg = args[0] as String
+            val emailArg = args[1] as String?
+            val firstNameArg = args[2] as String?
+            val lastNameArg = args[3] as String?
+            api.joinLoyalty(phoneArg, emailArg, firstNameArg, lastNameArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getLoyaltyStatus$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val identifierArg = args[0] as String
+            api.getLoyaltyStatus(identifierArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))

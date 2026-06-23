@@ -174,6 +174,25 @@ abstract class PersonalizationHostApi {
   @async
   String searchFull(String query, String? paramsJson);
 
+  /// Joins the loyalty program (`loyalty/members/join`) and returns the
+  /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
+  /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
+  /// Dart layer parses the result into [LoyaltyJoinResponse].
+  @async
+  String joinLoyalty(
+    String phone,
+    String? email,
+    String? firstName,
+    String? lastName,
+  );
+
+  /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
+  /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
+  /// [identifier] is the member identifier (phone).
+  /// Dart layer parses the result into [LoyaltyStatusResponse].
+  @async
+  String getLoyaltyStatus(String identifier);
+
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
   @async
   void trackPurchase(

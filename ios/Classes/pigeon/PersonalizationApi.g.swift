@@ -185,11 +185,14 @@ struct InitConfig: Hashable {
   }
 }
 
-/// Wire format for one purchase line (maps to native [PurchaseItemRequest]; quantity not exposed).
+/// Wire format for one purchase line (maps to native `PurchaseItemRequest`).
+/// [amount] is the canonical line quantity; native's redundant `quantity` alias
+/// is intentionally not exposed.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
 struct PurchaseLineItemWire: Hashable {
   var id: String
+  /// Number of units of this product in the order (the line quantity).
   var amount: Int64
   var price: Double
   var lineId: String? = nil
@@ -418,6 +421,16 @@ protocol PersonalizationHostApi {
   /// [paramsJson] is a JSON object string with optional search parameters.
   /// Dart layer parses the result into [SearchFullResponse].
   func searchFull(query: String, paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// Joins the loyalty program (`loyalty/members/join`) and returns the
+  /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
+  /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
+  /// Dart layer parses the result into [LoyaltyJoinResponse].
+  func joinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
+  /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
+  /// [identifier] is the member identifier (phone).
+  /// Dart layer parses the result into [LoyaltyStatusResponse].
+  func getLoyaltyStatus(identifier: String, completion: @escaping (Result<String, Error>) -> Void)
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
   func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, completion: @escaping (Result<Void, Error>) -> Void)
 }
@@ -659,6 +672,51 @@ class PersonalizationHostApiSetup {
       }
     } else {
       searchFullChannel.setMessageHandler(nil)
+    }
+    /// Joins the loyalty program (`loyalty/members/join`) and returns the
+    /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
+    /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
+    /// Dart layer parses the result into [LoyaltyJoinResponse].
+    let joinLoyaltyChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.joinLoyalty\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      joinLoyaltyChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let phoneArg = args[0] as! String
+        let emailArg: String? = nilOrValue(args[1])
+        let firstNameArg: String? = nilOrValue(args[2])
+        let lastNameArg: String? = nilOrValue(args[3])
+        api.joinLoyalty(phone: phoneArg, email: emailArg, firstName: firstNameArg, lastName: lastNameArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      joinLoyaltyChannel.setMessageHandler(nil)
+    }
+    /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
+    /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
+    /// [identifier] is the member identifier (phone).
+    /// Dart layer parses the result into [LoyaltyStatusResponse].
+    let getLoyaltyStatusChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getLoyaltyStatus\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getLoyaltyStatusChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let identifierArg = args[0] as! String
+        api.getLoyaltyStatus(identifier: identifierArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getLoyaltyStatusChannel.setMessageHandler(nil)
     }
     /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
     let trackPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)

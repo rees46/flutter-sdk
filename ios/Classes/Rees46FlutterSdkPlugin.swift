@@ -215,7 +215,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return dict
   }
 
-  private static func _categoryToDict(_ c: Category) -> [String: Any] {
+  private static func _categoryToDict(_ c: REES46.Category) -> [String: Any] {
     var dict: [String: Any] = ["id": c.id, "name": c.name]
     if let parentId = c.parentId { dict["parent_id"] = parentId }
     if let url = c.url { dict["url"] = url }
@@ -286,8 +286,10 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
   }
 
   private static func _productsListResponseToDict(_ r: ProductsListResponse) -> [String: Any] {
+    // As of REES46 3.24+, ProductsListResponse.products is [Product] (not [ProductInfo]);
+    // Product carries no categories, which the Dart parser already treats as optional.
     var dict: [String: Any] = [
-      "products": r.products.map { _productInfoToDict($0) },
+      "products": r.products.map { _searchProductToDict($0) },
       "products_total": r.productsTotal,
     ]
     if let pr = r.priceRange {
@@ -506,12 +508,84 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return dict
   }
 
-  private static func _searchCategoryToDict(_ c: Category) -> [String: Any] {
+  private static func _searchCategoryToDict(_ c: REES46.Category) -> [String: Any] {
     var dict: [String: Any] = ["id": c.id, "name": c.name]
     if let url = c.url { dict["url"] = url }
     if let parent = c.parentId { dict["parent"] = parent }
     if let count = c.count { dict["count"] = count }
     return dict
+  }
+
+  func joinLoyalty(
+    phone: String,
+    email: String?,
+    firstName: String?,
+    lastName: String?,
+    completion: @escaping (Result<String, Error>) -> Void
+  ) {
+    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    if phone.isEmpty {
+      completion(.failure(PigeonError(code: "bad_args", message: "phone is required", details: nil)))
+      return
+    }
+    sdk.joinLoyalty(phone: phone, email: email, firstName: firstName, lastName: lastName) { result in
+      switch result {
+      case .success(let response):
+        var dict: [String: Any] = ["payload": response.payload]
+        if let status = response.status { dict["status"] = status }
+        Self._encodeEnvelope(dict, completion: completion)
+      case .failure(let err):
+        completion(.failure(PigeonError(code: "join_loyalty_failed", message: String(describing: err), details: nil)))
+      }
+    }
+  }
+
+  func getLoyaltyStatus(identifier: String, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    if identifier.isEmpty {
+      completion(.failure(PigeonError(code: "bad_args", message: "identifier is required", details: nil)))
+      return
+    }
+    sdk.getLoyaltyStatus(identifier: identifier) { result in
+      switch result {
+      case .success(let response):
+        var payload: [String: Any] = [:]
+        if let member = response.member { payload["member"] = member }
+        if let level = response.level {
+          var levelDict: [String: Any] = [:]
+          if let name = level.name { levelDict["name"] = name }
+          if let code = level.code { levelDict["code"] = code }
+          if let exp = level.expirationDate { levelDict["expiration_date"] = exp }
+          payload["level"] = levelDict
+        }
+        var dict: [String: Any] = ["payload": payload]
+        if let status = response.status { dict["status"] = status }
+        Self._encodeEnvelope(dict, completion: completion)
+      case .failure(let err):
+        completion(.failure(PigeonError(code: "loyalty_status_failed", message: String(describing: err), details: nil)))
+      }
+    }
+  }
+
+  /// Serializes a loyalty response envelope `{ "status": ..., "payload": ... }`
+  /// to a JSON string, mirroring the other JSON-returning host methods.
+  private static func _encodeEnvelope(
+    _ dict: [String: Any],
+    completion: @escaping (Result<String, Error>) -> Void
+  ) {
+    guard JSONSerialization.isValidJSONObject(dict),
+          let data = try? JSONSerialization.data(withJSONObject: dict),
+          let json = String(data: data, encoding: .utf8) else {
+      completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize loyalty response", details: nil)))
+      return
+    }
+    completion(.success(json))
   }
 
   func getSid() throws -> String {
@@ -530,38 +604,46 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
-    var profileData = ProfileData()
-    profileData.userEmail = params.email
-    profileData.userPhone = params.phone
-    profileData.userLoyaltyId = params.loyaltyId
-    profileData.firstName = params.firstName
-    profileData.lastName = params.lastName
-    profileData.age = params.age.map { Int($0) }
-    profileData.location = params.location
-    profileData.advertisingId = params.advertisingId
-    profileData.fbID = params.fbId
-    profileData.vkID = params.vkId
-    profileData.telegramId = params.telegramId
-    profileData.loyaltyCardLocation = params.loyaltyCardLocation
-    profileData.loyaltyStatus = params.loyaltyStatus
-    profileData.loyaltyBonuses = params.loyaltyBonuses.map { Int($0) }
-    profileData.loyaltyBonusesToNextLevel = params.loyaltyBonusesToNextLevel.map { Int($0) }
-    profileData.boughtSomething = params.boughtSomething
-    profileData.userId = params.userId
+    // As of REES46 3.24+, `setProfileData` takes individual named parameters
+    // instead of a `ProfileData` value.
+    var gender: Gender?
     if let genderStr = params.gender {
-      profileData.gender = genderStr == "m" ? .male : .female
+      gender = genderStr == "m" ? .male : .female
     }
+    var birthday: Date?
     if let birthdayStr = params.birthday {
       let fmt = DateFormatter()
       fmt.dateFormat = "yyyy-MM-dd"
-      profileData.birthday = fmt.date(from: birthdayStr)
+      birthday = fmt.date(from: birthdayStr)
     }
+    var customProperties: [String: Any?]?
     if let json = params.customPropertiesJson,
        let data = json.data(using: .utf8),
        let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-      profileData.customProperties = obj
+      customProperties = obj
     }
-    sdk.setProfileData(profileData: profileData) { result in
+    sdk.setProfileData(
+      userEmail: params.email,
+      userPhone: params.phone,
+      userLoyaltyId: params.loyaltyId,
+      birthday: birthday,
+      age: params.age.map { Int($0) },
+      firstName: params.firstName,
+      lastName: params.lastName,
+      location: params.location,
+      gender: gender,
+      advertisingId: params.advertisingId,
+      fbID: params.fbId,
+      vkID: params.vkId,
+      telegramId: params.telegramId,
+      loyaltyCardLocation: params.loyaltyCardLocation,
+      loyaltyStatus: params.loyaltyStatus,
+      loyaltyBonuses: params.loyaltyBonuses.map { Int($0) },
+      loyaltyBonusesToNextLevel: params.loyaltyBonusesToNextLevel.map { Int($0) },
+      boughtSomething: params.boughtSomething,
+      userId: params.userId,
+      customProperties: customProperties
+    ) { result in
       switch result {
       case .success:
         completion(.success(()))

@@ -15,11 +15,7 @@ PlatformException _createConnectionError(String channelName) {
   );
 }
 
-List<Object?> wrapResponse({
-  Object? result,
-  PlatformException? error,
-  bool empty = false,
-}) {
+List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty = false}) {
   if (empty) {
     return <Object?>[];
   }
@@ -28,24 +24,20 @@ List<Object?> wrapResponse({
   }
   return <Object?>[error.code, error.message, error.details];
 }
-
 bool _deepEquals(Object? a, Object? b) {
   if (a is List && b is List) {
     return a.length == b.length &&
-        a.indexed.every(
-          ((int, dynamic) item) => _deepEquals(item.$2, b[item.$1]),
-        );
+        a.indexed
+        .every(((int, dynamic) item) => _deepEquals(item.$2, b[item.$1]));
   }
   if (a is Map && b is Map) {
-    return a.length == b.length &&
-        a.entries.every(
-          (MapEntry<Object?, Object?> entry) =>
-              (b as Map<Object?, Object?>).containsKey(entry.key) &&
-              _deepEquals(entry.value, b[entry.key]),
-        );
+    return a.length == b.length && a.entries.every((MapEntry<Object?, Object?> entry) =>
+        (b as Map<Object?, Object?>).containsKey(entry.key) &&
+        _deepEquals(entry.value, b[entry.key]));
   }
   return a == b;
 }
+
 
 class InitConfig {
   InitConfig({
@@ -89,8 +81,7 @@ class InitConfig {
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
   static InitConfig decode(Object result) {
     result as List<Object?>;
@@ -120,10 +111,13 @@ class InitConfig {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
 
-/// Wire format for one purchase line (maps to native [PurchaseItemRequest]; quantity not exposed).
+/// Wire format for one purchase line (maps to native `PurchaseItemRequest`).
+/// [amount] is the canonical line quantity; native's redundant `quantity` alias
+/// is intentionally not exposed.
 class PurchaseLineItemWire {
   PurchaseLineItemWire({
     required this.id,
@@ -135,6 +129,7 @@ class PurchaseLineItemWire {
 
   String id;
 
+  /// Number of units of this product in the order (the line quantity).
   int amount;
 
   double price;
@@ -144,12 +139,17 @@ class PurchaseLineItemWire {
   String? fashionSize;
 
   List<Object?> _toList() {
-    return <Object?>[id, amount, price, lineId, fashionSize];
+    return <Object?>[
+      id,
+      amount,
+      price,
+      lineId,
+      fashionSize,
+    ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
   static PurchaseLineItemWire decode(Object result) {
     result as List<Object?>;
@@ -176,7 +176,8 @@ class PurchaseLineItemWire {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
 
 /// Wire format for profile fields sent to native SDK.
@@ -274,8 +275,7 @@ class ProfileParamsWire {
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
   static ProfileParamsWire decode(Object result) {
     result as List<Object?>;
@@ -317,8 +317,10 @@ class ProfileParamsWire {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
+
 
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
@@ -327,13 +329,13 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is InitConfig) {
+    }    else if (value is InitConfig) {
       buffer.putUint8(129);
       writeValue(buffer, value.encode());
-    } else if (value is PurchaseLineItemWire) {
+    }    else if (value is PurchaseLineItemWire) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    } else if (value is ProfileParamsWire) {
+    }    else if (value is ProfileParamsWire) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
     } else {
@@ -344,11 +346,11 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129:
+      case 129: 
         return InitConfig.decode(readValue(buffer)!);
-      case 130:
+      case 130: 
         return PurchaseLineItemWire.decode(readValue(buffer)!);
-      case 131:
+      case 131: 
         return ProfileParamsWire.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -360,13 +362,9 @@ class PersonalizationHostApi {
   /// Constructor for [PersonalizationHostApi].  The [binaryMessenger] named argument is
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
-  PersonalizationHostApi({
-    BinaryMessenger? binaryMessenger,
-    String messageChannelSuffix = '',
-  }) : pigeonVar_binaryMessenger = binaryMessenger,
-       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
-           ? '.$messageChannelSuffix'
-           : '';
+  PersonalizationHostApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
+      : pigeonVar_binaryMessenger = binaryMessenger,
+        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -374,17 +372,13 @@ class PersonalizationHostApi {
   final String pigeonVar_messageChannelSuffix;
 
   Future<void> initialize(InitConfig config) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.initialize$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[config],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.initialize$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[config]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -401,14 +395,12 @@ class PersonalizationHostApi {
   }
 
   Future<String> getPlatformVersion() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getPlatformVersion$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getPlatformVersion$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -432,14 +424,12 @@ class PersonalizationHostApi {
 
   /// Returns the push token stored by the native SDK (if any).
   Future<String?> getStoredPushToken() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoredPushToken$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoredPushToken$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -457,25 +447,14 @@ class PersonalizationHostApi {
   }
 
   /// [customFieldsJson] is JSON object string or null (maps to native custom fields map).
-  Future<void> trackEvent(
-    String event,
-    int? time,
-    String? category,
-    String? label,
-    int? value,
-    String? customFieldsJson,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[event, time, category, label, value, customFieldsJson],
+  Future<void> trackEvent(String event, int? time, String? category, String? label, int? value, String? customFieldsJson) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[event, time, category, label, value, customFieldsJson]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -492,17 +471,13 @@ class PersonalizationHostApi {
   }
 
   Future<void> setProfile(ProfileParamsWire params) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setProfile$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[params],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setProfile$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[params]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -522,17 +497,13 @@ class PersonalizationHostApi {
   /// [paramsJson] is a JSON object string with optional filter parameters.
   /// Dart layer parses the result into [RecommendationResponse].
   Future<String> getRecommendation(String code, String? paramsJson) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getRecommendation$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[code, paramsJson],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getRecommendation$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, paramsJson]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -555,14 +526,12 @@ class PersonalizationHostApi {
 
   /// Returns the current session ID from the native SDK.
   Future<String> getSid() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -586,14 +555,12 @@ class PersonalizationHostApi {
 
   /// Returns the device ID assigned by the native SDK, or null before first sync.
   Future<String?> getDid() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getDid$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getDid$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -613,17 +580,13 @@ class PersonalizationHostApi {
   /// Returns a single product's details as a JSON string.
   /// Dart layer parses the result into [Product].
   Future<String> getProductInfo(String itemId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductInfo$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[itemId],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductInfo$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -648,17 +611,13 @@ class PersonalizationHostApi {
   /// [paramsJson] is a JSON object with optional filter fields.
   /// Dart layer parses the result into [ProductsListResponse].
   Future<String> getProductsList(String? paramsJson) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductsList$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[paramsJson],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductsList$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[paramsJson]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -683,14 +642,12 @@ class PersonalizationHostApi {
   /// No parameters — the native SDK decides what to return based on shop config.
   /// Dart layer parses the result into [SearchBlankResponse].
   Future<String> searchBlank() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -716,17 +673,13 @@ class PersonalizationHostApi {
   /// [paramsJson] may contain optional "locations" (String) and "excluded_brands" ([String]).
   /// Dart layer parses the result into [SearchInstantResponse].
   Future<String> searchInstant(String query, String? paramsJson) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[query, paramsJson],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[query, paramsJson]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -751,17 +704,77 @@ class PersonalizationHostApi {
   /// [paramsJson] is a JSON object string with optional search parameters.
   /// Dart layer parses the result into [SearchFullResponse].
   Future<String> searchFull(String query, String? paramsJson) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[query, paramsJson],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[query, paramsJson]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as String?)!;
+    }
+  }
+
+  /// Joins the loyalty program (`loyalty/members/join`) and returns the
+  /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
+  /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
+  /// Dart layer parses the result into [LoyaltyJoinResponse].
+  Future<String> joinLoyalty(String phone, String? email, String? firstName, String? lastName) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.joinLoyalty$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[phone, email, firstName, lastName]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as String?)!;
+    }
+  }
+
+  /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
+  /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
+  /// [identifier] is the member identifier (phone).
+  /// Dart layer parses the result into [LoyaltyStatusResponse].
+  Future<String> getLoyaltyStatus(String identifier) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getLoyaltyStatus$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[identifier]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -783,53 +796,14 @@ class PersonalizationHostApi {
   }
 
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
-  Future<void> trackPurchase(
-    String orderId,
-    double orderPrice,
-    List<PurchaseLineItemWire> items,
-    String? deliveryType,
-    String? deliveryAddress,
-    String? paymentType,
-    bool isTaxFree,
-    String? promocode,
-    double? orderCash,
-    double? orderBonuses,
-    double? orderDelivery,
-    double? orderDiscount,
-    String? channel,
-    String? customJson,
-    String? recommendedSourceJson,
-    String? stream,
-    String? segment,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel
-        .send(<Object?>[
-          orderId,
-          orderPrice,
-          items,
-          deliveryType,
-          deliveryAddress,
-          paymentType,
-          isTaxFree,
-          promocode,
-          orderCash,
-          orderBonuses,
-          orderDelivery,
-          orderDiscount,
-          channel,
-          customJson,
-          recommendedSourceJson,
-          stream,
-          segment,
-        ]);
+  Future<void> trackPurchase(String orderId, double orderPrice, List<PurchaseLineItemWire> items, String? deliveryType, String? deliveryAddress, String? paymentType, bool isTaxFree, String? promocode, double? orderCash, double? orderBonuses, double? orderDelivery, double? orderDiscount, String? channel, String? customJson, String? recommendedSourceJson, String? stream, String? segment) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[orderId, orderPrice, items, deliveryType, deliveryAddress, paymentType, isTaxFree, promocode, orderCash, orderBonuses, orderDelivery, orderDiscount, channel, customJson, recommendedSourceJson, stream, segment]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -855,115 +829,79 @@ abstract class PersonalizationFlutterApi {
 
   void onPushClicked(Map<String, String?> payload);
 
-  static void setUp(
-    PersonalizationFlutterApi? api, {
-    BinaryMessenger? binaryMessenger,
-    String messageChannelSuffix = '',
-  }) {
-    messageChannelSuffix = messageChannelSuffix.isNotEmpty
-        ? '.$messageChannelSuffix'
-        : '';
+  static void setUp(PersonalizationFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
     {
-      final BasicMessageChannel<Object?>
-      pigeonVar_channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived$messageChannelSuffix',
-        pigeonChannelCodec,
-        binaryMessenger: binaryMessenger,
-      );
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
-          assert(
-            message != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived was null.',
-          );
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final Map<String, String?>? arg_payload =
-              (args[0] as Map<Object?, Object?>?)?.cast<String, String?>();
-          assert(
-            arg_payload != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived was null, expected non-null Map<String, String?>.',
-          );
+          final Map<String, String?>? arg_payload = (args[0] as Map<Object?, Object?>?)?.cast<String, String?>();
+          assert(arg_payload != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived was null, expected non-null Map<String, String?>.');
           try {
             api.onPushReceived(arg_payload!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
-            return wrapResponse(
-              error: PlatformException(code: 'error', message: e.toString()),
-            );
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }
     }
     {
-      final BasicMessageChannel<Object?>
-      pigeonVar_channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered$messageChannelSuffix',
-        pigeonChannelCodec,
-        binaryMessenger: binaryMessenger,
-      );
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
-          assert(
-            message != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered was null.',
-          );
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final Map<String, String?>? arg_payload =
-              (args[0] as Map<Object?, Object?>?)?.cast<String, String?>();
-          assert(
-            arg_payload != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered was null, expected non-null Map<String, String?>.',
-          );
+          final Map<String, String?>? arg_payload = (args[0] as Map<Object?, Object?>?)?.cast<String, String?>();
+          assert(arg_payload != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered was null, expected non-null Map<String, String?>.');
           try {
             api.onPushDelivered(arg_payload!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
-            return wrapResponse(
-              error: PlatformException(code: 'error', message: e.toString()),
-            );
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }
     }
     {
-      final BasicMessageChannel<Object?>
-      pigeonVar_channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked$messageChannelSuffix',
-        pigeonChannelCodec,
-        binaryMessenger: binaryMessenger,
-      );
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
-          assert(
-            message != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked was null.',
-          );
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final Map<String, String?>? arg_payload =
-              (args[0] as Map<Object?, Object?>?)?.cast<String, String?>();
-          assert(
-            arg_payload != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked was null, expected non-null Map<String, String?>.',
-          );
+          final Map<String, String?>? arg_payload = (args[0] as Map<Object?, Object?>?)?.cast<String, String?>();
+          assert(arg_payload != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked was null, expected non-null Map<String, String?>.');
           try {
             api.onPushClicked(arg_payload!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
-            return wrapResponse(
-              error: PlatformException(code: 'error', message: e.toString()),
-            );
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }
