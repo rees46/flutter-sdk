@@ -45,7 +45,9 @@ void main() {
     final sdk = await initSdk();
 
     final response = await sdk.joinLoyalty(phone: phone);
-    debugPrint('joinLoyalty -> status=${response.status} payload=${response.payload}');
+    debugPrint(
+      'joinLoyalty -> status=${response.status} payload=${response.payload}',
+    );
     expect(response.status, equals('success'));
   });
 
