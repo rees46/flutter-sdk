@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'pigeon/personalization_api.g.dart' as pigeon;
 import 'init/sdk_init_handler.dart';
+import 'loyalty/loyalty_response.dart';
 import 'profile/profile_params.dart';
 import 'push/push_notification_callbacks.dart';
 import 'recommendation/recommendation_params.dart';
@@ -107,6 +108,38 @@ class PersonalizationSdk {
     }
     final json = await _api.searchFull(query, params?.toJson());
     return SearchFullResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
+  }
+
+  /// Joins the loyalty program (native `loyalty/members/join`).
+  ///
+  /// The shop is identified by the SDK's configured `shop_id`; [phone] is
+  /// required, the remaining member fields are optional.
+  Future<LoyaltyJoinResponse> joinLoyalty({
+    required String phone,
+    String? email,
+    String? firstName,
+    String? lastName,
+  }) async {
+    if (phone.isEmpty) {
+      throw ArgumentError.value(phone, 'phone', 'must be non-empty');
+    }
+    final json = await _api.joinLoyalty(phone, email, firstName, lastName);
+    return LoyaltyJoinResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
+  }
+
+  /// Returns the loyalty membership status (native `loyalty/members/status`).
+  ///
+  /// [identifier] is the member identifier (phone).
+  Future<LoyaltyStatusResponse> getLoyaltyStatus(String identifier) async {
+    if (identifier.isEmpty) {
+      throw ArgumentError.value(identifier, 'identifier', 'must be non-empty');
+    }
+    final json = await _api.getLoyaltyStatus(identifier);
+    return LoyaltyStatusResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
   }

@@ -305,6 +305,55 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
+    override fun joinLoyalty(
+        phone: String,
+        email: String?,
+        firstName: String?,
+        lastName: String?,
+        callback: (Result<String>) -> Unit,
+    ) {
+        if (phone.isBlank()) {
+            callback(Result.failure(FlutterError("bad_args", "phone is required", null)))
+            return
+        }
+        try {
+            SDK.instance.loyaltyManager.join(
+                phone = phone,
+                email = email,
+                firstName = firstName,
+                lastName = lastName,
+                onSuccess = { response ->
+                    callback(Result.success(Gson().toJson(response)))
+                },
+                onError = { code, message ->
+                    callback(Result.failure(FlutterError("join_loyalty_failed", message ?: "error $code", null)))
+                },
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("join_loyalty_failed", t.message, null)))
+        }
+    }
+
+    override fun getLoyaltyStatus(identifier: String, callback: (Result<String>) -> Unit) {
+        if (identifier.isBlank()) {
+            callback(Result.failure(FlutterError("bad_args", "identifier is required", null)))
+            return
+        }
+        try {
+            SDK.instance.loyaltyManager.getStatus(
+                identifier = identifier,
+                onSuccess = { response ->
+                    callback(Result.success(Gson().toJson(response)))
+                },
+                onError = { code, message ->
+                    callback(Result.failure(FlutterError("loyalty_status_failed", message ?: "error $code", null)))
+                },
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("loyalty_status_failed", t.message, null)))
+        }
+    }
+
     override fun getSid(): String = SDK.instance.getSid()
 
     override fun getDid(): String? = SDK.instance.getDid()

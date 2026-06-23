@@ -123,7 +123,9 @@ class InitConfig {
   int get hashCode => Object.hashAll(_toList());
 }
 
-/// Wire format for one purchase line (maps to native [PurchaseItemRequest]; quantity not exposed).
+/// Wire format for one purchase line (maps to native `PurchaseItemRequest`).
+/// [amount] is the canonical line quantity; native's redundant `quantity` alias
+/// is intentionally not exposed.
 class PurchaseLineItemWire {
   PurchaseLineItemWire({
     required this.id,
@@ -135,6 +137,7 @@ class PurchaseLineItemWire {
 
   String id;
 
+  /// Number of units of this product in the order (the line quantity).
   int amount;
 
   double price;
@@ -761,6 +764,83 @@ class PersonalizationHostApi {
         );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
       <Object?>[query, paramsJson],
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as String?)!;
+    }
+  }
+
+  /// Joins the loyalty program (`loyalty/members/join`) and returns the
+  /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
+  /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
+  /// Dart layer parses the result into [LoyaltyJoinResponse].
+  Future<String> joinLoyalty(
+    String phone,
+    String? email,
+    String? firstName,
+    String? lastName,
+  ) async {
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.joinLoyalty$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel =
+        BasicMessageChannel<Object?>(
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[phone, email, firstName, lastName],
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as String?)!;
+    }
+  }
+
+  /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
+  /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
+  /// [identifier] is the member identifier (phone).
+  /// Dart layer parses the result into [LoyaltyStatusResponse].
+  Future<String> getLoyaltyStatus(String identifier) async {
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getLoyaltyStatus$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel =
+        BasicMessageChannel<Object?>(
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[identifier],
     );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;

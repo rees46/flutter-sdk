@@ -94,12 +94,19 @@ class _InitPageState extends State<InitPage> {
   String? _searchInstantError;
   bool _searchInstantLoading = false;
 
+  // Loyalty state
+  final _loyaltyPhoneController = TextEditingController(text: '79991234567');
+  String? _loyaltyResult;
+  String? _loyaltyError;
+  bool _loyaltyLoading = false;
+
   @override
   void dispose() {
     _recBlockController.dispose();
     _productIdController.dispose();
     _searchQueryController.dispose();
     _searchInstantQueryController.dispose();
+    _loyaltyPhoneController.dispose();
     super.dispose();
   }
 
@@ -337,6 +344,52 @@ class _InitPageState extends State<InitPage> {
     }
   }
 
+  Future<void> _joinLoyalty() async {
+    final phone = _loyaltyPhoneController.text.trim();
+    if (phone.isEmpty) return;
+    setState(() {
+      _loyaltyLoading = true;
+      _loyaltyError = null;
+      _loyaltyResult = null;
+    });
+    try {
+      final response = await _sdk.joinLoyalty(phone: phone);
+      setState(() {
+        _loyaltyResult = 'join: status=${response.status}';
+        _loyaltyLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loyaltyError = 'Error: $e';
+        _loyaltyLoading = false;
+      });
+    }
+  }
+
+  Future<void> _getLoyaltyStatus() async {
+    final phone = _loyaltyPhoneController.text.trim();
+    if (phone.isEmpty) return;
+    setState(() {
+      _loyaltyLoading = true;
+      _loyaltyError = null;
+      _loyaltyResult = null;
+    });
+    try {
+      final response = await _sdk.getLoyaltyStatus(phone);
+      setState(() {
+        _loyaltyResult =
+            'status: ${response.status}, member=${response.member}, '
+            'level=${response.level?.name ?? '-'}';
+        _loyaltyLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loyaltyError = 'Error: $e';
+        _loyaltyLoading = false;
+      });
+    }
+  }
+
   Future<void> _demoTrackEvent() async {
     if (_initState != InitState.initialized) return;
     try {
@@ -506,6 +559,16 @@ class _InitPageState extends State<InitPage> {
             loading: _searchLoading,
             enabled: _initState == InitState.initialized,
             onSearch: _searchFull,
+          ),
+          const SizedBox(height: 12),
+          _LoyaltyCard(
+            phoneController: _loyaltyPhoneController,
+            result: _loyaltyResult,
+            error: _loyaltyError,
+            loading: _loyaltyLoading,
+            enabled: _initState == InitState.initialized,
+            onJoin: _joinLoyalty,
+            onStatus: _getLoyaltyStatus,
           ),
           const SizedBox(height: 24),
           Text('Tracking', style: Theme.of(context).textTheme.titleMedium),
@@ -792,6 +855,83 @@ class _ProductInfoCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 key: const Key('lbl_product_info_error'),
+                error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoyaltyCard extends StatelessWidget {
+  final TextEditingController phoneController;
+  final String? result;
+  final String? error;
+  final bool loading;
+  final bool enabled;
+  final VoidCallback onJoin;
+  final VoidCallback onStatus;
+
+  const _LoyaltyCard({
+    required this.phoneController,
+    required this.result,
+    required this.error,
+    required this.loading,
+    required this.enabled,
+    required this.onJoin,
+    required this.onStatus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Loyalty', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('field_loyalty_phone'),
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone',
+                hintText: 'e.g. 79991234567',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('btn_join_loyalty'),
+                    onPressed: (enabled && !loading) ? onJoin : null,
+                    child: Text(loading ? 'Loading…' : 'Join'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('btn_loyalty_status'),
+                    onPressed: (enabled && !loading) ? onStatus : null,
+                    child: Text(loading ? 'Loading…' : 'Status'),
+                  ),
+                ),
+              ],
+            ),
+            if (result != null) ...[
+              const SizedBox(height: 8),
+              Text(key: const Key('lbl_loyalty_result'), result!),
+            ],
+            if (error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                key: const Key('lbl_loyalty_error'),
                 error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),

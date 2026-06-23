@@ -81,13 +81,15 @@ android {
 }
 
 dependencies {
-    // REES46 Android SDK (Maven Central).
+    // REES46 Android SDK (JitPack).
     //
-    // Note: the 2.x line in Maven Central uses versions like 2.6.0 (not 2.28.0).
-    val rees46AndroidSdkVersion = "2.6.0"
+    // Published from github.com/rees46/android-sdk as `com.github.rees46:android-sdk:<tag>`.
+    // v2.33.0 is the first release that exposes the loyalty manager
+    // (`SDK.instance.loyaltyManager`).
+    val rees46AndroidSdkVersion = "v2.33.0"
     add(
         "rees46Implementation",
-        "com.rees46:rees46-sdk:$rees46AndroidSdkVersion",
+        "com.github.rees46:android-sdk:$rees46AndroidSdkVersion",
     )
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
