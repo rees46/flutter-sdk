@@ -573,6 +573,167 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
+  func getProfile(completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    sdk.getProfile { result in
+      switch result {
+      case .success(let response):
+        Self._encodeCatalog(Self._profileResponseToDict(response), errorCode: "get_profile_failed", completion: completion)
+      case .failure(let err):
+        completion(.failure(PigeonError(code: "get_profile_failed", message: String(describing: err), details: nil)))
+      }
+    }
+  }
+
+  func getProductCounters(item: String, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    if item.isEmpty {
+      completion(.failure(PigeonError(code: "bad_args", message: "item is required", details: nil)))
+      return
+    }
+    sdk.getProductCounters(item: item) { result in
+      switch result {
+      case .success(let response):
+        Self._encodeCatalog(Self._productCountersToDict(response), errorCode: "product_counters_failed", completion: completion)
+      case .failure(let err):
+        completion(.failure(PigeonError(code: "product_counters_failed", message: String(describing: err), details: nil)))
+      }
+    }
+  }
+
+  func getCategory(category: String, limit: Int64?, page: Int64?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    if category.isEmpty {
+      completion(.failure(PigeonError(code: "bad_args", message: "category is required", details: nil)))
+      return
+    }
+    sdk.getCategory(
+      category: category,
+      limit: limit.map { Int($0) },
+      page: page.map { Int($0) },
+      brands: nil,
+      locations: nil,
+      filters: nil
+    ) { result in
+      switch result {
+      case .success(let response):
+        Self._encodeCatalog(Self._categoryResponseToDict(response), errorCode: "get_category_failed", completion: completion)
+      case .failure(let err):
+        completion(.failure(PigeonError(code: "get_category_failed", message: String(describing: err), details: nil)))
+      }
+    }
+  }
+
+  func getCollection(collectionId: String, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    if collectionId.isEmpty {
+      completion(.failure(PigeonError(code: "bad_args", message: "collectionId is required", details: nil)))
+      return
+    }
+    sdk.getCollection(
+      collectionId: collectionId,
+      location: nil,
+      email: nil,
+      phone: nil,
+      externalId: nil,
+      loyaltyId: nil
+    ) { result in
+      switch result {
+      case .success(let response):
+        Self._encodeCatalog(Self._collectionResponseToDict(response), errorCode: "get_collection_failed", completion: completion)
+      case .failure(let err):
+        completion(.failure(PigeonError(code: "get_collection_failed", message: String(describing: err), details: nil)))
+      }
+    }
+  }
+
+  private static func _profileResponseToDict(_ p: GetProfileResponse) -> [String: Any] {
+    var d: [String: Any] = [:]
+    if let v = p.id { d["id"] = v }
+    if let v = p.email { d["email"] = v }
+    if let v = p.phone { d["phone"] = v }
+    if let v = p.firstName { d["first_name"] = v }
+    if let v = p.lastName { d["last_name"] = v }
+    if let v = p.hasEmail { d["has_email"] = v }
+    if let v = p.emailRegisteredAt { d["email_registered_at"] = v }
+    if let v = p.gender { d["gender"] = v }
+    if let v = p.computedGender { d["computed_gender"] = v }
+    if let v = p.boughtSomething { d["bought_something"] = v }
+    if JSONSerialization.isValidJSONObject(p.customProperties) {
+      d["custom_properties"] = p.customProperties
+    }
+    return d
+  }
+
+  private static func _productCountersToDict(_ r: ProductCountersResponse) -> [String: Any] {
+    func counterDict(_ c: ProductCounter?) -> [String: Any]? {
+      guard let c = c else { return nil }
+      return ["view": c.view, "cart": c.cart, "purchase": c.purchase]
+    }
+    var d: [String: Any] = [:]
+    if let v = counterDict(r.daily) { d["daily"] = v }
+    if let v = counterDict(r.now) { d["now"] = v }
+    if let t = r.triggers {
+      d["triggers"] = ["back_in_stock": t.backInStock, "price_drop": t.priceDrop]
+    }
+    return d
+  }
+
+  private static func _categoryResponseToDict(_ r: CategoryResponse) -> [String: Any] {
+    return [
+      "products_total": r.productsTotal,
+      "products": r.products.map { _categoryProductToDict($0) },
+    ]
+  }
+
+  private static func _collectionResponseToDict(_ r: CollectionResponse) -> [String: Any] {
+    return ["products": r.products.map { _categoryProductToDict($0) }]
+  }
+
+  private static func _categoryProductToDict(_ p: CategoryProduct) -> [String: Any] {
+    var d: [String: Any] = [:]
+    if let v = p.id { d["id"] = v }
+    if let v = p.name { d["name"] = v }
+    if let v = p.brand { d["brand"] = v }
+    if let v = p.price { d["price"] = v }
+    if let v = p.priceFormatted { d["price_formatted"] = v }
+    if let v = p.priceFull { d["price_full"] = v }
+    if let v = p.priceFullFormatted { d["price_full_formatted"] = v }
+    if let v = p.currency { d["currency"] = v }
+    if let v = p.imageUrl { d["image_url"] = v }
+    if let v = p.url { d["url"] = v }
+    if let v = p.picture { d["picture"] = v }
+    return d
+  }
+
+  /// Serializes a catalog response dictionary to a JSON string, mirroring the
+  /// other JSON-returning host methods.
+  private static func _encodeCatalog(
+    _ dict: [String: Any],
+    errorCode: String,
+    completion: @escaping (Result<String, Error>) -> Void
+  ) {
+    guard JSONSerialization.isValidJSONObject(dict),
+          let data = try? JSONSerialization.data(withJSONObject: dict),
+          let json = String(data: data, encoding: .utf8) else {
+      completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize \(errorCode) response", details: nil)))
+      return
+    }
+    completion(.success(json))
+  }
+
   /// Serializes a loyalty response envelope `{ "status": ..., "payload": ... }`
   /// to a JSON string, mirroring the other JSON-returning host methods.
   private static func _encodeEnvelope(

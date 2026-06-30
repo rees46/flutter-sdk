@@ -354,6 +354,88 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
+    override fun getProfile(callback: (Result<String>) -> Unit) {
+        try {
+            SDK.instance.profileManager.getProfile(
+                onSuccess = { response ->
+                    callback(Result.success(Gson().toJson(response)))
+                },
+                onError = { code, message ->
+                    callback(Result.failure(FlutterError("get_profile_failed", message ?: "error $code", null)))
+                },
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("get_profile_failed", t.message, null)))
+        }
+    }
+
+    override fun getProductCounters(item: String, callback: (Result<String>) -> Unit) {
+        if (item.isBlank()) {
+            callback(Result.failure(FlutterError("bad_args", "item is required", null)))
+            return
+        }
+        try {
+            SDK.instance.productsManager.getProductCounters(
+                item = item,
+                onSuccess = { response ->
+                    callback(Result.success(Gson().toJson(response)))
+                },
+                onError = { code, message ->
+                    callback(Result.failure(FlutterError("product_counters_failed", message ?: "error $code", null)))
+                },
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("product_counters_failed", t.message, null)))
+        }
+    }
+
+    override fun getCategory(
+        category: String,
+        limit: Long?,
+        page: Long?,
+        callback: (Result<String>) -> Unit,
+    ) {
+        if (category.isBlank()) {
+            callback(Result.failure(FlutterError("bad_args", "category is required", null)))
+            return
+        }
+        try {
+            SDK.instance.categoryManager.getCategory(
+                category = category,
+                limit = limit?.toInt(),
+                page = page?.toInt(),
+                onSuccess = { response ->
+                    callback(Result.success(Gson().toJson(response)))
+                },
+                onError = { code, message ->
+                    callback(Result.failure(FlutterError("get_category_failed", message ?: "error $code", null)))
+                },
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("get_category_failed", t.message, null)))
+        }
+    }
+
+    override fun getCollection(collectionId: String, callback: (Result<String>) -> Unit) {
+        if (collectionId.isBlank()) {
+            callback(Result.failure(FlutterError("bad_args", "collectionId is required", null)))
+            return
+        }
+        try {
+            SDK.instance.collectionManager.getCollection(
+                collectionId = collectionId,
+                onSuccess = { response ->
+                    callback(Result.success(Gson().toJson(response)))
+                },
+                onError = { code, message ->
+                    callback(Result.failure(FlutterError("get_collection_failed", message ?: "error $code", null)))
+                },
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("get_collection_failed", t.message, null)))
+        }
+    }
+
     override fun getSid(): String = SDK.instance.getSid()
 
     override fun getDid(): String? = SDK.instance.getDid()

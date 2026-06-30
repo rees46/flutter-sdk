@@ -372,6 +372,27 @@ interface PersonalizationHostApi {
    * Dart layer parses the result into [LoyaltyStatusResponse].
    */
   fun getLoyaltyStatus(identifier: String, callback: (Result<String>) -> Unit)
+  /**
+   * Returns the current user's profile as a JSON string.
+   * Dart layer parses the result into [ProfileResponse].
+   */
+  fun getProfile(callback: (Result<String>) -> Unit)
+  /**
+   * Returns view / cart / purchase counters for [item] as a JSON string.
+   * Dart layer parses the result into [ProductCountersResponse].
+   */
+  fun getProductCounters(item: String, callback: (Result<String>) -> Unit)
+  /**
+   * Returns a category product listing as a JSON string.
+   * [limit] and [page] paginate the result; both are optional.
+   * Dart layer parses the result into [CategoryResponse].
+   */
+  fun getCategory(category: String, limit: Long?, page: Long?, callback: (Result<String>) -> Unit)
+  /**
+   * Returns a merchandised collection's products as a JSON string.
+   * Dart layer parses the result into [CollectionResponse].
+   */
+  fun getCollection(collectionId: String, callback: (Result<String>) -> Unit)
   /** [customJson] and [recommendedSourceJson] are JSON object strings or null. */
   fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, callback: (Result<Unit>) -> Unit)
 
@@ -657,6 +678,86 @@ interface PersonalizationHostApi {
             val args = message as List<Any?>
             val identifierArg = args[0] as String
             api.getLoyaltyStatus(identifierArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProfile$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.getProfile{ result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductCounters$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemArg = args[0] as String
+            api.getProductCounters(itemArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCategory$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val categoryArg = args[0] as String
+            val limitArg = args[1] as Long?
+            val pageArg = args[2] as Long?
+            api.getCategory(categoryArg, limitArg, pageArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCollection$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val collectionIdArg = args[0] as String
+            api.getCollection(collectionIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
