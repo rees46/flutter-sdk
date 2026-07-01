@@ -92,6 +92,10 @@ dependencies {
         "com.github.rees46:android-sdk:$rees46AndroidSdkVersion",
     )
 
+    // Used directly by the push presenter (NotificationCompat / ContextCompat). The native SDK
+    // depends on the same version but as `implementation`, so it is not exposed transitively.
+    implementation("androidx.core:core-ktx:1.13.1")
+
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
 }

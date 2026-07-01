@@ -1,3 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="com.rees46.rees46_flutter_sdk">
+  <application>
+    <!--
+      Installs the push display listener at process start so pushes appear even when the app has
+      been swiped away (cold process, no Flutter engine running). See Rees46PushInitProvider.
+    -->
+    <provider
+      android:name="com.rees46.rees46_flutter_sdk.push.Rees46PushInitProvider"
+      android:authorities="${applicationId}.rees46pushinitprovider"
+      android:exported="false" />
+  </application>
 </manifest>

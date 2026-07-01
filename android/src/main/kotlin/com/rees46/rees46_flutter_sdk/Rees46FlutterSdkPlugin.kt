@@ -17,8 +17,8 @@ import com.personalization.SDK
 import com.personalization.api.OnApiCallbackListener
 import com.personalization.api.params.ProfileParams
 import com.personalization.api.params.SearchParams as NativeSearchParams
-import com.personalization.features.notification.presentation.helpers.NotificationImageHelper
 import com.personalization.sdk.data.models.dto.notification.NotificationData
+import com.rees46.rees46_flutter_sdk.push.Rees46PushNotifier
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -116,31 +116,29 @@ class Rees46FlutterSdkPlugin :
                 needReInitialization = config.needReInitialization,
             )
 
-            // Mirror REES46 entrypoint behaviour: show notifications on message.
+            Rees46PushNotifier.ensureChannel(applicationContext)
+
+            // Show a heads-up BigPicture notification on message (pop-up, image, tap opens the app)
+            // — the native equivalent of the REES46 React Native demo. This replaces the SDK's
+            // built-in collapsed/low-importance custom-view notification. The push is also forwarded
+            // to Dart (onPushReceived / onPushDelivered) so the host app can react.
             sdk.setOnMessageListener { data ->
+                android.util.Log.d(
+                    Rees46PushNotifier.TAG,
+                    "onMessage (plugin listener) id=${data.id}",
+                )
                 val payload = data.toPayload()
-                flutterApi?.onPushReceived(payload) { _ -> }
+                // The listener fires on an FCM background thread, but flutterApi is a Pigeon
+                // channel whose methods are @UiThread — calling them off the main thread throws
+                // and would abort before the notification is posted. Hop to Main (coroutineScope
+                // is Dispatchers.Main) for every flutterApi call, download+post the notification
+                // off the main thread, and never let a flutterApi failure block the display.
                 coroutineScope.launch {
-                    val (images, hasError) = withContext(Dispatchers.IO) {
-                        NotificationImageHelper.loadBitmaps(urls = data.image)
+                    runCatching { flutterApi?.onPushReceived(payload) { _ -> } }
+                    withContext(Dispatchers.IO) {
+                        Rees46PushNotifier.show(applicationContext, data)
                     }
-                    sdk.notificationHelper.createNotification(
-                        context = applicationContext,
-                        data = NotificationData(
-                            id = data.id,
-                            title = data.title,
-                            body = data.body,
-                            icon = data.icon,
-                            type = data.type,
-                            actions = data.actions,
-                            actionUrls = data.actionUrls,
-                            image = data.image,
-                            event = data.event,
-                        ),
-                        images = images,
-                        hasError = hasError,
-                    )
-                    flutterApi?.onPushDelivered(payload) { _ -> }
+                    runCatching { flutterApi?.onPushDelivered(payload) { _ -> } }
                 }
             }
 
