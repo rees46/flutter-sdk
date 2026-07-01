@@ -1,4 +1,5 @@
 import '../products/products_list_response.dart' show Product;
+import '../json_number.dart';
 
 export '../products/products_list_response.dart' show Product;
 
@@ -19,7 +20,7 @@ class CategoryResponse {
 
   factory CategoryResponse.fromJson(Map<String, dynamic> json) {
     return CategoryResponse(
-      productsTotal: json['products_total'] as int? ?? 0,
+      productsTotal: toIntOrNull(json['products_total']) ?? 0,
       products: (json['products'] as List<dynamic>? ?? [])
           .map((e) => Product.fromJson(e as Map<String, dynamic>))
           .toList(),

@@ -1,3 +1,4 @@
+import '../json_number.dart';
 /// Response from [PersonalizationSdk.getProductCounters].
 ///
 /// Mirrors native `ProductCountersResponse`: per-period view/cart/purchase
@@ -42,9 +43,9 @@ class ProductCounter {
 
   factory ProductCounter.fromJson(Map<String, dynamic> json) {
     return ProductCounter(
-      view: json['view'] as int? ?? 0,
-      cart: json['cart'] as int? ?? 0,
-      purchase: json['purchase'] as int? ?? 0,
+      view: toIntOrNull(json['view']) ?? 0,
+      cart: toIntOrNull(json['cart']) ?? 0,
+      purchase: toIntOrNull(json['purchase']) ?? 0,
     );
   }
 }
@@ -61,8 +62,8 @@ class ProductCounterTriggers {
 
   factory ProductCounterTriggers.fromJson(Map<String, dynamic> json) {
     return ProductCounterTriggers(
-      backInStock: json['back_in_stock'] as int? ?? 0,
-      priceDrop: json['price_drop'] as int? ?? 0,
+      backInStock: toIntOrNull(json['back_in_stock']) ?? 0,
+      priceDrop: toIntOrNull(json['price_drop']) ?? 0,
     );
   }
 }
