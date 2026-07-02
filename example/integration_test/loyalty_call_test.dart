@@ -1,18 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
-/// Real-network integration test for the loyalty methods.
+/// Real-network integration test for the loyalty methods, exercised at the SDK
+/// level (no demo UI). It complements [loyalty_sdk_test], which drives the same
+/// methods through the example app's UI.
 ///
 /// Drives the actual native SDK (Android `loyaltyManager`, iOS
 /// `joinLoyalty`/`getLoyaltyStatus`) against the live REES46 API using a
-/// loyalty-enabled shop. Run on a booted simulator/emulator:
+/// loyalty-enabled shop. Runs as part of the Patrol suite.
 ///
-///   flutter test integration_test/loyalty_call_test.dart -d [device-id]
+/// NOTE: this must be a `patrolTest`, not a plain `testWidgets` with
+/// `IntegrationTestWidgetsFlutterBinding` — Patrol bundles every *_test.dart in
+/// this directory and initializes its own `PatrolBinding`; a second binding
+/// would conflict and hang the whole run during test exploration.
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   const shopId = 'c1140c8254976de297c3caf971701a';
   const apiDomain = 'api.rees46.ru';
   const phone = '79991234567';
@@ -20,10 +23,12 @@ void main() {
   Future<PersonalizationSdk> initSdk() async {
     final sdk = PersonalizationSdk();
     await sdk.initialize(
-      const SdkInitConfig(
+      SdkInitConfig(
         shopId: shopId,
         apiDomain: apiDomain,
-        stream: kIsWeb ? 'web' : 'ios',
+        stream: defaultTargetPlatform == TargetPlatform.android
+            ? 'android'
+            : 'ios',
         enableLogs: true,
         autoSendPushToken: false,
         sendAdvertisingId: false,
@@ -41,7 +46,7 @@ void main() {
     return sdk;
   }
 
-  testWidgets('joinLoyalty — real call returns success', (tester) async {
+  patrolTest('joinLoyalty — real call returns success', ($) async {
     final sdk = await initSdk();
 
     final response = await sdk.joinLoyalty(phone: phone);
@@ -51,7 +56,7 @@ void main() {
     expect(response.status, equals('success'));
   });
 
-  testWidgets('getLoyaltyStatus — real call returns success', (tester) async {
+  patrolTest('getLoyaltyStatus — real call returns success', ($) async {
     final sdk = await initSdk();
 
     final response = await sdk.getLoyaltyStatus(phone);

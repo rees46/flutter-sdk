@@ -1,0 +1,69 @@
+name: Android integration tests
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  patrol-android:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Hardware acceleration for the Android emulator on ubuntu runners.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      # Pin to match the `patrol` package major in example/pubspec.yaml (^4.x).
+      - name: Install patrol_cli
+        run: |
+          dart pub global activate patrol_cli 4.3.1
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      # Boots an emulator, runs the whole integration_test/ suite on it, tears down.
+      # The tests drive the real example app against the REES46 demo shop (c1140c…),
+      # so they exercise the Kotlin bridge + real backend — what unit tests can't.
+      - name: Run Patrol integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: default
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          cores: 3
+          emulator-options: >-
+            -no-window -no-snapshot -noaudio -no-boot-anim
+            -gpu swiftshader_indirect -camera-back none
+          working-directory: example
+          script: |
+            flutter pub get
+            patrol test --verbose

@@ -4,10 +4,13 @@ import 'package:patrol/patrol.dart';
 
 import 'package:rees46_sdk_example/main.dart' as app;
 
+import 'patrol_setup.dart';
+
 import 'test_config.dart';
 
 Future<void> _initializeSdk(PatrolIntegrationTester $) async {
   await $.pumpWidgetAndSettle(const app.App());
+  await dismissStartupPermissionDialog($);
   await $(
     'Status: Initialized',
   ).waitUntilExists(timeout: const Duration(seconds: 30));
@@ -43,7 +46,9 @@ void main() {
     final title = _labelText($, 'lbl_rec_title');
     expect(title, isNot(contains('Error')));
     expect(title, startsWith('Title:'));
-  });
+    // Skipped until a real recommender block code for the test shop is set in
+    // TestConfig — the placeholder returns 404. Auto-runs once a code is set.
+  }, skip: TestConfig.recommendationBlockCode == 'your_block_code');
 
   patrolTest('getRecommendation — product count is non-negative', ($) async {
     await _initializeSdk($);
@@ -62,12 +67,14 @@ void main() {
     final n = int.tryParse(countText.replaceFirst('Products: ', ''));
     expect(n, isNotNull);
     expect(n, greaterThanOrEqualTo(0));
-  });
+  }, skip: TestConfig.recommendationBlockCode == 'your_block_code');
 
   patrolTest('getRecommendation — empty block code does not crash', ($) async {
     await _initializeSdk($);
 
-    // Leave block code field empty and tap.
+    // The field is pre-filled for manual use — clear it to exercise the empty case.
+    await $.tester.enterText(find.byKey(const Key('field_rec_block_code')), '');
+    await $.tester.pump();
     await $('Get Recommendations').scrollTo();
     await $('Get Recommendations').tap();
     await $.pumpAndSettle();

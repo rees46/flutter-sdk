@@ -3,9 +3,12 @@ import 'package:patrol/patrol.dart';
 
 import 'package:rees46_sdk_example/main.dart' as app;
 
+import 'patrol_setup.dart';
+
 void main() {
   patrolTest('auto-initializes on startup with hardcoded config', ($) async {
     await $.pumpWidgetAndSettle(const app.App());
+    await dismissStartupPermissionDialog($);
 
     await $(
       'Status: Initialized',
@@ -16,6 +19,7 @@ void main() {
     $,
   ) async {
     await $.pumpWidgetAndSettle(const app.App());
+    await dismissStartupPermissionDialog($);
 
     await $(
       'Status: Initialized',
@@ -28,6 +32,7 @@ void main() {
     'Re-initialize button re-runs initialization and returns to Initialized',
     ($) async {
       await $.pumpWidgetAndSettle(const app.App());
+      await dismissStartupPermissionDialog($);
 
       await $(
         'Status: Initialized',

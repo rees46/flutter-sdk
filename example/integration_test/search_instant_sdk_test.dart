@@ -4,10 +4,13 @@ import 'package:patrol/patrol.dart';
 
 import 'package:rees46_sdk_example/main.dart' as app;
 
+import 'patrol_setup.dart';
+
 import 'test_config.dart';
 
 Future<void> _initializeSdk(PatrolIntegrationTester $) async {
   await $.pumpWidgetAndSettle(const app.App());
+  await dismissStartupPermissionDialog($);
   await $(
     'Status: Initialized',
   ).waitUntilExists(timeout: const Duration(seconds: 30));
@@ -31,8 +34,13 @@ void main() {
     );
     await $.tester.pump();
 
-    await $('Search Instant').tap();
-    await $('Search Instant').waitUntilVisible();
+    await $(const Key('btn_search_instant')).scrollTo();
+    await $(const Key('btn_search_instant')).tap();
+    await waitForResultOrError(
+      $,
+      'lbl_search_instant_total',
+      'lbl_search_instant_error',
+    );
 
     expect(find.byKey(const Key('lbl_search_instant_error')), findsNothing);
 
@@ -46,7 +54,15 @@ void main() {
   patrolTest('searchInstant — empty query is no-op in the UI', ($) async {
     await _initializeSdk($);
 
-    await $('Search Instant').tap();
+    // The field is pre-filled for manual use — clear it to exercise the empty case.
+    await $.tester.enterText(
+      find.byKey(const Key('field_search_instant_query')),
+      '',
+    );
+    await $.tester.pump();
+
+    await $(const Key('btn_search_instant')).scrollTo();
+    await $(const Key('btn_search_instant')).tap();
     await $.pumpAndSettle();
 
     expect(find.byKey(const Key('lbl_search_instant_total')), findsNothing);
@@ -62,12 +78,22 @@ void main() {
     );
     await $.tester.pump();
 
-    await $('Search Instant').tap();
-    await $('Search Instant').waitUntilVisible();
+    await $(const Key('btn_search_instant')).scrollTo();
+    await $(const Key('btn_search_instant')).tap();
+    await waitForResultOrError(
+      $,
+      'lbl_search_instant_total',
+      'lbl_search_instant_error',
+    );
     final first = _labelText($, 'lbl_search_instant_total');
 
-    await $('Search Instant').tap();
-    await $('Search Instant').waitUntilVisible();
+    await $(const Key('btn_search_instant')).scrollTo();
+    await $(const Key('btn_search_instant')).tap();
+    await waitForResultOrError(
+      $,
+      'lbl_search_instant_total',
+      'lbl_search_instant_error',
+    );
     final second = _labelText($, 'lbl_search_instant_total');
 
     expect(first, equals(second));
@@ -82,8 +108,13 @@ void main() {
     );
     await $.tester.pump();
 
-    await $('Search Instant').tap();
-    await $('Search Instant').waitUntilVisible();
+    await $(const Key('btn_search_instant')).scrollTo();
+    await $(const Key('btn_search_instant')).tap();
+    await waitForResultOrError(
+      $,
+      'lbl_search_instant_total',
+      'lbl_search_instant_error',
+    );
 
     final hasTotal = find
         .byKey(const Key('lbl_search_instant_total'))

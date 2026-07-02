@@ -32,6 +32,10 @@ enum InitState { idle, initializing, initialized, failed }
 class _InitPageState extends State<InitPage> {
   final _sdk = PersonalizationSdk();
 
+  // Platform channel used to ask the host for the Android 13+ notification
+  // permission. See [_requestNotificationPermission].
+  static const _platformChannel = MethodChannel('rees46_sdk_example/platform');
+
   // Hardcoded demo credentials — the demo does not need editable init inputs.
   static const _shopId = 'c1140c8254976de297c3caf971701a';
   static const _apiDomain = 'api.rees46.ru';
@@ -59,20 +63,22 @@ class _InitPageState extends State<InitPage> {
   String? _profileStatus;
 
   // Recommendation state
-  final _recBlockController = TextEditingController();
+  final _recBlockController = TextEditingController(
+    text: 'e6249bb15043644bf25b135006149962',
+  );
   String? _recTitle;
   int? _recProductCount;
   String? _recError;
   bool _recLoading = false;
 
   // Search (full) state
-  final _searchQueryController = TextEditingController();
+  final _searchQueryController = TextEditingController(text: 'Logitech');
   int? _searchTotal;
   String? _searchError;
   bool _searchLoading = false;
 
   // Product info state
-  final _productIdController = TextEditingController();
+  final _productIdController = TextEditingController(text: '868');
   String? _productInfoName;
   String? _productInfoError;
   bool _productInfoLoading = false;
@@ -89,7 +95,7 @@ class _InitPageState extends State<InitPage> {
   bool _searchBlankLoading = false;
 
   // Search instant state
-  final _searchInstantQueryController = TextEditingController();
+  final _searchInstantQueryController = TextEditingController(text: 'Logitech');
   int? _searchInstantTotal;
   String? _searchInstantError;
   bool _searchInstantLoading = false;
@@ -100,6 +106,26 @@ class _InitPageState extends State<InitPage> {
   String? _loyaltyError;
   bool _loyaltyLoading = false;
 
+  // Catalog state (profile / product counters / category / collection)
+  String? _catalogProfile;
+  String? _catalogProfileError;
+  bool _catalogProfileLoading = false;
+
+  final _catalogCounterItemController = TextEditingController(text: '868');
+  String? _catalogCounters;
+  String? _catalogCountersError;
+  bool _catalogCountersLoading = false;
+
+  final _catalogCategoryController = TextEditingController(text: 'naushniki');
+  String? _catalogCategory;
+  String? _catalogCategoryError;
+  bool _catalogCategoryLoading = false;
+
+  final _catalogCollectionController = TextEditingController(text: '1');
+  String? _catalogCollection;
+  String? _catalogCollectionError;
+  bool _catalogCollectionLoading = false;
+
   @override
   void dispose() {
     _recBlockController.dispose();
@@ -107,6 +133,9 @@ class _InitPageState extends State<InitPage> {
     _searchQueryController.dispose();
     _searchInstantQueryController.dispose();
     _loyaltyPhoneController.dispose();
+    _catalogCounterItemController.dispose();
+    _catalogCategoryController.dispose();
+    _catalogCollectionController.dispose();
     super.dispose();
   }
 
@@ -123,6 +152,23 @@ class _InitPageState extends State<InitPage> {
     // Auto-initialize on startup — the demo uses hardcoded config, so no manual
     // step is needed. The button below only re-initializes (e.g. after toggling flags).
     _initialize();
+    // Ask for the notification permission after the first frame. Triggering it from
+    // Dart (rather than MainActivity.onCreate) guarantees it runs after Patrol's
+    // app-service handshake, so the system dialog never hangs an integration test.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestNotificationPermission();
+    });
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    try {
+      await _platformChannel.invokeMethod<void>(
+        'requestNotificationPermission',
+      );
+    } catch (_) {
+      // Best-effort: the app still runs without it (pushes just won't be shown
+      // until the permission is granted), and non-Android hosts ignore it.
+    }
   }
 
   Future<void> _initialize() async {
@@ -200,8 +246,10 @@ class _InitPageState extends State<InitPage> {
   Future<void> _setProfile() async {
     try {
       await _sdk.setProfile(
+        // Not example.com — the REES46 backend rejects RFC 2606 reserved test
+        // domains with 400 "Invalid email or missing".
         const ProfileParams(
-          email: 'test@example.com',
+          email: 'tester@rees46.com',
           firstName: 'Test',
           gender: ProfileGender.male,
         ),
@@ -390,12 +438,105 @@ class _InitPageState extends State<InitPage> {
     }
   }
 
+  Future<void> _getCatalogProfile() async {
+    setState(() {
+      _catalogProfileLoading = true;
+      _catalogProfileError = null;
+      _catalogProfile = null;
+    });
+    try {
+      final p = await _sdk.getProfile();
+      setState(() {
+        _catalogProfile =
+            'id=${p.id ?? '-'}, hasEmail=${p.hasEmail ?? false}, '
+            'gender=${p.gender ?? '-'}, props=${p.customProperties.length}';
+        _catalogProfileLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _catalogProfileError = 'Error: $e';
+        _catalogProfileLoading = false;
+      });
+    }
+  }
+
+  Future<void> _getCatalogCounters() async {
+    final item = _catalogCounterItemController.text.trim();
+    if (item.isEmpty) return;
+    setState(() {
+      _catalogCountersLoading = true;
+      _catalogCountersError = null;
+      _catalogCounters = null;
+    });
+    try {
+      final c = await _sdk.getProductCounters(item);
+      setState(() {
+        _catalogCounters =
+            'now.view=${c.now?.view ?? 0}, daily.view=${c.daily?.view ?? 0}, '
+            'priceDrop=${c.triggers?.priceDrop ?? 0}';
+        _catalogCountersLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _catalogCountersError = 'Error: $e';
+        _catalogCountersLoading = false;
+      });
+    }
+  }
+
+  Future<void> _getCatalogCategory() async {
+    final category = _catalogCategoryController.text.trim();
+    if (category.isEmpty) return;
+    setState(() {
+      _catalogCategoryLoading = true;
+      _catalogCategoryError = null;
+      _catalogCategory = null;
+    });
+    try {
+      final r = await _sdk.getCategory(category, limit: 5);
+      setState(() {
+        _catalogCategory =
+            'total=${r.productsTotal}, products=${r.products.length}';
+        _catalogCategoryLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _catalogCategoryError = 'Error: $e';
+        _catalogCategoryLoading = false;
+      });
+    }
+  }
+
+  Future<void> _getCatalogCollection() async {
+    final id = _catalogCollectionController.text.trim();
+    if (id.isEmpty) return;
+    setState(() {
+      _catalogCollectionLoading = true;
+      _catalogCollectionError = null;
+      _catalogCollection = null;
+    });
+    try {
+      final r = await _sdk.getCollection(id);
+      setState(() {
+        _catalogCollection = 'products=${r.products.length}';
+        _catalogCollectionLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _catalogCollectionError = 'Error: $e';
+        _catalogCollectionLoading = false;
+      });
+    }
+  }
+
   Future<void> _demoTrackEvent() async {
     if (_initState != InitState.initialized) return;
     try {
       await _sdk.trackEvent(
         'flutter_example',
-        customFields: const {'source': 'example_app'},
+        // 'source' is a reserved event key (collides with the SDK's own body
+        // fields) — use a non-reserved custom key.
+        customFields: const {'example_source': 'example_app'},
       );
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -443,157 +584,190 @@ class _InitPageState extends State<InitPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('REES46 SDK init demo')),
-      body: ListView(
+      // A SingleChildScrollView + Column (rather than a lazy ListView) so every
+      // card and input field is always built and findable by integration tests,
+      // even when off-screen. A ListView only builds children near the viewport,
+      // which makes `find.byKey(...)` miss fields below the fold.
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          _InitStatusCard(
-            state: _initState,
-            error: _initError,
-            lastInitAt: _lastInitAt,
-          ),
-          const SizedBox(height: 12),
-          _PushTokenCard(
-            token: _storedPushToken,
-            updatedAt: _tokenUpdatedAt,
-            loading: _tokenLoading,
-            onRefresh: _tokenLoading ? null : _refreshToken,
-            onCopy: (_storedPushToken?.isNotEmpty ?? false) ? _copyToken : null,
-          ),
-          const SizedBox(height: 24),
-          SwitchListTile(
-            value: _enableLogs,
-            onChanged: (v) => setState(() => _enableLogs = v),
-            title: const Text('enableLogs (iOS)'),
-          ),
-          SwitchListTile(
-            value: _autoSendPushToken,
-            onChanged: (v) => setState(() => _autoSendPushToken = v),
-            title: const Text('autoSendPushToken'),
-          ),
-          SwitchListTile(
-            value: _sendAdvertisingId,
-            onChanged: (v) => setState(() => _sendAdvertisingId = v),
-            title: const Text('sendAdvertisingId (iOS)'),
-          ),
-          SwitchListTile(
-            value: _enableAutoPopupPresentation,
-            onChanged: (v) => setState(() => _enableAutoPopupPresentation = v),
-            title: const Text('enableAutoPopupPresentation (iOS)'),
-          ),
-          SwitchListTile(
-            value: _needReInitialization,
-            onChanged: (v) => setState(() => _needReInitialization = v),
-            title: const Text('needReInitialization'),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _initState == InitState.initializing
-                ? null
-                : _initialize,
-            child: Text(
-              _initState == InitState.initializing
-                  ? 'Initializing…'
-                  : 'Re-initialize',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _InitStatusCard(
+              state: _initState,
+              error: _initError,
+              lastInitAt: _lastInitAt,
             ),
-          ),
-          const SizedBox(height: 12),
-          _ProfileCard(
-            sid: _sid,
-            did: _did,
-            profileStatus: _profileStatus,
-            enabled: _initState == InitState.initialized,
-            onGetSid: _getSid,
-            onGetDid: _getDid,
-            onSetProfile: _setProfile,
-          ),
-          const SizedBox(height: 12),
-          _RecommendationCard(
-            blockController: _recBlockController,
-            title: _recTitle,
-            productCount: _recProductCount,
-            error: _recError,
-            loading: _recLoading,
-            enabled: _initState == InitState.initialized,
-            onGet: _getRecommendation,
-          ),
-          const SizedBox(height: 12),
-          _ProductInfoCard(
-            idController: _productIdController,
-            productName: _productInfoName,
-            error: _productInfoError,
-            loading: _productInfoLoading,
-            enabled: _initState == InitState.initialized,
-            onGet: _getProductInfo,
-          ),
-          const SizedBox(height: 12),
-          _ProductsListCard(
-            total: _productsListTotal,
-            error: _productsListError,
-            loading: _productsListLoading,
-            enabled: _initState == InitState.initialized,
-            onGet: _getProductsList,
-          ),
-          const SizedBox(height: 12),
-          _SearchBlankCard(
-            productCount: _searchBlankProductCount,
-            suggestCount: _searchBlankSuggestCount,
-            error: _searchBlankError,
-            loading: _searchBlankLoading,
-            enabled: _initState == InitState.initialized,
-            onSearch: _searchBlank,
-          ),
-          const SizedBox(height: 12),
-          _SearchInstantCard(
-            queryController: _searchInstantQueryController,
-            total: _searchInstantTotal,
-            error: _searchInstantError,
-            loading: _searchInstantLoading,
-            enabled: _initState == InitState.initialized,
-            onSearch: _searchInstant,
-          ),
-          const SizedBox(height: 12),
-          _SearchCard(
-            queryController: _searchQueryController,
-            total: _searchTotal,
-            error: _searchError,
-            loading: _searchLoading,
-            enabled: _initState == InitState.initialized,
-            onSearch: _searchFull,
-          ),
-          const SizedBox(height: 12),
-          _LoyaltyCard(
-            phoneController: _loyaltyPhoneController,
-            result: _loyaltyResult,
-            error: _loyaltyError,
-            loading: _loyaltyLoading,
-            enabled: _initState == InitState.initialized,
-            onJoin: _joinLoyalty,
-            onStatus: _getLoyaltyStatus,
-          ),
-          const SizedBox(height: 24),
-          Text('Tracking', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(
-            'Requires successful initialization above.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            key: const Key('example_demo_track_event'),
-            onPressed: _initState == InitState.initialized
-                ? _demoTrackEvent
-                : null,
-            child: const Text('Send demo trackEvent'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            key: const Key('example_demo_track_purchase'),
-            onPressed: _initState == InitState.initialized
-                ? _demoTrackPurchase
-                : null,
-            child: const Text('Send demo trackPurchase'),
-          ),
-        ],
+            const SizedBox(height: 12),
+            _PushTokenCard(
+              token: _storedPushToken,
+              updatedAt: _tokenUpdatedAt,
+              loading: _tokenLoading,
+              onRefresh: _tokenLoading ? null : _refreshToken,
+              onCopy: (_storedPushToken?.isNotEmpty ?? false)
+                  ? _copyToken
+                  : null,
+            ),
+            const SizedBox(height: 24),
+            SwitchListTile(
+              value: _enableLogs,
+              onChanged: (v) => setState(() => _enableLogs = v),
+              title: const Text('enableLogs (iOS)'),
+            ),
+            SwitchListTile(
+              value: _autoSendPushToken,
+              onChanged: (v) => setState(() => _autoSendPushToken = v),
+              title: const Text('autoSendPushToken'),
+            ),
+            SwitchListTile(
+              value: _sendAdvertisingId,
+              onChanged: (v) => setState(() => _sendAdvertisingId = v),
+              title: const Text('sendAdvertisingId (iOS)'),
+            ),
+            SwitchListTile(
+              value: _enableAutoPopupPresentation,
+              onChanged: (v) =>
+                  setState(() => _enableAutoPopupPresentation = v),
+              title: const Text('enableAutoPopupPresentation (iOS)'),
+            ),
+            SwitchListTile(
+              value: _needReInitialization,
+              onChanged: (v) => setState(() => _needReInitialization = v),
+              title: const Text('needReInitialization'),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _initState == InitState.initializing
+                  ? null
+                  : _initialize,
+              child: Text(
+                _initState == InitState.initializing
+                    ? 'Initializing…'
+                    : 'Re-initialize',
+              ),
+            ),
+            const SizedBox(height: 12),
+            _ProfileCard(
+              sid: _sid,
+              did: _did,
+              profileStatus: _profileStatus,
+              enabled: _initState == InitState.initialized,
+              onGetSid: _getSid,
+              onGetDid: _getDid,
+              onSetProfile: _setProfile,
+            ),
+            const SizedBox(height: 12),
+            _RecommendationCard(
+              blockController: _recBlockController,
+              title: _recTitle,
+              productCount: _recProductCount,
+              error: _recError,
+              loading: _recLoading,
+              enabled: _initState == InitState.initialized,
+              onGet: _getRecommendation,
+            ),
+            const SizedBox(height: 12),
+            _ProductInfoCard(
+              idController: _productIdController,
+              productName: _productInfoName,
+              error: _productInfoError,
+              loading: _productInfoLoading,
+              enabled: _initState == InitState.initialized,
+              onGet: _getProductInfo,
+            ),
+            const SizedBox(height: 12),
+            _ProductsListCard(
+              total: _productsListTotal,
+              error: _productsListError,
+              loading: _productsListLoading,
+              enabled: _initState == InitState.initialized,
+              onGet: _getProductsList,
+            ),
+            const SizedBox(height: 12),
+            _SearchBlankCard(
+              productCount: _searchBlankProductCount,
+              suggestCount: _searchBlankSuggestCount,
+              error: _searchBlankError,
+              loading: _searchBlankLoading,
+              enabled: _initState == InitState.initialized,
+              onSearch: _searchBlank,
+            ),
+            const SizedBox(height: 12),
+            _SearchInstantCard(
+              queryController: _searchInstantQueryController,
+              total: _searchInstantTotal,
+              error: _searchInstantError,
+              loading: _searchInstantLoading,
+              enabled: _initState == InitState.initialized,
+              onSearch: _searchInstant,
+            ),
+            const SizedBox(height: 12),
+            _SearchCard(
+              queryController: _searchQueryController,
+              total: _searchTotal,
+              error: _searchError,
+              loading: _searchLoading,
+              enabled: _initState == InitState.initialized,
+              onSearch: _searchFull,
+            ),
+            const SizedBox(height: 12),
+            _LoyaltyCard(
+              phoneController: _loyaltyPhoneController,
+              result: _loyaltyResult,
+              error: _loyaltyError,
+              loading: _loyaltyLoading,
+              enabled: _initState == InitState.initialized,
+              onJoin: _joinLoyalty,
+              onStatus: _getLoyaltyStatus,
+            ),
+            const SizedBox(height: 12),
+            _CatalogCard(
+              enabled: _initState == InitState.initialized,
+              profile: _catalogProfile,
+              profileError: _catalogProfileError,
+              profileLoading: _catalogProfileLoading,
+              onGetProfile: _getCatalogProfile,
+              counterItemController: _catalogCounterItemController,
+              counters: _catalogCounters,
+              countersError: _catalogCountersError,
+              countersLoading: _catalogCountersLoading,
+              onGetCounters: _getCatalogCounters,
+              categoryController: _catalogCategoryController,
+              category: _catalogCategory,
+              categoryError: _catalogCategoryError,
+              categoryLoading: _catalogCategoryLoading,
+              onGetCategory: _getCatalogCategory,
+              collectionController: _catalogCollectionController,
+              collection: _catalogCollection,
+              collectionError: _catalogCollectionError,
+              collectionLoading: _catalogCollectionLoading,
+              onGetCollection: _getCatalogCollection,
+            ),
+            const SizedBox(height: 24),
+            Text('Tracking', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              'Requires successful initialization above.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              key: const Key('example_demo_track_event'),
+              onPressed: _initState == InitState.initialized
+                  ? _demoTrackEvent
+                  : null,
+              child: const Text('Send demo trackEvent'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              key: const Key('example_demo_track_purchase'),
+              onPressed: _initState == InitState.initialized
+                  ? _demoTrackPurchase
+                  : null,
+              child: const Text('Send demo trackPurchase'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -934,6 +1108,183 @@ class _LoyaltyCard extends StatelessWidget {
                 key: const Key('lbl_loyalty_error'),
                 error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CatalogCard extends StatelessWidget {
+  final bool enabled;
+
+  final String? profile;
+  final String? profileError;
+  final bool profileLoading;
+  final VoidCallback onGetProfile;
+
+  final TextEditingController counterItemController;
+  final String? counters;
+  final String? countersError;
+  final bool countersLoading;
+  final VoidCallback onGetCounters;
+
+  final TextEditingController categoryController;
+  final String? category;
+  final String? categoryError;
+  final bool categoryLoading;
+  final VoidCallback onGetCategory;
+
+  final TextEditingController collectionController;
+  final String? collection;
+  final String? collectionError;
+  final bool collectionLoading;
+  final VoidCallback onGetCollection;
+
+  const _CatalogCard({
+    required this.enabled,
+    required this.profile,
+    required this.profileError,
+    required this.profileLoading,
+    required this.onGetProfile,
+    required this.counterItemController,
+    required this.counters,
+    required this.countersError,
+    required this.countersLoading,
+    required this.onGetCounters,
+    required this.categoryController,
+    required this.category,
+    required this.categoryError,
+    required this.categoryLoading,
+    required this.onGetCategory,
+    required this.collectionController,
+    required this.collection,
+    required this.collectionError,
+    required this.collectionLoading,
+    required this.onGetCollection,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final errorStyle = TextStyle(color: Theme.of(context).colorScheme.error);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Catalog', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+
+            // getProfile — no input; returns the current session's profile.
+            OutlinedButton(
+              key: const Key('btn_catalog_profile'),
+              onPressed: (enabled && !profileLoading) ? onGetProfile : null,
+              child: Text(profileLoading ? 'Loading…' : 'Get Profile'),
+            ),
+            if (profile != null) ...[
+              const SizedBox(height: 8),
+              Text(key: const Key('lbl_catalog_profile'), profile!),
+            ],
+            if (profileError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                key: const Key('lbl_catalog_profile_error'),
+                profileError!,
+                style: errorStyle,
+              ),
+            ],
+            const Divider(height: 24),
+
+            // getProductCounters
+            TextField(
+              key: const Key('field_catalog_counter_item'),
+              controller: counterItemController,
+              decoration: const InputDecoration(
+                labelText: 'Counters: item ID',
+                hintText: 'e.g. sku-123',
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              key: const Key('btn_catalog_counters'),
+              onPressed: (enabled && !countersLoading) ? onGetCounters : null,
+              child: Text(
+                countersLoading ? 'Loading…' : 'Get Product Counters',
+              ),
+            ),
+            if (counters != null) ...[
+              const SizedBox(height: 8),
+              Text(key: const Key('lbl_catalog_counters'), counters!),
+            ],
+            if (countersError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                key: const Key('lbl_catalog_counters_error'),
+                countersError!,
+                style: errorStyle,
+              ),
+            ],
+            const Divider(height: 24),
+
+            // getCategory
+            TextField(
+              key: const Key('field_catalog_category'),
+              controller: categoryController,
+              decoration: const InputDecoration(
+                labelText: 'Category ID',
+                hintText: 'e.g. 100',
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              key: const Key('btn_catalog_category'),
+              onPressed: (enabled && !categoryLoading) ? onGetCategory : null,
+              child: Text(categoryLoading ? 'Loading…' : 'Get Category'),
+            ),
+            if (category != null) ...[
+              const SizedBox(height: 8),
+              Text(key: const Key('lbl_catalog_category'), category!),
+            ],
+            if (categoryError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                key: const Key('lbl_catalog_category_error'),
+                categoryError!,
+                style: errorStyle,
+              ),
+            ],
+            const Divider(height: 24),
+
+            // getCollection
+            TextField(
+              key: const Key('field_catalog_collection'),
+              controller: collectionController,
+              decoration: const InputDecoration(
+                labelText: 'Collection ID',
+                hintText: 'e.g. 1',
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              key: const Key('btn_catalog_collection'),
+              onPressed: (enabled && !collectionLoading)
+                  ? onGetCollection
+                  : null,
+              child: Text(collectionLoading ? 'Loading…' : 'Get Collection'),
+            ),
+            if (collection != null) ...[
+              const SizedBox(height: 8),
+              Text(key: const Key('lbl_catalog_collection'), collection!),
+            ],
+            if (collectionError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                key: const Key('lbl_catalog_collection_error'),
+                collectionError!,
+                style: errorStyle,
               ),
             ],
           ],
