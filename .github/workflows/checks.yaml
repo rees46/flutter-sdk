@@ -49,8 +49,11 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
       
+      # Exclude generated *.g.dart (Pigeon): they are not hand-formatted, and
+      # `dart format` ignores the analysis_options `formatter: exclude` list, so
+      # filter them out here via git pathspec.
       - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --output=none --set-exit-if-changed $(git ls-files '*.dart' ':!:*.g.dart')
       
       # This is a plugin package: the buildable app lives in example/,
       # so build there (the repo root has no lib/main.dart).

@@ -1,4 +1,5 @@
 import '../recommendation/recommendation_response.dart' show ProductCategory;
+import '../json_number.dart';
 
 export '../recommendation/recommendation_response.dart' show ProductCategory;
 
@@ -23,7 +24,7 @@ class ProductsListResponse {
       products: (json['products'] as List<dynamic>? ?? [])
           .map((e) => Product.fromJson(e as Map<String, dynamic>))
           .toList(),
-      productsTotal: json['products_total'] as int? ?? 0,
+      productsTotal: toIntOrNull(json['products_total']) ?? 0,
       priceRange: json['price_range'] == null
           ? null
           : PriceRange.fromJson(json['price_range'] as Map<String, dynamic>),
@@ -80,20 +81,19 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       brand: json['brand'] as String? ?? '',
       description: json['description'] as String? ?? '',
       imageUrl: json['image_url'] as String? ?? '',
       url: json['url'] as String? ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      priceFull: (json['price_full'] as num?)?.toDouble() ?? 0.0,
+      price: toDoubleOrNull(json['price']) ?? 0.0,
+      priceFull: toDoubleOrNull(json['price_full']) ?? 0.0,
       priceFormatted: json['price_formatted'] as String?,
       priceFullFormatted: json['price_full_formatted'] as String?,
       currency: json['currency'] as String? ?? '',
-      salesRate: json['sales_rate'] as int? ?? 0,
-      relativeSalesRate:
-          (json['relative_sales_rate'] as num?)?.toDouble() ?? 0.0,
+      salesRate: toIntOrNull(json['sales_rate']) ?? 0,
+      relativeSalesRate: toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
       resizedImages: _parseResizedImages(json['image_url_resized']),
       categories: (json['categories'] as List<dynamic>? ?? [])
           .map((e) => ProductCategory.fromJson(e as Map<String, dynamic>))
@@ -122,8 +122,8 @@ class PriceRange {
 
   factory PriceRange.fromJson(Map<String, dynamic> json) {
     return PriceRange(
-      min: (json['min'] as num?)?.toDouble() ?? 0.0,
-      max: (json['max'] as num?)?.toDouble() ?? 0.0,
+      min: toDoubleOrNull(json['min']) ?? 0.0,
+      max: toDoubleOrNull(json['max']) ?? 0.0,
     );
   }
 }

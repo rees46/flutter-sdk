@@ -1,3 +1,5 @@
+import '../json_number.dart';
+
 /// Typed response for [PersonalizationSdk.getRecommendation].
 ///
 /// Contains only fields present in **both** Android and iOS native SDK models.
@@ -91,7 +93,7 @@ class RecommendedProduct {
     final rawCategories = json['categories'] as List<dynamic>? ?? [];
     final rawResized = json['image_url_resized'];
     return RecommendedProduct(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       brand: json['brand'] as String? ?? '',
       description: json['description'] as String? ?? '',
@@ -104,14 +106,13 @@ class RecommendedProduct {
       categories: rawCategories
           .map((e) => ProductCategory.fromJson(e as Map<String, dynamic>))
           .toList(),
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      priceFull: (json['price_full'] as num?)?.toDouble() ?? 0.0,
+      price: toDoubleOrNull(json['price']) ?? 0.0,
+      priceFull: toDoubleOrNull(json['price_full']) ?? 0.0,
       priceFormatted: json['price_formatted'] as String?,
       priceFullFormatted: json['price_full_formatted'] as String?,
       currency: json['currency'] as String? ?? '',
-      salesRate: json['sales_rate'] as int? ?? 0,
-      relativeSalesRate:
-          (json['relative_sales_rate'] as num?)?.toDouble() ?? 0.0,
+      salesRate: toIntOrNull(json['sales_rate']) ?? 0,
+      relativeSalesRate: toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
     );
   }
 }
@@ -138,7 +139,7 @@ class ProductCategory {
 
   factory ProductCategory.fromJson(Map<String, dynamic> json) {
     return ProductCategory(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       parentId: json['parent_id'] as String?,
       url: json['url'] as String?,

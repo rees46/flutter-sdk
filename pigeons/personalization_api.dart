@@ -193,6 +193,27 @@ abstract class PersonalizationHostApi {
   @async
   String getLoyaltyStatus(String identifier);
 
+  /// Returns the current user's profile as a JSON string.
+  /// Dart layer parses the result into [ProfileResponse].
+  @async
+  String getProfile();
+
+  /// Returns view / cart / purchase counters for [item] as a JSON string.
+  /// Dart layer parses the result into [ProductCountersResponse].
+  @async
+  String getProductCounters(String item);
+
+  /// Returns a category product listing as a JSON string.
+  /// [limit] and [page] paginate the result; both are optional.
+  /// Dart layer parses the result into [CategoryResponse].
+  @async
+  String getCategory(String category, int? limit, int? page);
+
+  /// Returns a merchandised collection's products as a JSON string.
+  /// Dart layer parses the result into [CollectionResponse].
+  @async
+  String getCollection(String collectionId);
+
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
   @async
   void trackPurchase(

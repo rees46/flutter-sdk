@@ -1,6 +1,10 @@
 export 'src/personalization_sdk.dart';
 export 'src/loyalty/loyalty_response.dart';
+export 'src/category/category_response.dart';
+export 'src/collection/collection_response.dart';
+export 'src/products/product_counters_response.dart';
 export 'src/profile/profile_params.dart';
+export 'src/profile/profile_response.dart';
 export 'src/recommendation/recommendation_params.dart';
 export 'src/recommendation/recommendation_response.dart';
 export 'src/products/products_list_params.dart';

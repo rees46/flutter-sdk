@@ -1,0 +1,76 @@
+name: Bump version
+
+# Autobump for the Flutter SDK, mirroring the Android/iOS pipeline but self-contained
+# (no shared rees46/workflow changes). semantic-release computes the next version from
+# Conventional Commits; this workflow writes it into pubspec.yaml + CHANGELOG.md and
+# commits `chore(release): <version>` to master. The existing deploy.yaml then tags
+# v<version>, which triggers publish.yaml -> pub.dev (OIDC).
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - .github
+  workflow_dispatch:
+
+jobs:
+  # Skip bumping when HEAD is itself a release commit — otherwise the push made by
+  # this workflow would trigger another bump (infinite loop).
+  find-release-commit:
+    uses: rees46/workflow/.github/workflows/reusable-release-commit-finder.yaml@master
+    with:
+      commitMessage: 'chore(release):'
+    secrets:
+      githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  bump-version:
+    needs: find-release-commit
+    if: |
+      github.event_name == 'workflow_dispatch' || (
+        github.event_name == 'push' &&
+        needs.find-release-commit.outputs.hasCommit == 'false')
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.VERSIONER_ID }}
+          private-key: ${{ secrets.VERSIONER_SECRET }}
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      # Dry-run: compute the next version + notes from Conventional Commits without
+      # tagging, committing or publishing. Reads .releaserc.yml from the repo root.
+      - name: Compute next version
+        id: semantic
+        uses: docker://ghcr.io/codfish/semantic-release-action:v3
+        with:
+          dry-run: true
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Apply version bump
+        if: steps.semantic.outputs.new-release-published == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.semantic.outputs.release-version }}
+          RELEASE_NOTES: ${{ steps.semantic.outputs.release-notes }}
+        run: |
+          chmod +x ./scripts/apply_release.sh
+          ./scripts/apply_release.sh
+
+      # Commit the bump to master. The existing deploy.yaml reacts to this push,
+      # tags v<version> (with its own app token), and publish.yaml publishes.
+      - name: Commit and push release
+        if: steps.semantic.outputs.new-release-published == 'true'
+        run: |
+          git config user.name "rees46-versioner[bot]"
+          git config user.email "rees46-versioner[bot]@users.noreply.github.com"
+          git add pubspec.yaml CHANGELOG.md
+          git commit -m "chore(release): ${{ steps.semantic.outputs.release-version }}"
+          git push origin HEAD:master

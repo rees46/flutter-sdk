@@ -1,3 +1,5 @@
+import '../json_number.dart';
+
 /// Response from [PersonalizationSdk.searchFull].
 ///
 /// Excluded Android-only response fields: brands (`List<Brand>`), clarification,
@@ -26,7 +28,7 @@ class SearchFullResponse {
       categories: (json['categories'] as List<dynamic>? ?? [])
           .map((e) => SearchCategory.fromJson(e as Map<String, dynamic>))
           .toList(),
-      productsTotal: json['products_total'] as int? ?? 0,
+      productsTotal: toIntOrNull(json['products_total']) ?? 0,
       priceRange: json['price_range'] == null
           ? null
           : SearchPriceRange.fromJson(
@@ -84,20 +86,19 @@ class SearchProduct {
 
   factory SearchProduct.fromJson(Map<String, dynamic> json) {
     return SearchProduct(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       brand: json['brand'] as String? ?? '',
       description: json['description'] as String? ?? '',
       imageUrl: json['image_url'] as String? ?? '',
       url: json['url'] as String? ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      priceFull: (json['price_full'] as num?)?.toDouble() ?? 0.0,
+      price: toDoubleOrNull(json['price']) ?? 0.0,
+      priceFull: toDoubleOrNull(json['price_full']) ?? 0.0,
       priceFormatted: json['price_formatted'] as String?,
       priceFullFormatted: json['price_full_formatted'] as String?,
       currency: json['currency'] as String? ?? '',
-      salesRate: json['sales_rate'] as int? ?? 0,
-      relativeSalesRate:
-          (json['relative_sales_rate'] as num?)?.toDouble() ?? 0.0,
+      salesRate: toIntOrNull(json['sales_rate']) ?? 0,
+      relativeSalesRate: toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
       resizedImages: _parseResizedImages(json['image_url_resized']),
     );
   }
@@ -133,7 +134,7 @@ class SearchInstantResponse {
       categories: (json['categories'] as List<dynamic>? ?? [])
           .map((e) => SearchCategory.fromJson(e as Map<String, dynamic>))
           .toList(),
-      productsTotal: json['products_total'] as int? ?? 0,
+      productsTotal: toIntOrNull(json['products_total']) ?? 0,
       locations: (json['locations'] as List<dynamic>?)
           ?.map((e) => SearchLocation.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -176,11 +177,11 @@ class SearchCategory {
 
   factory SearchCategory.fromJson(Map<String, dynamic> json) {
     return SearchCategory(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       url: json['url'] as String?,
       parentId: json['parent'] as String?,
-      count: json['count'] as int?,
+      count: toIntOrNull(json['count']),
     );
   }
 }
@@ -193,8 +194,8 @@ class SearchPriceRange {
 
   factory SearchPriceRange.fromJson(Map<String, dynamic> json) {
     return SearchPriceRange(
-      min: (json['min'] as num?)?.toDouble() ?? 0.0,
-      max: (json['max'] as num?)?.toDouble() ?? 0.0,
+      min: toDoubleOrNull(json['min']) ?? 0.0,
+      max: toDoubleOrNull(json['max']) ?? 0.0,
     );
   }
 }
@@ -250,7 +251,7 @@ class SearchLocation {
 
   factory SearchLocation.fromJson(Map<String, dynamic> json) {
     return SearchLocation(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       type: json['type'] as String?,
     );

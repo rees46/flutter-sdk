@@ -84,13 +84,17 @@ dependencies {
     // REES46 Android SDK (JitPack).
     //
     // Published from github.com/rees46/android-sdk as `com.github.rees46:android-sdk:<tag>`.
-    // v2.33.0 is the first release that exposes the loyalty manager
-    // (`SDK.instance.loyaltyManager`).
-    val rees46AndroidSdkVersion = "v2.33.0"
+    // v2.34.0 adds the catalog read managers (profile, product counters,
+    // category, collection) on top of the loyalty manager (v2.33.0).
+    val rees46AndroidSdkVersion = "v2.34.0"
     add(
         "rees46Implementation",
         "com.github.rees46:android-sdk:$rees46AndroidSdkVersion",
     )
+
+    // Used directly by the push presenter (NotificationCompat / ContextCompat). The native SDK
+    // depends on the same version but as `implementation`, so it is not exposed transitively.
+    implementation("androidx.core:core-ktx:1.13.1")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")

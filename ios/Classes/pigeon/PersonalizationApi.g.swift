@@ -431,6 +431,19 @@ protocol PersonalizationHostApi {
   /// [identifier] is the member identifier (phone).
   /// Dart layer parses the result into [LoyaltyStatusResponse].
   func getLoyaltyStatus(identifier: String, completion: @escaping (Result<String, Error>) -> Void)
+  /// Returns the current user's profile as a JSON string.
+  /// Dart layer parses the result into [ProfileResponse].
+  func getProfile(completion: @escaping (Result<String, Error>) -> Void)
+  /// Returns view / cart / purchase counters for [item] as a JSON string.
+  /// Dart layer parses the result into [ProductCountersResponse].
+  func getProductCounters(item: String, completion: @escaping (Result<String, Error>) -> Void)
+  /// Returns a category product listing as a JSON string.
+  /// [limit] and [page] paginate the result; both are optional.
+  /// Dart layer parses the result into [CategoryResponse].
+  func getCategory(category: String, limit: Int64?, page: Int64?, completion: @escaping (Result<String, Error>) -> Void)
+  /// Returns a merchandised collection's products as a JSON string.
+  /// Dart layer parses the result into [CollectionResponse].
+  func getCollection(collectionId: String, completion: @escaping (Result<String, Error>) -> Void)
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
   func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, completion: @escaping (Result<Void, Error>) -> Void)
 }
@@ -717,6 +730,83 @@ class PersonalizationHostApiSetup {
       }
     } else {
       getLoyaltyStatusChannel.setMessageHandler(nil)
+    }
+    /// Returns the current user's profile as a JSON string.
+    /// Dart layer parses the result into [ProfileResponse].
+    let getProfileChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProfile\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getProfileChannel.setMessageHandler { _, reply in
+        api.getProfile { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getProfileChannel.setMessageHandler(nil)
+    }
+    /// Returns view / cart / purchase counters for [item] as a JSON string.
+    /// Dart layer parses the result into [ProductCountersResponse].
+    let getProductCountersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductCounters\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getProductCountersChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemArg = args[0] as! String
+        api.getProductCounters(item: itemArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getProductCountersChannel.setMessageHandler(nil)
+    }
+    /// Returns a category product listing as a JSON string.
+    /// [limit] and [page] paginate the result; both are optional.
+    /// Dart layer parses the result into [CategoryResponse].
+    let getCategoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCategory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getCategoryChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let categoryArg = args[0] as! String
+        let limitArg: Int64? = nilOrValue(args[1])
+        let pageArg: Int64? = nilOrValue(args[2])
+        api.getCategory(category: categoryArg, limit: limitArg, page: pageArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getCategoryChannel.setMessageHandler(nil)
+    }
+    /// Returns a merchandised collection's products as a JSON string.
+    /// Dart layer parses the result into [CollectionResponse].
+    let getCollectionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCollection\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getCollectionChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let collectionIdArg = args[0] as! String
+        api.getCollection(collectionId: collectionIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getCollectionChannel.setMessageHandler(nil)
     }
     /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
     let trackPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)

@@ -4,8 +4,11 @@ import 'package:patrol/patrol.dart';
 
 import 'package:rees46_sdk_example/main.dart' as app;
 
+import 'patrol_setup.dart';
+
 Future<void> _initializeSdk(PatrolIntegrationTester $) async {
   await $.pumpWidgetAndSettle(const app.App());
+  await dismissStartupPermissionDialog($);
   await $(
     'Status: Initialized',
   ).waitUntilExists(timeout: const Duration(seconds: 30));
@@ -26,7 +29,9 @@ void main() {
 
     await $('Get SID').scrollTo();
     await $('Get SID').tap();
-    await $.pumpAndSettle();
+    // lbl_sid is always present (shows '—' before the call); wait for the value,
+    // not pumpAndSettle which returns before the async call has resolved.
+    await pumpUntil($, () => _labelText($, 'lbl_sid') != '—');
 
     final sid = _labelText($, 'lbl_sid');
     expect(sid, isNotEmpty);
@@ -39,12 +44,12 @@ void main() {
 
     await $('Get SID').scrollTo();
     await $('Get SID').tap();
-    await $.pumpAndSettle();
+    await pumpUntil($, () => _labelText($, 'lbl_sid') != '—');
     final first = _labelText($, 'lbl_sid');
 
     await $('Get SID').scrollTo();
     await $('Get SID').tap();
-    await $.pumpAndSettle();
+    await pumpUntil($, () => _labelText($, 'lbl_sid') != '—');
     final second = _labelText($, 'lbl_sid');
 
     expect(first, equals(second));
@@ -58,7 +63,7 @@ void main() {
 
     await $('Get DID').scrollTo();
     await $('Get DID').tap();
-    await $.pumpAndSettle();
+    await pumpUntil($, () => _labelText($, 'lbl_did') != '—');
 
     final did = _labelText($, 'lbl_did');
     expect(did, isNot(contains('Error')));
@@ -71,7 +76,7 @@ void main() {
 
     await $('Get DID').scrollTo();
     await $('Get DID').tap();
-    await $.pumpAndSettle();
+    await pumpUntil($, () => _labelText($, 'lbl_did') != '—');
 
     final did = _labelText($, 'lbl_did');
     // Either the SDK assigned a DID or returned null before the first API sync.
@@ -86,10 +91,12 @@ void main() {
 
     await $('Set Profile').scrollTo();
     await $('Set Profile').tap();
-    await $.pumpAndSettle();
+    // lbl_profile_status is rendered only once the call completes.
+    await $(
+      const Key('lbl_profile_status'),
+    ).waitUntilExists(timeout: const Duration(seconds: 30));
 
-    final status = _labelText($, 'lbl_profile_status');
-    expect(status, equals('Profile set'));
+    expect(_labelText($, 'lbl_profile_status'), equals('Profile set'));
   });
 
   patrolTest('setProfile — can be called multiple times', ($) async {
@@ -97,12 +104,16 @@ void main() {
 
     await $('Set Profile').scrollTo();
     await $('Set Profile').tap();
-    await $.pumpAndSettle();
+    await $(
+      const Key('lbl_profile_status'),
+    ).waitUntilExists(timeout: const Duration(seconds: 30));
     expect(_labelText($, 'lbl_profile_status'), equals('Profile set'));
 
     await $('Set Profile').scrollTo();
     await $('Set Profile').tap();
-    await $.pumpAndSettle();
+    await $(
+      const Key('lbl_profile_status'),
+    ).waitUntilExists(timeout: const Duration(seconds: 30));
     expect(_labelText($, 'lbl_profile_status'), equals('Profile set'));
   });
 }

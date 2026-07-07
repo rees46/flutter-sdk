@@ -1,0 +1,14 @@
+# Autobump config for the Flutter SDK.
+#
+# semantic-release runs in DRY-RUN mode from .github/workflows/version.yaml — it only
+# computes the next version + release notes from Conventional Commits (feat: -> minor,
+# fix: -> patch, BREAKING CHANGE -> major). It does NOT tag, commit or publish here.
+#
+# The workflow then writes the computed version into pubspec.yaml + CHANGELOG.md and
+# commits `chore(release): <version>` to master. The existing deploy.yaml tags
+# v<version>, which triggers publish.yaml -> pub.dev (OIDC). See version.yaml.
+branches:
+  - master
+plugins:
+  - '@semantic-release/commit-analyzer'
+  - '@semantic-release/release-notes-generator'

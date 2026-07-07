@@ -4,8 +4,11 @@ import 'package:patrol/patrol.dart';
 
 import 'package:rees46_sdk_example/main.dart' as app;
 
+import 'patrol_setup.dart';
+
 Future<void> _initializeSdk(PatrolIntegrationTester $) async {
   await $.pumpWidgetAndSettle(const app.App());
+  await dismissStartupPermissionDialog($);
   await $(
     'Status: Initialized',
   ).waitUntilExists(timeout: const Duration(seconds: 30));
@@ -23,7 +26,11 @@ void main() {
 
     await $('Get Products List').scrollTo();
     await $('Get Products List').tap();
-    await $('Get Products List').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_products_list_total',
+      'lbl_products_list_error',
+    );
 
     expect(find.byKey(const Key('lbl_products_list_error')), findsNothing);
 
@@ -39,12 +46,20 @@ void main() {
 
     await $('Get Products List').scrollTo();
     await $('Get Products List').tap();
-    await $('Get Products List').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_products_list_total',
+      'lbl_products_list_error',
+    );
     final first = _labelText($, 'lbl_products_list_total');
 
     await $('Get Products List').scrollTo();
     await $('Get Products List').tap();
-    await $('Get Products List').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_products_list_total',
+      'lbl_products_list_error',
+    );
     final second = _labelText($, 'lbl_products_list_total');
 
     expect(first, equals(second));
@@ -55,7 +70,11 @@ void main() {
 
     await $('Get Products List').scrollTo();
     await $('Get Products List').tap();
-    await $('Get Products List').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_products_list_total',
+      'lbl_products_list_error',
+    );
 
     expect(find.byKey(const Key('lbl_products_list_error')), findsNothing);
     expect(find.byKey(const Key('lbl_products_list_total')), findsOneWidget);

@@ -4,8 +4,11 @@ import 'package:patrol/patrol.dart';
 
 import 'package:rees46_sdk_example/main.dart' as app;
 
+import 'patrol_setup.dart';
+
 Future<void> _initializeSdk(PatrolIntegrationTester $) async {
   await $.pumpWidgetAndSettle(const app.App());
+  await dismissStartupPermissionDialog($);
   await $(
     'Status: Initialized',
   ).waitUntilExists(timeout: const Duration(seconds: 30));
@@ -21,9 +24,13 @@ void main() {
   patrolTest('searchBlank — returns products and suggests counts', ($) async {
     await _initializeSdk($);
 
-    await $('Search Blank').scrollTo();
-    await $('Search Blank').tap();
-    await $('Search Blank').waitUntilVisible();
+    await $(const Key('btn_search_blank')).scrollTo();
+    await $(const Key('btn_search_blank')).tap();
+    await waitForResultOrError(
+      $,
+      'lbl_search_blank_products',
+      'lbl_search_blank_error',
+    );
 
     expect(find.byKey(const Key('lbl_search_blank_error')), findsNothing);
 
@@ -44,14 +51,22 @@ void main() {
   patrolTest('searchBlank — can be called multiple times', ($) async {
     await _initializeSdk($);
 
-    await $('Search Blank').scrollTo();
-    await $('Search Blank').tap();
-    await $('Search Blank').waitUntilVisible();
+    await $(const Key('btn_search_blank')).scrollTo();
+    await $(const Key('btn_search_blank')).tap();
+    await waitForResultOrError(
+      $,
+      'lbl_search_blank_products',
+      'lbl_search_blank_error',
+    );
     final firstProducts = _labelText($, 'lbl_search_blank_products');
 
-    await $('Search Blank').scrollTo();
-    await $('Search Blank').tap();
-    await $('Search Blank').waitUntilVisible();
+    await $(const Key('btn_search_blank')).scrollTo();
+    await $(const Key('btn_search_blank')).tap();
+    await waitForResultOrError(
+      $,
+      'lbl_search_blank_products',
+      'lbl_search_blank_error',
+    );
     final secondProducts = _labelText($, 'lbl_search_blank_products');
 
     expect(firstProducts, equals(secondProducts));
@@ -60,9 +75,13 @@ void main() {
   patrolTest('searchBlank — no error on first call after init', ($) async {
     await _initializeSdk($);
 
-    await $('Search Blank').scrollTo();
-    await $('Search Blank').tap();
-    await $('Search Blank').waitUntilVisible();
+    await $(const Key('btn_search_blank')).scrollTo();
+    await $(const Key('btn_search_blank')).tap();
+    await waitForResultOrError(
+      $,
+      'lbl_search_blank_products',
+      'lbl_search_blank_error',
+    );
 
     expect(find.byKey(const Key('lbl_search_blank_error')), findsNothing);
     expect(find.byKey(const Key('lbl_search_blank_products')), findsOneWidget);

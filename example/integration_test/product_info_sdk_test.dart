@@ -4,10 +4,13 @@ import 'package:patrol/patrol.dart';
 
 import 'package:rees46_sdk_example/main.dart' as app;
 
+import 'patrol_setup.dart';
+
 import 'test_config.dart';
 
 Future<void> _initializeSdk(PatrolIntegrationTester $) async {
   await $.pumpWidgetAndSettle(const app.App());
+  await dismissStartupPermissionDialog($);
   await $(
     'Status: Initialized',
   ).waitUntilExists(timeout: const Duration(seconds: 30));
@@ -31,7 +34,11 @@ void main() {
 
     await $('Get Product Info').scrollTo();
     await $('Get Product Info').tap();
-    await $('Get Product Info').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_product_info_name',
+      'lbl_product_info_error',
+    );
 
     expect(find.byKey(const Key('lbl_product_info_error')), findsNothing);
 
@@ -42,6 +49,10 @@ void main() {
 
   patrolTest('getProductInfo — empty ID is no-op in the UI', ($) async {
     await _initializeSdk($);
+
+    // The field is pre-filled for manual use — clear it to exercise the empty case.
+    await $.tester.enterText(find.byKey(const Key('field_product_id')), '');
+    await $.tester.pump();
 
     await $('Get Product Info').scrollTo();
     await $('Get Product Info').tap();
@@ -62,7 +73,11 @@ void main() {
 
     await $('Get Product Info').scrollTo();
     await $('Get Product Info').tap();
-    await $('Get Product Info').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_product_info_name',
+      'lbl_product_info_error',
+    );
 
     final hasName = find
         .byKey(const Key('lbl_product_info_name'))

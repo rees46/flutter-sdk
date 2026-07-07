@@ -1,9 +1,13 @@
 import 'dart:convert';
 
 import 'pigeon/personalization_api.g.dart' as pigeon;
+import 'category/category_response.dart';
+import 'collection/collection_response.dart';
 import 'init/sdk_init_handler.dart';
 import 'loyalty/loyalty_response.dart';
+import 'products/product_counters_response.dart';
 import 'profile/profile_params.dart';
+import 'profile/profile_response.dart';
 import 'push/push_notification_callbacks.dart';
 import 'recommendation/recommendation_params.dart';
 import 'recommendation/recommendation_response.dart';
@@ -140,6 +144,55 @@ class PersonalizationSdk {
     }
     final json = await _api.getLoyaltyStatus(identifier);
     return LoyaltyStatusResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
+  }
+
+  /// Returns the current user's profile (native `ProfileManager.getProfile`).
+  Future<ProfileResponse> getProfile() async {
+    final json = await _api.getProfile();
+    return ProfileResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
+  }
+
+  /// Returns view / cart / purchase counters for [item]
+  /// (native `ProductsManager.getProductCounters`).
+  Future<ProductCountersResponse> getProductCounters(String item) async {
+    if (item.isEmpty) {
+      throw ArgumentError.value(item, 'item', 'must be non-empty');
+    }
+    final json = await _api.getProductCounters(item);
+    return ProductCountersResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
+  }
+
+  /// Returns a category product listing (native `CategoryManager.getCategory`).
+  ///
+  /// [limit] and [page] paginate the result; both are optional.
+  Future<CategoryResponse> getCategory(
+    String category, {
+    int? limit,
+    int? page,
+  }) async {
+    if (category.isEmpty) {
+      throw ArgumentError.value(category, 'category', 'must be non-empty');
+    }
+    final json = await _api.getCategory(category, limit, page);
+    return CategoryResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
+  }
+
+  /// Returns a merchandised collection's products
+  /// (native `CollectionManager.getCollection`).
+  Future<CollectionResponse> getCollection(String collectionId) async {
+    if (collectionId.isEmpty) {
+      throw ArgumentError.value(
+        collectionId,
+        'collectionId',
+        'must be non-empty',
+      );
+    }
+    final json = await _api.getCollection(collectionId);
+    return CollectionResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
   }
