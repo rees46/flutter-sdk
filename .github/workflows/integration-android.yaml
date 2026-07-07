@@ -16,7 +16,7 @@ jobs:
   patrol-android:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@v4
@@ -48,21 +48,56 @@ jobs:
           dart pub global activate patrol_cli 4.3.1
           echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
 
-      # Boots an emulator, runs the whole integration_test/ suite on it, tears down.
-      # The tests drive the real example app against the REES46 demo shop (c1140c…),
-      # so they exercise the Kotlin bridge + real backend — what unit tests can't.
-      - name: Run Patrol integration tests
+      # GitHub-hosted emulators cold-boot flakily (adb offline / frozen device),
+      # which is the phase our runs hung in. Boot from a cached AVD snapshot
+      # instead: a warm-up run creates it once, and test runs restore it with
+      # `-no-snapshot-save`. The image is `google_apis` (ships Google Play
+      # services, needed for the FCM token fetch on init) — the AOSP `default`
+      # image lacks it and is markedly flakier. All AVD params must match between
+      # the warm-up and the test run, and are encoded in the cache key.
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api34-google_apis-x86_64-pixel6-v1
+
+      - name: Create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
-          target: default
+          target: google_apis
           arch: x86_64
           profile: pixel_6
           ram-size: 4096M
           cores: 3
+          force-avd-creation: false
           emulator-options: >-
-            -no-window -no-snapshot -noaudio -no-boot-anim
+            -no-window -noaudio -no-boot-anim
             -gpu swiftshader_indirect -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+
+      # Boots the emulator from the cached snapshot and runs the whole
+      # integration_test/ suite. The tests drive the real example app against the
+      # REES46 demo shop (c1140c…), exercising the Kotlin bridge + real backend.
+      - name: Run Patrol integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          cores: 3
+          force-avd-creation: false
+          emulator-options: >-
+            -no-snapshot-save -no-window -noaudio -no-boot-anim
+            -gpu swiftshader_indirect -camera-back none
+          disable-animations: true
           working-directory: example
           script: |
             flutter pub get
