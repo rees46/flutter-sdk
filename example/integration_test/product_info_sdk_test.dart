@@ -34,7 +34,11 @@ void main() {
 
     await $('Get Product Info').scrollTo();
     await $('Get Product Info').tap();
-    await $('Get Product Info').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_product_info_name',
+      'lbl_product_info_error',
+    );
 
     expect(find.byKey(const Key('lbl_product_info_error')), findsNothing);
 
@@ -69,7 +73,11 @@ void main() {
 
     await $('Get Product Info').scrollTo();
     await $('Get Product Info').tap();
-    await $('Get Product Info').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_product_info_name',
+      'lbl_product_info_error',
+    );
 
     final hasName = find
         .byKey(const Key('lbl_product_info_name'))

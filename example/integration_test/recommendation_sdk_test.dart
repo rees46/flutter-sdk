@@ -40,8 +40,9 @@ void main() {
       await $('Get Recommendations').scrollTo();
       await $('Get Recommendations').tap();
 
-      // Wait for loading to finish — button text reverts to 'Get Recommendations'.
-      await $('Get Recommendations').waitUntilVisible();
+      // Wait for the recommendation result (or error) to render — not just the
+      // button, which never left the tree, so the async call may still be pending.
+      await waitForResultOrError($, 'lbl_rec_title', 'lbl_rec_error');
 
       expect(find.byKey(const Key('lbl_rec_error')), findsNothing);
 
@@ -66,7 +67,7 @@ void main() {
       await $.tester.pump();
       await $('Get Recommendations').scrollTo();
       await $('Get Recommendations').tap();
-      await $('Get Recommendations').waitUntilVisible();
+      await waitForResultOrError($, 'lbl_rec_title', 'lbl_rec_error');
 
       final countText = _labelText($, 'lbl_rec_count');
       // Text is "Products: N" — extract the number.
@@ -102,7 +103,7 @@ void main() {
     await $.tester.pump();
     await $('Get Recommendations').scrollTo();
     await $('Get Recommendations').tap();
-    await $('Get Recommendations').waitUntilVisible();
+    await waitForResultOrError($, 'lbl_rec_title', 'lbl_rec_error');
 
     // Either an error label appears, or we get an empty product list — both are valid.
     final hasError = find

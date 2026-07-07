@@ -24,6 +24,25 @@ Future<void> waitForResultOrError(
   }
 }
 
+/// Pumps (up to [maxPumps] × 500 ms) until [predicate] returns true.
+///
+/// Use this to wait for an async SDK result to render. `pumpAndSettle` returns
+/// before a network call completes (nothing keeps scheduling frames while the
+/// future is in flight), and waiting on the tapped button is a no-op because the
+/// button never left the tree — both race the result. Prefer [waitForResultOrError]
+/// when the result/error widgets only appear on completion; use this when a label
+/// is always present and only its text changes (e.g. a value replacing a '—').
+Future<void> pumpUntil(
+  PatrolIntegrationTester $,
+  bool Function() predicate, {
+  int maxPumps = 60,
+}) async {
+  for (var i = 0; i < maxPumps; i++) {
+    if (predicate()) return;
+    await $.tester.pump(const Duration(milliseconds: 500));
+  }
+}
+
 /// Dismisses the Android 13+ POST_NOTIFICATIONS permission dialog that the
 /// example app requests once at startup (see MainActivity).
 ///

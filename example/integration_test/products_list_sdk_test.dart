@@ -26,7 +26,11 @@ void main() {
 
     await $('Get Products List').scrollTo();
     await $('Get Products List').tap();
-    await $('Get Products List').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_products_list_total',
+      'lbl_products_list_error',
+    );
 
     expect(find.byKey(const Key('lbl_products_list_error')), findsNothing);
 
@@ -42,12 +46,20 @@ void main() {
 
     await $('Get Products List').scrollTo();
     await $('Get Products List').tap();
-    await $('Get Products List').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_products_list_total',
+      'lbl_products_list_error',
+    );
     final first = _labelText($, 'lbl_products_list_total');
 
     await $('Get Products List').scrollTo();
     await $('Get Products List').tap();
-    await $('Get Products List').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_products_list_total',
+      'lbl_products_list_error',
+    );
     final second = _labelText($, 'lbl_products_list_total');
 
     expect(first, equals(second));
@@ -58,7 +70,11 @@ void main() {
 
     await $('Get Products List').scrollTo();
     await $('Get Products List').tap();
-    await $('Get Products List').waitUntilVisible();
+    await waitForResultOrError(
+      $,
+      'lbl_products_list_total',
+      'lbl_products_list_error',
+    );
 
     expect(find.byKey(const Key('lbl_products_list_error')), findsNothing);
     expect(find.byKey(const Key('lbl_products_list_total')), findsOneWidget);
