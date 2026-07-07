@@ -12,9 +12,12 @@ void main() {
     await $('REES46 SDK init demo').waitUntilVisible();
     await $('Initialization').waitUntilVisible();
     await $('Stored push token').waitUntilVisible();
-    await $('Tracking').scrollTo();
-    await $('Send demo trackEvent').scrollTo();
-    await $('Send demo trackPurchase').scrollTo();
+    // Tracking is the last section of a long form. Each scroll relies on fling
+    // momentum that a GPU-throttled CI emulator shrinks, so the default 15 scrolls
+    // can undershoot; give generous headroom (the loop stops once it's visible).
+    await $('Tracking').scrollTo(maxScrolls: 40);
+    await $('Send demo trackEvent').scrollTo(maxScrolls: 40);
+    await $('Send demo trackPurchase').scrollTo(maxScrolls: 40);
   });
 
   patrolTest(

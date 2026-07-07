@@ -45,7 +45,7 @@ void main() {
   patrolTest('getProfile — returns the session profile', ($) async {
     await _initializeSdk($);
 
-    await $(const Key('btn_catalog_profile')).scrollTo();
+    await $(const Key('btn_catalog_profile')).scrollTo(maxScrolls: 40);
     await $(const Key('btn_catalog_profile')).tap();
 
     await $(
@@ -68,7 +68,7 @@ void main() {
     );
     await $.tester.pump();
 
-    await $(const Key('btn_catalog_counters')).scrollTo();
+    await $(const Key('btn_catalog_counters')).scrollTo(maxScrolls: 40);
     await $(const Key('btn_catalog_counters')).tap();
 
     await $(
@@ -89,7 +89,7 @@ void main() {
     );
     await $.tester.pump();
 
-    await $(const Key('btn_catalog_counters')).scrollTo();
+    await $(const Key('btn_catalog_counters')).scrollTo(maxScrolls: 40);
     await $(const Key('btn_catalog_counters')).tap();
     await $.pumpAndSettle();
 
@@ -109,7 +109,7 @@ void main() {
     );
     await $.tester.pump();
 
-    await $(const Key('btn_catalog_category')).scrollTo();
+    await $(const Key('btn_catalog_category')).scrollTo(maxScrolls: 40);
     await $(const Key('btn_catalog_category')).tap();
 
     await _waitForTerminalState(
@@ -134,7 +134,7 @@ void main() {
     );
     await $.tester.pump();
 
-    await $(const Key('btn_catalog_category')).scrollTo();
+    await $(const Key('btn_catalog_category')).scrollTo(maxScrolls: 40);
     await $(const Key('btn_catalog_category')).tap();
     await $.pumpAndSettle();
 
@@ -154,7 +154,7 @@ void main() {
     );
     await $.tester.pump();
 
-    await $(const Key('btn_catalog_collection')).scrollTo();
+    await $(const Key('btn_catalog_collection')).scrollTo(maxScrolls: 40);
     await $(const Key('btn_catalog_collection')).tap();
 
     await _waitForTerminalState(

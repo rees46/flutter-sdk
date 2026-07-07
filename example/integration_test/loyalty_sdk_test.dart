@@ -24,7 +24,7 @@ void main() {
   patrolTest('getLoyaltyStatus — real call returns success', ($) async {
     await _initializeSdk($);
 
-    await $(const Key('btn_loyalty_status')).scrollTo();
+    await $(const Key('btn_loyalty_status')).scrollTo(maxScrolls: 40);
     await $(const Key('btn_loyalty_status')).tap();
 
     await $(
@@ -41,7 +41,7 @@ void main() {
   patrolTest('joinLoyalty — real call returns success', ($) async {
     await _initializeSdk($);
 
-    await $(const Key('btn_join_loyalty')).scrollTo();
+    await $(const Key('btn_join_loyalty')).scrollTo(maxScrolls: 40);
     await $(const Key('btn_join_loyalty')).tap();
 
     await $(
