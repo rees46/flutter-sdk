@@ -1,0 +1,17 @@
+<!--
+  Neutral, non-branded fallback for the push notification small icon.
+
+  A small icon must be a white, alpha-only silhouette (the system tints it), so this is a plain
+  white disc. It is used ONLY as a last resort by Rees46PushNotifier.resolveSmallIcon when the host
+  app declares neither a `com.rees46.push.notification_icon` meta-data icon nor a launcher icon.
+  Host apps are expected to provide their own icon — see the README push section.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,3 A9,9 0 1 0 12,21 A9,9 0 1 0 12,3 Z" />
+</vector>

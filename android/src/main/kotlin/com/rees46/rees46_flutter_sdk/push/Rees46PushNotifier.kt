@@ -5,14 +5,15 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.personalization.resources.NotificationResources
 import com.personalization.sdk.data.models.dto.notification.NotificationData
+import com.rees46.rees46_flutter_sdk.R
 import java.net.URL
 
 /**
@@ -36,6 +37,28 @@ object Rees46PushNotifier {
     /** Distinct from the SDK's own LOW-importance "notification_channel" so HIGH importance sticks. */
     const val CHANNEL_ID = "rees46_push"
     private const val CHANNEL_NAME = "Push notifications"
+
+    /**
+     * Manifest meta-data key a host app can set to point at its own notification icon, e.g.:
+     * ```
+     * <meta-data
+     *     android:name="com.rees46.push.notification_icon"
+     *     android:resource="@drawable/ic_stat_notify" />
+     * ```
+     */
+    private const val META_DATA_ICON = "com.rees46.push.notification_icon"
+
+    /**
+     * Firebase's own default-notification-icon meta-data. Reused so a host that already configured
+     * an FCM icon does not have to duplicate it under [META_DATA_ICON]:
+     * ```
+     * <meta-data
+     *     android:name="com.google.firebase.messaging.default_notification_icon"
+     *     android:resource="@drawable/ic_stat_notify" />
+     * ```
+     */
+    private const val FIREBASE_META_DATA_ICON =
+        "com.google.firebase.messaging.default_notification_icon"
 
     /** Idempotent. Creates the HIGH-importance channel so pushes appear as a heads-up pop-up. */
     fun ensureChannel(context: Context) {
@@ -61,7 +84,7 @@ object Rees46PushNotifier {
             val largeIcon = data.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::loadBitmap)
 
             val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(NotificationResources.NOTIFICATION_ICON)
+                .setSmallIcon(resolveSmallIcon(context))
                 .setContentTitle(data.title)
                 .setContentText(data.body)
                 .setAutoCancel(true)
@@ -111,6 +134,43 @@ object Rees46PushNotifier {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
+
+    /**
+     * Resolves the small icon so the notification carries the HOST app's branding, never REES46's.
+     *
+     * Order mirrors FCM's `default_notification_icon` handling:
+     *  1. A host-declared icon via [META_DATA_ICON] manifest meta-data. This is the recommended
+     *     path — a small icon must be a white, alpha-only silhouette (Android tints it), which a
+     *     full-colour launcher icon is not.
+     *  2. The host's existing Firebase [FIREBASE_META_DATA_ICON], so an FCM icon that is already
+     *     configured is reused without the host duplicating it under our key.
+     *  3. The host app's launcher icon, so the branding is still the client's (not REES46's) even
+     *     when no dedicated icon is configured.
+     *  4. A neutral, non-branded default ([R.drawable.ic_rees46_push_default], a plain white disc),
+     *     only as a last resort if the host has no icon at all. Never REES46 branding.
+     */
+    private fun resolveSmallIcon(context: Context): Int {
+        val appInfo = try {
+            context.packageManager.getApplicationInfo(
+                context.packageName,
+                PackageManager.GET_META_DATA,
+            )
+        } catch (e: Exception) {
+            null
+        }
+        val metaData = appInfo?.metaData
+
+        val configured = metaData?.getInt(META_DATA_ICON, 0) ?: 0
+        if (configured != 0) return configured
+
+        val firebaseIcon = metaData?.getInt(FIREBASE_META_DATA_ICON, 0) ?: 0
+        if (firebaseIcon != 0) return firebaseIcon
+
+        val launcherIcon = appInfo?.icon ?: 0
+        if (launcherIcon != 0) return launcherIcon
+
+        return R.drawable.ic_rees46_push_default
     }
 
     private fun loadBitmap(url: String): Bitmap? = try {
