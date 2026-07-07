@@ -1,4 +1,5 @@
 import '../json_number.dart';
+
 /// Response from [PersonalizationSdk.getProductCounters].
 ///
 /// Mirrors native `ProductCountersResponse`: per-period view/cart/purchase

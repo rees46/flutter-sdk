@@ -93,8 +93,7 @@ class Product {
       priceFullFormatted: json['price_full_formatted'] as String?,
       currency: json['currency'] as String? ?? '',
       salesRate: toIntOrNull(json['sales_rate']) ?? 0,
-      relativeSalesRate:
-          toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
+      relativeSalesRate: toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
       resizedImages: _parseResizedImages(json['image_url_resized']),
       categories: (json['categories'] as List<dynamic>? ?? [])
           .map((e) => ProductCategory.fromJson(e as Map<String, dynamic>))

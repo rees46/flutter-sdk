@@ -98,7 +98,12 @@ void main() {
     });
 
     test('absent sections parse to null', () async {
-      stub(_countersChannel, jsonEncode({'now': {'view': 1, 'cart': 0, 'purchase': 0}}));
+      stub(
+        _countersChannel,
+        jsonEncode({
+          'now': {'view': 1, 'cart': 0, 'purchase': 0},
+        }),
+      );
 
       final r = await PersonalizationSdk().getProductCounters('item1');
       expect(r.now?.view, equals(1));

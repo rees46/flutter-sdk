@@ -26,48 +26,56 @@ void main() {
   // ---------------------------------------------------------------------------
   // getRecommendation
   // ---------------------------------------------------------------------------
-  patrolTest('getRecommendation — returns title and product list', ($) async {
-    await _initializeSdk($);
+  patrolTest(
+    'getRecommendation — returns title and product list',
+    ($) async {
+      await _initializeSdk($);
 
-    await $.tester.enterText(
-      find.byKey(const Key('field_rec_block_code')),
-      TestConfig.recommendationBlockCode,
-    );
-    await $.tester.pump();
+      await $.tester.enterText(
+        find.byKey(const Key('field_rec_block_code')),
+        TestConfig.recommendationBlockCode,
+      );
+      await $.tester.pump();
 
-    await $('Get Recommendations').scrollTo();
-    await $('Get Recommendations').tap();
+      await $('Get Recommendations').scrollTo();
+      await $('Get Recommendations').tap();
 
-    // Wait for loading to finish — button text reverts to 'Get Recommendations'.
-    await $('Get Recommendations').waitUntilVisible();
+      // Wait for loading to finish — button text reverts to 'Get Recommendations'.
+      await $('Get Recommendations').waitUntilVisible();
 
-    expect(find.byKey(const Key('lbl_rec_error')), findsNothing);
+      expect(find.byKey(const Key('lbl_rec_error')), findsNothing);
 
-    final title = _labelText($, 'lbl_rec_title');
-    expect(title, isNot(contains('Error')));
-    expect(title, startsWith('Title:'));
-    // Skipped until a real recommender block code for the test shop is set in
-    // TestConfig — the placeholder returns 404. Auto-runs once a code is set.
-  }, skip: TestConfig.recommendationBlockCode == 'your_block_code');
+      final title = _labelText($, 'lbl_rec_title');
+      expect(title, isNot(contains('Error')));
+      expect(title, startsWith('Title:'));
+      // Skipped until a real recommender block code for the test shop is set in
+      // TestConfig — the placeholder returns 404. Auto-runs once a code is set.
+    },
+    skip: TestConfig.recommendationBlockCode == 'your_block_code',
+  );
 
-  patrolTest('getRecommendation — product count is non-negative', ($) async {
-    await _initializeSdk($);
+  patrolTest(
+    'getRecommendation — product count is non-negative',
+    ($) async {
+      await _initializeSdk($);
 
-    await $.tester.enterText(
-      find.byKey(const Key('field_rec_block_code')),
-      TestConfig.recommendationBlockCode,
-    );
-    await $.tester.pump();
-    await $('Get Recommendations').scrollTo();
-    await $('Get Recommendations').tap();
-    await $('Get Recommendations').waitUntilVisible();
+      await $.tester.enterText(
+        find.byKey(const Key('field_rec_block_code')),
+        TestConfig.recommendationBlockCode,
+      );
+      await $.tester.pump();
+      await $('Get Recommendations').scrollTo();
+      await $('Get Recommendations').tap();
+      await $('Get Recommendations').waitUntilVisible();
 
-    final countText = _labelText($, 'lbl_rec_count');
-    // Text is "Products: N" — extract the number.
-    final n = int.tryParse(countText.replaceFirst('Products: ', ''));
-    expect(n, isNotNull);
-    expect(n, greaterThanOrEqualTo(0));
-  }, skip: TestConfig.recommendationBlockCode == 'your_block_code');
+      final countText = _labelText($, 'lbl_rec_count');
+      // Text is "Products: N" — extract the number.
+      final n = int.tryParse(countText.replaceFirst('Products: ', ''));
+      expect(n, isNotNull);
+      expect(n, greaterThanOrEqualTo(0));
+    },
+    skip: TestConfig.recommendationBlockCode == 'your_block_code',
+  );
 
   patrolTest('getRecommendation — empty block code does not crash', ($) async {
     await _initializeSdk($);

@@ -13,10 +13,7 @@ class CategoryResponse {
   final int productsTotal;
   final List<Product> products;
 
-  const CategoryResponse({
-    required this.productsTotal,
-    required this.products,
-  });
+  const CategoryResponse({required this.productsTotal, required this.products});
 
   factory CategoryResponse.fromJson(Map<String, dynamic> json) {
     return CategoryResponse(

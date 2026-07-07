@@ -1,4 +1,5 @@
 import '../json_number.dart';
+
 /// Typed response for [PersonalizationSdk.getRecommendation].
 ///
 /// Contains only fields present in **both** Android and iOS native SDK models.
@@ -111,8 +112,7 @@ class RecommendedProduct {
       priceFullFormatted: json['price_full_formatted'] as String?,
       currency: json['currency'] as String? ?? '',
       salesRate: toIntOrNull(json['sales_rate']) ?? 0,
-      relativeSalesRate:
-          toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
+      relativeSalesRate: toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
     );
   }
 }

@@ -192,7 +192,9 @@ class PersonalizationSdk {
       );
     }
     final json = await _api.getCollection(collectionId);
-    return CollectionResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
+    return CollectionResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
   }
 
   Future<RecommendationResponse> getRecommendation(

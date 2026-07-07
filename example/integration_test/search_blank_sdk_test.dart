@@ -26,7 +26,11 @@ void main() {
 
     await $(const Key('btn_search_blank')).scrollTo();
     await $(const Key('btn_search_blank')).tap();
-    await waitForResultOrError($, 'lbl_search_blank_products', 'lbl_search_blank_error');
+    await waitForResultOrError(
+      $,
+      'lbl_search_blank_products',
+      'lbl_search_blank_error',
+    );
 
     expect(find.byKey(const Key('lbl_search_blank_error')), findsNothing);
 
@@ -49,12 +53,20 @@ void main() {
 
     await $(const Key('btn_search_blank')).scrollTo();
     await $(const Key('btn_search_blank')).tap();
-    await waitForResultOrError($, 'lbl_search_blank_products', 'lbl_search_blank_error');
+    await waitForResultOrError(
+      $,
+      'lbl_search_blank_products',
+      'lbl_search_blank_error',
+    );
     final firstProducts = _labelText($, 'lbl_search_blank_products');
 
     await $(const Key('btn_search_blank')).scrollTo();
     await $(const Key('btn_search_blank')).tap();
-    await waitForResultOrError($, 'lbl_search_blank_products', 'lbl_search_blank_error');
+    await waitForResultOrError(
+      $,
+      'lbl_search_blank_products',
+      'lbl_search_blank_error',
+    );
     final secondProducts = _labelText($, 'lbl_search_blank_products');
 
     expect(firstProducts, equals(secondProducts));
@@ -65,7 +77,11 @@ void main() {
 
     await $(const Key('btn_search_blank')).scrollTo();
     await $(const Key('btn_search_blank')).tap();
-    await waitForResultOrError($, 'lbl_search_blank_products', 'lbl_search_blank_error');
+    await waitForResultOrError(
+      $,
+      'lbl_search_blank_products',
+      'lbl_search_blank_error',
+    );
 
     expect(find.byKey(const Key('lbl_search_blank_error')), findsNothing);
     expect(find.byKey(const Key('lbl_search_blank_products')), findsOneWidget);

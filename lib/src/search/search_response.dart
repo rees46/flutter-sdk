@@ -1,4 +1,5 @@
 import '../json_number.dart';
+
 /// Response from [PersonalizationSdk.searchFull].
 ///
 /// Excluded Android-only response fields: brands (`List<Brand>`), clarification,
@@ -97,8 +98,7 @@ class SearchProduct {
       priceFullFormatted: json['price_full_formatted'] as String?,
       currency: json['currency'] as String? ?? '',
       salesRate: toIntOrNull(json['sales_rate']) ?? 0,
-      relativeSalesRate:
-          toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
+      relativeSalesRate: toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
       resizedImages: _parseResizedImages(json['image_url_resized']),
     );
   }
