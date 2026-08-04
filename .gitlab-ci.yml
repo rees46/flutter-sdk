@@ -1,0 +1,26 @@
+# GitLab CI for flutter-sdk (rees46/flutter-sdk) — day 9
+#
+# Replaces GHA checks.yaml (analyze / test / format / example APK).
+# Publish to pub.dev stays on GHA until day 10 (publish.yaml + OIDC).
+# Patrol Android (integration-android.yaml) stays on GHA for now.
+#
+# No Docker / ghcr / ansible — checks only.
+# Safe: no publish. Day 10: wire pub.dev if/when cutover from GHA.
+
+stages:
+  - check
+
+variables:
+  FF_USE_FASTZIP: "true"
+  # Pin matches .github/workflows/checks.yaml (subosito/flutter-action 3.44.0).
+  FLUTTER_IMAGE: "ghcr.io/cirruslabs/flutter:3.44.0"
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+
+include:
+  - local: .gitlab/ci/checks.yml

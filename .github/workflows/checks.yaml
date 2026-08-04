@@ -8,6 +8,8 @@ on:
       - synchronize
     paths-ignore:
       - .github
+      - .gitlab/**
+      - .gitlab-ci.yml
       - .idea
       - .vscode
 

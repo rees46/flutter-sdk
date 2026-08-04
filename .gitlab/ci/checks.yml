@@ -1,0 +1,33 @@
+# PR / web checks — mirrors .github/workflows/checks.yaml
+# (without Patrol; that stays on GHA integration-android.yaml).
+
+.check_base:
+  stage: check
+  image: $FLUTTER_IMAGE
+  timeout: 45m
+  before_script:
+    - flutter --version
+    - flutter config --no-analytics
+    - flutter pub get
+
+check:
+  extends: .check_base
+  script:
+    - flutter analyze --fatal-infos --fatal-warnings
+    - flutter test --coverage
+    # Exclude generated *.g.dart (Pigeon): dart format ignores analysis_options
+    # formatter.exclude, so filter via git pathspec (same as GHA).
+    - dart format --output=none --set-exit-if-changed $(git ls-files '*.dart' ':!:*.g.dart')
+    # Plugin package: buildable app is in example/
+    - cd example && flutter pub get && flutter build apk --debug
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE !~ /^Draft:/'
+      when: manual
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - "**/*"
+        - "!.gitlab/**"
+        - "!.gitlab-ci.yml"
+        - "!.github/**"
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
