@@ -2,8 +2,13 @@ name: Deploy
 
 on:
   push:
+    # Which branch is the trunk is decided in the job below, not here: `on:` takes
+    # literal branch names and never evaluates ${{ }}, so a hardcoded `master`
+    # silently never fires in the personaclick mirror, whose trunk is `main`.
+    # '**' matches every branch while still keeping tag pushes out of this
+    # workflow — those belong to publish.yaml.
     branches:
-      - master
+      - '**'
   workflow_dispatch:
 
 # Auto-tags a release when the pubspec version is new. The tag is pushed with a
@@ -16,8 +21,12 @@ jobs:
     name: Tag release on version bump
     runs-on: ubuntu-latest
 
-    # Publish/tag only from the canonical repository owner.
-    if: github.repository_owner == 'rees46'
+    # Tag only from the canonical repository owner, and only for a push to that
+    # repository's own default branch — `master` here, `main` in the mirror.
+    # Every other branch push starts this workflow and stops on this line.
+    if: |
+      github.repository_owner == 'rees46' &&
+      github.ref_name == github.event.repository.default_branch
 
     steps:
       # Self-activates once VERSIONER_ID / VERSIONER_SECRET are set.
