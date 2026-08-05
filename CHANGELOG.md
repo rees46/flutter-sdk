@@ -1,3 +1,14 @@
+## [0.1.1](https://github.com/rees46/flutter-sdk/compare/v0.1.0...v0.1.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* **ci:** tag from whatever branch the repo calls its trunk ([d8d1c03](https://github.com/rees46/flutter-sdk/commit/d8d1c0388112e8aa28f9916cb88f0dbcc4b7f4e7))
+
+
+
+
+
 # [0.1.0](https://github.com/rees46/flutter-sdk/compare/v0.0.3...v0.1.0) (2026-07-07)
 
 
