@@ -22,12 +22,5 @@ check:
     - cd example && flutter pub get && flutter build apk --debug
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE !~ /^Draft:/'
-      when: manual
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - "**/*"
-        - "!.gitlab/**"
-        - "!.gitlab-ci.yml"
-        - "!.github/**"
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: manual
