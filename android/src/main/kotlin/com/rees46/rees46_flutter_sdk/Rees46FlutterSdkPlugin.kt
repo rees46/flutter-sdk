@@ -2,7 +2,6 @@ package com.rees46.rees46_flutter_sdk
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.SystemClock
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
@@ -13,12 +12,17 @@ import com.rees46.rees46_flutter_sdk.pigeon.ProfileParamsWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
 import com.google.gson.Gson
 import com.personalization.Params
+import com.personalization.PushEventType
+import com.personalization.PushProvider
+import com.personalization.Rees46
+import com.personalization.Rees46Config
 import com.personalization.SDK
 import com.personalization.api.OnApiCallbackListener
 import com.personalization.api.params.ProfileParams
 import com.personalization.api.params.SearchParams as NativeSearchParams
 import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.push.Rees46PushNotifier
+import com.rees46.rees46_flutter_sdk.push.Rees46ShopStore
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -92,12 +96,29 @@ class Rees46FlutterSdkPlugin :
 
     override fun getPlatformVersion(): String = "Android ${android.os.Build.VERSION.RELEASE}"
 
-    override fun getStoredPushToken(): String? {
-        val prefs: SharedPreferences =
-            applicationContext.getSharedPreferences(DEFAULT_STORAGE_KEY, Context.MODE_PRIVATE)
-        return prefs.getString(TOKEN_KEY, null)
-            ?.takeIf { it.isNotBlank() }
-    }
+    /**
+     * Resolves the SDK instance a call targets via the multi-instance [Rees46]
+     * facade. A null [shopId] resolves the single default instance; an unknown or
+     * (with no id) ambiguous shop throws [com.personalization.UnknownShopIdException]
+     * / [com.personalization.AmbiguousShopException], which the calling method turns
+     * into a Flutter error. This is the F3 wiring; requires the native `Rees46`
+     * facade (local `android-sdk` via `includeBuild`, or a version that ships it).
+     */
+    private fun sdk(shopId: String?): SDK = Rees46.getInstance(shopId)
+
+    override fun getStoredPushToken(shopId: String?): String? =
+        try {
+            // Read the token from the resolved instance's own storage via the SDK's
+            // public getter — NOT the legacy `DEFAULT_STORAGE_KEY` prefs. Multi-instance
+            // partitions storage per shop_id (`personalization_sdk_<shopId>`), so the
+            // legacy shared file is empty on a fresh install and the token would never
+            // be found there.
+            val sdk = sdk(shopId)
+            sdk.getPushToken(PushProvider.FCM) ?: sdk.getPushToken(PushProvider.HMS)
+        } catch (t: Throwable) {
+            // Unknown/ambiguous shop, or the instance is not initialized yet.
+            null
+        }
 
     override fun initialize(config: InitConfig, callback: (Result<Unit>) -> Unit) {
         val shopId = config.shopId
@@ -106,26 +127,32 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            val sdk = SDK.instance
-            sdk.initialize(
-                context = applicationContext,
+            val shopConfig = Rees46Config(
                 shopId = shopId,
                 apiDomain = config.apiDomain,
                 stream = config.stream,
                 autoSendPushToken = config.autoSendPushToken,
                 needReInitialization = config.needReInitialization,
             )
+            // F3: initialize (and register) the instance through the multi-instance
+            // `Rees46` facade so it is reachable by shopId via Rees46.getInstance.
+            Rees46.initialize(context = applicationContext, config = shopConfig)
+
+            // Persist so the cold-start push provider (Rees46PushInitProvider) can re-register this
+            // shop on a process FCM spins up before Dart runs — otherwise the registry is empty and
+            // Rees46.handlePush drops the push (killed-app "push never arrives" on Android).
+            Rees46ShopStore.save(applicationContext, shopConfig)
 
             Rees46PushNotifier.ensureChannel(applicationContext)
 
-            // Show a heads-up BigPicture notification on message (pop-up, image, tap opens the app)
-            // — the native equivalent of the REES46 React Native demo. This replaces the SDK's
-            // built-in collapsed/low-importance custom-view notification. The push is also forwarded
-            // to Dart (onPushReceived / onPushDelivered) so the host app can react.
-            sdk.setOnMessageListener { data ->
+            // FL-5: one process-global, shop-aware listener (not per-instance) so a push for any
+            // shop routes here with its shopId. Shows a heads-up BigPicture notification (pop-up,
+            // image, tap opens the app) and forwards to Dart (onPushReceived / onPushDelivered)
+            // tagged with the shop it routed to, so the Dart dispatcher delivers it to that shop.
+            Rees46.setOnMessageListener { messageShopId, data ->
                 android.util.Log.d(
                     Rees46PushNotifier.TAG,
-                    "onMessage (plugin listener) id=${data.id}",
+                    "onMessage (plugin listener) shop=$messageShopId id=${data.id}",
                 )
                 val payload = data.toPayload()
                 // The listener fires on an FCM background thread, but flutterApi is a Pigeon
@@ -134,11 +161,11 @@ class Rees46FlutterSdkPlugin :
                 // is Dispatchers.Main) for every flutterApi call, download+post the notification
                 // off the main thread, and never let a flutterApi failure block the display.
                 coroutineScope.launch {
-                    runCatching { flutterApi?.onPushReceived(payload) { _ -> } }
+                    runCatching { flutterApi?.onPushReceived(messageShopId, payload) { _ -> } }
                     withContext(Dispatchers.IO) {
                         Rees46PushNotifier.show(applicationContext, data)
                     }
-                    runCatching { flutterApi?.onPushDelivered(payload) { _ -> } }
+                    runCatching { flutterApi?.onPushDelivered(messageShopId, payload) { _ -> } }
                 }
             }
 
@@ -151,6 +178,7 @@ class Rees46FlutterSdkPlugin :
     override fun getRecommendation(
         code: String,
         paramsJson: String?,
+        shopId: String?,
         callback: (Result<String>) -> Unit,
     ) {
         if (code.isBlank()) {
@@ -159,7 +187,7 @@ class Rees46FlutterSdkPlugin :
         }
         try {
             val params = buildRecommendationParams(paramsJson)
-            SDK.instance.recommendationManager.getExtendedRecommendation(
+            sdk(shopId).recommendationManager.getExtendedRecommendation(
                 recommenderCode = code,
                 params = params,
                 onGetExtendedRecommendation = { response ->
@@ -174,13 +202,13 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
-    override fun getProductInfo(itemId: String, callback: (Result<String>) -> Unit) {
+    override fun getProductInfo(itemId: String, shopId: String?, callback: (Result<String>) -> Unit) {
         if (itemId.isBlank()) {
             callback(Result.failure(FlutterError("bad_args", "itemId is required", null)))
             return
         }
         try {
-            SDK.instance.productsManager.getProductInfo(
+            sdk(shopId).productsManager.getProductInfo(
                 itemId = itemId,
                 listener = object : OnApiCallbackListener() {
                     override fun onSuccess(response: org.json.JSONObject?) {
@@ -197,7 +225,7 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
-    override fun getProductsList(paramsJson: String?, callback: (Result<String>) -> Unit) {
+    override fun getProductsList(paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit) {
         try {
             val p = if (!paramsJson.isNullOrBlank()) JSONObject(paramsJson) else null
             val brands = p?.optString("brands")?.takeIf { it.isNotEmpty() }
@@ -209,7 +237,7 @@ class Rees46FlutterSdkPlugin :
             val filters: Map<String, Any>? = p?.optJSONObject("filters")?.let { obj ->
                 obj.keys().asSequence().associateWith { key -> obj.get(key) }
             }
-            SDK.instance.productsManager.getProductsList(
+            sdk(shopId).productsManager.getProductsList(
                 brands = brands,
                 merchants = merchants,
                 categories = categories,
@@ -232,9 +260,9 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
-    override fun searchBlank(callback: (Result<String>) -> Unit) {
+    override fun searchBlank(shopId: String?, callback: (Result<String>) -> Unit) {
         try {
-            SDK.instance.searchManager.searchBlank(
+            sdk(shopId).searchManager.searchBlank(
                 onSearchBlank = { response ->
                     callback(Result.success(Gson().toJson(response)))
                 },
@@ -250,6 +278,7 @@ class Rees46FlutterSdkPlugin :
     override fun searchInstant(
         query: String,
         paramsJson: String?,
+        shopId: String?,
         callback: (Result<String>) -> Unit,
     ) {
         if (query.isBlank()) {
@@ -260,7 +289,7 @@ class Rees46FlutterSdkPlugin :
             val json = if (!paramsJson.isNullOrBlank()) JSONObject(paramsJson) else null
             val locations = json?.optString("locations")?.takeIf { it.isNotEmpty() }
             val excludedBrands = jsonArrayToStringList(json?.optJSONArray("excluded_brands"))
-            SDK.instance.searchManager.searchInstant(
+            sdk(shopId).searchManager.searchInstant(
                 query = query,
                 locations = locations,
                 excludedMerchants = null,
@@ -280,6 +309,7 @@ class Rees46FlutterSdkPlugin :
     override fun searchFull(
         query: String,
         paramsJson: String?,
+        shopId: String?,
         callback: (Result<String>) -> Unit,
     ) {
         if (query.isBlank()) {
@@ -288,7 +318,7 @@ class Rees46FlutterSdkPlugin :
         }
         try {
             val params = buildSearchParams(paramsJson)
-            SDK.instance.searchManager.searchFull(
+            sdk(shopId).searchManager.searchFull(
                 query = query,
                 searchParams = params,
                 onSearchFull = { response ->
@@ -308,6 +338,7 @@ class Rees46FlutterSdkPlugin :
         email: String?,
         firstName: String?,
         lastName: String?,
+        shopId: String?,
         callback: (Result<String>) -> Unit,
     ) {
         if (phone.isBlank()) {
@@ -315,7 +346,7 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            SDK.instance.loyaltyManager.join(
+            sdk(shopId).loyaltyManager.join(
                 phone = phone,
                 email = email,
                 firstName = firstName,
@@ -332,13 +363,13 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
-    override fun getLoyaltyStatus(identifier: String, callback: (Result<String>) -> Unit) {
+    override fun getLoyaltyStatus(identifier: String, shopId: String?, callback: (Result<String>) -> Unit) {
         if (identifier.isBlank()) {
             callback(Result.failure(FlutterError("bad_args", "identifier is required", null)))
             return
         }
         try {
-            SDK.instance.loyaltyManager.getStatus(
+            sdk(shopId).loyaltyManager.getStatus(
                 identifier = identifier,
                 onSuccess = { response ->
                     callback(Result.success(Gson().toJson(response)))
@@ -352,9 +383,9 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
-    override fun getProfile(callback: (Result<String>) -> Unit) {
+    override fun getProfile(shopId: String?, callback: (Result<String>) -> Unit) {
         try {
-            SDK.instance.profileManager.getProfile(
+            sdk(shopId).profileManager.getProfile(
                 onSuccess = { response ->
                     callback(Result.success(Gson().toJson(response)))
                 },
@@ -367,13 +398,13 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
-    override fun getProductCounters(item: String, callback: (Result<String>) -> Unit) {
+    override fun getProductCounters(item: String, shopId: String?, callback: (Result<String>) -> Unit) {
         if (item.isBlank()) {
             callback(Result.failure(FlutterError("bad_args", "item is required", null)))
             return
         }
         try {
-            SDK.instance.productsManager.getProductCounters(
+            sdk(shopId).productsManager.getProductCounters(
                 item = item,
                 onSuccess = { response ->
                     callback(Result.success(Gson().toJson(response)))
@@ -391,6 +422,7 @@ class Rees46FlutterSdkPlugin :
         category: String,
         limit: Long?,
         page: Long?,
+        shopId: String?,
         callback: (Result<String>) -> Unit,
     ) {
         if (category.isBlank()) {
@@ -398,7 +430,7 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            SDK.instance.categoryManager.getCategory(
+            sdk(shopId).categoryManager.getCategory(
                 category = category,
                 limit = limit?.toInt(),
                 page = page?.toInt(),
@@ -414,13 +446,13 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
-    override fun getCollection(collectionId: String, callback: (Result<String>) -> Unit) {
+    override fun getCollection(collectionId: String, shopId: String?, callback: (Result<String>) -> Unit) {
         if (collectionId.isBlank()) {
             callback(Result.failure(FlutterError("bad_args", "collectionId is required", null)))
             return
         }
         try {
-            SDK.instance.collectionManager.getCollection(
+            sdk(shopId).collectionManager.getCollection(
                 collectionId = collectionId,
                 onSuccess = { response ->
                     callback(Result.success(Gson().toJson(response)))
@@ -434,11 +466,11 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
-    override fun getSid(): String = SDK.instance.getSid()
+    override fun getSid(shopId: String?): String = sdk(shopId).getSid()
 
-    override fun getDid(): String? = SDK.instance.getDid()
+    override fun getDid(shopId: String?): String? = sdk(shopId).getDid()
 
-    override fun setProfile(params: ProfileParamsWire, callback: (Result<Unit>) -> Unit) {
+    override fun setProfile(params: ProfileParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit) {
         try {
             val builder = ProfileParams.Builder()
             params.email?.let { builder.put("email", it) }
@@ -464,7 +496,7 @@ class Rees46FlutterSdkPlugin :
                 val obj = JSONObject(json)
                 obj.keys().forEach { key -> builder.put(key, obj.getString(key)) }
             }
-            SDK.instance.profile(builder.build(), object : OnApiCallbackListener() {
+            sdk(shopId).profile(builder.build(), object : OnApiCallbackListener() {
                 override fun onSuccess(response: JSONObject?) {
                     callback(Result.success(Unit))
                 }
@@ -484,6 +516,7 @@ class Rees46FlutterSdkPlugin :
         label: String?,
         value: Long?,
         customFieldsJson: String?,
+        shopId: String?,
         callback: (Result<Unit>) -> Unit,
     ) {
         if (event.isBlank()) {
@@ -493,6 +526,7 @@ class Rees46FlutterSdkPlugin :
         try {
             val customFields = jsonObjectStringToMap(customFieldsJson)
             FlutterTrackingBridge.postTrackEvent(
+                sdk = sdk(shopId),
                 event = event,
                 time = time,
                 category = category,
@@ -524,6 +558,7 @@ class Rees46FlutterSdkPlugin :
         recommendedSourceJson: String?,
         stream: String?,
         segment: String?,
+        shopId: String?,
         callback: (Result<Unit>) -> Unit,
     ) {
         if (orderId.isBlank()) {
@@ -542,6 +577,7 @@ class Rees46FlutterSdkPlugin :
                     JSONObject(recommendedSourceJson)
                 }
             FlutterTrackingBridge.postTrackPurchase(
+                sdk = sdk(shopId),
                 orderId = orderId,
                 orderPrice = orderPrice,
                 items = items,
@@ -566,6 +602,22 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
+    override fun handlePush(
+        payload: Map<String, String>,
+        event: Long,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        try {
+            // Flutter PushEvent index: 0=received, 1=delivered, 2=clicked. Android's
+            // PushEventType has no `delivered`, so received & delivered both track received.
+            val type = if (event.toInt() == 2) PushEventType.CLICKED else PushEventType.RECEIVED
+            Rees46.handlePush(payload, type)
+            callback(Result.success(Unit))
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("handle_push_failed", t.message, null)))
+        }
+    }
+
     private fun handleNotificationLaunchIntent(intent: Intent?) {
         val extras = intent?.extras ?: return
         if (!extras.isPersonalizationNotificationClick()) {
@@ -579,8 +631,13 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            SDK.instance.notificationClicked(extras)
-            flutterApi?.onPushClicked(payload) { _ -> }
+            // FL-5: route the click through the multi-instance facade — it resolves the shop from
+            // the payload's shop_id and tracks the click on that instance. Forward to Dart tagged
+            // with the shop so the dispatcher delivers the click to it.
+            val shopId = payload[SHOP_ID_KEY]
+            val stringPayload = payload.filterValues { it != null }.mapValues { it.value!! }
+            Rees46.handlePush(stringPayload, PushEventType.CLICKED)
+            flutterApi?.onPushClicked(shopId, payload) { _ -> }
         } catch (_: Throwable) {
             // SDK may not be initialized yet; ignore.
         }
@@ -588,8 +645,7 @@ class Rees46FlutterSdkPlugin :
 
     companion object {
         private const val NOTIFICATION_CLICK_DEBOUNCE_MS = 800L
-        private const val DEFAULT_STORAGE_KEY = "DEFAULT_STORAGE_KEY"
-        private const val TOKEN_KEY = "token"
+        private const val SHOP_ID_KEY = "shop_id"
 
         private var lastClickSignature: String? = null
         private var lastClickAtElapsedMs: Long = 0L

@@ -102,6 +102,7 @@ internal object FlutterTrackingBridge {
             )
 
     fun postTrackEvent(
+        sdk: SDK,
         event: String,
         time: Long?,
         category: String?,
@@ -153,7 +154,7 @@ internal object FlutterTrackingBridge {
         }
 
         @Suppress("DEPRECATION")
-        SDK.instance.sendAsync(
+        sdk.sendAsync(
             CUSTOM_PUSH_PATH,
             body,
             object : OnApiCallbackListener() {
@@ -170,6 +171,7 @@ internal object FlutterTrackingBridge {
     }
 
     fun postTrackPurchase(
+        sdk: SDK,
         orderId: String,
         orderPrice: Double,
         items: List<PurchaseLineItemWire>,
@@ -223,7 +225,7 @@ internal object FlutterTrackingBridge {
         val body = buildResult.getOrNull()!!
 
         @Suppress("DEPRECATION")
-        SDK.instance.sendAsync(
+        sdk.sendAsync(
             PURCHASE_PUSH_PATH,
             body,
             object : OnApiCallbackListener() {
