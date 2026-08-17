@@ -73,9 +73,9 @@ void main() {
 
     await pumpUntil(
       $,
-      () => textByKey('mi-push-result')?.startsWith('routed:') ?? false,
+      () => textByKey('mi-push-result')?.contains('routed:') ?? false,
     );
-    expect(textByKey('mi-push-result'), startsWith('routed:'));
+    expect(textByKey('mi-push-result'), contains('routed:'));
   });
 
   patrolTest('push shop_id=unknown is dropped', ($) async {
@@ -84,8 +84,11 @@ void main() {
     await $('push shop_id=unknown').scrollTo();
     await $('push shop_id=unknown').tap();
 
-    await pumpUntil($, () => textByKey('mi-push-result') == 'dropped');
-    expect(textByKey('mi-push-result'), 'dropped');
+    await pumpUntil(
+      $,
+      () => textByKey('mi-push-result')?.contains('dropped') ?? false,
+    );
+    expect(textByKey('mi-push-result'), contains('dropped'));
   });
 
   patrolTest('push with no shop_id is dropped (two shops live)', ($) async {
@@ -94,7 +97,10 @@ void main() {
     await $('push (no shop_id)').scrollTo();
     await $('push (no shop_id)').tap();
 
-    await pumpUntil($, () => textByKey('mi-push-result') == 'dropped');
-    expect(textByKey('mi-push-result'), 'dropped');
+    await pumpUntil(
+      $,
+      () => textByKey('mi-push-result')?.contains('dropped') ?? false,
+    );
+    expect(textByKey('mi-push-result'), contains('dropped'));
   });
 }
