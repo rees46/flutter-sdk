@@ -42,7 +42,10 @@ public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplication
     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) -> Bool {
-    flutterApi?.onPushReceived(payload: Self._stringPayload(userInfo)) { _ in }
+    flutterApi?.onPushReceived(
+      shopId: Self._shopId(userInfo),
+      payload: Self._stringPayload(userInfo)
+    ) { _ in }
 
     Rees46FlutterSdkPlugin.notificationService?
       .didReceiveRemoteNotifications(application, didReceiveRemoteNotification: userInfo) { result, _ in
@@ -59,9 +62,10 @@ extension Rees46FlutterSdkPlugin: UNUserNotificationCenterDelegate {
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
-    var payload = Self._stringPayload(response.notification.request.content.userInfo)
+    let userInfo = response.notification.request.content.userInfo
+    var payload = Self._stringPayload(userInfo)
     payload["actionIdentifier"] = response.actionIdentifier
-    flutterApi?.onPushClicked(payload: payload) { _ in }
+    flutterApi?.onPushClicked(shopId: Self._shopId(userInfo), payload: payload) { _ in }
     completionHandler()
   }
 
@@ -70,7 +74,10 @@ extension Rees46FlutterSdkPlugin: UNUserNotificationCenterDelegate {
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
-    flutterApi?.onPushDelivered(payload: Self._stringPayload(notification.request.content.userInfo)) { _ in }
+    flutterApi?.onPushDelivered(
+      shopId: Self._shopId(notification.request.content.userInfo),
+      payload: Self._stringPayload(notification.request.content.userInfo)
+    ) { _ in }
     if #available(iOS 14.0, *) {
       completionHandler([.badge, .sound, .banner, .list])
     } else {
@@ -80,6 +87,13 @@ extension Rees46FlutterSdkPlugin: UNUserNotificationCenterDelegate {
 }
 
 extension Rees46FlutterSdkPlugin {
+  /// The shop the push is addressed to — its `shop_id`, resolved by the Dart
+  /// dispatcher to the matching handle's callbacks (nil falls back to the single
+  /// default).
+  fileprivate static func _shopId(_ userInfo: [AnyHashable: Any]) -> String? {
+    return userInfo["shop_id"] as? String
+  }
+
   fileprivate static func _stringPayload(_ userInfo: [AnyHashable: Any]) -> [String: String?] {
     var result: [String: String?] = [:]
     for (keyAny, value) in userInfo {
@@ -99,7 +113,17 @@ extension Rees46FlutterSdkPlugin {
 }
 
 final class PersonalizationHostApiImpl: PersonalizationHostApi {
-  func getStoredPushToken() throws -> String? {
+  /// Resolves the SDK instance a call targets via the multi-instance `Rees46`
+  /// facade. `shopId == nil` resolves the single default instance; an unknown or
+  /// (with no id) ambiguous shop throws, which `try?` turns into `nil` — the
+  /// caller then reports `not_initialized`. This is the F3 wiring; requires the
+  /// native `Rees46` facade (local `ios-sdk` via Podfile `:path`, or a pod
+  /// version that ships it).
+  private func sdk(_ shopId: String?) -> PersonalizationSDK? {
+    return try? Rees46.instance(for: shopId)
+  }
+
+  func getStoredPushToken(shopId: String?) throws -> String? {
     guard let deviceToken = UserDefaults.standard.data(forKey: Rees46FlutterSdkPlugin.pushTokenKey) else {
       return nil
     }
@@ -113,16 +137,19 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       return
     }
 
-    let sdk = createPersonalizationSDK(
-      shopId: config.shopId,
-      apiDomain: config.apiDomain,
-      stream: config.stream,
-      enableLogs: config.enableLogs,
-      autoSendPushToken: config.autoSendPushToken,
-      sendAdvertisingId: config.sendAdvertisingId,
-      parentViewController: nil,
-      enableAutoPopupPresentation: config.enableAutoPopupPresentation,
-      needReInitialization: config.needReInitialization
+    // F3: initialize (and register) the instance through the multi-instance
+    // `Rees46` facade so it is reachable by `shopId` via `Rees46.instance(for:)`.
+    let sdk = Rees46.initialize(
+      Rees46Config(
+        shopId: config.shopId,
+        apiDomain: config.apiDomain,
+        stream: config.stream,
+        enableLogs: config.enableLogs,
+        autoSendPushToken: config.autoSendPushToken,
+        sendAdvertisingId: config.sendAdvertisingId,
+        enableAutoPopupPresentation: config.enableAutoPopupPresentation,
+        needReInitialization: config.needReInitialization
+      )
     ) { error in
       if let error = error {
         completion(.failure(PigeonError(code: "init_failed", message: String(describing: error), details: nil)))
@@ -131,6 +158,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       }
     }
 
+    // Kept for the AppDelegate push path (device token / remote notification),
+    // which still uses the last-initialized instance until F4 routes by shop.
     Rees46FlutterSdkPlugin.sdk = sdk
 
     // Create notification service to receive AppDelegate callbacks (device token, remote notification).
@@ -145,8 +174,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return "iOS " + UIDevice.current.systemVersion
   }
 
-  func getRecommendation(code: String, paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getRecommendation(code: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -222,8 +251,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return dict
   }
 
-  func getProductInfo(itemId: String, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getProductInfo(itemId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -247,8 +276,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func getProductsList(paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getProductsList(paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -323,8 +352,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     ]
   }
 
-  func searchBlank(completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func searchBlank(shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -351,8 +380,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     ]
   }
 
-  func searchInstant(query: String, paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func searchInstant(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -403,8 +432,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func searchFull(query: String, paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func searchFull(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -521,9 +550,10 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     email: String?,
     firstName: String?,
     lastName: String?,
+    shopId: String?,
     completion: @escaping (Result<String, Error>) -> Void
   ) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -543,8 +573,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func getLoyaltyStatus(identifier: String, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getLoyaltyStatus(identifier: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -573,8 +603,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func getProfile(completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getProfile(shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -588,8 +618,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func getProductCounters(item: String, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getProductCounters(item: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -607,8 +637,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func getCategory(category: String, limit: Int64?, page: Int64?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getCategory(category: String, limit: Int64?, page: Int64?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -633,8 +663,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func getCollection(collectionId: String, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -749,19 +779,19 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     completion(.success(json))
   }
 
-  func getSid() throws -> String {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func getSid(shopId: String?) throws -> String {
+    guard let sdk = sdk(shopId) else {
       throw PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)
     }
     return sdk.userSeance
   }
 
-  func getDid() throws -> String? {
-    return Rees46FlutterSdkPlugin.sdk?.deviceId
+  func getDid(shopId: String?) throws -> String? {
+    return sdk(shopId)?.deviceId
   }
 
-  func setProfile(params: ProfileParamsWire, completion: @escaping (Result<Void, Error>) -> Void) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+  func setProfile(params: ProfileParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
     }
@@ -821,9 +851,10 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     label: String?,
     value: Int64?,
     customFieldsJson: String?,
+    shopId: String?,
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+    guard let sdk = sdk(shopId) else {
       completion(
         .failure(
           PigeonError(
@@ -880,9 +911,10 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     recommendedSourceJson: String?,
     stream: String?,
     segment: String?,
+    shopId: String?,
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
-    guard let sdk = Rees46FlutterSdkPlugin.sdk else {
+    guard let sdk = sdk(shopId) else {
       completion(
         .failure(
           PigeonError(
@@ -943,6 +975,18 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
               details: nil)))
       }
     }
+  }
+
+  func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void) {
+    // Flutter PushEvent index: 0=received, 1=delivered, 2=clicked.
+    let pushEvent: PushEvent
+    switch event {
+    case 1: pushEvent = .delivered
+    case 2: pushEvent = .clicked
+    default: pushEvent = .received
+    }
+    Rees46.handlePush(payload as [AnyHashable: Any], event: pushEvent)
+    completion(.success(()))
   }
 
   private func parseJsonObject(_ json: String?) -> [String: Any]? {

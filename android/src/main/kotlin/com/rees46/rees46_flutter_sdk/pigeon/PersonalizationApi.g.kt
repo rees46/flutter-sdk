@@ -315,86 +315,93 @@ interface PersonalizationHostApi {
   fun initialize(config: InitConfig, callback: (Result<Unit>) -> Unit)
   fun getPlatformVersion(): String
   /** Returns the push token stored by the native SDK (if any). */
-  fun getStoredPushToken(): String?
+  fun getStoredPushToken(shopId: String?): String?
   /** [customFieldsJson] is JSON object string or null (maps to native custom fields map). */
-  fun trackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFieldsJson: String?, callback: (Result<Unit>) -> Unit)
-  fun setProfile(params: ProfileParamsWire, callback: (Result<Unit>) -> Unit)
+  fun trackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFieldsJson: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun setProfile(params: ProfileParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit)
   /**
    * Returns the recommendation block as a JSON string.
    * [paramsJson] is a JSON object string with optional filter parameters.
    * Dart layer parses the result into [RecommendationResponse].
    */
-  fun getRecommendation(code: String, paramsJson: String?, callback: (Result<String>) -> Unit)
+  fun getRecommendation(code: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
   /** Returns the current session ID from the native SDK. */
-  fun getSid(): String
+  fun getSid(shopId: String?): String
   /** Returns the device ID assigned by the native SDK, or null before first sync. */
-  fun getDid(): String?
+  fun getDid(shopId: String?): String?
   /**
    * Returns a single product's details as a JSON string.
    * Dart layer parses the result into [Product].
    */
-  fun getProductInfo(itemId: String, callback: (Result<String>) -> Unit)
+  fun getProductInfo(itemId: String, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns a paginated product catalog list as a JSON string.
    * [paramsJson] is a JSON object with optional filter fields.
    * Dart layer parses the result into [ProductsListResponse].
    */
-  fun getProductsList(paramsJson: String?, callback: (Result<String>) -> Unit)
+  fun getProductsList(paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns blank search results (trending/popular) as a JSON string.
    * No parameters — the native SDK decides what to return based on shop config.
    * Dart layer parses the result into [SearchBlankResponse].
    */
-  fun searchBlank(callback: (Result<String>) -> Unit)
+  fun searchBlank(shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns instant (typeahead) search results as a JSON string.
    * [paramsJson] may contain optional "locations" (String) and "excluded_brands" ([String]).
    * Dart layer parses the result into [SearchInstantResponse].
    */
-  fun searchInstant(query: String, paramsJson: String?, callback: (Result<String>) -> Unit)
+  fun searchInstant(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns full search results as a JSON string.
    * [paramsJson] is a JSON object string with optional search parameters.
    * Dart layer parses the result into [SearchFullResponse].
    */
-  fun searchFull(query: String, paramsJson: String?, callback: (Result<String>) -> Unit)
+  fun searchFull(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Joins the loyalty program (`loyalty/members/join`) and returns the
    * response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
    * The shop is identified by the SDK's configured `shop_id`; [phone] is required.
    * Dart layer parses the result into [LoyaltyJoinResponse].
    */
-  fun joinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, callback: (Result<String>) -> Unit)
+  fun joinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns the loyalty membership status (`loyalty/members/status`) as a JSON
    * string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
    * [identifier] is the member identifier (phone).
    * Dart layer parses the result into [LoyaltyStatusResponse].
    */
-  fun getLoyaltyStatus(identifier: String, callback: (Result<String>) -> Unit)
+  fun getLoyaltyStatus(identifier: String, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns the current user's profile as a JSON string.
    * Dart layer parses the result into [ProfileResponse].
    */
-  fun getProfile(callback: (Result<String>) -> Unit)
+  fun getProfile(shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns view / cart / purchase counters for [item] as a JSON string.
    * Dart layer parses the result into [ProductCountersResponse].
    */
-  fun getProductCounters(item: String, callback: (Result<String>) -> Unit)
+  fun getProductCounters(item: String, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns a category product listing as a JSON string.
    * [limit] and [page] paginate the result; both are optional.
    * Dart layer parses the result into [CategoryResponse].
    */
-  fun getCategory(category: String, limit: Long?, page: Long?, callback: (Result<String>) -> Unit)
+  fun getCategory(category: String, limit: Long?, page: Long?, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns a merchandised collection's products as a JSON string.
    * Dart layer parses the result into [CollectionResponse].
    */
-  fun getCollection(collectionId: String, callback: (Result<String>) -> Unit)
+  fun getCollection(collectionId: String, shopId: String?, callback: (Result<String>) -> Unit)
+  /**
+   * Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
+   * via the native `Rees46.handlePush`. [event] is the index of the Dart
+   * `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
+   * maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
+   */
+  fun handlePush(payload: Map<String, String>, event: Long, callback: (Result<Unit>) -> Unit)
   /** [customJson] and [recommendedSourceJson] are JSON object strings or null. */
-  fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, callback: (Result<Unit>) -> Unit)
+  fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
 
   companion object {
     /** The codec used by PersonalizationHostApi. */
@@ -442,9 +449,11 @@ interface PersonalizationHostApi {
       run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoredPushToken$separatedMessageChannelSuffix", codec)
         if (api != null) {
-          channel.setMessageHandler { _, reply ->
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
             val wrapped: List<Any?> = try {
-              listOf(api.getStoredPushToken())
+              listOf(api.getStoredPushToken(shopIdArg))
             } catch (exception: Throwable) {
               PersonalizationApiPigeonUtils.wrapError(exception)
             }
@@ -465,7 +474,8 @@ interface PersonalizationHostApi {
             val labelArg = args[3] as String?
             val valueArg = args[4] as Long?
             val customFieldsJsonArg = args[5] as String?
-            api.trackEvent(eventArg, timeArg, categoryArg, labelArg, valueArg, customFieldsJsonArg) { result: Result<Unit> ->
+            val shopIdArg = args[6] as String?
+            api.trackEvent(eventArg, timeArg, categoryArg, labelArg, valueArg, customFieldsJsonArg, shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -484,7 +494,8 @@ interface PersonalizationHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val paramsArg = args[0] as ProfileParamsWire
-            api.setProfile(paramsArg) { result: Result<Unit> ->
+            val shopIdArg = args[1] as String?
+            api.setProfile(paramsArg, shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -504,7 +515,8 @@ interface PersonalizationHostApi {
             val args = message as List<Any?>
             val codeArg = args[0] as String
             val paramsJsonArg = args[1] as String?
-            api.getRecommendation(codeArg, paramsJsonArg) { result: Result<String> ->
+            val shopIdArg = args[2] as String?
+            api.getRecommendation(codeArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -521,9 +533,11 @@ interface PersonalizationHostApi {
       run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid$separatedMessageChannelSuffix", codec)
         if (api != null) {
-          channel.setMessageHandler { _, reply ->
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
             val wrapped: List<Any?> = try {
-              listOf(api.getSid())
+              listOf(api.getSid(shopIdArg))
             } catch (exception: Throwable) {
               PersonalizationApiPigeonUtils.wrapError(exception)
             }
@@ -536,9 +550,11 @@ interface PersonalizationHostApi {
       run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getDid$separatedMessageChannelSuffix", codec)
         if (api != null) {
-          channel.setMessageHandler { _, reply ->
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
             val wrapped: List<Any?> = try {
-              listOf(api.getDid())
+              listOf(api.getDid(shopIdArg))
             } catch (exception: Throwable) {
               PersonalizationApiPigeonUtils.wrapError(exception)
             }
@@ -554,7 +570,8 @@ interface PersonalizationHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val itemIdArg = args[0] as String
-            api.getProductInfo(itemIdArg) { result: Result<String> ->
+            val shopIdArg = args[1] as String?
+            api.getProductInfo(itemIdArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -574,7 +591,8 @@ interface PersonalizationHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val paramsJsonArg = args[0] as String?
-            api.getProductsList(paramsJsonArg) { result: Result<String> ->
+            val shopIdArg = args[1] as String?
+            api.getProductsList(paramsJsonArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -591,8 +609,10 @@ interface PersonalizationHostApi {
       run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank$separatedMessageChannelSuffix", codec)
         if (api != null) {
-          channel.setMessageHandler { _, reply ->
-            api.searchBlank{ result: Result<String> ->
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.searchBlank(shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -613,7 +633,8 @@ interface PersonalizationHostApi {
             val args = message as List<Any?>
             val queryArg = args[0] as String
             val paramsJsonArg = args[1] as String?
-            api.searchInstant(queryArg, paramsJsonArg) { result: Result<String> ->
+            val shopIdArg = args[2] as String?
+            api.searchInstant(queryArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -634,7 +655,8 @@ interface PersonalizationHostApi {
             val args = message as List<Any?>
             val queryArg = args[0] as String
             val paramsJsonArg = args[1] as String?
-            api.searchFull(queryArg, paramsJsonArg) { result: Result<String> ->
+            val shopIdArg = args[2] as String?
+            api.searchFull(queryArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -657,7 +679,8 @@ interface PersonalizationHostApi {
             val emailArg = args[1] as String?
             val firstNameArg = args[2] as String?
             val lastNameArg = args[3] as String?
-            api.joinLoyalty(phoneArg, emailArg, firstNameArg, lastNameArg) { result: Result<String> ->
+            val shopIdArg = args[4] as String?
+            api.joinLoyalty(phoneArg, emailArg, firstNameArg, lastNameArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -677,7 +700,8 @@ interface PersonalizationHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val identifierArg = args[0] as String
-            api.getLoyaltyStatus(identifierArg) { result: Result<String> ->
+            val shopIdArg = args[1] as String?
+            api.getLoyaltyStatus(identifierArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -694,8 +718,10 @@ interface PersonalizationHostApi {
       run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProfile$separatedMessageChannelSuffix", codec)
         if (api != null) {
-          channel.setMessageHandler { _, reply ->
-            api.getProfile{ result: Result<String> ->
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.getProfile(shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -715,7 +741,8 @@ interface PersonalizationHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val itemArg = args[0] as String
-            api.getProductCounters(itemArg) { result: Result<String> ->
+            val shopIdArg = args[1] as String?
+            api.getProductCounters(itemArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -737,7 +764,8 @@ interface PersonalizationHostApi {
             val categoryArg = args[0] as String
             val limitArg = args[1] as Long?
             val pageArg = args[2] as Long?
-            api.getCategory(categoryArg, limitArg, pageArg) { result: Result<String> ->
+            val shopIdArg = args[3] as String?
+            api.getCategory(categoryArg, limitArg, pageArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -757,13 +785,34 @@ interface PersonalizationHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val collectionIdArg = args[0] as String
-            api.getCollection(collectionIdArg) { result: Result<String> ->
+            val shopIdArg = args[1] as String?
+            api.getCollection(collectionIdArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
               } else {
                 val data = result.getOrNull()
                 reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val payloadArg = args[0] as Map<String, String>
+            val eventArg = args[1] as Long
+            api.handlePush(payloadArg, eventArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
               }
             }
           }
@@ -793,7 +842,8 @@ interface PersonalizationHostApi {
             val recommendedSourceJsonArg = args[14] as String?
             val streamArg = args[15] as String?
             val segmentArg = args[16] as String?
-            api.trackPurchase(orderIdArg, orderPriceArg, itemsArg, deliveryTypeArg, deliveryAddressArg, paymentTypeArg, isTaxFreeArg, promocodeArg, orderCashArg, orderBonusesArg, orderDeliveryArg, orderDiscountArg, channelArg, customJsonArg, recommendedSourceJsonArg, streamArg, segmentArg) { result: Result<Unit> ->
+            val shopIdArg = args[17] as String?
+            api.trackPurchase(orderIdArg, orderPriceArg, itemsArg, deliveryTypeArg, deliveryAddressArg, paymentTypeArg, isTaxFreeArg, promocodeArg, orderCashArg, orderBonusesArg, orderDeliveryArg, orderDiscountArg, channelArg, customJsonArg, recommendedSourceJsonArg, streamArg, segmentArg, shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -817,12 +867,12 @@ class PersonalizationFlutterApi(private val binaryMessenger: BinaryMessenger, pr
       PersonalizationApiPigeonCodec()
     }
   }
-  fun onPushReceived(payloadArg: Map<String, String?>, callback: (Result<Unit>) -> Unit)
+  fun onPushReceived(shopIdArg: String?, payloadArg: Map<String, String?>, callback: (Result<Unit>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
     val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
-    channel.send(listOf(payloadArg)) {
+    channel.send(listOf(shopIdArg, payloadArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
@@ -834,12 +884,12 @@ class PersonalizationFlutterApi(private val binaryMessenger: BinaryMessenger, pr
       } 
     }
   }
-  fun onPushDelivered(payloadArg: Map<String, String?>, callback: (Result<Unit>) -> Unit)
+  fun onPushDelivered(shopIdArg: String?, payloadArg: Map<String, String?>, callback: (Result<Unit>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
     val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
-    channel.send(listOf(payloadArg)) {
+    channel.send(listOf(shopIdArg, payloadArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
@@ -851,12 +901,12 @@ class PersonalizationFlutterApi(private val binaryMessenger: BinaryMessenger, pr
       } 
     }
   }
-  fun onPushClicked(payloadArg: Map<String, String?>, callback: (Result<Unit>) -> Unit)
+  fun onPushClicked(shopIdArg: String?, payloadArg: Map<String, String?>, callback: (Result<Unit>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
     val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
-    channel.send(listOf(payloadArg)) {
+    channel.send(listOf(shopIdArg, payloadArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))

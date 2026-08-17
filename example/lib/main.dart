@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
+import 'multi_instance_pane.dart';
+
 void main() => runApp(const App());
 
 class App extends StatelessWidget {
@@ -30,7 +32,13 @@ class InitPage extends StatefulWidget {
 enum InitState { idle, initializing, initialized, failed }
 
 class _InitPageState extends State<InitPage> {
-  final _sdk = PersonalizationSdk();
+  // Initialized through the multi-instance [Rees46] facade — the same entry
+  // point the iOS/Android demos use — so shop A is registered in the facade and
+  // the Multi-instance screen reaches the very same instance via
+  // Rees46.getInstance(shopId). Bound to shop A explicitly, so every call stays
+  // unambiguous even after that screen brings a second shop to life. Assigned in
+  // [_initialize] (rebuilt on re-initialize).
+  late PersonalizationSdk _sdk;
 
   // Platform channel used to ask the host for the Android 13+ notification
   // permission. See [_requestNotificationPermission].
@@ -142,15 +150,10 @@ class _InitPageState extends State<InitPage> {
   @override
   void initState() {
     super.initState();
-    _sdk.setPushNotificationCallbacks(
-      onReceived: (payload) {
-        // In the demo we only surface init/token state; push payloads can be added later.
-      },
-      onDelivered: (payload) {},
-      onClicked: (payload) {},
-    );
     // Auto-initialize on startup — the demo uses hardcoded config, so no manual
-    // step is needed. The button below only re-initializes (e.g. after toggling flags).
+    // step is needed. `_initialize` assigns `_sdk` (synchronously, before its
+    // first await) and wires the push callbacks. The button below only
+    // re-initializes (e.g. after toggling flags).
     _initialize();
     // Ask for the notification permission after the first frame. Triggering it from
     // Dart (rather than MainActivity.onCreate) guarantees it runs after Patrol's
@@ -178,8 +181,13 @@ class _InitPageState extends State<InitPage> {
     });
 
     try {
-      await _sdk.initialize(
-        SdkInitConfig(
+      // Initialize shop A through the multi-instance facade — the unified entry
+      // point, same as iOS/Android. Returns the handle and registers the shop,
+      // so the Multi-instance screen resolves the very same instance via
+      // Rees46.getInstance(shopId). Re-initializing rebuilds the handle with the
+      // current toggles.
+      _sdk = Rees46.initialize(
+        Rees46Config(
           shopId: _shopId,
           apiDomain: _apiDomain,
           stream: _stream,
@@ -189,6 +197,14 @@ class _InitPageState extends State<InitPage> {
           enableAutoPopupPresentation: _enableAutoPopupPresentation,
           needReInitialization: _needReInitialization,
         ),
+      );
+      _sdk.setPushNotificationCallbacks(
+        onReceived: (payload) {
+          // In the demo we only surface init/token state; push payloads can be
+          // added later.
+        },
+        onDelivered: (payload) {},
+        onClicked: (payload) {},
       );
       setState(() {
         _initState = InitState.initialized;
@@ -583,7 +599,21 @@ class _InitPageState extends State<InitPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('REES46 SDK init demo')),
+      appBar: AppBar(
+        title: const Text('REES46 SDK init demo'),
+        actions: [
+          IconButton(
+            key: const Key('open-multi-instance'),
+            tooltip: 'Multi-instance (two shops)',
+            icon: const Icon(Icons.storefront),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const MultiInstancePane(),
+              ),
+            ),
+          ),
+        ],
+      ),
       // A SingleChildScrollView + Column (rather than a lazy ListView) so every
       // card and input field is always built and findable by integration tests,
       // even when off-screen. A ListView only builds children near the viewport,
@@ -597,6 +627,17 @@ class _InitPageState extends State<InitPage> {
               state: _initState,
               error: _initError,
               lastInitAt: _lastInitAt,
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              key: const Key('open-multi-instance-button'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const MultiInstancePane(),
+                ),
+              ),
+              icon: const Icon(Icons.storefront),
+              label: const Text('Open multi-instance demo (two shops)'),
             ),
             const SizedBox(height: 12),
             _PushTokenCard(

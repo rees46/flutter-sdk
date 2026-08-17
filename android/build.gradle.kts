@@ -61,6 +61,11 @@ android {
 
     defaultConfig {
         minSdk = 24
+        // The REES46 Android library is flavored on a `default` dimension
+        // (rees46 / personaclick); this plugin has no such dimension. Tell Gradle
+        // which flavor to consume. A no-op for the single-variant JitPack artifact;
+        // required when the SDK is consumed from source (local `includeBuild`).
+        missingDimensionStrategy("default", "rees46")
     }
 
     testOptions {
@@ -82,11 +87,9 @@ android {
 
 dependencies {
     // REES46 Android SDK (JitPack).
-    //
     // Published from github.com/rees46/android-sdk as `com.github.rees46:android-sdk:<tag>`.
-    // v2.34.0 adds the catalog read managers (profile, product counters,
-    // category, collection) on top of the loyalty manager (v2.33.0).
-    val rees46AndroidSdkVersion = "v2.34.0"
+    // v2.36.0 is the first tag that ships the multi-instance `Rees46` facade.
+    val rees46AndroidSdkVersion = "v2.36.0"
     add(
         "rees46Implementation",
         "com.github.rees46:android-sdk:$rees46AndroidSdkVersion",

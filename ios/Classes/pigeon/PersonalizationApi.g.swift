@@ -390,62 +390,67 @@ protocol PersonalizationHostApi {
   func initialize(config: InitConfig, completion: @escaping (Result<Void, Error>) -> Void)
   func getPlatformVersion() throws -> String
   /// Returns the push token stored by the native SDK (if any).
-  func getStoredPushToken() throws -> String?
+  func getStoredPushToken(shopId: String?) throws -> String?
   /// [customFieldsJson] is JSON object string or null (maps to native custom fields map).
-  func trackEvent(event: String, time: Int64?, category: String?, label: String?, value: Int64?, customFieldsJson: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func setProfile(params: ProfileParamsWire, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackEvent(event: String, time: Int64?, category: String?, label: String?, value: Int64?, customFieldsJson: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func setProfile(params: ProfileParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
   /// Returns the recommendation block as a JSON string.
   /// [paramsJson] is a JSON object string with optional filter parameters.
   /// Dart layer parses the result into [RecommendationResponse].
-  func getRecommendation(code: String, paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func getRecommendation(code: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns the current session ID from the native SDK.
-  func getSid() throws -> String
+  func getSid(shopId: String?) throws -> String
   /// Returns the device ID assigned by the native SDK, or null before first sync.
-  func getDid() throws -> String?
+  func getDid(shopId: String?) throws -> String?
   /// Returns a single product's details as a JSON string.
   /// Dart layer parses the result into [Product].
-  func getProductInfo(itemId: String, completion: @escaping (Result<String, Error>) -> Void)
+  func getProductInfo(itemId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns a paginated product catalog list as a JSON string.
   /// [paramsJson] is a JSON object with optional filter fields.
   /// Dart layer parses the result into [ProductsListResponse].
-  func getProductsList(paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func getProductsList(paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns blank search results (trending/popular) as a JSON string.
   /// No parameters — the native SDK decides what to return based on shop config.
   /// Dart layer parses the result into [SearchBlankResponse].
-  func searchBlank(completion: @escaping (Result<String, Error>) -> Void)
+  func searchBlank(shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns instant (typeahead) search results as a JSON string.
   /// [paramsJson] may contain optional "locations" (String) and "excluded_brands" ([String]).
   /// Dart layer parses the result into [SearchInstantResponse].
-  func searchInstant(query: String, paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func searchInstant(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns full search results as a JSON string.
   /// [paramsJson] is a JSON object string with optional search parameters.
   /// Dart layer parses the result into [SearchFullResponse].
-  func searchFull(query: String, paramsJson: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func searchFull(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Joins the loyalty program (`loyalty/members/join`) and returns the
   /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
   /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
   /// Dart layer parses the result into [LoyaltyJoinResponse].
-  func joinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func joinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
   /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
   /// [identifier] is the member identifier (phone).
   /// Dart layer parses the result into [LoyaltyStatusResponse].
-  func getLoyaltyStatus(identifier: String, completion: @escaping (Result<String, Error>) -> Void)
+  func getLoyaltyStatus(identifier: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns the current user's profile as a JSON string.
   /// Dart layer parses the result into [ProfileResponse].
-  func getProfile(completion: @escaping (Result<String, Error>) -> Void)
+  func getProfile(shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns view / cart / purchase counters for [item] as a JSON string.
   /// Dart layer parses the result into [ProductCountersResponse].
-  func getProductCounters(item: String, completion: @escaping (Result<String, Error>) -> Void)
+  func getProductCounters(item: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns a category product listing as a JSON string.
   /// [limit] and [page] paginate the result; both are optional.
   /// Dart layer parses the result into [CategoryResponse].
-  func getCategory(category: String, limit: Int64?, page: Int64?, completion: @escaping (Result<String, Error>) -> Void)
+  func getCategory(category: String, limit: Int64?, page: Int64?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns a merchandised collection's products as a JSON string.
   /// Dart layer parses the result into [CollectionResponse].
-  func getCollection(collectionId: String, completion: @escaping (Result<String, Error>) -> Void)
+  func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
+  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+  /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
+  /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
+  func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void)
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
-  func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -487,9 +492,11 @@ class PersonalizationHostApiSetup {
     /// Returns the push token stored by the native SDK (if any).
     let getStoredPushTokenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoredPushToken\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      getStoredPushTokenChannel.setMessageHandler { _, reply in
+      getStoredPushTokenChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
         do {
-          let result = try api.getStoredPushToken()
+          let result = try api.getStoredPushToken(shopId: shopIdArg)
           reply(wrapResult(result))
         } catch {
           reply(wrapError(error))
@@ -509,7 +516,8 @@ class PersonalizationHostApiSetup {
         let labelArg: String? = nilOrValue(args[3])
         let valueArg: Int64? = nilOrValue(args[4])
         let customFieldsJsonArg: String? = nilOrValue(args[5])
-        api.trackEvent(event: eventArg, time: timeArg, category: categoryArg, label: labelArg, value: valueArg, customFieldsJson: customFieldsJsonArg) { result in
+        let shopIdArg: String? = nilOrValue(args[6])
+        api.trackEvent(event: eventArg, time: timeArg, category: categoryArg, label: labelArg, value: valueArg, customFieldsJson: customFieldsJsonArg, shopId: shopIdArg) { result in
           switch result {
           case .success:
             reply(wrapResult(nil))
@@ -526,7 +534,8 @@ class PersonalizationHostApiSetup {
       setProfileChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let paramsArg = args[0] as! ProfileParamsWire
-        api.setProfile(params: paramsArg) { result in
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.setProfile(params: paramsArg, shopId: shopIdArg) { result in
           switch result {
           case .success:
             reply(wrapResult(nil))
@@ -547,7 +556,8 @@ class PersonalizationHostApiSetup {
         let args = message as! [Any?]
         let codeArg = args[0] as! String
         let paramsJsonArg: String? = nilOrValue(args[1])
-        api.getRecommendation(code: codeArg, paramsJson: paramsJsonArg) { result in
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.getRecommendation(code: codeArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -562,9 +572,11 @@ class PersonalizationHostApiSetup {
     /// Returns the current session ID from the native SDK.
     let getSidChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      getSidChannel.setMessageHandler { _, reply in
+      getSidChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
         do {
-          let result = try api.getSid()
+          let result = try api.getSid(shopId: shopIdArg)
           reply(wrapResult(result))
         } catch {
           reply(wrapError(error))
@@ -576,9 +588,11 @@ class PersonalizationHostApiSetup {
     /// Returns the device ID assigned by the native SDK, or null before first sync.
     let getDidChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getDid\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      getDidChannel.setMessageHandler { _, reply in
+      getDidChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
         do {
-          let result = try api.getDid()
+          let result = try api.getDid(shopId: shopIdArg)
           reply(wrapResult(result))
         } catch {
           reply(wrapError(error))
@@ -594,7 +608,8 @@ class PersonalizationHostApiSetup {
       getProductInfoChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let itemIdArg = args[0] as! String
-        api.getProductInfo(itemId: itemIdArg) { result in
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.getProductInfo(itemId: itemIdArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -614,7 +629,8 @@ class PersonalizationHostApiSetup {
       getProductsListChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let paramsJsonArg: String? = nilOrValue(args[0])
-        api.getProductsList(paramsJson: paramsJsonArg) { result in
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.getProductsList(paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -631,8 +647,10 @@ class PersonalizationHostApiSetup {
     /// Dart layer parses the result into [SearchBlankResponse].
     let searchBlankChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      searchBlankChannel.setMessageHandler { _, reply in
-        api.searchBlank { result in
+      searchBlankChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.searchBlank(shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -653,7 +671,8 @@ class PersonalizationHostApiSetup {
         let args = message as! [Any?]
         let queryArg = args[0] as! String
         let paramsJsonArg: String? = nilOrValue(args[1])
-        api.searchInstant(query: queryArg, paramsJson: paramsJsonArg) { result in
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.searchInstant(query: queryArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -674,7 +693,8 @@ class PersonalizationHostApiSetup {
         let args = message as! [Any?]
         let queryArg = args[0] as! String
         let paramsJsonArg: String? = nilOrValue(args[1])
-        api.searchFull(query: queryArg, paramsJson: paramsJsonArg) { result in
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.searchFull(query: queryArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -698,7 +718,8 @@ class PersonalizationHostApiSetup {
         let emailArg: String? = nilOrValue(args[1])
         let firstNameArg: String? = nilOrValue(args[2])
         let lastNameArg: String? = nilOrValue(args[3])
-        api.joinLoyalty(phone: phoneArg, email: emailArg, firstName: firstNameArg, lastName: lastNameArg) { result in
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.joinLoyalty(phone: phoneArg, email: emailArg, firstName: firstNameArg, lastName: lastNameArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -719,7 +740,8 @@ class PersonalizationHostApiSetup {
       getLoyaltyStatusChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let identifierArg = args[0] as! String
-        api.getLoyaltyStatus(identifier: identifierArg) { result in
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.getLoyaltyStatus(identifier: identifierArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -735,8 +757,10 @@ class PersonalizationHostApiSetup {
     /// Dart layer parses the result into [ProfileResponse].
     let getProfileChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProfile\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      getProfileChannel.setMessageHandler { _, reply in
-        api.getProfile { result in
+      getProfileChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.getProfile(shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -755,7 +779,8 @@ class PersonalizationHostApiSetup {
       getProductCountersChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let itemArg = args[0] as! String
-        api.getProductCounters(item: itemArg) { result in
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.getProductCounters(item: itemArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -777,7 +802,8 @@ class PersonalizationHostApiSetup {
         let categoryArg = args[0] as! String
         let limitArg: Int64? = nilOrValue(args[1])
         let pageArg: Int64? = nilOrValue(args[2])
-        api.getCategory(category: categoryArg, limit: limitArg, page: pageArg) { result in
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.getCategory(category: categoryArg, limit: limitArg, page: pageArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -796,7 +822,8 @@ class PersonalizationHostApiSetup {
       getCollectionChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let collectionIdArg = args[0] as! String
-        api.getCollection(collectionId: collectionIdArg) { result in
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.getCollection(collectionId: collectionIdArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -807,6 +834,28 @@ class PersonalizationHostApiSetup {
       }
     } else {
       getCollectionChannel.setMessageHandler(nil)
+    }
+    /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
+    /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+    /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
+    /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
+    let handlePushChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      handlePushChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let payloadArg = args[0] as! [String: String]
+        let eventArg = args[1] as! Int64
+        api.handlePush(payload: payloadArg, event: eventArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      handlePushChannel.setMessageHandler(nil)
     }
     /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
     let trackPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
@@ -830,7 +879,8 @@ class PersonalizationHostApiSetup {
         let recommendedSourceJsonArg: String? = nilOrValue(args[14])
         let streamArg: String? = nilOrValue(args[15])
         let segmentArg: String? = nilOrValue(args[16])
-        api.trackPurchase(orderId: orderIdArg, orderPrice: orderPriceArg, items: itemsArg, deliveryType: deliveryTypeArg, deliveryAddress: deliveryAddressArg, paymentType: paymentTypeArg, isTaxFree: isTaxFreeArg, promocode: promocodeArg, orderCash: orderCashArg, orderBonuses: orderBonusesArg, orderDelivery: orderDeliveryArg, orderDiscount: orderDiscountArg, channel: channelArg, customJson: customJsonArg, recommendedSourceJson: recommendedSourceJsonArg, stream: streamArg, segment: segmentArg) { result in
+        let shopIdArg: String? = nilOrValue(args[17])
+        api.trackPurchase(orderId: orderIdArg, orderPrice: orderPriceArg, items: itemsArg, deliveryType: deliveryTypeArg, deliveryAddress: deliveryAddressArg, paymentType: paymentTypeArg, isTaxFree: isTaxFreeArg, promocode: promocodeArg, orderCash: orderCashArg, orderBonuses: orderBonusesArg, orderDelivery: orderDeliveryArg, orderDiscount: orderDiscountArg, channel: channelArg, customJson: customJsonArg, recommendedSourceJson: recommendedSourceJsonArg, stream: streamArg, segment: segmentArg, shopId: shopIdArg) { result in
           switch result {
           case .success:
             reply(wrapResult(nil))
@@ -846,9 +896,9 @@ class PersonalizationHostApiSetup {
 }
 /// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
 protocol PersonalizationFlutterApiProtocol {
-  func onPushReceived(payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void)
-  func onPushDelivered(payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void)
-  func onPushClicked(payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onPushReceived(shopId shopIdArg: String?, payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onPushDelivered(shopId shopIdArg: String?, payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onPushClicked(shopId shopIdArg: String?, payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void)
 }
 class PersonalizationFlutterApi: PersonalizationFlutterApiProtocol {
   private let binaryMessenger: FlutterBinaryMessenger
@@ -860,10 +910,10 @@ class PersonalizationFlutterApi: PersonalizationFlutterApiProtocol {
   var codec: PersonalizationApiPigeonCodec {
     return PersonalizationApiPigeonCodec.shared
   }
-  func onPushReceived(payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void) {
+  func onPushReceived(shopId shopIdArg: String?, payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void) {
     let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
-    channel.sendMessage([payloadArg] as [Any?]) { response in
+    channel.sendMessage([shopIdArg, payloadArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return
@@ -878,10 +928,10 @@ class PersonalizationFlutterApi: PersonalizationFlutterApiProtocol {
       }
     }
   }
-  func onPushDelivered(payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void) {
+  func onPushDelivered(shopId shopIdArg: String?, payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void) {
     let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
-    channel.sendMessage([payloadArg] as [Any?]) { response in
+    channel.sendMessage([shopIdArg, payloadArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return
@@ -896,10 +946,10 @@ class PersonalizationFlutterApi: PersonalizationFlutterApiProtocol {
       }
     }
   }
-  func onPushClicked(payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void) {
+  func onPushClicked(shopId shopIdArg: String?, payload payloadArg: [String: String?], completion: @escaping (Result<Void, PigeonError>) -> Void) {
     let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
-    channel.sendMessage([payloadArg] as [Any?]) { response in
+    channel.sendMessage([shopIdArg, payloadArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return

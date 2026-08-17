@@ -109,6 +109,11 @@ class ProfileParamsWire {
   });
 }
 
+// Multi-instance: every per-instance method carries a trailing `String? shopId`
+// so the native bridge can resolve the target instance via the native `Rees46`
+// facade. `shopId == null` means the legacy single/default instance (the
+// back-compat fallback). `initialize` needs no extra param — its shop id is
+// inside [InitConfig]; `getPlatformVersion` touches no instance.
 @HostApi()
 abstract class PersonalizationHostApi {
   @async
@@ -117,7 +122,7 @@ abstract class PersonalizationHostApi {
   String getPlatformVersion();
 
   /// Returns the push token stored by the native SDK (if any).
-  String? getStoredPushToken();
+  String? getStoredPushToken(String? shopId);
 
   /// [customFieldsJson] is JSON object string or null (maps to native custom fields map).
   @async
@@ -128,51 +133,52 @@ abstract class PersonalizationHostApi {
     String? label,
     int? value,
     String? customFieldsJson,
+    String? shopId,
   );
 
   @async
-  void setProfile(ProfileParamsWire params);
+  void setProfile(ProfileParamsWire params, String? shopId);
 
   /// Returns the recommendation block as a JSON string.
   /// [paramsJson] is a JSON object string with optional filter parameters.
   /// Dart layer parses the result into [RecommendationResponse].
   @async
-  String getRecommendation(String code, String? paramsJson);
+  String getRecommendation(String code, String? paramsJson, String? shopId);
 
   /// Returns the current session ID from the native SDK.
-  String getSid();
+  String getSid(String? shopId);
 
   /// Returns the device ID assigned by the native SDK, or null before first sync.
-  String? getDid();
+  String? getDid(String? shopId);
 
   /// Returns a single product's details as a JSON string.
   /// Dart layer parses the result into [Product].
   @async
-  String getProductInfo(String itemId);
+  String getProductInfo(String itemId, String? shopId);
 
   /// Returns a paginated product catalog list as a JSON string.
   /// [paramsJson] is a JSON object with optional filter fields.
   /// Dart layer parses the result into [ProductsListResponse].
   @async
-  String getProductsList(String? paramsJson);
+  String getProductsList(String? paramsJson, String? shopId);
 
   /// Returns blank search results (trending/popular) as a JSON string.
   /// No parameters — the native SDK decides what to return based on shop config.
   /// Dart layer parses the result into [SearchBlankResponse].
   @async
-  String searchBlank();
+  String searchBlank(String? shopId);
 
   /// Returns instant (typeahead) search results as a JSON string.
   /// [paramsJson] may contain optional "locations" (String) and "excluded_brands" ([String]).
   /// Dart layer parses the result into [SearchInstantResponse].
   @async
-  String searchInstant(String query, String? paramsJson);
+  String searchInstant(String query, String? paramsJson, String? shopId);
 
   /// Returns full search results as a JSON string.
   /// [paramsJson] is a JSON object string with optional search parameters.
   /// Dart layer parses the result into [SearchFullResponse].
   @async
-  String searchFull(String query, String? paramsJson);
+  String searchFull(String query, String? paramsJson, String? shopId);
 
   /// Joins the loyalty program (`loyalty/members/join`) and returns the
   /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
@@ -184,6 +190,7 @@ abstract class PersonalizationHostApi {
     String? email,
     String? firstName,
     String? lastName,
+    String? shopId,
   );
 
   /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
@@ -191,28 +198,35 @@ abstract class PersonalizationHostApi {
   /// [identifier] is the member identifier (phone).
   /// Dart layer parses the result into [LoyaltyStatusResponse].
   @async
-  String getLoyaltyStatus(String identifier);
+  String getLoyaltyStatus(String identifier, String? shopId);
 
   /// Returns the current user's profile as a JSON string.
   /// Dart layer parses the result into [ProfileResponse].
   @async
-  String getProfile();
+  String getProfile(String? shopId);
 
   /// Returns view / cart / purchase counters for [item] as a JSON string.
   /// Dart layer parses the result into [ProductCountersResponse].
   @async
-  String getProductCounters(String item);
+  String getProductCounters(String item, String? shopId);
 
   /// Returns a category product listing as a JSON string.
   /// [limit] and [page] paginate the result; both are optional.
   /// Dart layer parses the result into [CategoryResponse].
   @async
-  String getCategory(String category, int? limit, int? page);
+  String getCategory(String category, int? limit, int? page, String? shopId);
 
   /// Returns a merchandised collection's products as a JSON string.
   /// Dart layer parses the result into [CollectionResponse].
   @async
-  String getCollection(String collectionId);
+  String getCollection(String collectionId, String? shopId);
+
+  /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
+  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+  /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
+  /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
+  @async
+  void handlePush(Map<String, String> payload, int event);
 
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
   @async
@@ -234,14 +248,19 @@ abstract class PersonalizationHostApi {
     String? recommendedSourceJson,
     String? stream,
     String? segment,
+    String? shopId,
   );
 }
 
+// Multi-instance: each inbound push callback carries the `shopId` the push
+// routed to (resolved natively from the payload's `shop_id`), so the Dart
+// dispatcher delivers it to that shop's registered callbacks. `shopId == null`
+// means the legacy single/default instance.
 @FlutterApi()
 abstract class PersonalizationFlutterApi {
-  void onPushReceived(Map<String, String?> payload);
+  void onPushReceived(String? shopId, Map<String, String?> payload);
 
-  void onPushDelivered(Map<String, String?> payload);
+  void onPushDelivered(String? shopId, Map<String, String?> payload);
 
-  void onPushClicked(Map<String, String?> payload);
+  void onPushClicked(String? shopId, Map<String, String?> payload);
 }

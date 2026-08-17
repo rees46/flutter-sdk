@@ -5,6 +5,8 @@ import 'category/category_response.dart';
 import 'collection/collection_response.dart';
 import 'init/sdk_init_handler.dart';
 import 'loyalty/loyalty_response.dart';
+import 'multi_instance/push_dispatcher.dart';
+import 'multi_instance/push_event.dart';
 import 'products/product_counters_response.dart';
 import 'profile/profile_params.dart';
 import 'profile/profile_response.dart';
@@ -23,10 +25,19 @@ class PersonalizationSdk {
   final SdkInitHandler _initHandler;
   final PushNotificationCallbacks _pushCallbacks = PushNotificationCallbacks();
 
-  PersonalizationSdk({pigeon.PersonalizationHostApi? api})
+  /// The shop this handle is bound to, or `null` for the legacy default
+  /// instance. Set by [Rees46.initialize] / [Rees46.getInstance]. Reserved for
+  /// per-call routing once the native `Rees46` facade is wired (plan step F3);
+  /// stored now so multi-instance handles carry their identity.
+  final String? shopId;
+
+  PersonalizationSdk({pigeon.PersonalizationHostApi? api, this.shopId})
     : _api = api ?? pigeon.PersonalizationHostApi(),
       _initHandler = SdkInitHandler(api: api) {
-    pigeon.PersonalizationFlutterApi.setUp(_pushCallbacks);
+    // One process-global dispatcher owns the Pigeon push channel and routes each
+    // inbound push (by shopId) to the right handle — register this handle's
+    // callbacks with it instead of claiming the channel per instance.
+    PushDispatcher.instance.register(shopId, _pushCallbacks);
   }
 
   /// Registers optional listeners for push lifecycle events emitted by native code.
@@ -47,7 +58,29 @@ class PersonalizationSdk {
   }
 
   Future<String?> getStoredPushToken() {
-    return _api.getStoredPushToken();
+    return _api.getStoredPushToken(shopId);
+  }
+
+  /// Routes [payload] to the native `Rees46.handlePush` for [event] (the entry a
+  /// host with its own messaging service calls). Prefer [Rees46.handlePush],
+  /// which resolves the target shop and drops unroutable pushes first.
+  Future<void> handlePush(Map<String, String> payload, PushEvent event) {
+    return _api.handlePush(payload, event.index);
+  }
+
+  /// Fires this handle's registered push callbacks for [event]. Used by
+  /// [Rees46.handlePush] to deliver an inbound push to the shop it routed to,
+  /// independent of the process-global Pigeon push channel (real FCM inbound
+  /// routing by `shop_id` is FL-5).
+  void dispatchInboundPush(PushEvent event, Map<String, String?> payload) {
+    switch (event) {
+      case PushEvent.received:
+        _pushCallbacks.onPushReceived(payload);
+      case PushEvent.delivered:
+        _pushCallbacks.onPushDelivered(payload);
+      case PushEvent.clicked:
+        _pushCallbacks.onPushClicked(payload);
+    }
   }
 
   Future<void> initialize(SdkInitConfig config) {
@@ -55,36 +88,36 @@ class PersonalizationSdk {
   }
 
   Future<void> setProfile(ProfileParams params) {
-    return _api.setProfile(params.toWire());
+    return _api.setProfile(params.toWire(), shopId);
   }
 
   Future<String> getSid() {
-    return _api.getSid();
+    return _api.getSid(shopId);
   }
 
   Future<String?> getDid() {
-    return _api.getDid();
+    return _api.getDid(shopId);
   }
 
   Future<Product> getProductInfo(String itemId) async {
     if (itemId.isEmpty) {
       throw ArgumentError.value(itemId, 'itemId', 'must be non-empty');
     }
-    final json = await _api.getProductInfo(itemId);
+    final json = await _api.getProductInfo(itemId, shopId);
     return Product.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
   Future<ProductsListResponse> getProductsList({
     ProductsListParams? params,
   }) async {
-    final json = await _api.getProductsList(params?.toJson());
+    final json = await _api.getProductsList(params?.toJson(), shopId);
     return ProductsListResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
   }
 
   Future<SearchBlankResponse> searchBlank() async {
-    final json = await _api.searchBlank();
+    final json = await _api.searchBlank(shopId);
     return SearchBlankResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
@@ -97,7 +130,7 @@ class PersonalizationSdk {
     if (query.isEmpty) {
       throw ArgumentError.value(query, 'query', 'must be non-empty');
     }
-    final json = await _api.searchInstant(query, params?.toJson());
+    final json = await _api.searchInstant(query, params?.toJson(), shopId);
     return SearchInstantResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
@@ -110,7 +143,7 @@ class PersonalizationSdk {
     if (query.isEmpty) {
       throw ArgumentError.value(query, 'query', 'must be non-empty');
     }
-    final json = await _api.searchFull(query, params?.toJson());
+    final json = await _api.searchFull(query, params?.toJson(), shopId);
     return SearchFullResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
@@ -129,7 +162,13 @@ class PersonalizationSdk {
     if (phone.isEmpty) {
       throw ArgumentError.value(phone, 'phone', 'must be non-empty');
     }
-    final json = await _api.joinLoyalty(phone, email, firstName, lastName);
+    final json = await _api.joinLoyalty(
+      phone,
+      email,
+      firstName,
+      lastName,
+      shopId,
+    );
     return LoyaltyJoinResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
@@ -142,7 +181,7 @@ class PersonalizationSdk {
     if (identifier.isEmpty) {
       throw ArgumentError.value(identifier, 'identifier', 'must be non-empty');
     }
-    final json = await _api.getLoyaltyStatus(identifier);
+    final json = await _api.getLoyaltyStatus(identifier, shopId);
     return LoyaltyStatusResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
@@ -150,7 +189,7 @@ class PersonalizationSdk {
 
   /// Returns the current user's profile (native `ProfileManager.getProfile`).
   Future<ProfileResponse> getProfile() async {
-    final json = await _api.getProfile();
+    final json = await _api.getProfile(shopId);
     return ProfileResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
@@ -160,7 +199,7 @@ class PersonalizationSdk {
     if (item.isEmpty) {
       throw ArgumentError.value(item, 'item', 'must be non-empty');
     }
-    final json = await _api.getProductCounters(item);
+    final json = await _api.getProductCounters(item, shopId);
     return ProductCountersResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
@@ -177,7 +216,7 @@ class PersonalizationSdk {
     if (category.isEmpty) {
       throw ArgumentError.value(category, 'category', 'must be non-empty');
     }
-    final json = await _api.getCategory(category, limit, page);
+    final json = await _api.getCategory(category, limit, page, shopId);
     return CategoryResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
@@ -191,7 +230,7 @@ class PersonalizationSdk {
         'must be non-empty',
       );
     }
-    final json = await _api.getCollection(collectionId);
+    final json = await _api.getCollection(collectionId, shopId);
     return CollectionResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
@@ -204,7 +243,7 @@ class PersonalizationSdk {
     if (code.isEmpty) {
       throw ArgumentError.value(code, 'code', 'must be non-empty');
     }
-    final json = await _api.getRecommendation(code, params?.toJson());
+    final json = await _api.getRecommendation(code, params?.toJson(), shopId);
     return RecommendationResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );
@@ -232,6 +271,7 @@ class PersonalizationSdk {
       label,
       value,
       customFieldsJson,
+      shopId,
     );
   }
 
@@ -290,6 +330,7 @@ class PersonalizationSdk {
       recommendedSource == null ? null : jsonEncode(recommendedSource),
       stream,
       segment,
+      shopId,
     );
   }
 }

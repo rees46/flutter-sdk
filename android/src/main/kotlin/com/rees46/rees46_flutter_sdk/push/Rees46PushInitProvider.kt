@@ -5,22 +5,23 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 import android.util.Log
-import com.personalization.SDK
+import com.personalization.Rees46
 
 /**
- * Installs the push display listener at process start — including the cold process FCM spins up
- * just to deliver a push when the app has been swiped away and no Flutter engine is running.
+ * Bootstraps push handling at process start — including the cold process FCM spins up just to
+ * deliver a push when the app has been swiped away and no Flutter engine is running.
  *
- * A [ContentProvider.onCreate] runs before `Application.onCreate` and before the SDK's
- * messaging services, the same auto-initialization trick `FirebaseInitProvider` uses. We only
- * attach an [com.personalization.OnMessageListener] to the SDK singleton (no full
- * [SDK.initialize] — display needs none): when the message arrives, the SDK routes it to this
- * listener and the heads-up BigPicture is posted. Tracking the "received" event needs an
- * initialized SDK and is skipped in this cold path; the click is still tracked once the user taps
- * and the app starts and initializes.
+ * A [ContentProvider.onCreate] runs before `Application.onCreate` and before the SDK's messaging
+ * services, the same auto-initialization trick `FirebaseInitProvider` uses. On a cold start Dart
+ * never runs, so nothing has registered the shops — and `Rees46.handlePush` (called by the SDK's
+ * `MessagingService`) would resolve no shop and drop the push. So here we:
+ *   1. re-register every shop initialized in a previous run (persisted in [Rees46ShopStore]),
+ *      lazily — [Rees46.handlePush] brings a pending shop up just enough to display and track;
+ *   2. attach the shop-aware [com.personalization.OnShopMessageListener] via the facade, so a
+ *      routed push posts the heads-up BigPicture.
  *
  * On a normal launch this listener is replaced by the plugin's full listener (which also forwards
- * the push to Dart) when Dart calls `initialize()` on the same singleton.
+ * the push to Dart) when Dart calls `initialize()`.
  */
 class Rees46PushInitProvider : ContentProvider() {
 
@@ -28,12 +29,25 @@ class Rees46PushInitProvider : ContentProvider() {
         val context = context?.applicationContext ?: return false
         try {
             Rees46PushNotifier.ensureChannel(context)
-            SDK.instance.setOnMessageListener { data ->
-                Log.d(Rees46PushNotifier.TAG, "onMessage (provider listener) id=${data.id}")
+
+            // Re-register shops from a previous run so the cold-start registry is non-empty and
+            // Rees46.handlePush can resolve the push instead of dropping it.
+            val shops = Rees46ShopStore.read(context)
+            if (shops.isNotEmpty()) {
+                Rees46.registerShops(context = context, configs = shops, eagerInit = false)
+            }
+
+            // Shop-aware display listener via the facade, matching the running-app path: the SDK
+            // routes each push to its shop and fires this to post the notification.
+            Rees46.setOnMessageListener { shopId, data ->
+                Log.d(Rees46PushNotifier.TAG, "onMessage (provider listener) shop=$shopId id=${data.id}")
                 // Off the main thread: show() downloads the image synchronously.
                 Thread { Rees46PushNotifier.show(context, data) }.start()
             }
-            Log.d(Rees46PushNotifier.TAG, "provider installed cold-start push listener")
+            Log.d(
+                Rees46PushNotifier.TAG,
+                "provider installed cold-start push listener (${shops.size} shop(s) re-registered)",
+            )
         } catch (t: Throwable) {
             // Never let push bootstrap crash the host process at startup.
             Log.e(Rees46PushNotifier.TAG, "provider failed to install push listener", t)

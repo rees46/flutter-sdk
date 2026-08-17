@@ -1,4 +1,8 @@
 export 'src/personalization_sdk.dart';
+export 'src/multi_instance/rees46.dart';
+export 'src/multi_instance/rees46_config.dart';
+export 'src/multi_instance/push_event.dart';
+export 'src/multi_instance/sdk_exceptions.dart';
 export 'src/loyalty/loyalty_response.dart';
 export 'src/category/category_response.dart';
 export 'src/collection/collection_response.dart';
