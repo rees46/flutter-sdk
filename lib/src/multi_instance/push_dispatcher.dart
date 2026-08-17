@@ -41,7 +41,9 @@ class PushDispatcher implements pigeon.PersonalizationFlutterApi {
       return _byShop[shopId]; // unknown shop → drop
     }
     final targets = <PushNotificationCallbacks>[..._byShop.values, ?_default];
-    return targets.length == 1 ? targets.first : null; // several → ambiguous drop
+    return targets.length == 1
+        ? targets.first
+        : null; // several → ambiguous drop
   }
 
   @override

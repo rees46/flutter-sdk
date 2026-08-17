@@ -16,7 +16,10 @@ void main() {
 
   group('explicit shopId', () {
     test('live shop → Existing', () {
-      expect(resolve(requested: 'a', live: {'a'}), const ExistingResolution('a'));
+      expect(
+        resolve(requested: 'a', live: {'a'}),
+        const ExistingResolution('a'),
+      );
     });
 
     test('pending shop → Pending', () {
@@ -63,10 +66,7 @@ void main() {
     });
 
     test('one live + one pending → Ambiguous', () {
-      expect(
-        resolve(live: {'a'}, pending: {'b'}),
-        const AmbiguousResolution(),
-      );
+      expect(resolve(live: {'a'}, pending: {'b'}), const AmbiguousResolution());
     });
 
     test('two pending → Ambiguous', () {

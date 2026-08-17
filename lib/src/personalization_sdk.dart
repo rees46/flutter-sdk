@@ -162,7 +162,13 @@ class PersonalizationSdk {
     if (phone.isEmpty) {
       throw ArgumentError.value(phone, 'phone', 'must be non-empty');
     }
-    final json = await _api.joinLoyalty(phone, email, firstName, lastName, shopId);
+    final json = await _api.joinLoyalty(
+      phone,
+      email,
+      firstName,
+      lastName,
+      shopId,
+    );
     return LoyaltyJoinResponse.fromJson(
       jsonDecode(json) as Map<String, dynamic>,
     );

@@ -43,7 +43,9 @@ void main() {
 
     await pumpUntil(
       $,
-      () => textByKey('mi-contract-result')?.contains('AmbiguousShopException') ?? false,
+      () =>
+          textByKey('mi-contract-result')?.contains('AmbiguousShopException') ??
+          false,
     );
     expect(textByKey('mi-contract-result'), contains('AmbiguousShopException'));
   });
@@ -56,7 +58,9 @@ void main() {
 
     await pumpUntil(
       $,
-      () => textByKey('mi-contract-result')?.contains('UnknownShopIdException') ?? false,
+      () =>
+          textByKey('mi-contract-result')?.contains('UnknownShopIdException') ??
+          false,
     );
     expect(textByKey('mi-contract-result'), contains('UnknownShopIdException'));
   });

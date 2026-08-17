@@ -51,9 +51,9 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
     // Shop B — registered lazily, then materialized right here by resolving it.
     if (!Rees46.isInitialized(MultiInstancePane.shopIdB) &&
         !Rees46.pendingShopIds.contains(MultiInstancePane.shopIdB)) {
-      Rees46.registerShops(
-        const [Rees46Config(shopId: MultiInstancePane.shopIdB)],
-      );
+      Rees46.registerShops(const [
+        Rees46Config(shopId: MultiInstancePane.shopIdB),
+      ]);
     }
     _shopB = Rees46.getInstance(MultiInstancePane.shopIdB); // B is born here
 
@@ -244,10 +244,7 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
             ..._log.map(
               (e) => Text(
                 e,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
             ),
         ],
@@ -263,8 +260,7 @@ class _Session {
   final String? did;
   final String? sid;
 
-  bool get ready =>
-      (did?.isNotEmpty ?? false) || (sid?.isNotEmpty ?? false);
+  bool get ready => (did?.isNotEmpty ?? false) || (sid?.isNotEmpty ?? false);
 }
 
 class _SessionCard extends StatelessWidget {

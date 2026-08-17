@@ -116,8 +116,7 @@ class Rees46 {
   ) => _instance._handlePush(payload, event);
 
   /// Shops that are live (initialized), sorted.
-  static List<String> get liveShopIds =>
-      _instance._live.keys.toList()..sort();
+  static List<String> get liveShopIds => _instance._live.keys.toList()..sort();
 
   /// Shops registered lazily and not yet initialized, sorted.
   static List<String> get pendingShopIds =>
@@ -155,7 +154,9 @@ class Rees46 {
         _live[shopId] ?? (throw UnknownShopIdException(shopId)),
       PendingResolution(:final shopId) => _materialize(shopId),
       NotRegisteredResolution() => throw UnknownShopIdException(shopId),
-      AmbiguousResolution() => throw AmbiguousShopException(_registeredShopIds()),
+      AmbiguousResolution() => throw AmbiguousShopException(
+        _registeredShopIds(),
+      ),
     };
   }
 
@@ -164,7 +165,10 @@ class Rees46 {
 
   static const String _shopIdKey = 'shop_id';
 
-  Future<String?> _handlePush(Map<String, String> payload, PushEvent event) async {
+  Future<String?> _handlePush(
+    Map<String, String> payload,
+    PushEvent event,
+  ) async {
     final resolution = InstanceResolver.resolve(
       requestedShopId: payload[_shopIdKey],
       liveShopIds: _live.keys.toSet(),

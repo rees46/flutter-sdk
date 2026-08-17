@@ -22,7 +22,9 @@ void main() {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     messenger.setMockMessageHandler(sidChannel, (message) async {
       capturedGetSidArgs =
-          pigeon.PersonalizationHostApi.pigeonChannelCodec.decodeMessage(message)
+          pigeon.PersonalizationHostApi.pigeonChannelCodec.decodeMessage(
+                message,
+              )
               as List<Object?>;
       return pigeon.PersonalizationHostApi.pigeonChannelCodec.encodeMessage(
         <Object?>['sid-123'],
@@ -30,7 +32,9 @@ void main() {
     });
     messenger.setMockMessageHandler(trackChannel, (message) async {
       capturedTrackArgs =
-          pigeon.PersonalizationHostApi.pigeonChannelCodec.decodeMessage(message)
+          pigeon.PersonalizationHostApi.pigeonChannelCodec.decodeMessage(
+                message,
+              )
               as List<Object?>;
       return pigeon.PersonalizationHostApi.pigeonChannelCodec.encodeMessage(
         <Object?>[],

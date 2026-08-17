@@ -127,7 +127,10 @@ void main() {
     });
 
     test('no id with nothing registered → UnknownShopIdException', () {
-      expect(() => Rees46.getInstance(), throwsA(isA<UnknownShopIdException>()));
+      expect(
+        () => Rees46.getInstance(),
+        throwsA(isA<UnknownShopIdException>()),
+      );
     });
   });
 
