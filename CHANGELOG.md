@@ -1,3 +1,14 @@
+# [0.2.0](https://github.com/rees46/flutter-sdk/compare/v0.1.1...v0.2.0) (2026-08-17)
+
+
+### Features
+
+* **sdk:** multi-instance support — Rees46 facade, shop-aware push, demo ([77670a3](https://github.com/rees46/flutter-sdk/commit/77670a32c43210fda488cc9be3cc0a1e6c77fed5))
+
+
+
+
+
 ## [0.1.1](https://github.com/rees46/flutter-sdk/compare/v0.1.0...v0.1.1) (2026-08-05)
 
 
