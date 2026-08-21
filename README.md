@@ -1,85 +1,143 @@
-# rees46_flutter_sdk
+# rees46_sdk
 
-Flutter plugin wrapper around REES46 native SDKs (Android/iOS).
+[![pub package](https://img.shields.io/pub/v/rees46_sdk.svg)](https://pub.dev/packages/rees46_sdk)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Getting Started
+Flutter plugin for the REES46 personalization platform — a thin bridge over the
+native [Android](https://github.com/rees46/android-sdk) and
+[iOS](https://github.com/rees46/ios-sdk) SDKs. Storage, sessions, identity and
+push delivery happen natively; Dart only routes calls to the right shop instance.
 
-### Install
+## Add the package
 
-Add dependency in your app:
-
-```yaml
-dependencies:
-  rees46_sdk: ^0.0.1
+```bash
+flutter pub add rees46_sdk
 ```
 
-### Initialize
+Everything is exported from a single import:
 
 ```dart
 import 'package:rees46_sdk/rees46_sdk.dart';
-
-final sdk = PersonalizationSdk();
-
-await sdk.initialize(
-  const SdkInitConfig(
-    shopId: 'YOUR_SHOP_ID',
-    apiDomain: 'api.rees46.ru',
-    // stream defaults to 'ios' on iOS and 'android' on Android if omitted.
-    stream: 'ios',
-    enableLogs: false,
-    autoSendPushToken: true,
-    sendAdvertisingId: false,
-    enableAutoPopupPresentation: true,
-    needReInitialization: false,
-  ),
-);
 ```
 
-### API structure
+The native dependencies come with it — `com.github.rees46:android-sdk` from
+JitPack and the `REES46` pod from CocoaPods trunk.
 
-The public API is exported from
-`package:rees46_sdk/rees46_sdk.dart`:
+### Android
 
-- **`PersonalizationSdk`** — the SDK entrypoint (tracking, search,
-  recommendations, profile).
-- **`SdkInitConfig`** — initialization config passed to `initialize()`.
+The plugin brings its own Gradle settings; the only value your app must agree on
+is **`minSdk 24`**. Current Flutter versions already default to it, so a freshly
+generated project needs no changes — set it only if you hardcoded something lower:
 
-### Run demo app
-
-```bash
-cd example
-fvm flutter run
+```kotlin
+android {
+    defaultConfig {
+        minSdk = 24
+    }
+}
 ```
 
-### Notes
+Your app's Java version does **not** have to match the plugin's — `compileOptions`
+and `jvmTarget` only govern the module they are declared in.
 
-- **Android**: uses Maven dependency `com.rees46:rees46-sdk:2.28.0` and calls `SDK.initialize(...)`. Some iOS-only init flags are accepted by Dart API but ignored on Android.
-- **iOS**: uses CocoaPods dependency `REES46 (3.23.0)` and calls `createPersonalizationSDK(...)`.
-- **Pushes**:
-  - **Android**: when `autoSendPushToken=true`, the native SDK fetches the FCM token via `FirebaseMessaging.getInstance().token` during initialization and sends it.
-  - **iOS**: when `autoSendPushToken=true`, the native SDK requests notification permission and registers for remote notifications. The Flutter plugin also forwards `didRegisterForRemoteNotificationsWithDeviceToken` and `didReceiveRemoteNotification` AppDelegate callbacks to the native SDK.
+If your `android/settings.gradle.kts` centralizes repositories
+(`RepositoriesMode.FAIL_ON_PROJECT_REPOS` / `PREFER_SETTINGS`), add JitPack there —
+otherwise the native SDK cannot be resolved:
 
-### Android push notification icon
-
-On Android the plugin displays incoming pushes itself, so the notification's **small icon** is resolved from the **host app**, never from REES46. You should point it at your own icon:
-
-```xml
-<!-- android/app/src/main/AndroidManifest.xml, inside <application> -->
-<meta-data
-    android:name="com.rees46.push.notification_icon"
-    android:resource="@drawable/ic_stat_notify" />
+```kotlin
+maven(url = "https://jitpack.io")
 ```
 
-The icon must be a **white, alpha-only silhouette** — Android tints the small icon, so a full-colour image renders as a solid white/grey square. Generate one via Android Studio → *New → Image Asset → Notification Icons*.
+### iOS
 
-**Already using Firebase?** If your app already declares `com.google.firebase.messaging.default_notification_icon`, you don't need to set anything — the plugin reuses that icon. Set `com.rees46.push.notification_icon` only if you want a different icon for REES46 pushes specifically.
+Nothing to add: the plugin's podspec pulls the `REES46` pod and declares the
+iOS 13.0 minimum itself, `pod install` runs as part of `flutter run`, and the
+plugin registers its own application delegate — your `AppDelegate` stays untouched.
 
-Resolution order:
+## Initialize
 
-1. The `com.rees46.push.notification_icon` meta-data icon above (recommended if you want a dedicated icon).
-2. The existing Firebase `com.google.firebase.messaging.default_notification_icon`, if declared.
-3. The app's launcher icon, if neither is set (may look like a square, since a launcher icon is not a silhouette).
-4. A neutral non-branded default bundled in the plugin, only if the host has no icon at all.
+Initialize once, as early as possible — typically in `main()`, before `runApp`:
 
-For Flutter plugin development basics, see Flutter docs: [develop plugins](https://flutter.dev/to/develop-plugins).
+```dart
+import 'package:flutter/widgets.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
 
+late final PersonalizationSdk sdk;
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  sdk = Rees46.initialize(
+    const Rees46Config(shopId: 'YOUR_SHOP_ID'),
+  );
+
+  runApp(const MyApp());
+}
+```
+
+`Rees46` is the entry point. `Rees46.initialize` **returns the handle
+synchronously** and starts native initialization in the background; calls issued
+right after are queued natively until the session is ready, so the handle is
+usable straight away. A broken setup surfaces as a `PlatformException` on the
+first call you make with it (`bad_args` for an empty `shopId`, `init_failed` if
+native init threw).
+
+`shopId` is the only required field:
+
+| Field | Default | Notes |
+|---|---|---|
+| `shopId` | — (**required**) | Your REES46 shop key |
+| `apiDomain` | `api.rees46.ru` | API host |
+| `stream` | `android` / `ios` | Traffic stream label; defaults to the current platform |
+| `autoSendPushToken` | `true` | Fetches and sends the push token during init |
+| `needReInitialization` | `false` | Forces a fresh session / device id |
+
+Push delivery needs platform setup of its own — a Firebase config on Android, the
+Push Notifications capability on iOS. Without it initialization still succeeds;
+there is simply no token to send.
+
+Keep one place that owns the handle, so no widget re-initializes:
+
+```dart
+class Rees46Service {
+  static const _shopId = 'YOUR_SHOP_ID';
+
+  static PersonalizationSdk get sdk => Rees46.isInitialized(_shopId)
+      ? Rees46.getInstance(_shopId)
+      : Rees46.initialize(const Rees46Config(shopId: _shopId));
+}
+```
+
+### Check that it worked
+
+```dart
+final sid = await sdk.getSid();   // session id
+final did = await sdk.getDid();   // device id issued by REES46
+```
+
+A non-empty `did` means the native SDK completed its handshake with the API.
+
+### Several shops in one app
+
+One app can run several shops at once — regional storefronts, super-app tenants.
+Each gets its own native instance with isolated storage, session and `did`.
+
+```dart
+// Registered now, initialized on first use.
+Rees46.registerShops(const [
+  Rees46Config(shopId: 'shop-a'),
+  Rees46Config(shopId: 'shop-b'),
+]);                                 // pass eagerInit: true to initialize up front
+
+final shopA = Rees46.getInstance('shop-a');
+```
+
+Address instances explicitly once more than one is registered: `getInstance()`
+without an id resolves only while exactly one shop is registered, and throws
+`AmbiguousShopException` otherwise (`UnknownShopIdException` for an id that was
+never registered).
+
+
+## License
+
+MIT — see [LICENSE](LICENSE).
