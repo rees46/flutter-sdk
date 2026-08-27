@@ -30,6 +30,11 @@ flutter_ios_podfile_setup
 target 'Runner' do
   use_frameworks!
 
+  # LOCAL WIRING (DEV-4409): the native pod is taken from the sibling ios-sdk checkout on branch
+  # DEV-4409-standart-tracking-metod-unification. Remove this line once the release ships — the
+  # pod normally comes from the plugin podspec's dependency.
+  pod 'REES46', :path => '/Users/andreykropotov/Documents/FlutterProjects/ios-sdk'
+
   target 'RunnerUITests' do
     inherit! :complete
   end
