@@ -844,6 +844,173 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
+  // MARK: - Tracking namespace
+  //
+  // Each method hands straight to the native `tracking` namespace of the resolved instance;
+  // the wire models are translated one to one.
+
+  func trackProductView(
+    itemId: String,
+    source: TrackingSourceWire?,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.productView(id: itemId, source: source?.native) { self.report($0, completion) }
+    }
+  }
+
+  func trackCategoryView(
+    categoryId: String,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.categoryView(id: categoryId) { self.report($0, completion) }
+    }
+  }
+
+  func trackSearch(
+    query: String,
+    results: [String]?,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.search(query: query, results: results) { self.report($0, completion) }
+    }
+  }
+
+  func trackAddToCart(
+    item: TrackingItemWire,
+    source: TrackingSourceWire?,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.addToCart(item: item.native, source: source?.native) { self.report($0, completion) }
+    }
+  }
+
+  func trackSyncCart(
+    items: [TrackingItemWire],
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.syncCart(items: items.map { $0.native }) { self.report($0, completion) }
+    }
+  }
+
+  func trackRemoveFromCart(
+    itemId: String,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.removeFromCart(id: itemId) { self.report($0, completion) }
+    }
+  }
+
+  func trackAddToFavorites(
+    itemId: String,
+    source: TrackingSourceWire?,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.addToFavorites(id: itemId, source: source?.native) { self.report($0, completion) }
+    }
+  }
+
+  func trackSyncFavorites(
+    itemIds: [String],
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.syncFavorites(ids: itemIds) { self.report($0, completion) }
+    }
+  }
+
+  func trackRemoveFromFavorites(
+    itemId: String,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.removeFromFavorites(id: itemId) { self.report($0, completion) }
+    }
+  }
+
+  func trackStoryView(
+    storyId: String,
+    slideId: String,
+    code: String?,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.storyView(storyId: storyId, slideId: slideId, code: code) {
+        self.report($0, completion)
+      }
+    }
+  }
+
+  func trackStoryClick(
+    storyId: String,
+    slideId: String,
+    code: String?,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    withTracking(shopId, completion) { tracking in
+      tracking.storyClick(storyId: storyId, slideId: slideId, code: code) {
+        self.report($0, completion)
+      }
+    }
+  }
+
+  func trackSetSource(source: TrackingSourceWire, shopId: String?) throws {
+    guard let sdk = sdk(shopId) else {
+      throw PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)
+    }
+    guard let native = source.native else {
+      throw PigeonError(
+        code: "bad_args", message: "unknown source type: \(source.type)", details: nil)
+    }
+    sdk.tracking.setSource(native)
+  }
+
+  /// Resolves the instance, reports a resolution failure through `completion`, then tracks.
+  private func withTracking(
+    _ shopId: String?,
+    _ completion: @escaping (Result<Void, Error>) -> Void,
+    _ body: (TrackingAPI) -> Void
+  ) {
+    guard let sdk = sdk(shopId) else {
+      completion(
+        .failure(
+          PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    body(sdk.tracking)
+  }
+
+  private func report(
+    _ result: Result<Void, SdkError>,
+    _ completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    switch result {
+    case .success:
+      completion(.success(()))
+    case .failure(let error):
+      completion(
+        .failure(
+          PigeonError(code: "track_failed", message: "\(error)", details: nil)))
+    }
+  }
+
   func trackEvent(
     event: String,
     time: Int64?,
@@ -993,5 +1160,25 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     guard let json, !json.isEmpty, let data = json.data(using: .utf8) else { return nil }
     let obj = try? JSONSerialization.jsonObject(with: data)
     return obj as? [String: Any]
+  }
+}
+
+extension TrackingItemWire {
+  var native: TrackingItem {
+    TrackingItem(
+      id: id,
+      quantity: Int(quantity),
+      price: price,
+      fashionSize: fashionSize
+    )
+  }
+}
+
+extension TrackingSourceWire {
+  /// An unknown source type is dropped rather than guessed — Dart only sends known values.
+  /// `stories` has no case in the iOS `RecommendedByCase`, so a story source is dropped here.
+  var native: TrackingSource? {
+    guard let type = RecommendedByCase(rawValue: type) else { return nil }
+    return TrackingSource(type: type, code: code)
   }
 }

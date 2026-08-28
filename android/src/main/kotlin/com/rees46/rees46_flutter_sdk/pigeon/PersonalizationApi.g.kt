@@ -269,6 +269,88 @@ data class ProfileParamsWire (
 
   override fun hashCode(): Int = toList().hashCode()
 }
+
+/**
+ * Wire format for one product line in a tracking event (maps to native `TrackingItem`).
+ *
+ * [quantity] is the domain name for the line quantity; native sends it as `amount`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class TrackingItemWire (
+  val id: String,
+  val quantity: Long,
+  val price: Double? = null,
+  val fashionSize: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): TrackingItemWire {
+      val id = pigeonVar_list[0] as String
+      val quantity = pigeonVar_list[1] as Long
+      val price = pigeonVar_list[2] as Double?
+      val fashionSize = pigeonVar_list[3] as String?
+      return TrackingItemWire(id, quantity, price, fashionSize)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      quantity,
+      price,
+      fashionSize,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is TrackingItemWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * Wire format for event attribution (maps to native `TrackingSource`).
+ *
+ * [type] is the wire value of the source type — `dynamic`, `chain`, `bulk`,
+ * `transactional`, `instant_search`, `full_search`, `stories`. Dart only ever sends what its
+ * `TrackingSourceType` enum produces; the bridges reject anything else.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class TrackingSourceWire (
+  val type: String,
+  val code: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): TrackingSourceWire {
+      val type = pigeonVar_list[0] as String
+      val code = pigeonVar_list[1] as String
+      return TrackingSourceWire(type, code)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      type,
+      code,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is TrackingSourceWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
 private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -287,6 +369,16 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
           ProfileParamsWire.fromList(it)
         }
       }
+      132.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          TrackingItemWire.fromList(it)
+        }
+      }
+      133.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          TrackingSourceWire.fromList(it)
+        }
+      }
       else -> super.readValueOfType(type, buffer)
     }
   }
@@ -302,6 +394,14 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
       }
       is ProfileParamsWire -> {
         stream.write(131)
+        writeValue(stream, value.toList())
+      }
+      is TrackingItemWire -> {
+        stream.write(132)
+        writeValue(stream, value.toList())
+      }
+      is TrackingSourceWire -> {
+        stream.write(133)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -400,6 +500,19 @@ interface PersonalizationHostApi {
    * maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
    */
   fun handlePush(payload: Map<String, String>, event: Long, callback: (Result<Unit>) -> Unit)
+  fun trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackCategoryView(categoryId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackSearch(query: String, results: List<String>?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackAddToCart(item: TrackingItemWire, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackSyncCart(items: List<TrackingItemWire>, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackRemoveFromCart(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackAddToFavorites(itemId: String, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackSyncFavorites(itemIds: List<String>, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackRemoveFromFavorites(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackStoryView(storyId: String, slideId: String, code: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackStoryClick(storyId: String, slideId: String, code: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** Stores the attribution source natively for the next event. */
+  fun trackSetSource(source: TrackingSourceWire, shopId: String?)
   /** [customJson] and [recommendedSourceJson] are JSON object strings or null. */
   fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
 
@@ -815,6 +928,253 @@ interface PersonalizationHostApi {
                 reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
               }
             }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackProductView$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val sourceArg = args[1] as TrackingSourceWire?
+            val shopIdArg = args[2] as String?
+            api.trackProductView(itemIdArg, sourceArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackCategoryView$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val categoryIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.trackCategoryView(categoryIdArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSearch$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val queryArg = args[0] as String
+            val resultsArg = args[1] as List<String>?
+            val shopIdArg = args[2] as String?
+            api.trackSearch(queryArg, resultsArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackAddToCart$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemArg = args[0] as TrackingItemWire
+            val sourceArg = args[1] as TrackingSourceWire?
+            val shopIdArg = args[2] as String?
+            api.trackAddToCart(itemArg, sourceArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSyncCart$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemsArg = args[0] as List<TrackingItemWire>
+            val shopIdArg = args[1] as String?
+            api.trackSyncCart(itemsArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackRemoveFromCart$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.trackRemoveFromCart(itemIdArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackAddToFavorites$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val sourceArg = args[1] as TrackingSourceWire?
+            val shopIdArg = args[2] as String?
+            api.trackAddToFavorites(itemIdArg, sourceArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSyncFavorites$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdsArg = args[0] as List<String>
+            val shopIdArg = args[1] as String?
+            api.trackSyncFavorites(itemIdsArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackRemoveFromFavorites$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.trackRemoveFromFavorites(itemIdArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackStoryView$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val storyIdArg = args[0] as String
+            val slideIdArg = args[1] as String
+            val codeArg = args[2] as String?
+            val shopIdArg = args[3] as String?
+            api.trackStoryView(storyIdArg, slideIdArg, codeArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackStoryClick$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val storyIdArg = args[0] as String
+            val slideIdArg = args[1] as String
+            val codeArg = args[2] as String?
+            val shopIdArg = args[3] as String?
+            api.trackStoryClick(storyIdArg, slideIdArg, codeArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSetSource$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val sourceArg = args[0] as TrackingSourceWire
+            val shopIdArg = args[1] as String?
+            val wrapped: List<Any?> = try {
+              api.trackSetSource(sourceArg, shopIdArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)

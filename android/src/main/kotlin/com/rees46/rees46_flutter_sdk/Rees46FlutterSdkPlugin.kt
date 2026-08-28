@@ -10,6 +10,8 @@ import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationFlutterApi
 import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationHostApi
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileParamsWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
+import com.rees46.rees46_flutter_sdk.pigeon.TrackingItemWire
+import com.rees46.rees46_flutter_sdk.pigeon.TrackingSourceWire
 import com.google.gson.Gson
 import com.personalization.Params
 import com.personalization.PushEventType
@@ -18,6 +20,10 @@ import com.personalization.Rees46
 import com.personalization.Rees46Config
 import com.personalization.SDK
 import com.personalization.api.OnApiCallbackListener
+import com.personalization.api.managers.TrackingApi
+import com.personalization.api.models.tracking.TrackingItem
+import com.personalization.api.models.tracking.TrackingSource
+import com.personalization.api.models.tracking.TrackingSourceType
 import com.personalization.api.params.ProfileParams
 import com.personalization.api.params.SearchParams as NativeSearchParams
 import com.personalization.sdk.data.models.dto.notification.NotificationData
@@ -508,6 +514,146 @@ class Rees46FlutterSdkPlugin :
             callback(Result.failure(FlutterError("set_profile_failed", t.message, null)))
         }
     }
+
+    // region tracking namespace
+    //
+    // Each method hands straight to the native `tracking` namespace of the resolved instance;
+    // the wire models are translated one to one.
+
+    override fun trackProductView(
+        itemId: String,
+        source: TrackingSourceWire?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) {
+        it.productView(itemId, source.toNative(), trackingListener(callback))
+    }
+
+    override fun trackCategoryView(
+        categoryId: String,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) { it.categoryView(categoryId, trackingListener(callback)) }
+
+    override fun trackSearch(
+        query: String,
+        results: List<String>?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) { it.search(query, results, trackingListener(callback)) }
+
+    override fun trackAddToCart(
+        item: TrackingItemWire,
+        source: TrackingSourceWire?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) {
+        it.addToCart(item.toNative(), source.toNative(), trackingListener(callback))
+    }
+
+    override fun trackSyncCart(
+        items: List<TrackingItemWire>,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) {
+        it.syncCart(items.map { item -> item.toNative() }, trackingListener(callback))
+    }
+
+    override fun trackRemoveFromCart(
+        itemId: String,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) { it.removeFromCart(itemId, trackingListener(callback)) }
+
+    override fun trackAddToFavorites(
+        itemId: String,
+        source: TrackingSourceWire?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) {
+        it.addToFavorites(itemId, source.toNative(), trackingListener(callback))
+    }
+
+    override fun trackSyncFavorites(
+        itemIds: List<String>,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) { it.syncFavorites(itemIds, trackingListener(callback)) }
+
+    override fun trackRemoveFromFavorites(
+        itemId: String,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) {
+        it.removeFromFavorites(itemId, trackingListener(callback))
+    }
+
+    override fun trackStoryView(
+        storyId: String,
+        slideId: String,
+        code: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) {
+        it.storyView(storyId, slideId, code, trackingListener(callback))
+    }
+
+    override fun trackStoryClick(
+        storyId: String,
+        slideId: String,
+        code: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = trackingCall(callback, shopId) {
+        it.storyClick(storyId, slideId, code, trackingListener(callback))
+    }
+
+    override fun trackSetSource(source: TrackingSourceWire, shopId: String?) {
+        val native = source.toNative()
+            ?: throw FlutterError("bad_args", "unknown source type: ${source.type}", null)
+        sdk(shopId).tracking.setSource(native)
+    }
+
+    /** Resolves the instance, reports a resolution failure through [callback], then tracks. */
+    private fun trackingCall(
+        callback: (Result<Unit>) -> Unit,
+        shopId: String?,
+        body: (TrackingApi) -> Unit,
+    ) {
+        try {
+            body(sdk(shopId).tracking)
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("track_failed", t.message, null)))
+        }
+    }
+
+    private fun trackingListener(callback: (Result<Unit>) -> Unit) =
+        object : OnApiCallbackListener() {
+            override fun onSuccess(response: JSONObject?) {
+                callback(Result.success(Unit))
+            }
+
+            override fun onError(code: Int, msg: String?) {
+                val message = listOfNotNull(code.toString(), msg).joinToString(": ")
+                callback(Result.failure(FlutterError("track_failed", message, null)))
+            }
+        }
+
+    private fun TrackingItemWire.toNative(): TrackingItem = TrackingItem(
+        id = id,
+        quantity = quantity.toInt(),
+        price = price,
+        fashionSize = fashionSize,
+    )
+
+    /** An unknown source type is dropped rather than guessed — Dart only sends known values. */
+    private fun TrackingSourceWire?.toNative(): TrackingSource? {
+        val wire = this ?: return null
+        val type = TrackingSourceType.entries.firstOrNull { it.value == wire.type } ?: return null
+        return TrackingSource(type = type, code = wire.code)
+    }
+
+    // endregion
 
     override fun trackEvent(
         event: String,

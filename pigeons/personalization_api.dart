@@ -109,6 +109,35 @@ class ProfileParamsWire {
   });
 }
 
+/// Wire format for one product line in a tracking event (maps to native `TrackingItem`).
+///
+/// [quantity] is the domain name for the line quantity; native sends it as `amount`.
+class TrackingItemWire {
+  final String id;
+  final int quantity;
+  final double? price;
+  final String? fashionSize;
+
+  const TrackingItemWire({
+    required this.id,
+    required this.quantity,
+    this.price,
+    this.fashionSize,
+  });
+}
+
+/// Wire format for event attribution (maps to native `TrackingSource`).
+///
+/// [type] is the wire value of the source type — `dynamic`, `chain`, `bulk`,
+/// `transactional`, `instant_search`, `full_search`, `stories`. Dart only ever sends what its
+/// `TrackingSourceType` enum produces; the bridges reject anything else.
+class TrackingSourceWire {
+  final String type;
+  final String code;
+
+  const TrackingSourceWire({required this.type, required this.code});
+}
+
 // Multi-instance: every per-instance method carries a trailing `String? shopId`
 // so the native bridge can resolve the target instance via the native `Rees46`
 // facade. `shopId == null` means the legacy single/default instance (the
@@ -227,6 +256,46 @@ abstract class PersonalizationHostApi {
   /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
   @async
   void handlePush(Map<String, String> payload, int event);
+
+  // Standard tracking events (`tracking` namespace). Each maps onto the native namespace
+  // method of the same name; `trackEvent` and `trackPurchase` above are its `custom` and
+  // `purchase` members.
+
+  @async
+  void trackProductView(String itemId, TrackingSourceWire? source, String? shopId);
+
+  @async
+  void trackCategoryView(String categoryId, String? shopId);
+
+  @async
+  void trackSearch(String query, List<String>? results, String? shopId);
+
+  @async
+  void trackAddToCart(TrackingItemWire item, TrackingSourceWire? source, String? shopId);
+
+  @async
+  void trackSyncCart(List<TrackingItemWire> items, String? shopId);
+
+  @async
+  void trackRemoveFromCart(String itemId, String? shopId);
+
+  @async
+  void trackAddToFavorites(String itemId, TrackingSourceWire? source, String? shopId);
+
+  @async
+  void trackSyncFavorites(List<String> itemIds, String? shopId);
+
+  @async
+  void trackRemoveFromFavorites(String itemId, String? shopId);
+
+  @async
+  void trackStoryView(String storyId, String slideId, String? code, String? shopId);
+
+  @async
+  void trackStoryClick(String storyId, String slideId, String? code, String? shopId);
+
+  /// Stores the attribution source natively for the next event.
+  void trackSetSource(TrackingSourceWire source, String? shopId);
 
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
   @async
