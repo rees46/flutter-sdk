@@ -31,6 +31,112 @@ class InitPage extends StatefulWidget {
 
 enum InitState { idle, initializing, initialized, failed }
 
+/// One button of the standard-events section.
+class _TrackingDemo {
+  const _TrackingDemo({
+    required this.key,
+    required this.label,
+    required this.method,
+    required this.call,
+  });
+
+  final String key;
+  final String label;
+  final String method;
+  final Future<void> Function(TrackingApi tracking) call;
+}
+
+const _demoItemId = 'flutter-demo-sku-001';
+const _demoSecondItemId = 'flutter-demo-sku-002';
+const _demoCategoryId = 'flutter-demo-category';
+const _demoSearchQuery = 'demo boots';
+const _demoSourceCode = 'flutter-demo-block';
+
+final List<_TrackingDemo> _trackingDemos = [
+  _TrackingDemo(
+    key: 'tracking_product_view',
+    label: 'Tracking: product view',
+    method: 'productView',
+    call: (tracking) => tracking.productView(
+      _demoItemId,
+      source: const TrackingSource(
+        type: TrackingSourceType.dynamicBlock,
+        code: _demoSourceCode,
+      ),
+    ),
+  ),
+  _TrackingDemo(
+    key: 'tracking_category_view',
+    label: 'Tracking: category view',
+    method: 'categoryView',
+    call: (tracking) => tracking.categoryView(_demoCategoryId),
+  ),
+  _TrackingDemo(
+    key: 'tracking_search',
+    label: 'Tracking: search',
+    method: 'search',
+    call: (tracking) => tracking.search(
+      _demoSearchQuery,
+      results: const [_demoItemId, _demoSecondItemId],
+    ),
+  ),
+  _TrackingDemo(
+    key: 'tracking_add_to_cart',
+    label: 'Tracking: add to cart',
+    method: 'addToCart',
+    call: (tracking) => tracking.addToCart(
+      const TrackingItem(id: _demoItemId, quantity: 2, price: 49.9),
+    ),
+  ),
+  _TrackingDemo(
+    key: 'tracking_sync_cart',
+    label: 'Tracking: sync cart',
+    method: 'syncCart',
+    call: (tracking) => tracking.syncCart(const [
+      TrackingItem(id: _demoItemId, quantity: 2, price: 49.9),
+      TrackingItem(id: _demoSecondItemId),
+    ]),
+  ),
+  _TrackingDemo(
+    key: 'tracking_remove_from_cart',
+    label: 'Tracking: remove from cart',
+    method: 'removeFromCart',
+    call: (tracking) => tracking.removeFromCart(_demoItemId),
+  ),
+  _TrackingDemo(
+    key: 'tracking_add_to_favorites',
+    label: 'Tracking: add to favorites',
+    method: 'addToFavorites',
+    call: (tracking) => tracking.addToFavorites(_demoItemId),
+  ),
+  _TrackingDemo(
+    key: 'tracking_sync_favorites',
+    label: 'Tracking: sync favorites',
+    method: 'syncFavorites',
+    call: (tracking) => tracking.syncFavorites(const [
+      _demoItemId,
+      _demoSecondItemId,
+    ]),
+  ),
+  _TrackingDemo(
+    key: 'tracking_remove_from_favorites',
+    label: 'Tracking: remove from favorites',
+    method: 'removeFromFavorites',
+    call: (tracking) => tracking.removeFromFavorites(_demoItemId),
+  ),
+  _TrackingDemo(
+    key: 'tracking_set_source',
+    label: 'Tracking: set source',
+    method: 'setSource',
+    call: (tracking) => tracking.setSource(
+      const TrackingSource(
+        type: TrackingSourceType.dynamicBlock,
+        code: _demoSourceCode,
+      ),
+    ),
+  ),
+];
+
 class _InitPageState extends State<InitPage> {
   // Initialized through the multi-instance [Rees46] facade — the same entry
   // point the iOS/Android demos use — so shop A is registered in the facade and
@@ -545,10 +651,28 @@ class _InitPageState extends State<InitPage> {
     }
   }
 
+  String? _trackingResult;
+
+  /// Runs one namespace call and shows the outcome as `<method> OK` / `<method> failed`,
+  /// which is what the integration test reads.
+  Future<void> _runTracking(
+    String method,
+    Future<void> Function(TrackingApi tracking) call,
+  ) async {
+    try {
+      await call(_sdk.tracking);
+      if (!mounted) return;
+      setState(() => _trackingResult = '$method OK');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _trackingResult = '$method failed: $e');
+    }
+  }
+
   Future<void> _demoTrackEvent() async {
     if (_initState != InitState.initialized) return;
     try {
-      await _sdk.trackEvent(
+      await _sdk.tracking.custom(
         'flutter_example',
         // 'source' is a reserved event key (collides with the SDK's own body
         // fields) — use a non-reserved custom key.
@@ -569,7 +693,7 @@ class _InitPageState extends State<InitPage> {
   Future<void> _demoTrackPurchase() async {
     if (_initState != InitState.initialized) return;
     try {
-      await _sdk.trackPurchase(
+      await _sdk.tracking.purchase(
         orderId: 'example-order-1',
         orderPrice: 99.0,
         items: const [PurchaseLineItem(id: 'sku-1', amount: 1, price: 99.0)],
@@ -807,6 +931,23 @@ class _InitPageState extends State<InitPage> {
                   : null,
               child: const Text('Send demo trackPurchase'),
             ),
+            const SizedBox(height: 24),
+            Text(
+              'Standard events (sdk.tracking)',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            for (final demo in _trackingDemos) ...[
+              OutlinedButton(
+                key: Key(demo.key),
+                onPressed: _initState == InitState.initialized
+                    ? () => _runTracking(demo.method, demo.call)
+                    : null,
+                child: Text(demo.label),
+              ),
+              const SizedBox(height: 8),
+            ],
+            Text(key: const Key('lbl_tracking_result'), _trackingResult ?? '—'),
           ],
         ),
       ),
