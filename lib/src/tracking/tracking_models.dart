@@ -26,7 +26,8 @@ enum TrackingSourceType {
   transactional('transactional'),
   instantSearch('instant_search'),
   fullSearch('full_search'),
-  stories('stories');
+  stories('stories'),
+  webPushDigest('web_push_digest');
 
   const TrackingSourceType(this.wireValue);
 

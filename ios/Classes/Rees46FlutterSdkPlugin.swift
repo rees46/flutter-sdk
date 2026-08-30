@@ -856,7 +856,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
     withTracking(shopId, completion) { tracking in
-      tracking.productView(id: itemId, source: source?.native) { self.report($0, completion) }
+      tracking.productView(itemId: itemId, source: source?.native) { self.report($0, completion) }
     }
   }
 
@@ -866,7 +866,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
     withTracking(shopId, completion) { tracking in
-      tracking.categoryView(id: categoryId) { self.report($0, completion) }
+      tracking.categoryView(categoryId: categoryId) { self.report($0, completion) }
     }
   }
 
@@ -908,7 +908,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
     withTracking(shopId, completion) { tracking in
-      tracking.removeFromCart(id: itemId) { self.report($0, completion) }
+      tracking.removeFromCart(itemId: itemId) { self.report($0, completion) }
     }
   }
 
@@ -919,7 +919,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
     withTracking(shopId, completion) { tracking in
-      tracking.addToFavorites(id: itemId, source: source?.native) { self.report($0, completion) }
+      tracking.addToFavorites(itemId: itemId, source: source?.native) { self.report($0, completion) }
     }
   }
 
@@ -929,7 +929,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
     withTracking(shopId, completion) { tracking in
-      tracking.syncFavorites(ids: itemIds) { self.report($0, completion) }
+      tracking.syncFavorites(itemIds: itemIds) { self.report($0, completion) }
     }
   }
 
@@ -939,7 +939,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
     withTracking(shopId, completion) { tracking in
-      tracking.removeFromFavorites(id: itemId) { self.report($0, completion) }
+      tracking.removeFromFavorites(itemId: itemId) { self.report($0, completion) }
     }
   }
 
@@ -1175,10 +1175,10 @@ extension TrackingItemWire {
 }
 
 extension TrackingSourceWire {
-  /// An unknown source type is dropped rather than guessed — Dart only sends known values.
-  /// `stories` has no case in the iOS `RecommendedByCase`, so a story source is dropped here.
+  /// An unknown source type is dropped rather than guessed — Dart only sends known values, and the
+  /// Dart, Android and iOS `TrackingSourceType` enums carry the same set.
   var native: TrackingSource? {
-    guard let type = RecommendedByCase(rawValue: type) else { return nil }
+    guard let type = TrackingSourceType(rawValue: type) else { return nil }
     return TrackingSource(type: type, code: code)
   }
 }

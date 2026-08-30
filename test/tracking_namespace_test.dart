@@ -180,6 +180,7 @@ void main() {
           'instant_search',
           'full_search',
           'stories',
+          'web_push_digest',
         ],
       );
     });
