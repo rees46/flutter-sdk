@@ -4,10 +4,6 @@ version = "1.0-SNAPSHOT"
 buildscript {
     val kotlinVersion = "2.2.20"
     repositories {
-        // LOCAL WIRING (DEV-4409): the native SDK is built from the sibling
-        // DEV-4409-standart-tracking-metod-unification branch and published to mavenLocal.
-        // Revert to JitPack coordinates once the native release ships.
-        mavenLocal()
         google()
         mavenCentral()
         maven(url = "https://jitpack.io")
@@ -21,10 +17,6 @@ buildscript {
 
 allprojects {
     repositories {
-        // LOCAL WIRING (DEV-4409): the native SDK is built from the sibling
-        // DEV-4409-standart-tracking-metod-unification branch and published to mavenLocal.
-        // Revert to JitPack coordinates once the native release ships.
-        mavenLocal()
         google()
         mavenCentral()
         maven(url = "https://jitpack.io")
@@ -95,16 +87,8 @@ android {
 
 dependencies {
     // REES46 Android SDK.
-    // LOCAL WIRING (DEV-4409): built from the sibling android-sdk checkout on branch
-    // DEV-4409-standart-tracking-metod-unification and published with
-    // `./gradlew :personalization-sdk:publishRees46ReleaseLibraryPublicationToMavenLocal`.
-    // Revert to the JitPack coordinate below once the native release ships:
-    //     val rees46AndroidSdkVersion = "v2.36.0"
-    //     add("rees46Implementation", "com.github.rees46:android-sdk:$rees46AndroidSdkVersion")
-    add(
-        "rees46Implementation",
-        "com.personalization:personalization-sdk:2.36.0",
-    )
+    val rees46AndroidSdkVersion = "v2.37.0"
+    add("rees46Implementation", "com.github.rees46:android-sdk:$rees46AndroidSdkVersion")
 
     // Used directly by the push presenter (NotificationCompat / ContextCompat). The native SDK
     // depends on the same version but as `implementation`, so it is not exposed transitively.

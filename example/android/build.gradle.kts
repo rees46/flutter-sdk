@@ -1,7 +1,5 @@
 allprojects {
     repositories {
-        // LOCAL WIRING (DEV-4409) — see android/build.gradle.kts. Remove with it.
-        mavenLocal()
         google()
         mavenCentral()
         maven(url = "https://jitpack.io")

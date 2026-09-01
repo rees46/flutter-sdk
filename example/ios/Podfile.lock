@@ -7,21 +7,21 @@ PODS:
     - CocoaAsyncSocket (~> 7.6)
     - Flutter
     - FlutterMacOS
-  - REES46 (3.30.0)
+  - REES46 (3.31.0)
   - rees46_sdk (0.0.1):
     - Flutter
-    - REES46 (= 3.30.0)
+    - REES46 (= 3.31.0)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - patrol (from `.symlinks/plugins/patrol/darwin`)
-  - REES46 (from `/Users/andreykropotov/Documents/FlutterProjects/ios-sdk`)
   - rees46_sdk (from `.symlinks/plugins/rees46_sdk/ios`)
 
 SPEC REPOS:
   trunk:
     - CocoaAsyncSocket
+    - REES46
 
 EXTERNAL SOURCES:
   Flutter:
@@ -30,8 +30,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
   patrol:
     :path: ".symlinks/plugins/patrol/darwin"
-  REES46:
-    :path: "/Users/andreykropotov/Documents/FlutterProjects/ios-sdk"
   rees46_sdk:
     :path: ".symlinks/plugins/rees46_sdk/ios"
 
@@ -40,9 +38,9 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   patrol: cea8074f183a2a4232d0ebd10569ae05149ada42
-  REES46: e99e94c2ae031e62b6dd62c81a0d0db37659a48c
-  rees46_sdk: 5677cdb063f6ed6f1fd7cfafe3cd209a47313c7c
+  REES46: 7ce1596d694a17cad9f5d646e37d31122520d680
+  rees46_sdk: cafb55d934fd342eca9c0c4b2d3f5b2f04d2d282
 
-PODFILE CHECKSUM: 060e5d67fb40e2ac65b0b9bf93fba35390ac423b
+PODFILE CHECKSUM: b6e248ac4c1eff5807c8b044b39b8bc326af3f5f
 
 COCOAPODS: 1.16.2
