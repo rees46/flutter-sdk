@@ -1,3 +1,20 @@
+# [0.3.0](https://github.com/rees46/flutter-sdk/compare/v0.2.0...v0.3.0) (2026-09-02)
+
+
+### Bug Fixes
+
+* **ci:** tag only the commit that bumps the version, sync only on release ([6906a03](https://github.com/rees46/flutter-sdk/commit/6906a031038c082cb7bea541e777830f6f694426))
+* **tracking:** follow the native namespace rename and widen the source set ([d366b79](https://github.com/rees46/flutter-sdk/commit/d366b7916b2d38f87e20038d40ffffc104e02e34))
+
+
+### Features
+
+* **tracking:** bridge the standard events to the tracking namespace ([cae82df](https://github.com/rees46/flutter-sdk/commit/cae82df104f584be850487950eec27a39bb6e79e))
+
+
+
+
+
 # [0.2.0](https://github.com/rees46/flutter-sdk/compare/v0.1.1...v0.2.0) (2026-08-17)
 
 
