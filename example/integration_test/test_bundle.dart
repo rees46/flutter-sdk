@@ -71,9 +71,9 @@ Future<void> main() async {
     reportGroupStructure(dartTestGroup);
   });
 
-// START: GENERATED TEST GROUPS
+  // START: GENERATED TEST GROUPS
   group('tracking_events_test', tracking_events_test.main);
-// END: GENERATED TEST GROUPS
+  // END: GENERATED TEST GROUPS
 
   final dartTestGroup = await testExplorationCompleter.future;
   final appService = PatrolAppService(topLevelDartTestGroup: dartTestGroup);

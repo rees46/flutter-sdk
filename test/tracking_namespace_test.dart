@@ -34,7 +34,11 @@ void main() {
 
   setUp(() {
     // The SDK constructor claims the push channels; stub them so they stay quiet.
-    for (final event in ['onPushReceived', 'onPushDelivered', 'onPushClicked']) {
+    for (final event in [
+      'onPushReceived',
+      'onPushDelivered',
+      'onPushClicked',
+    ]) {
       mockChannel(
         flutterApiPrefix + event,
         (ByteData? _) async => codec.encodeMessage(<Object?>[]),
@@ -137,7 +141,11 @@ void main() {
       await sdk.tracking.storyClick(storyId: '42', slideId: '3');
 
       expect(viewed().sublist(0, 3), ['42', '3', 'main_stories']);
-      expect(clicked()[2], isNull, reason: 'native falls back to the loaded block');
+      expect(
+        clicked()[2],
+        isNull,
+        reason: 'native falls back to the loaded block',
+      );
     });
   });
 
@@ -170,19 +178,16 @@ void main() {
     });
 
     test('every source type has the wire value the API expects', () {
-      expect(
-        TrackingSourceType.values.map((e) => e.wireValue),
-        [
-          'dynamic',
-          'chain',
-          'bulk',
-          'transactional',
-          'instant_search',
-          'full_search',
-          'stories',
-          'web_push_digest',
-        ],
-      );
+      expect(TrackingSourceType.values.map((e) => e.wireValue), [
+        'dynamic',
+        'chain',
+        'bulk',
+        'transactional',
+        'instant_search',
+        'full_search',
+        'stories',
+        'web_push_digest',
+      ]);
     });
   });
 

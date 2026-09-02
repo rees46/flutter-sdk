@@ -262,7 +262,11 @@ abstract class PersonalizationHostApi {
   // `purchase` members.
 
   @async
-  void trackProductView(String itemId, TrackingSourceWire? source, String? shopId);
+  void trackProductView(
+    String itemId,
+    TrackingSourceWire? source,
+    String? shopId,
+  );
 
   @async
   void trackCategoryView(String categoryId, String? shopId);
@@ -271,7 +275,11 @@ abstract class PersonalizationHostApi {
   void trackSearch(String query, List<String>? results, String? shopId);
 
   @async
-  void trackAddToCart(TrackingItemWire item, TrackingSourceWire? source, String? shopId);
+  void trackAddToCart(
+    TrackingItemWire item,
+    TrackingSourceWire? source,
+    String? shopId,
+  );
 
   @async
   void trackSyncCart(List<TrackingItemWire> items, String? shopId);
@@ -280,7 +288,11 @@ abstract class PersonalizationHostApi {
   void trackRemoveFromCart(String itemId, String? shopId);
 
   @async
-  void trackAddToFavorites(String itemId, TrackingSourceWire? source, String? shopId);
+  void trackAddToFavorites(
+    String itemId,
+    TrackingSourceWire? source,
+    String? shopId,
+  );
 
   @async
   void trackSyncFavorites(List<String> itemIds, String? shopId);
@@ -289,10 +301,20 @@ abstract class PersonalizationHostApi {
   void trackRemoveFromFavorites(String itemId, String? shopId);
 
   @async
-  void trackStoryView(String storyId, String slideId, String? code, String? shopId);
+  void trackStoryView(
+    String storyId,
+    String slideId,
+    String? code,
+    String? shopId,
+  );
 
   @async
-  void trackStoryClick(String storyId, String slideId, String? code, String? shopId);
+  void trackStoryClick(
+    String storyId,
+    String slideId,
+    String? code,
+    String? shopId,
+  );
 
   /// Stores the attribution source natively for the next event.
   void trackSetSource(TrackingSourceWire source, String? shopId);

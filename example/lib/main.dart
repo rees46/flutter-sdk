@@ -113,10 +113,8 @@ final List<_TrackingDemo> _trackingDemos = [
     key: 'tracking_sync_favorites',
     label: 'Tracking: sync favorites',
     method: 'syncFavorites',
-    call: (tracking) => tracking.syncFavorites(const [
-      _demoItemId,
-      _demoSecondItemId,
-    ]),
+    call: (tracking) =>
+        tracking.syncFavorites(const [_demoItemId, _demoSecondItemId]),
   ),
   _TrackingDemo(
     key: 'tracking_remove_from_favorites',
