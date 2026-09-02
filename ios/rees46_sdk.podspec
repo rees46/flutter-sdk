@@ -14,7 +14,7 @@ Flutter plugin wrapper around REES46 native SDK.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.dependency 'REES46', '3.30.0'
+  s.dependency 'REES46', '3.31.0'
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.

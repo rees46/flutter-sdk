@@ -86,14 +86,9 @@ android {
 }
 
 dependencies {
-    // REES46 Android SDK (JitPack).
-    // Published from github.com/rees46/android-sdk as `com.github.rees46:android-sdk:<tag>`.
-    // v2.36.0 is the first tag that ships the multi-instance `Rees46` facade.
-    val rees46AndroidSdkVersion = "v2.36.0"
-    add(
-        "rees46Implementation",
-        "com.github.rees46:android-sdk:$rees46AndroidSdkVersion",
-    )
+    // REES46 Android SDK.
+    val rees46AndroidSdkVersion = "v2.37.0"
+    add("rees46Implementation", "com.github.rees46:android-sdk:$rees46AndroidSdkVersion")
 
     // Used directly by the push presenter (NotificationCompat / ContextCompat). The native SDK
     // depends on the same version but as `implementation`, so it is not exposed transitively.

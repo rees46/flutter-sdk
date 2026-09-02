@@ -19,6 +19,7 @@ import 'search/search_params.dart';
 import 'search/search_response.dart';
 import 'sdk_init_config.dart';
 import 'tracking/purchase_line_item.dart';
+import 'tracking/tracking_api.dart';
 
 class PersonalizationSdk {
   final pigeon.PersonalizationHostApi _api;
@@ -31,9 +32,14 @@ class PersonalizationSdk {
   /// stored now so multi-instance handles carry their identity.
   final String? shopId;
 
+  /// Standard tracking events, grouped: `sdk.tracking.productView('sku-1')`,
+  /// `sdk.tracking.addToCart(item)`, and the rest.
+  late final TrackingApi tracking;
+
   PersonalizationSdk({pigeon.PersonalizationHostApi? api, this.shopId})
     : _api = api ?? pigeon.PersonalizationHostApi(),
       _initHandler = SdkInitHandler(api: api) {
+    tracking = TrackingApi(_api, shopId);
     // One process-global dispatcher owns the Pigeon push channel and routes each
     // inbound push (by shopId) to the right handle — register this handle's
     // callbacks with it instead of claiming the channel per instance.
@@ -250,6 +256,7 @@ class PersonalizationSdk {
   }
 
   /// Custom event tracking (native `trackEvent` / `TrackEventManager.trackEvent`).
+  @Deprecated('Use sdk.tracking.custom(event) instead.')
   Future<void> trackEvent(
     String event, {
     int? time,
@@ -276,6 +283,7 @@ class PersonalizationSdk {
   }
 
   /// Purchase tracking (native `trackPurchase` with typed line items).
+  @Deprecated('Use sdk.tracking.purchase(...) instead.')
   Future<void> trackPurchase({
     required String orderId,
     required double orderPrice,

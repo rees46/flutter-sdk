@@ -1,19 +1,21 @@
 name: Repository synchronization
 
+# Triggered by the release commit itself rather than by the completion of the
+# Deploy workflow. Deploy completes on every push to the trunk — once for the
+# change, once again for the release commit — so a single release used to reach
+# the mirror as two synchronization PRs carrying the same version.
 on:
-  workflow_run:
-    workflows:
-      - Deploy
-    types:
-      - completed
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
   prepare:
     if: |
+      !contains(github.repository_owner, 'personaclick') &&
       (github.event_name == 'workflow_dispatch' ||
-       github.event.workflow_run.conclusion == 'success') &&
-      !contains(github.repository_owner, 'personaclick')
+       startsWith(github.event.head_commit.message, 'chore(release):'))
     runs-on: ubuntu-latest
     outputs:
       replacements: ${{ steps.getReplacementsStep.outputs.replacements }}

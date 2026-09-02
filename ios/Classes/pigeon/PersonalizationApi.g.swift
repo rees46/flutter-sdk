@@ -338,6 +338,82 @@ struct ProfileParamsWire: Hashable {
   }
 }
 
+/// Wire format for one product line in a tracking event (maps to native `TrackingItem`).
+///
+/// [quantity] is the domain name for the line quantity; native sends it as `amount`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct TrackingItemWire: Hashable {
+  var id: String
+  var quantity: Int64
+  var price: Double? = nil
+  var fashionSize: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> TrackingItemWire? {
+    let id = pigeonVar_list[0] as! String
+    let quantity = pigeonVar_list[1] as! Int64
+    let price: Double? = nilOrValue(pigeonVar_list[2])
+    let fashionSize: String? = nilOrValue(pigeonVar_list[3])
+
+    return TrackingItemWire(
+      id: id,
+      quantity: quantity,
+      price: price,
+      fashionSize: fashionSize
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      quantity,
+      price,
+      fashionSize,
+    ]
+  }
+  static func == (lhs: TrackingItemWire, rhs: TrackingItemWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// Wire format for event attribution (maps to native `TrackingSource`).
+///
+/// [type] is the wire value of the source type — `dynamic`, `chain`, `bulk`,
+/// `transactional`, `instant_search`, `full_search`, `stories`. Dart only ever sends what its
+/// `TrackingSourceType` enum produces; the bridges reject anything else.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct TrackingSourceWire: Hashable {
+  var type: String
+  var code: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> TrackingSourceWire? {
+    let type = pigeonVar_list[0] as! String
+    let code = pigeonVar_list[1] as! String
+
+    return TrackingSourceWire(
+      type: type,
+      code: code
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      type,
+      code,
+    ]
+  }
+  static func == (lhs: TrackingSourceWire, rhs: TrackingSourceWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
 private class PersonalizationApiPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
@@ -347,6 +423,10 @@ private class PersonalizationApiPigeonCodecReader: FlutterStandardReader {
       return PurchaseLineItemWire.fromList(self.readValue() as! [Any?])
     case 131:
       return ProfileParamsWire.fromList(self.readValue() as! [Any?])
+    case 132:
+      return TrackingItemWire.fromList(self.readValue() as! [Any?])
+    case 133:
+      return TrackingSourceWire.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -363,6 +443,12 @@ private class PersonalizationApiPigeonCodecWriter: FlutterStandardWriter {
       super.writeValue(value.toList())
     } else if let value = value as? ProfileParamsWire {
       super.writeByte(131)
+      super.writeValue(value.toList())
+    } else if let value = value as? TrackingItemWire {
+      super.writeByte(132)
+      super.writeValue(value.toList())
+    } else if let value = value as? TrackingSourceWire {
+      super.writeByte(133)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -449,6 +535,19 @@ protocol PersonalizationHostApi {
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
   /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
   func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackCategoryView(categoryId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackSearch(query: String, results: [String]?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackAddToCart(item: TrackingItemWire, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackSyncCart(items: [TrackingItemWire], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackRemoveFromCart(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackAddToFavorites(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackSyncFavorites(itemIds: [String], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackRemoveFromFavorites(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackStoryView(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackStoryClick(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// Stores the attribution source natively for the next event.
+  func trackSetSource(source: TrackingSourceWire, shopId: String?) throws
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
   func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
 }
@@ -856,6 +955,229 @@ class PersonalizationHostApiSetup {
       }
     } else {
       handlePushChannel.setMessageHandler(nil)
+    }
+    let trackProductViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackProductView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackProductViewChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let sourceArg: TrackingSourceWire? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.trackProductView(itemId: itemIdArg, source: sourceArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackProductViewChannel.setMessageHandler(nil)
+    }
+    let trackCategoryViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackCategoryView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackCategoryViewChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let categoryIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.trackCategoryView(categoryId: categoryIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackCategoryViewChannel.setMessageHandler(nil)
+    }
+    let trackSearchChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSearch\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackSearchChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let queryArg = args[0] as! String
+        let resultsArg: [String]? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.trackSearch(query: queryArg, results: resultsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackSearchChannel.setMessageHandler(nil)
+    }
+    let trackAddToCartChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackAddToCart\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackAddToCartChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemArg = args[0] as! TrackingItemWire
+        let sourceArg: TrackingSourceWire? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.trackAddToCart(item: itemArg, source: sourceArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackAddToCartChannel.setMessageHandler(nil)
+    }
+    let trackSyncCartChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSyncCart\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackSyncCartChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemsArg = args[0] as! [TrackingItemWire]
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.trackSyncCart(items: itemsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackSyncCartChannel.setMessageHandler(nil)
+    }
+    let trackRemoveFromCartChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackRemoveFromCart\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackRemoveFromCartChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.trackRemoveFromCart(itemId: itemIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackRemoveFromCartChannel.setMessageHandler(nil)
+    }
+    let trackAddToFavoritesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackAddToFavorites\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackAddToFavoritesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let sourceArg: TrackingSourceWire? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.trackAddToFavorites(itemId: itemIdArg, source: sourceArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackAddToFavoritesChannel.setMessageHandler(nil)
+    }
+    let trackSyncFavoritesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSyncFavorites\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackSyncFavoritesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdsArg = args[0] as! [String]
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.trackSyncFavorites(itemIds: itemIdsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackSyncFavoritesChannel.setMessageHandler(nil)
+    }
+    let trackRemoveFromFavoritesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackRemoveFromFavorites\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackRemoveFromFavoritesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.trackRemoveFromFavorites(itemId: itemIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackRemoveFromFavoritesChannel.setMessageHandler(nil)
+    }
+    let trackStoryViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackStoryView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackStoryViewChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let storyIdArg = args[0] as! String
+        let slideIdArg = args[1] as! String
+        let codeArg: String? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.trackStoryView(storyId: storyIdArg, slideId: slideIdArg, code: codeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackStoryViewChannel.setMessageHandler(nil)
+    }
+    let trackStoryClickChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackStoryClick\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackStoryClickChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let storyIdArg = args[0] as! String
+        let slideIdArg = args[1] as! String
+        let codeArg: String? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.trackStoryClick(storyId: storyIdArg, slideId: slideIdArg, code: codeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackStoryClickChannel.setMessageHandler(nil)
+    }
+    /// Stores the attribution source natively for the next event.
+    let trackSetSourceChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSetSource\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackSetSourceChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let sourceArg = args[0] as! TrackingSourceWire
+        let shopIdArg: String? = nilOrValue(args[1])
+        do {
+          try api.trackSetSource(source: sourceArg, shopId: shopIdArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      trackSetSourceChannel.setMessageHandler(nil)
     }
     /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
     let trackPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)

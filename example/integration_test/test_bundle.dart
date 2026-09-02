@@ -9,7 +9,7 @@ import 'package:patrol/src/platform/contracts/contracts.dart';
 import 'package:test_api/src/backend/invoker.dart';
 
 // START: GENERATED TEST IMPORTS
-import 'search_blank_sdk_test.dart' as search_blank_sdk_test;
+import 'tracking_events_test.dart' as tracking_events_test;
 // END: GENERATED TEST IMPORTS
 
 Future<void> main() async {
@@ -72,7 +72,7 @@ Future<void> main() async {
   });
 
   // START: GENERATED TEST GROUPS
-  group('search_blank_sdk_test', search_blank_sdk_test.main);
+  group('tracking_events_test', tracking_events_test.main);
   // END: GENERATED TEST GROUPS
 
   final dartTestGroup = await testExplorationCompleter.future;
