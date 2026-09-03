@@ -87,7 +87,7 @@ android {
 
 dependencies {
     // REES46 Android SDK.
-    val rees46AndroidSdkVersion = "v2.37.0"
+    val rees46AndroidSdkVersion = "v2.38.0"
     add("rees46Implementation", "com.github.rees46:android-sdk:$rees46AndroidSdkVersion")
 
     // Used directly by the push presenter (NotificationCompat / ContextCompat). The native SDK
