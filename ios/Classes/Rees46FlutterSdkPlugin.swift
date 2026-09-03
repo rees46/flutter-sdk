@@ -1068,6 +1068,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     deliveryAddress: String?,
     paymentType: String?,
     isTaxFree: Bool,
+    isGiftPackage: Bool,
     promocode: String?,
     orderCash: Double?,
     orderBonuses: Double?,
@@ -1127,7 +1128,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       custom: parseJsonObject(customJson),
       recommendedSource: parseJsonObject(recommendedSourceJson),
       stream: stream,
-      segment: segment
+      segment: segment,
+      isGiftPackage: isGiftPackage
     )
     sdk.trackPurchase(request, recommendedBy: nil) { result in
       switch result {

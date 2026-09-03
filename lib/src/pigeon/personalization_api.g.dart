@@ -1341,14 +1341,14 @@ class PersonalizationHostApi {
   }
 
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
-  Future<void> trackPurchase(String orderId, double orderPrice, List<PurchaseLineItemWire> items, String? deliveryType, String? deliveryAddress, String? paymentType, bool isTaxFree, String? promocode, double? orderCash, double? orderBonuses, double? orderDelivery, double? orderDiscount, String? channel, String? customJson, String? recommendedSourceJson, String? stream, String? segment, String? shopId) async {
+  Future<void> trackPurchase(String orderId, double orderPrice, List<PurchaseLineItemWire> items, String? deliveryType, String? deliveryAddress, String? paymentType, bool isTaxFree, bool isGiftPackage, String? promocode, double? orderCash, double? orderBonuses, double? orderDelivery, double? orderDiscount, String? channel, String? customJson, String? recommendedSourceJson, String? stream, String? segment, String? shopId) async {
     final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[orderId, orderPrice, items, deliveryType, deliveryAddress, paymentType, isTaxFree, promocode, orderCash, orderBonuses, orderDelivery, orderDiscount, channel, customJson, recommendedSourceJson, stream, segment, shopId]);
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[orderId, orderPrice, items, deliveryType, deliveryAddress, paymentType, isTaxFree, isGiftPackage, promocode, orderCash, orderBonuses, orderDelivery, orderDiscount, channel, customJson, recommendedSourceJson, stream, segment, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {

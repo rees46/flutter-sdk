@@ -549,7 +549,7 @@ protocol PersonalizationHostApi {
   /// Stores the attribution source natively for the next event.
   func trackSetSource(source: TrackingSourceWire, shopId: String?) throws
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
-  func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, isGiftPackage: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -1191,18 +1191,19 @@ class PersonalizationHostApiSetup {
         let deliveryAddressArg: String? = nilOrValue(args[4])
         let paymentTypeArg: String? = nilOrValue(args[5])
         let isTaxFreeArg = args[6] as! Bool
-        let promocodeArg: String? = nilOrValue(args[7])
-        let orderCashArg: Double? = nilOrValue(args[8])
-        let orderBonusesArg: Double? = nilOrValue(args[9])
-        let orderDeliveryArg: Double? = nilOrValue(args[10])
-        let orderDiscountArg: Double? = nilOrValue(args[11])
-        let channelArg: String? = nilOrValue(args[12])
-        let customJsonArg: String? = nilOrValue(args[13])
-        let recommendedSourceJsonArg: String? = nilOrValue(args[14])
-        let streamArg: String? = nilOrValue(args[15])
-        let segmentArg: String? = nilOrValue(args[16])
-        let shopIdArg: String? = nilOrValue(args[17])
-        api.trackPurchase(orderId: orderIdArg, orderPrice: orderPriceArg, items: itemsArg, deliveryType: deliveryTypeArg, deliveryAddress: deliveryAddressArg, paymentType: paymentTypeArg, isTaxFree: isTaxFreeArg, promocode: promocodeArg, orderCash: orderCashArg, orderBonuses: orderBonusesArg, orderDelivery: orderDeliveryArg, orderDiscount: orderDiscountArg, channel: channelArg, customJson: customJsonArg, recommendedSourceJson: recommendedSourceJsonArg, stream: streamArg, segment: segmentArg, shopId: shopIdArg) { result in
+        let isGiftPackageArg = args[7] as! Bool
+        let promocodeArg: String? = nilOrValue(args[8])
+        let orderCashArg: Double? = nilOrValue(args[9])
+        let orderBonusesArg: Double? = nilOrValue(args[10])
+        let orderDeliveryArg: Double? = nilOrValue(args[11])
+        let orderDiscountArg: Double? = nilOrValue(args[12])
+        let channelArg: String? = nilOrValue(args[13])
+        let customJsonArg: String? = nilOrValue(args[14])
+        let recommendedSourceJsonArg: String? = nilOrValue(args[15])
+        let streamArg: String? = nilOrValue(args[16])
+        let segmentArg: String? = nilOrValue(args[17])
+        let shopIdArg: String? = nilOrValue(args[18])
+        api.trackPurchase(orderId: orderIdArg, orderPrice: orderPriceArg, items: itemsArg, deliveryType: deliveryTypeArg, deliveryAddress: deliveryAddressArg, paymentType: paymentTypeArg, isTaxFree: isTaxFreeArg, isGiftPackage: isGiftPackageArg, promocode: promocodeArg, orderCash: orderCashArg, orderBonuses: orderBonusesArg, orderDelivery: orderDeliveryArg, orderDiscount: orderDiscountArg, channel: channelArg, customJson: customJsonArg, recommendedSourceJson: recommendedSourceJsonArg, stream: streamArg, segment: segmentArg, shopId: shopIdArg) { result in
           switch result {
           case .success:
             reply(wrapResult(nil))

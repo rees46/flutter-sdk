@@ -252,6 +252,7 @@ await sdk.tracking.purchase(
   deliveryAddress: 'Tverskaya 1, Moscow',
   paymentType: 'card',
   isTaxFree: false,
+  isGiftPackage: true,
   promocode: 'WINTER20',
   orderCash: 100.0,
   orderBonuses: 49.8,

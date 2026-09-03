@@ -329,6 +329,7 @@ abstract class PersonalizationHostApi {
     String? deliveryAddress,
     String? paymentType,
     bool isTaxFree,
+    bool isGiftPackage,
     String? promocode,
     double? orderCash,
     double? orderBonuses,

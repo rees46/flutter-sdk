@@ -66,6 +66,7 @@ internal object FlutterTrackingBridge {
         const val DELIVERY_ADDRESS = "delivery_address"
         const val PAYMENT_TYPE = "payment_type"
         const val TAX_FREE = "tax_free"
+        const val GIFT_PACKAGE = "gift_package"
         const val PROMOCODE = "promocode"
         const val ORDER_CASH = "order_cash"
         const val ORDER_BONUSES = "order_bonuses"
@@ -179,6 +180,7 @@ internal object FlutterTrackingBridge {
         deliveryAddress: String?,
         paymentType: String?,
         isTaxFree: Boolean,
+        isGiftPackage: Boolean,
         promocode: String?,
         orderCash: Double?,
         orderBonuses: Double?,
@@ -199,6 +201,7 @@ internal object FlutterTrackingBridge {
             deliveryAddress = deliveryAddress,
             paymentType = paymentType,
             isTaxFree = isTaxFree,
+            isGiftPackage = isGiftPackage,
             promocode = promocode,
             orderCash = orderCash,
             orderBonuses = orderBonuses,
@@ -249,6 +252,7 @@ internal object FlutterTrackingBridge {
         deliveryAddress: String?,
         paymentType: String?,
         isTaxFree: Boolean,
+        isGiftPackage: Boolean,
         promocode: String?,
         orderCash: Double?,
         orderBonuses: Double?,
@@ -303,6 +307,7 @@ internal object FlutterTrackingBridge {
                     deliveryAddress = deliveryAddress,
                     paymentType = paymentType,
                     isTaxFree = isTaxFree,
+                    isGiftPackage = isGiftPackage,
                     promocode = promocode,
                     orderCash = orderCash,
                     orderBonuses = orderBonuses,
@@ -328,6 +333,7 @@ internal object FlutterTrackingBridge {
         deliveryAddress: String?,
         paymentType: String?,
         isTaxFree: Boolean,
+        isGiftPackage: Boolean,
         promocode: String?,
         orderCash: Double?,
         orderBonuses: Double?,
@@ -369,6 +375,9 @@ internal object FlutterTrackingBridge {
         }
         if (isTaxFree) {
             root.put(PurchaseWireKeys.TAX_FREE, true)
+        }
+        if (isGiftPackage) {
+            root.put(PurchaseWireKeys.GIFT_PACKAGE, true)
         }
         promocode?.takeIf { it.isNotBlank() }?.let {
             root.put(PurchaseWireKeys.PROMOCODE, it)
