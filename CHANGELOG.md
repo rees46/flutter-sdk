@@ -1,3 +1,14 @@
+# [0.4.0](https://github.com/rees46/flutter-sdk/compare/v0.3.0...v0.4.0) (2026-09-03)
+
+
+### Features
+
+* **tracking:** bridge gift_package through to the natives ([f2faec8](https://github.com/rees46/flutter-sdk/commit/f2faec8240da7d7a09fe4f2c3c04d4837aa4b2bd))
+
+
+
+
+
 # [0.3.0](https://github.com/rees46/flutter-sdk/compare/v0.2.0...v0.3.0) (2026-09-02)
 
 
