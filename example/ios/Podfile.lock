@@ -7,10 +7,10 @@ PODS:
     - CocoaAsyncSocket (~> 7.6)
     - Flutter
     - FlutterMacOS
-  - REES46 (3.31.0)
+  - REES46 (3.33.0)
   - rees46_sdk (0.0.1):
     - Flutter
-    - REES46 (= 3.31.0)
+    - REES46 (= 3.33.0)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -38,8 +38,8 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   patrol: cea8074f183a2a4232d0ebd10569ae05149ada42
-  REES46: 7ce1596d694a17cad9f5d646e37d31122520d680
-  rees46_sdk: cafb55d934fd342eca9c0c4b2d3f5b2f04d2d282
+  REES46: 92331668908a711e67515f368a9b00ed775fcffc
+  rees46_sdk: 8ad2e581dcb34d936af65c5c7af8c9c4c84f5255
 
 PODFILE CHECKSUM: b6e248ac4c1eff5807c8b044b39b8bc326af3f5f
 

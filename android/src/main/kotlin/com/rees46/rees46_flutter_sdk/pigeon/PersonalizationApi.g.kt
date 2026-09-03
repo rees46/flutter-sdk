@@ -514,7 +514,7 @@ interface PersonalizationHostApi {
   /** Stores the attribution source natively for the next event. */
   fun trackSetSource(source: TrackingSourceWire, shopId: String?)
   /** [customJson] and [recommendedSourceJson] are JSON object strings or null. */
-  fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, isGiftPackage: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
 
   companion object {
     /** The codec used by PersonalizationHostApi. */
@@ -1192,18 +1192,19 @@ interface PersonalizationHostApi {
             val deliveryAddressArg = args[4] as String?
             val paymentTypeArg = args[5] as String?
             val isTaxFreeArg = args[6] as Boolean
-            val promocodeArg = args[7] as String?
-            val orderCashArg = args[8] as Double?
-            val orderBonusesArg = args[9] as Double?
-            val orderDeliveryArg = args[10] as Double?
-            val orderDiscountArg = args[11] as Double?
-            val channelArg = args[12] as String?
-            val customJsonArg = args[13] as String?
-            val recommendedSourceJsonArg = args[14] as String?
-            val streamArg = args[15] as String?
-            val segmentArg = args[16] as String?
-            val shopIdArg = args[17] as String?
-            api.trackPurchase(orderIdArg, orderPriceArg, itemsArg, deliveryTypeArg, deliveryAddressArg, paymentTypeArg, isTaxFreeArg, promocodeArg, orderCashArg, orderBonusesArg, orderDeliveryArg, orderDiscountArg, channelArg, customJsonArg, recommendedSourceJsonArg, streamArg, segmentArg, shopIdArg) { result: Result<Unit> ->
+            val isGiftPackageArg = args[7] as Boolean
+            val promocodeArg = args[8] as String?
+            val orderCashArg = args[9] as Double?
+            val orderBonusesArg = args[10] as Double?
+            val orderDeliveryArg = args[11] as Double?
+            val orderDiscountArg = args[12] as Double?
+            val channelArg = args[13] as String?
+            val customJsonArg = args[14] as String?
+            val recommendedSourceJsonArg = args[15] as String?
+            val streamArg = args[16] as String?
+            val segmentArg = args[17] as String?
+            val shopIdArg = args[18] as String?
+            api.trackPurchase(orderIdArg, orderPriceArg, itemsArg, deliveryTypeArg, deliveryAddressArg, paymentTypeArg, isTaxFreeArg, isGiftPackageArg, promocodeArg, orderCashArg, orderBonusesArg, orderDeliveryArg, orderDiscountArg, channelArg, customJsonArg, recommendedSourceJsonArg, streamArg, segmentArg, shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))

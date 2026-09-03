@@ -245,6 +245,25 @@ void main() {
       expect(args()[1], 100.0);
     });
 
+    test('purchase sends the gift package flag only when set', () async {
+      final plain = capture('trackPurchase');
+      await PersonalizationSdk().tracking.purchase(
+        orderId: 'order-1',
+        orderPrice: 100,
+        items: const [PurchaseLineItem(id: 'sku-1', amount: 1, price: 100)],
+      );
+      expect(plain()[7], false);
+
+      final gifted = capture('trackPurchase');
+      await PersonalizationSdk().tracking.purchase(
+        orderId: 'order-2',
+        orderPrice: 100,
+        items: const [PurchaseLineItem(id: 'sku-1', amount: 1, price: 100)],
+        isGiftPackage: true,
+      );
+      expect(gifted()[7], true);
+    });
+
     test('custom reaches the existing trackEvent channel', () async {
       final args = capture('trackEvent');
       await PersonalizationSdk().tracking.custom(

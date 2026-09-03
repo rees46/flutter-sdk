@@ -198,17 +198,17 @@ void main() {
       expect(wire.fashionSize, isNull);
     });
 
-    test('custom null → customJson (arg[13]) is null', () async {
+    test('custom null → customJson (arg[14]) is null', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
         orderPrice: 1.0,
         items: [const PurchaseLineItem(id: 'x', amount: 1, price: 1.0)],
       );
-      expect(getArgs()[13], isNull);
+      expect(getArgs()[14], isNull);
     });
 
-    test('custom provided → valid JSON at arg[13]', () async {
+    test('custom provided → valid JSON at arg[14]', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
@@ -216,11 +216,11 @@ void main() {
         items: [const PurchaseLineItem(id: 'x', amount: 1, price: 1.0)],
         custom: {'channel': 'app'},
       );
-      final json = jsonDecode(getArgs()[13] as String) as Map<String, dynamic>;
+      final json = jsonDecode(getArgs()[14] as String) as Map<String, dynamic>;
       expect(json['channel'], 'app');
     });
 
-    test('recommendedSource provided → valid JSON at arg[14]', () async {
+    test('recommendedSource provided → valid JSON at arg[15]', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
@@ -228,7 +228,7 @@ void main() {
         items: [const PurchaseLineItem(id: 'x', amount: 1, price: 1.0)],
         recommendedSource: {'type': 'popular', 'code': 'rec-1'},
       );
-      final json = jsonDecode(getArgs()[14] as String) as Map<String, dynamic>;
+      final json = jsonDecode(getArgs()[15] as String) as Map<String, dynamic>;
       expect(json['type'], 'popular');
       expect(json['code'], 'rec-1');
     });
@@ -243,6 +243,7 @@ void main() {
         deliveryAddress: 'Main St',
         paymentType: 'card',
         isTaxFree: true,
+        isGiftPackage: true,
         promocode: 'SAVE10',
         orderCash: 0.0,
         orderBonuses: 5.0,
@@ -260,16 +261,17 @@ void main() {
       expect(args[4], 'Main St'); // deliveryAddress
       expect(args[5], 'card'); // paymentType
       expect(args[6], true); // isTaxFree
-      expect(args[7], 'SAVE10'); // promocode
-      expect(args[8], 0.0); // orderCash
-      expect(args[9], 5.0); // orderBonuses
-      expect(args[10], 0.0); // orderDelivery
-      expect(args[11], 10.0); // orderDiscount
-      expect(args[12], 'mobile'); // channel
-      // args[13] = customJson
-      // args[14] = recommendedSourceJson
-      expect(args[15], 'android'); // stream
-      expect(args[16], 'vip'); // segment
+      expect(args[7], true); // isGiftPackage
+      expect(args[8], 'SAVE10'); // promocode
+      expect(args[9], 0.0); // orderCash
+      expect(args[10], 5.0); // orderBonuses
+      expect(args[11], 0.0); // orderDelivery
+      expect(args[12], 10.0); // orderDiscount
+      expect(args[13], 'mobile'); // channel
+      // args[14] = customJson
+      // args[15] = recommendedSourceJson
+      expect(args[16], 'android'); // stream
+      expect(args[17], 'vip'); // segment
     });
   });
 }
