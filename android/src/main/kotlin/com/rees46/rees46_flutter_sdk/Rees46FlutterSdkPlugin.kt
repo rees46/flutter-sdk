@@ -21,6 +21,8 @@ import com.personalization.Rees46Config
 import com.personalization.SDK
 import com.personalization.api.OnApiCallbackListener
 import com.personalization.api.managers.TrackingApi
+import com.personalization.api.models.purchase.PurchaseItemRequest
+import com.personalization.api.models.purchase.PurchaseTrackingRequest
 import com.personalization.api.models.tracking.TrackingItem
 import com.personalization.api.models.tracking.TrackingSource
 import com.personalization.api.models.tracking.TrackingSourceType
@@ -639,6 +641,42 @@ class Rees46FlutterSdkPlugin :
             }
         }
 
+    /// The native builder reports client-side validation with this code; the previous
+    /// hand-rolled path surfaced it in `details`, so keep that shape.
+    private val PURCHASE_CLIENT_VALIDATION_ERROR_CODE = -2
+
+    private fun purchaseListener(callback: (Result<Unit>) -> Unit) =
+        object : OnApiCallbackListener() {
+            override fun onSuccess(response: JSONObject?) {
+                callback(Result.success(Unit))
+            }
+
+            override fun onError(code: Int, msg: String?) {
+                if (code == PURCHASE_CLIENT_VALIDATION_ERROR_CODE) {
+                    callback(
+                        Result.failure(
+                            FlutterError(
+                                "track_purchase_failed",
+                                msg ?: "validation failed",
+                                mapOf("code" to code),
+                            ),
+                        ),
+                    )
+                } else {
+                    val message = listOfNotNull(code.toString(), msg).joinToString(": ")
+                    callback(Result.failure(FlutterError("track_purchase_failed", message, null)))
+                }
+            }
+        }
+
+    private fun PurchaseLineItemWire.toNative(): PurchaseItemRequest = PurchaseItemRequest(
+        id = id,
+        amount = amount.toInt(),
+        price = price,
+        lineId = lineId,
+        fashionSize = fashionSize,
+    )
+
     private fun TrackingItemWire.toNative(): TrackingItem = TrackingItem(
         id = id,
         quantity = quantity.toInt(),
@@ -717,22 +755,14 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            val recommendedSource =
-                if (recommendedSourceJson.isNullOrBlank()) {
-                    null
-                } else {
-                    JSONObject(recommendedSourceJson)
-                }
-            FlutterTrackingBridge.postTrackPurchase(
-                sdk = sdk(shopId),
+            val request = PurchaseTrackingRequest(
                 orderId = orderId,
                 orderPrice = orderPrice,
-                items = items,
+                items = items.map { it.toNative() },
                 deliveryType = deliveryType,
                 deliveryAddress = deliveryAddress,
                 paymentType = paymentType,
                 isTaxFree = isTaxFree,
-                isGiftPackage = isGiftPackage,
                 promocode = promocode,
                 orderCash = orderCash,
                 orderBonuses = orderBonuses,
@@ -740,11 +770,15 @@ class Rees46FlutterSdkPlugin :
                 orderDiscount = orderDiscount,
                 channel = channel,
                 custom = jsonObjectStringToMap(customJson),
-                recommendedSource = recommendedSource,
+                recommendedSource =
+                    if (recommendedSourceJson.isNullOrBlank()) null else JSONObject(recommendedSourceJson),
                 stream = stream,
                 segment = segment,
-                callback = callback,
+                isGiftPackage = isGiftPackage,
             )
+            // No per-call source: the Dart API only stores one via `setSource`, and the native
+            // manager attaches that stored attribution itself.
+            sdk(shopId).tracking.purchase(request, null, purchaseListener(callback))
         } catch (t: Throwable) {
             callback(Result.failure(FlutterError("track_purchase_failed", t.message, null)))
         }
