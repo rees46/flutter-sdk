@@ -1,3 +1,22 @@
+# [1.0.0](https://github.com/rees46/flutter-sdk/compare/v0.4.0...v1.0.0) (2026-09-07)
+
+
+### Bug Fixes
+
+* **tracking:** let syncCart and syncFavorites report an empty collection ([a4b54aa](https://github.com/rees46/flutter-sdk/commit/a4b54aaf17624782c0a4264544a0e59a8b46de95))
+
+
+* refactor(sdk)!: spell the facade REES46 ([d6678d6](https://github.com/rees46/flutter-sdk/commit/d6678d669727b8cd996034ad642fcd0ea87b41b8))
+
+
+### BREAKING CHANGES
+
+* `Rees46` and friends are now `REES46`.
+
+
+
+
+
 # [0.4.0](https://github.com/rees46/flutter-sdk/compare/v0.3.0...v0.4.0) (2026-09-03)
 
 
