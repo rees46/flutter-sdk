@@ -1037,7 +1037,7 @@ class PersonalizationHostApi {
   }
 
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+  /// via the native `REES46.handlePush`. [event] is the index of the Dart
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
   /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
   Future<void> handlePush(Map<String, String> payload, int event) async {

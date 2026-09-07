@@ -6,7 +6,7 @@ import 'tracking_models.dart';
 
 /// Standard tracking events — the `tracking` namespace of the SDK.
 ///
-/// Reached through an SDK handle: `Rees46.getInstance().tracking.productView('sku-1')`.
+/// Reached through an SDK handle: `REES46.getInstance().tracking.productView('sku-1')`.
 /// Every method routes to the native namespace of the same name, so an event fired from Dart
 /// is the same request the native SDKs send.
 class TrackingApi {
@@ -44,10 +44,10 @@ class TrackingApi {
   }
 
   /// Full cart contents after a change (`cart` with `full_cart`).
+  ///
+  /// An empty list is the way to report an emptied cart: the native SDKs always
+  /// send the list, so `items` goes on the wire as `[]`.
   Future<void> syncCart(List<TrackingItem> items) {
-    if (items.isEmpty) {
-      throw ArgumentError.value(items, 'items', 'must be non-empty');
-    }
     return _api.trackSyncCart(items.map((e) => e._wire).toList(), _shopId);
   }
 
@@ -64,10 +64,9 @@ class TrackingApi {
   }
 
   /// Full favorites contents after a change (`wish` with `full_wish`).
+  ///
+  /// An empty list reports emptied favorites, the same way [syncCart] does.
   Future<void> syncFavorites(List<String> itemIds) {
-    if (itemIds.isEmpty) {
-      throw ArgumentError.value(itemIds, 'itemIds', 'must be non-empty');
-    }
     return _api.trackSyncFavorites(itemIds, _shopId);
   }
 

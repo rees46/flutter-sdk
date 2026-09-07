@@ -139,7 +139,7 @@ class TrackingSourceWire {
 }
 
 // Multi-instance: every per-instance method carries a trailing `String? shopId`
-// so the native bridge can resolve the target instance via the native `Rees46`
+// so the native bridge can resolve the target instance via the native `REES46`
 // facade. `shopId == null` means the legacy single/default instance (the
 // back-compat fallback). `initialize` needs no extra param — its shop id is
 // inside [InitConfig]; `getPlatformVersion` touches no instance.
@@ -251,7 +251,7 @@ abstract class PersonalizationHostApi {
   String getCollection(String collectionId, String? shopId);
 
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+  /// via the native `REES46.handlePush`. [event] is the index of the Dart
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
   /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
   @async

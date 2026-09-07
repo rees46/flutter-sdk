@@ -1,4 +1,4 @@
-/// Push lifecycle event routed by [Rees46.handlePush].
+/// Push lifecycle event routed by [REES46.handlePush].
 ///
 /// The Flutter vocabulary — `received` / `delivered` / `clicked` — matches the
 /// SDK's existing push callbacks. Native maps it to its own set: Android

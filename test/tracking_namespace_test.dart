@@ -226,9 +226,16 @@ void main() {
       );
     });
 
-    test('empty collections throw', () {
-      expect(() => sdk.tracking.syncCart(const []), throwsArgumentError);
-      expect(() => sdk.tracking.syncFavorites(const []), throwsArgumentError);
+    test('an empty collection is sent, not rejected', () async {
+      // Emptying the cart or the favorites is a real event: the native SDKs
+      // always send the list, so the wrapper must not stand in the way.
+      final cart = capture('trackSyncCart');
+      await sdk.tracking.syncCart(const []);
+      expect(cart()[0], isEmpty);
+
+      final favorites = capture('trackSyncFavorites');
+      await sdk.tracking.syncFavorites(const []);
+      expect(favorites()[0], isEmpty);
     });
   });
 

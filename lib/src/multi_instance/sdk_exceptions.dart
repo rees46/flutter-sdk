@@ -1,9 +1,9 @@
-/// Exceptions raised by [Rees46] shop resolution.
+/// Exceptions raised by [REES46] shop resolution.
 ///
 /// They mirror the native contract so the same failure modes surface
 /// identically on every platform (see `Multi-instance — Contracts`):
 ///   * Android — `UnknownShopIdException` / `AmbiguousShopException`
-///   * iOS     — `Rees46Error.unknownShopId` / `.ambiguousShop`
+///   * iOS     — `REES46Error.unknownShopId` / `.ambiguousShop`
 ///
 /// The Flutter SDK is a thin bridge over the native SDKs, so these are raised by
 /// the Dart facade's own resolver (a mirror of the registered shop-ids) — the
@@ -15,7 +15,7 @@ library;
 class UnknownShopIdException implements Exception {
   const UnknownShopIdException(this.shopId, [this.customMessage]);
 
-  /// The requested shop id, or `null` when [Rees46.getInstance] was called with
+  /// The requested shop id, or `null` when [REES46.getInstance] was called with
   /// no id while nothing at all is registered.
   final String? shopId;
 
@@ -26,15 +26,15 @@ class UnknownShopIdException implements Exception {
       customMessage ??
       (shopId != null
           ? 'No shop is registered for shopId=$shopId. '
-                'Call Rees46.initialize(...) or Rees46.registerShops(...) first.'
+                'Call REES46.initialize(...) or REES46.registerShops(...) first.'
           : 'No shop has been registered. '
-                'Call Rees46.initialize(...) or Rees46.registerShops(...) first.');
+                'Call REES46.initialize(...) or REES46.registerShops(...) first.');
 
   @override
   String toString() => 'UnknownShopIdException: $message';
 }
 
-/// Thrown when [Rees46.getInstance] is called with no shop id while more than
+/// Thrown when [REES46.getInstance] is called with no shop id while more than
 /// one shop is registered — the default instance is ambiguous.
 class AmbiguousShopException implements Exception {
   const AmbiguousShopException(this.registeredShopIds, [this.customMessage]);
@@ -47,7 +47,7 @@ class AmbiguousShopException implements Exception {
 
   String get message =>
       customMessage ??
-      'More than one shop is registered — call Rees46.getInstance(shopId) with '
+      'More than one shop is registered — call REES46.getInstance(shopId) with '
           'an explicit id. Registered: $registeredShopIds.';
 
   @override

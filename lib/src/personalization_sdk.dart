@@ -27,8 +27,8 @@ class PersonalizationSdk {
   final PushNotificationCallbacks _pushCallbacks = PushNotificationCallbacks();
 
   /// The shop this handle is bound to, or `null` for the legacy default
-  /// instance. Set by [Rees46.initialize] / [Rees46.getInstance]. Reserved for
-  /// per-call routing once the native `Rees46` facade is wired (plan step F3);
+  /// instance. Set by [REES46.initialize] / [REES46.getInstance]. Reserved for
+  /// per-call routing once the native `REES46` facade is wired (plan step F3);
   /// stored now so multi-instance handles carry their identity.
   final String? shopId;
 
@@ -67,15 +67,15 @@ class PersonalizationSdk {
     return _api.getStoredPushToken(shopId);
   }
 
-  /// Routes [payload] to the native `Rees46.handlePush` for [event] (the entry a
-  /// host with its own messaging service calls). Prefer [Rees46.handlePush],
+  /// Routes [payload] to the native `REES46.handlePush` for [event] (the entry a
+  /// host with its own messaging service calls). Prefer [REES46.handlePush],
   /// which resolves the target shop and drops unroutable pushes first.
   Future<void> handlePush(Map<String, String> payload, PushEvent event) {
     return _api.handlePush(payload, event.index);
   }
 
   /// Fires this handle's registered push callbacks for [event]. Used by
-  /// [Rees46.handlePush] to deliver an inbound push to the shop it routed to,
+  /// [REES46.handlePush] to deliver an inbound push to the shop it routed to,
   /// independent of the process-global Pigeon push channel (real FCM inbound
   /// routing by `shop_id` is FL-5).
   void dispatchInboundPush(PushEvent event, Map<String, String?> payload) {

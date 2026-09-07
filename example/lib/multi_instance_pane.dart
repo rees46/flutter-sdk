@@ -8,7 +8,7 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 /// default; shop B is registered lazily and comes to life the moment this screen
 /// resolves it. Everything each instance sends carries its own `shop_id`/`did`,
 /// so the two session cards (did/sid) are the in-app proof of isolation. Also
-/// exercises the fail-fast resolution contract and `Rees46.handlePush` routing.
+/// exercises the fail-fast resolution contract and `REES46.handlePush` routing.
 ///
 /// (The native demos also show per-shop Stories; the Flutter SDK exposes no
 /// stories widget, so that part is omitted here.)
@@ -42,20 +42,20 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
     super.initState();
 
     // Shop A — eager default.
-    _shopA = Rees46.isInitialized(MultiInstancePane.shopIdA)
-        ? Rees46.getInstance(MultiInstancePane.shopIdA)
-        : Rees46.initialize(
-            const Rees46Config(shopId: MultiInstancePane.shopIdA),
+    _shopA = REES46.isInitialized(MultiInstancePane.shopIdA)
+        ? REES46.getInstance(MultiInstancePane.shopIdA)
+        : REES46.initialize(
+            const REES46Config(shopId: MultiInstancePane.shopIdA),
           );
 
     // Shop B — registered lazily, then materialized right here by resolving it.
-    if (!Rees46.isInitialized(MultiInstancePane.shopIdB) &&
-        !Rees46.pendingShopIds.contains(MultiInstancePane.shopIdB)) {
-      Rees46.registerShops(const [
-        Rees46Config(shopId: MultiInstancePane.shopIdB),
+    if (!REES46.isInitialized(MultiInstancePane.shopIdB) &&
+        !REES46.pendingShopIds.contains(MultiInstancePane.shopIdB)) {
+      REES46.registerShops(const [
+        REES46Config(shopId: MultiInstancePane.shopIdB),
       ]);
     }
-    _shopB = Rees46.getInstance(MultiInstancePane.shopIdB); // B is born here
+    _shopB = REES46.getInstance(MultiInstancePane.shopIdB); // B is born here
 
     _shopA.setPushNotificationCallbacks(
       onReceived: (p) => _addLog('✓ shop A onReceived: ${_pushLabel(p)}'),
@@ -125,7 +125,7 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
       'title': note,
       'body': note,
     };
-    final routed = await Rees46.handlePush(payload, PushEvent.received);
+    final routed = await REES46.handlePush(payload, PushEvent.received);
     final result = routed != null ? 'routed:$routed' : 'dropped';
     setState(() => _lastPushResult = result);
     _addLog('injected shop_id=${shopId ?? '—'} → $result');
@@ -180,13 +180,13 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
             children: [
               ElevatedButton(
                 onPressed: () =>
-                    _runContract('getInstance()', () => Rees46.getInstance()),
+                    _runContract('getInstance()', () => REES46.getInstance()),
                 child: const Text('getInstance() → Ambiguous'),
               ),
               ElevatedButton(
                 onPressed: () => _runContract(
                   'getInstance("nope")',
-                  () => Rees46.getInstance('nope'),
+                  () => REES46.getInstance('nope'),
                 ),
                 child: const Text('getInstance("nope") → Unknown'),
               ),
@@ -200,7 +200,7 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
 
           const SizedBox(height: 16),
           const Text(
-            'Push routing (Rees46.handlePush)',
+            'Push routing (REES46.handlePush)',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           Wrap(

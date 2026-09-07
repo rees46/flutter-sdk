@@ -1,17 +1,17 @@
 import '../sdk_init_config.dart';
 
 /// Configuration for one SDK instance (one shop), passed to
-/// [Rees46.initialize] / [Rees46.registerShops].
+/// [REES46.initialize] / [REES46.registerShops].
 ///
-/// Mirrors the native `Rees46Config` (Android/iOS). It is a superset of the
+/// Mirrors the native `REES46Config` (Android/iOS). It is a superset of the
 /// legacy [SdkInitConfig]: the same init fields plus an optional [storageKey]
 /// for the storage-partition key (defaults to `shopId` natively).
 ///
 /// `storageKey` is **reserved for parity** and not wired end-to-end yet: the
 /// Pigeon `InitConfig` has no `storageKey` field, so the native default
 /// (partition == `shopId`) applies until the bridge threads it (plan step F2).
-class Rees46Config {
-  const Rees46Config({
+class REES46Config {
+  const REES46Config({
     required this.shopId,
     this.apiDomain,
     this.stream,
@@ -49,7 +49,7 @@ class Rees46Config {
     needReInitialization: needReInitialization,
   );
 
-  Rees46Config copyWith({String? shopId, String? storageKey}) => Rees46Config(
+  REES46Config copyWith({String? shopId, String? storageKey}) => REES46Config(
     shopId: shopId ?? this.shopId,
     apiDomain: apiDomain,
     stream: stream,

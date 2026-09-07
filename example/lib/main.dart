@@ -136,10 +136,10 @@ final List<_TrackingDemo> _trackingDemos = [
 ];
 
 class _InitPageState extends State<InitPage> {
-  // Initialized through the multi-instance [Rees46] facade — the same entry
+  // Initialized through the multi-instance [REES46] facade — the same entry
   // point the iOS/Android demos use — so shop A is registered in the facade and
   // the Multi-instance screen reaches the very same instance via
-  // Rees46.getInstance(shopId). Bound to shop A explicitly, so every call stays
+  // REES46.getInstance(shopId). Bound to shop A explicitly, so every call stays
   // unambiguous even after that screen brings a second shop to life. Assigned in
   // [_initialize] (rebuilt on re-initialize).
   late PersonalizationSdk _sdk;
@@ -288,10 +288,10 @@ class _InitPageState extends State<InitPage> {
       // Initialize shop A through the multi-instance facade — the unified entry
       // point, same as iOS/Android. Returns the handle and registers the shop,
       // so the Multi-instance screen resolves the very same instance via
-      // Rees46.getInstance(shopId). Re-initializing rebuilds the handle with the
+      // REES46.getInstance(shopId). Re-initializing rebuilds the handle with the
       // current toggles.
-      _sdk = Rees46.initialize(
-        Rees46Config(
+      _sdk = REES46.initialize(
+        REES46Config(
           shopId: _shopId,
           apiDomain: _apiDomain,
           stream: _stream,
