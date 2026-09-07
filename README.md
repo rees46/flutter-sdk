@@ -67,15 +67,15 @@ late final PersonalizationSdk sdk;
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  sdk = Rees46.initialize(
-    const Rees46Config(shopId: 'YOUR_SHOP_ID'),
+  sdk = REES46.initialize(
+    const REES46Config(shopId: 'YOUR_SHOP_ID'),
   );
 
   runApp(const MyApp());
 }
 ```
 
-`Rees46` is the entry point. `Rees46.initialize` **returns the handle
+`REES46` is the entry point. `REES46.initialize` **returns the handle
 synchronously** and starts native initialization in the background; calls issued
 right after are queued natively until the session is ready, so the handle is
 usable straight away. A broken setup surfaces as a `PlatformException` on the
@@ -99,12 +99,12 @@ there is simply no token to send.
 Keep one place that owns the handle, so no widget re-initializes:
 
 ```dart
-class Rees46Service {
+class REES46Service {
   static const _shopId = 'YOUR_SHOP_ID';
 
-  static PersonalizationSdk get sdk => Rees46.isInitialized(_shopId)
-      ? Rees46.getInstance(_shopId)
-      : Rees46.initialize(const Rees46Config(shopId: _shopId));
+  static PersonalizationSdk get sdk => REES46.isInitialized(_shopId)
+      ? REES46.getInstance(_shopId)
+      : REES46.initialize(const REES46Config(shopId: _shopId));
 }
 ```
 
@@ -124,12 +124,12 @@ Each gets its own native instance with isolated storage, session and `did`.
 
 ```dart
 // Registered now, initialized on first use.
-Rees46.registerShops(const [
-  Rees46Config(shopId: 'shop-a'),
-  Rees46Config(shopId: 'shop-b'),
+REES46.registerShops(const [
+  REES46Config(shopId: 'shop-a'),
+  REES46Config(shopId: 'shop-b'),
 ]);                                 // pass eagerInit: true to initialize up front
 
-final shopA = Rees46.getInstance('shop-a');
+final shopA = REES46.getInstance('shop-a');
 ```
 
 Address instances explicitly once more than one is registered: `getInstance()`
@@ -154,7 +154,7 @@ Awaiting is optional — fire-and-forget from UI code is fine.
 With several shops the namespace follows the instance:
 
 ```dart
-await Rees46.getInstance('shop-b').tracking.productView('sku-1');
+await REES46.getInstance('shop-b').tracking.productView('sku-1');
 ```
 
 ### Catalog
@@ -202,8 +202,10 @@ await sdk.tracking.syncFavorites(const ['sku-1', 'sku-2']);
 await sdk.tracking.removeFromFavorites('sku-1');
 ```
 
-`syncCart` and `syncFavorites` reject an empty list with an `ArgumentError` —
-drop the last item through `removeFromCart` / `removeFromFavorites` instead.
+An empty list is how an emptied cart or wishlist is reported: `items` goes on
+the wire as `[]` alongside `full_cart` / `full_wish`, which is what the native
+SDKs send. Removing a single product is still `removeFromCart` /
+`removeFromFavorites`.
 
 ### Stories
 
@@ -289,39 +291,41 @@ duplicated under `payload`. The SDK's own keys are reserved and rejected —
 
 ### Attribution
 
-Events can carry the tool the user came from. Per call, for one event:
+Events can carry the campaign the user arrived from — a bulk mobile push, a
+chain. Both values come from the link that opened the app, which carries them as
+`recommended_by` and `recommended_code`:
 
-```dart
-await sdk.tracking.productView(
-  'sku-1',
-  source: const TrackingSource(
-    type: TrackingSourceType.dynamicBlock,
-    code: 'main_page_block',
-  ),
-);
+```
+myshop://product/sku-1?recommended_by=bulk&recommended_code=jkIWdXSRfwVyK
 ```
 
-`source` is accepted by `productView`, `addToCart` and `addToFavorites` — the
-events a recommendation leads to.
-
-Or stored once, for the events that follow — the case where the source outlives
-a single call, such as a user entering the catalog from a recommender block:
+A campaign brings the user in and then colours everything they do next, so store
+it once when you handle the link:
 
 ```dart
 await sdk.tracking.setSource(
-  const TrackingSource(
-    type: TrackingSourceType.dynamicBlock,
-    code: 'main_page_block',
-  ),
+  const TrackingSource(type: TrackingSourceType.bulk, code: 'jkIWdXSRfwVyK'),
 );
 
-// Carries source=main_page_block without being told to.
+// Carries recommended_by=bulk without being told to.
 await sdk.tracking.productView('sku-1');
 ```
 
 The stored source lives natively per shop, survives restarts, and is kept for 48
-hours or until it is replaced. A per-call `source` wins over the stored one, and
-an order is attributed by the `recommendedSource` of the `purchase` call itself.
+hours or until it is replaced.
+
+To attribute a single event instead of everything that follows, pass `source` per
+call — `productView`, `addToCart` and `addToFavorites` accept it:
+
+```dart
+await sdk.tracking.addToCart(
+  const TrackingItem(id: 'sku-1', quantity: 1),
+  source: const TrackingSource(type: TrackingSourceType.chain, code: 'welcome_2'),
+);
+```
+
+A per-call `source` wins over the stored one, and an order is attributed by the
+`recommendedSource` of the `purchase` call itself.
 
 | `TrackingSourceType` | Wire value | Set by |
 |---|---|---|
