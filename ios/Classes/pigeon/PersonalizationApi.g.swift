@@ -531,7 +531,7 @@ protocol PersonalizationHostApi {
   /// Dart layer parses the result into [CollectionResponse].
   func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+  /// via the native `REES46.handlePush`. [event] is the index of the Dart
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
   /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
   func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void)
@@ -935,7 +935,7 @@ class PersonalizationHostApiSetup {
       getCollectionChannel.setMessageHandler(nil)
     }
     /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-    /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+    /// via the native `REES46.handlePush`. [event] is the index of the Dart
     /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
     /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
     let handlePushChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)

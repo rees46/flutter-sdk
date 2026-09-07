@@ -8,7 +8,7 @@ import 'sdk_exceptions.dart';
 
 /// Builds and initializes a [PersonalizationSdk] handle for [config]. Injectable
 /// so tests can resolve shops without touching native or Pigeon.
-typedef Rees46SdkFactory = PersonalizationSdk Function(Rees46Config config);
+typedef REES46SdkFactory = PersonalizationSdk Function(REES46Config config);
 
 /// Public entry point for the Flutter SDK — the unified, multi-instance API.
 ///
@@ -18,12 +18,12 @@ typedef Rees46SdkFactory = PersonalizationSdk Function(Rees46Config config);
 ///
 /// ```dart
 /// // Single shop:
-/// final sdk = Rees46.initialize(Rees46Config(shopId: 'SHOP_ID'));
+/// final sdk = REES46.initialize(REES46Config(shopId: 'SHOP_ID'));
 /// sdk.trackEvent('category', ...);
 ///
 /// // Several shops, initialized lazily on first use:
-/// Rees46.registerShops([Rees46Config(shopId: 'shop-a'), Rees46Config(shopId: 'shop-b')]);
-/// Rees46.getInstance('shop-a').trackEvent('category', ...);
+/// REES46.registerShops([REES46Config(shopId: 'shop-a'), REES46Config(shopId: 'shop-b')]);
+/// REES46.getInstance('shop-a').trackEvent('category', ...);
 /// ```
 ///
 /// ## Why the facade holds a shop-id mirror
@@ -37,14 +37,14 @@ typedef Rees46SdkFactory = PersonalizationSdk Function(Rees46Config config);
 /// remains the source of truth for the instances themselves.
 ///
 /// Per-call routing to a specific native instance (threading `shopId` through
-/// every Pigeon call) lands once the native `Rees46` facade ships in the
+/// every Pigeon call) lands once the native `REES46` facade ships in the
 /// consumed artifacts — see the plan (`Multi-instance — Flutter Plan`, step F3).
 /// Until then single-shop [initialize] is fully functional and the resolution
 /// contract below is complete and tested.
-class Rees46 {
-  Rees46._();
+class REES46 {
+  REES46._();
 
-  static final Rees46 _instance = Rees46._();
+  static final REES46 _instance = REES46._();
 
   /// Live (initialized) instances by shop id. The Dart-side mirror of the
   /// native registry — used for resolution only.
@@ -52,14 +52,14 @@ class Rees46 {
 
   /// Shops registered lazily and not yet initialized. Materialized on the first
   /// [getInstance] for the shop.
-  final Map<String, Rees46Config> _pending = <String, Rees46Config>{};
+  final Map<String, REES46Config> _pending = <String, REES46Config>{};
 
-  Rees46SdkFactory _factory = _defaultFactory;
+  REES46SdkFactory _factory = _defaultFactory;
 
-  static PersonalizationSdk _defaultFactory(Rees46Config config) {
+  static PersonalizationSdk _defaultFactory(REES46Config config) {
     final sdk = PersonalizationSdk(shopId: config.shopId);
     // F1: delegates to the existing single-shop native init. Per-call `shopId`
-    // routing to the native `Rees46` facade lands in plan step F3.
+    // routing to the native `REES46` facade lands in plan step F3.
     sdk.initialize(config.toSdkInitConfig());
     return sdk;
   }
@@ -71,7 +71,7 @@ class Rees46 {
   /// Initializes an SDK instance for [config] immediately and returns it. The
   /// instance is registered, so it is also reachable via [getInstance]. Any
   /// pending registration for the same shop is cleared.
-  static PersonalizationSdk initialize(Rees46Config config) =>
+  static PersonalizationSdk initialize(REES46Config config) =>
       _instance._initialize(config);
 
   /// Registers [configs] without initializing them. Initialization happens
@@ -79,7 +79,7 @@ class Rees46 {
   /// the current region is needed. Pass [eagerInit] = true to initialize every
   /// shop up front — the super-shop case, where instances must stay consistent.
   static void registerShops(
-    List<Rees46Config> configs, {
+    List<REES46Config> configs, {
     bool eagerInit = false,
   }) => _instance._registerShops(configs, eagerInit: eagerInit);
 
@@ -99,7 +99,7 @@ class Rees46 {
       _instance._isInitialized(shopId);
 
   /// Routes a push to the shop it belongs to (the payload's `shop_id`) and tracks
-  /// [event] for it via the native `Rees46.handlePush`, then fires that shop's
+  /// [event] for it via the native `REES46.handlePush`, then fires that shop's
   /// registered push callbacks. Call this from a host that owns its messaging
   /// service.
   ///
@@ -126,14 +126,14 @@ class Rees46 {
   // Instance implementation
   // ---------------------------------------------------------------------------
 
-  PersonalizationSdk _initialize(Rees46Config config) {
+  PersonalizationSdk _initialize(REES46Config config) {
     final sdk = _factory(config);
     _live[config.shopId] = sdk;
     _pending.remove(config.shopId);
     return sdk;
   }
 
-  void _registerShops(List<Rees46Config> configs, {required bool eagerInit}) {
+  void _registerShops(List<REES46Config> configs, {required bool eagerInit}) {
     for (final config in configs) {
       if (eagerInit) {
         _initialize(config);
@@ -210,7 +210,7 @@ class Rees46 {
   /// Test-only: overrides the factory that builds/initializes instances so shop
   /// resolution can be exercised without touching native or Pigeon.
   @visibleForTesting
-  static set debugFactory(Rees46SdkFactory factory) =>
+  static set debugFactory(REES46SdkFactory factory) =>
       _instance._factory = factory;
 
   /// Test-only: drops all live and pending registrations and restores the

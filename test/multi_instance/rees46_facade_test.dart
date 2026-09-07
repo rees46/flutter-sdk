@@ -12,96 +12,96 @@ void main() {
   // resolution contract testable without native or a live Pigeon channel.
   late List<String> built;
 
-  Rees46Config cfg(String shopId) => Rees46Config(shopId: shopId);
+  REES46Config cfg(String shopId) => REES46Config(shopId: shopId);
 
   setUp(() {
     built = <String>[];
-    Rees46.debugFactory = (config) {
+    REES46.debugFactory = (config) {
       built.add(config.shopId);
       return PersonalizationSdk(shopId: config.shopId);
     };
   });
 
-  tearDown(Rees46.reset);
+  tearDown(REES46.reset);
 
   group('initialize', () {
     test('returns a handle bound to the shop and marks it live', () {
-      final sdk = Rees46.initialize(cfg('a'));
+      final sdk = REES46.initialize(cfg('a'));
 
       expect(sdk.shopId, 'a');
       expect(built, ['a']);
-      expect(Rees46.isInitialized('a'), isTrue);
-      expect(Rees46.liveShopIds, ['a']);
+      expect(REES46.isInitialized('a'), isTrue);
+      expect(REES46.liveShopIds, ['a']);
     });
 
     test('clears any pending registration for the same shop', () {
-      Rees46.registerShops([cfg('a')]);
-      expect(Rees46.pendingShopIds, ['a']);
+      REES46.registerShops([cfg('a')]);
+      expect(REES46.pendingShopIds, ['a']);
 
-      Rees46.initialize(cfg('a'));
+      REES46.initialize(cfg('a'));
 
-      expect(Rees46.pendingShopIds, isEmpty);
-      expect(Rees46.liveShopIds, ['a']);
+      expect(REES46.pendingShopIds, isEmpty);
+      expect(REES46.liveShopIds, ['a']);
     });
   });
 
   group('registerShops', () {
     test('lazy by default — registers without building', () {
-      Rees46.registerShops([cfg('a'), cfg('b')]);
+      REES46.registerShops([cfg('a'), cfg('b')]);
 
       expect(built, isEmpty);
-      expect(Rees46.pendingShopIds, ['a', 'b']);
-      expect(Rees46.isInitialized('a'), isFalse);
+      expect(REES46.pendingShopIds, ['a', 'b']);
+      expect(REES46.isInitialized('a'), isFalse);
     });
 
     test('eagerInit builds every shop up front', () {
-      Rees46.registerShops([cfg('a'), cfg('b')], eagerInit: true);
+      REES46.registerShops([cfg('a'), cfg('b')], eagerInit: true);
 
       expect(built, ['a', 'b']);
-      expect(Rees46.liveShopIds, ['a', 'b']);
-      expect(Rees46.pendingShopIds, isEmpty);
+      expect(REES46.liveShopIds, ['a', 'b']);
+      expect(REES46.pendingShopIds, isEmpty);
     });
   });
 
   group('getInstance', () {
     test('no id, single live shop → that instance', () {
-      Rees46.initialize(cfg('a'));
-      expect(Rees46.getInstance().shopId, 'a');
+      REES46.initialize(cfg('a'));
+      expect(REES46.getInstance().shopId, 'a');
     });
 
     test('explicit id returns the matching live instance', () {
-      Rees46.initialize(cfg('a'));
-      Rees46.initialize(cfg('b'));
-      expect(Rees46.getInstance('b').shopId, 'b');
+      REES46.initialize(cfg('a'));
+      REES46.initialize(cfg('b'));
+      expect(REES46.getInstance('b').shopId, 'b');
     });
 
     test('materializes a pending shop on first use', () {
-      Rees46.registerShops([cfg('a')]);
+      REES46.registerShops([cfg('a')]);
       expect(built, isEmpty);
 
-      final sdk = Rees46.getInstance('a');
+      final sdk = REES46.getInstance('a');
 
       expect(sdk.shopId, 'a');
       expect(built, ['a']);
-      expect(Rees46.liveShopIds, ['a']);
-      expect(Rees46.pendingShopIds, isEmpty);
+      expect(REES46.liveShopIds, ['a']);
+      expect(REES46.pendingShopIds, isEmpty);
     });
 
     test('materializes a pending shop only once', () {
-      Rees46.registerShops([cfg('a')]);
-      final first = Rees46.getInstance('a');
-      final second = Rees46.getInstance('a');
+      REES46.registerShops([cfg('a')]);
+      final first = REES46.getInstance('a');
+      final second = REES46.getInstance('a');
 
       expect(built, ['a']); // built once
       expect(identical(first, second), isTrue);
     });
 
     test('no id with several shops → AmbiguousShopException', () {
-      Rees46.initialize(cfg('a'));
-      Rees46.registerShops([cfg('b')]);
+      REES46.initialize(cfg('a'));
+      REES46.registerShops([cfg('b')]);
 
       expect(
-        () => Rees46.getInstance(),
+        () => REES46.getInstance(),
         throwsA(
           isA<AmbiguousShopException>().having(
             (e) => e.registeredShopIds,
@@ -113,9 +113,9 @@ void main() {
     });
 
     test('unknown id → UnknownShopIdException', () {
-      Rees46.initialize(cfg('a'));
+      REES46.initialize(cfg('a'));
       expect(
-        () => Rees46.getInstance('nope'),
+        () => REES46.getInstance('nope'),
         throwsA(
           isA<UnknownShopIdException>().having(
             (e) => e.shopId,
@@ -128,7 +128,7 @@ void main() {
 
     test('no id with nothing registered → UnknownShopIdException', () {
       expect(
-        () => Rees46.getInstance(),
+        () => REES46.getInstance(),
         throwsA(isA<UnknownShopIdException>()),
       );
     });
@@ -136,17 +136,17 @@ void main() {
 
   group('isInitialized', () {
     test('null id true only when exactly one live shop', () {
-      expect(Rees46.isInitialized(), isFalse);
-      Rees46.initialize(cfg('a'));
-      expect(Rees46.isInitialized(), isTrue);
-      Rees46.initialize(cfg('b'));
-      expect(Rees46.isInitialized(), isFalse); // ambiguous default
+      expect(REES46.isInitialized(), isFalse);
+      REES46.initialize(cfg('a'));
+      expect(REES46.isInitialized(), isTrue);
+      REES46.initialize(cfg('b'));
+      expect(REES46.isInitialized(), isFalse); // ambiguous default
     });
 
     test('pending shop is not counted as initialized', () {
-      Rees46.registerShops([cfg('a')]);
-      expect(Rees46.isInitialized('a'), isFalse);
-      expect(Rees46.isInitialized(), isFalse);
+      REES46.registerShops([cfg('a')]);
+      expect(REES46.isInitialized('a'), isFalse);
+      expect(REES46.isInitialized(), isFalse);
     });
   });
 }

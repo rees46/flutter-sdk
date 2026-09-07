@@ -1,4 +1,4 @@
-/// Pure decision logic behind [Rees46.getInstance]: given the requested `shopId`
+/// Pure decision logic behind [REES46.getInstance]: given the requested `shopId`
 /// (or none) and the sets of live and pending shops, decides which instance to
 /// return, whether one must be lazily materialized, or which error to raise.
 ///

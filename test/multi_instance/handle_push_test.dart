@@ -5,9 +5,9 @@ import 'package:rees46_sdk/src/multi_instance/rees46_config.dart';
 import 'package:rees46_sdk/src/personalization_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
-/// F4 contract: [Rees46.handlePush] resolves the target shop from the payload's
+/// F4 contract: [REES46.handlePush] resolves the target shop from the payload's
 /// `shop_id` (drop on unknown/ambiguous), tracks natively, and fires that shop's
-/// callbacks — mirror of the native `Rees46.handlePush` routing.
+/// callbacks — mirror of the native `REES46.handlePush` routing.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -17,7 +17,7 @@ void main() {
   late List<List<Object?>> nativeCalls;
   late Map<String, PersonalizationSdk> handles;
 
-  Rees46Config cfg(String shopId) => Rees46Config(shopId: shopId);
+  REES46Config cfg(String shopId) => REES46Config(shopId: shopId);
 
   Map<String, String> push(String? shopId) => {
     'shop_id': ?shopId,
@@ -42,7 +42,7 @@ void main() {
             <Object?>[],
           );
         });
-    Rees46.debugFactory = (config) {
+    REES46.debugFactory = (config) {
       final sdk = PersonalizationSdk(shopId: config.shopId);
       handles[config.shopId] = sdk;
       return sdk;
@@ -52,14 +52,14 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMessageHandler(handlePushChannel, null);
-    Rees46.reset();
+    REES46.reset();
   });
 
   test('routes to the shop named by shop_id and tracks natively', () async {
-    Rees46.initialize(cfg('A'));
-    Rees46.initialize(cfg('B'));
+    REES46.initialize(cfg('A'));
+    REES46.initialize(cfg('B'));
 
-    final routed = await Rees46.handlePush(push('B'), PushEvent.received);
+    final routed = await REES46.handlePush(push('B'), PushEvent.received);
 
     expect(routed, 'B');
     expect(nativeCalls, hasLength(1));
@@ -67,52 +67,52 @@ void main() {
   });
 
   test('unknown shop is dropped — no native call', () async {
-    Rees46.initialize(cfg('A'));
+    REES46.initialize(cfg('A'));
 
-    final routed = await Rees46.handlePush(push('zzz'), PushEvent.received);
+    final routed = await REES46.handlePush(push('zzz'), PushEvent.received);
 
     expect(routed, isNull);
     expect(nativeCalls, isEmpty);
   });
 
   test('no shop_id with a single live shop falls back to it', () async {
-    Rees46.initialize(cfg('A'));
+    REES46.initialize(cfg('A'));
 
-    final routed = await Rees46.handlePush(push(null), PushEvent.received);
+    final routed = await REES46.handlePush(push(null), PushEvent.received);
 
     expect(routed, 'A');
     expect(nativeCalls, hasLength(1));
   });
 
   test('no shop_id with two live shops is ambiguous and dropped', () async {
-    Rees46.initialize(cfg('A'));
-    Rees46.initialize(cfg('B'));
+    REES46.initialize(cfg('A'));
+    REES46.initialize(cfg('B'));
 
-    final routed = await Rees46.handlePush(push(null), PushEvent.received);
+    final routed = await REES46.handlePush(push(null), PushEvent.received);
 
     expect(routed, isNull);
     expect(nativeCalls, isEmpty);
   });
 
   test('materializes a pending shop and routes to it', () async {
-    Rees46.registerShops([cfg('A')]);
-    expect(Rees46.liveShopIds, isEmpty);
+    REES46.registerShops([cfg('A')]);
+    expect(REES46.liveShopIds, isEmpty);
 
-    final routed = await Rees46.handlePush(push('A'), PushEvent.received);
+    final routed = await REES46.handlePush(push('A'), PushEvent.received);
 
     expect(routed, 'A');
-    expect(Rees46.liveShopIds, ['A']); // materialized on the push
+    expect(REES46.liveShopIds, ['A']); // materialized on the push
   });
 
   test('fires only the target shop callbacks', () async {
-    Rees46.initialize(cfg('A'));
-    Rees46.initialize(cfg('B'));
+    REES46.initialize(cfg('A'));
+    REES46.initialize(cfg('B'));
     Map<String, String?>? gotA;
     Map<String, String?>? gotB;
     handles['A']!.setPushNotificationCallbacks(onReceived: (p) => gotA = p);
     handles['B']!.setPushNotificationCallbacks(onReceived: (p) => gotB = p);
 
-    await Rees46.handlePush(push('B'), PushEvent.received);
+    await REES46.handlePush(push('B'), PushEvent.received);
 
     expect(gotB, isNotNull);
     expect(gotB!['shop_id'], 'B');
