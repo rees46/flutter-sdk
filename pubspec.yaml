@@ -43,6 +43,11 @@ flutter:
       ios:
         pluginClass: Rees46FlutterSdkPlugin
 
+  # Иконки дизайн-системы. Отдаются как ассеты пакета: Flutter не рисует SVG
+  # без сторонней библиотеки, поэтому отрисовка остаётся за потребителем.
+  assets:
+    - assets/icons/
+
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
