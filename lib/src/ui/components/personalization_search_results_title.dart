@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 import '../personalization_icons.dart';
 import 'personalization_button.dart';
 import 'personalization_button_group.dart';
@@ -72,12 +72,15 @@ class PersonalizationSearchResultsTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     final TextStyle regular = TextStyle(
       fontSize: 14,
       height: 20 / 14,
       letterSpacing: 0.05,
       fontWeight: FontWeight.w400,
+      fontFamily: theme.fontFamily.familyFor(FontWeight.w400),
+      package: theme.fontFamily.package,
       color: colors.textSecondary,
     );
     final TextStyle strong = regular.copyWith(fontWeight: FontWeight.w600);

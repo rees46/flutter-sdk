@@ -3,6 +3,7 @@ import 'package:flutter/material.dart'
 import 'package:flutter/widgets.dart';
 
 import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 import '../personalization_icons.dart';
 
 /// Размер поля ввода.
@@ -101,7 +102,8 @@ class _PersonalizationInputFieldState extends State<PersonalizationInputField> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     final metrics = _inputMetrics[widget.size]!;
     final filled = _controller.text.isNotEmpty;
     final foreground =
@@ -112,6 +114,8 @@ class _PersonalizationInputFieldState extends State<PersonalizationInputField> {
       height: metrics.lineHeight / metrics.fontSize,
       letterSpacing: metrics.letterSpacing,
       fontWeight: FontWeight.w400,
+      fontFamily: theme.fontFamily.familyFor(FontWeight.w400),
+      package: theme.fontFamily.package,
       color: foreground,
     );
 
@@ -130,7 +134,7 @@ class _PersonalizationInputFieldState extends State<PersonalizationInputField> {
       padding: _padding(metrics),
       decoration: BoxDecoration(
         color: widget.enabled ? colors.backgroundInput : colors.backgroundInputDisabled,
-        borderRadius: BorderRadius.circular(metrics.radius),
+        borderRadius: BorderRadius.circular(theme.radius.resolve(metrics.radius)),
         border: Border.all(
           color: _focused && widget.enabled ? colors.lineInputFocus : colors.lineInput,
           width: _border,
@@ -255,7 +259,7 @@ class _InputMetrics {
   final double fontSize;
   final double lineHeight;
   final double letterSpacing;
-  final double radius;
+  final PersonalizationRadiusToken radius;
   final double paddingVertical;
 
   /// Горизонтальный отступ типа Input. У Search он равен вертикальному.
@@ -274,7 +278,7 @@ const Map<PersonalizationInputFieldSize, _InputMetrics> _inputMetrics =
     fontSize: 18,
     lineHeight: 32,
     letterSpacing: 0,
-    radius: 10,
+    radius: PersonalizationRadiusToken.xl,
     paddingVertical: 12,
     paddingInput: 16,
     paddingSelectStart: 16,
@@ -284,7 +288,7 @@ const Map<PersonalizationInputFieldSize, _InputMetrics> _inputMetrics =
     fontSize: 16,
     lineHeight: 24,
     letterSpacing: 0,
-    radius: 8,
+    radius: PersonalizationRadiusToken.lg,
     paddingVertical: 8,
     paddingInput: 12,
     paddingSelectStart: 12,
@@ -295,7 +299,7 @@ const Map<PersonalizationInputFieldSize, _InputMetrics> _inputMetrics =
     fontSize: 14,
     lineHeight: 24,
     letterSpacing: 0.05,
-    radius: 6,
+    radius: PersonalizationRadiusToken.md,
     paddingVertical: 4,
     paddingInput: 12,
     paddingSelectStart: 8,

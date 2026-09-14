@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 
 /// Точки-индикатор карусели.
 ///
@@ -19,7 +19,8 @@ class PersonalizationDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(

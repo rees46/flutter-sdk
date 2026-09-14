@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 
 /// Состояние чекбокса.
 enum PersonalizationCheckboxState { unchecked, checked, indeterminate }
@@ -30,7 +30,8 @@ class PersonalizationCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     final isFilled = state != PersonalizationCheckboxState.unchecked;
 
     final Widget box = CustomPaint(
@@ -42,6 +43,7 @@ class PersonalizationCheckbox extends StatelessWidget {
             : (disabled ? colors.backgroundInputDisabled : colors.backgroundInput),
         border: isFilled ? null : colors.lineInput,
         glyph: colors.textLightPrimary,
+        radius: theme.radius.resolve(PersonalizationRadiusToken.sm),
       ),
     );
 
@@ -64,17 +66,19 @@ class _CheckboxPainter extends CustomPainter {
     required this.fill,
     required this.border,
     required this.glyph,
+    required this.radius,
   });
 
   final PersonalizationCheckboxState state;
   final Color fill;
   final Color? border;
   final Color glyph;
+  final double radius;
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
 
     canvas.drawRRect(rrect, Paint()..color = fill);
 
@@ -82,7 +86,7 @@ class _CheckboxPainter extends CustomPainter {
       // Рамка внутрь, чтобы внешний размер остался ровно 20.
       final inset = rect.deflate(0.5);
       canvas.drawRRect(
-        RRect.fromRectAndRadius(inset, const Radius.circular(4)),
+        RRect.fromRectAndRadius(inset, Radius.circular(radius)),
         Paint()
           ..color = border!
           ..style = PaintingStyle.stroke
@@ -115,5 +119,9 @@ class _CheckboxPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_CheckboxPainter old) =>
-      old.state != state || old.fill != fill || old.border != border || old.glyph != glyph;
+      old.state != state ||
+      old.fill != fill ||
+      old.border != border ||
+      old.glyph != glyph ||
+      old.radius != radius;
 }

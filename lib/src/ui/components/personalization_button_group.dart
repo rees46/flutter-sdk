@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 
 /// Размер группы кнопок.
 enum PersonalizationButtonGroupSize { md, sm }
@@ -51,7 +51,8 @@ class PersonalizationButtonGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     final metrics = _groupMetrics[size]!;
     final side = metrics.iconSize + metrics.padding * 2;
 
@@ -59,14 +60,16 @@ class PersonalizationButtonGroup extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: colors.buttonSecondary,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(
+          theme.radius.resolve(PersonalizationRadiusToken.lg),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           for (int index = 0; index < items.length; index++) ...<Widget>[
             if (index > 0) const SizedBox(width: 2),
-            _segment(context, colors, metrics, side, index),
+            _segment(context, theme, metrics, side, index),
           ],
         ],
       ),
@@ -75,11 +78,12 @@ class PersonalizationButtonGroup extends StatelessWidget {
 
   Widget _segment(
     BuildContext context,
-    PersonalizationColors colors,
+    PersonalizationTheme theme,
     _GroupMetrics metrics,
     double side,
     int index,
   ) {
+    final colors = theme.colors;
     final item = items[index];
     final active = index == selectedIndex;
     final asset = active ? (item.activeIcon ?? item.icon) : item.icon;
@@ -93,7 +97,7 @@ class PersonalizationButtonGroup extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: active ? colors.buttonPrimary : colors.backgroundTransparent,
-          borderRadius: BorderRadius.circular(metrics.radius),
+          borderRadius: BorderRadius.circular(theme.radius.resolve(metrics.radius)),
         ),
         child: SizedBox(
           width: metrics.iconSize,
@@ -112,7 +116,7 @@ class _GroupMetrics {
     required this.iconSize,
   });
 
-  final double radius;
+  final PersonalizationRadiusToken radius;
 
   /// Отступ сегмента: 6 в MD и 2 в SM, обоих значений нет в шкале спейсингов.
   final double padding;
@@ -122,7 +126,7 @@ class _GroupMetrics {
 const Map<PersonalizationButtonGroupSize, _GroupMetrics> _groupMetrics =
     <PersonalizationButtonGroupSize, _GroupMetrics>{
   PersonalizationButtonGroupSize.md:
-      _GroupMetrics(radius: 6, padding: 6, iconSize: 24),
+      _GroupMetrics(radius: PersonalizationRadiusToken.md, padding: 6, iconSize: 24),
   PersonalizationButtonGroupSize.sm:
-      _GroupMetrics(radius: 4, padding: 2, iconSize: 20),
+      _GroupMetrics(radius: PersonalizationRadiusToken.sm, padding: 2, iconSize: 20),
 };

@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 
 /// Счётчик «показано N из M».
 ///
@@ -26,17 +26,22 @@ class PersonalizationCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     const double fontSize = 16;
     final TextStyle regular = TextStyle(
       fontSize: fontSize,
       height: 24 / fontSize,
       letterSpacing: 0,
       fontWeight: FontWeight.w400,
+      fontFamily: theme.fontFamily.familyFor(FontWeight.w400),
+      package: theme.fontFamily.package,
       color: colors.textSecondary,
     );
     final TextStyle strong = regular.copyWith(
       fontWeight: FontWeight.w600,
+      fontFamily: theme.fontFamily.familyFor(FontWeight.w600),
+      package: theme.fontFamily.package,
       color: colors.textPrimary,
     );
 

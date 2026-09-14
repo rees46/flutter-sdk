@@ -25,6 +25,7 @@ export 'src/ui/personalization_radius.dart';
 export 'src/ui/personalization_elevation.dart';
 export 'src/ui/personalization_icons.dart';
 export 'src/ui/personalization_colors.dart';
+export 'src/ui/personalization_theme.dart';
 export 'src/ui/components/personalization_badge.dart';
 export 'src/ui/components/personalization_tag.dart';
 export 'src/ui/components/personalization_checkbox.dart';

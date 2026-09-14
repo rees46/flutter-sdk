@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 import '../personalization_icons.dart';
 
 /// Строка-аккордеон списка.
@@ -36,12 +36,15 @@ class PersonalizationAccordion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     final style = TextStyle(
       fontSize: 16,
       height: 24 / 16,
       letterSpacing: 0,
       fontWeight: FontWeight.w400,
+      fontFamily: theme.fontFamily.familyFor(FontWeight.w400),
+      package: theme.fontFamily.package,
       color: colors.textPrimary,
     );
     final asset =

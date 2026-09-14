@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 
 /// Подпись-разделитель списка.
 ///
@@ -16,7 +16,8 @@ class PersonalizationListLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     return Text(
       label.toUpperCase(),
       style: TextStyle(
@@ -24,6 +25,8 @@ class PersonalizationListLabel extends StatelessWidget {
         height: 20 / 14,
         letterSpacing: 0.05,
         fontWeight: FontWeight.w400,
+        fontFamily: theme.fontFamily.familyFor(FontWeight.w400),
+        package: theme.fontFamily.package,
         color: colors.textHint,
       ),
     );

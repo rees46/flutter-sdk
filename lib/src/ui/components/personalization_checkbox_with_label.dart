@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 import 'personalization_checkbox.dart';
 
 /// Чекбокс с подписью.
@@ -24,7 +24,8 @@ class PersonalizationCheckboxWithLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
 
     final row = Row(
       mainAxisSize: MainAxisSize.min,
@@ -38,6 +39,8 @@ class PersonalizationCheckboxWithLabel extends StatelessWidget {
             fontSize: 16,
             height: 20 / 16,
             fontWeight: FontWeight.w400,
+            fontFamily: theme.fontFamily.familyFor(FontWeight.w400),
+            package: theme.fontFamily.package,
             color: disabled ? colors.textHint : colors.textPrimary,
           ),
         ),

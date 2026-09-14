@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 import '../personalization_icons.dart';
 
 /// Рейтинг товара, короткая форма.
@@ -34,13 +34,16 @@ class PersonalizationRating extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     const double fontSize = 16;
     final TextStyle base = TextStyle(
       fontSize: fontSize,
       height: 20 / fontSize,
       letterSpacing: 0,
       fontWeight: FontWeight.w400,
+      fontFamily: theme.fontFamily.familyFor(FontWeight.w400),
+      package: theme.fontFamily.package,
       color: colors.textHint,
     );
     final Color starColor =
@@ -72,6 +75,8 @@ class PersonalizationRating extends StatelessWidget {
                 value,
                 style: base.copyWith(
                   fontWeight: FontWeight.w600,
+                  fontFamily: theme.fontFamily.familyFor(FontWeight.w600),
+                  package: theme.fontFamily.package,
                   color: colors.textSecondary,
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 
 /// Размер кнопки.
 enum PersonalizationButtonSize { lg, md, sm }
@@ -65,7 +66,8 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     final metrics = _metrics[widget.size]!;
     final foreground = _foreground(colors);
 
@@ -80,6 +82,8 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
             height: metrics.lineHeight / metrics.fontSize,
             letterSpacing: metrics.letterSpacing,
             fontWeight: FontWeight.w600,
+            fontFamily: theme.fontFamily.familyFor(FontWeight.w600),
+            package: theme.fontFamily.package,
             color: foreground,
           ),
         ),
@@ -95,7 +99,7 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
         padding: _padding(metrics),
         decoration: BoxDecoration(
           color: _background(colors),
-          borderRadius: BorderRadius.circular(metrics.radius),
+          borderRadius: BorderRadius.circular(theme.radius.resolve(metrics.radius)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -189,7 +193,7 @@ class _ButtonMetrics {
   final double fontSize;
   final double lineHeight;
   final double letterSpacing;
-  final double radius;
+  final PersonalizationRadiusToken radius;
   final double paddingVertical;
 
   /// Горизонтальный отступ со стороны без иконки.
@@ -206,7 +210,7 @@ const Map<PersonalizationButtonSize, _ButtonMetrics> _metrics =
     fontSize: 20,
     lineHeight: 32,
     letterSpacing: 0,
-    radius: 10,
+    radius: PersonalizationRadiusToken.xl,
     paddingVertical: 12,
     paddingWide: 24,
     paddingNarrow: 16,
@@ -216,7 +220,7 @@ const Map<PersonalizationButtonSize, _ButtonMetrics> _metrics =
     fontSize: 16,
     lineHeight: 24,
     letterSpacing: 0,
-    radius: 8,
+    radius: PersonalizationRadiusToken.lg,
     paddingVertical: 8,
     paddingWide: 16,
     paddingNarrow: 12,
@@ -228,7 +232,7 @@ const Map<PersonalizationButtonSize, _ButtonMetrics> _metrics =
     fontSize: 14,
     lineHeight: 24,
     letterSpacing: 0.05,
-    radius: 4,
+    radius: PersonalizationRadiusToken.sm,
     paddingVertical: 4,
     paddingWide: 12,
     paddingNarrow: 8,

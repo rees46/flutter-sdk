@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 
 /// Пустое состояние дизайн-системы.
 ///
@@ -17,7 +17,8 @@ class PersonalizationEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 92),
@@ -29,6 +30,8 @@ class PersonalizationEmptyState extends StatelessWidget {
             fontSize: 20,
             height: 32 / 20,
             fontWeight: FontWeight.w400,
+            fontFamily: theme.fontFamily.familyFor(FontWeight.w400),
+            package: theme.fontFamily.package,
             color: colors.textSecondary,
           ),
         ),

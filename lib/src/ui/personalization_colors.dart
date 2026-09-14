@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'personalization_theme.dart';
+
 /// Цвета дизайн-системы.
 ///
 /// Figma Mobile SDK UI Kit (SSwS49L1fG1psWA7xbakV6), страница Colors,
 /// фреймы 57:141 (Light) и 187:362 (Dark). Снято 2026-09-09.
 ///
-/// Подключается к теме хоста как расширение:
-/// ```dart
-/// ThemeData(extensions: [PersonalizationColors.light])
-/// ThemeData.dark().copyWith(extensions: [PersonalizationColors.dark])
-/// ```
-/// и читается через `Theme.of(context).extension<PersonalizationColors>()`.
+/// Набор цветов внутри [PersonalizationTheme]: подключается не сам по себе,
+/// а полем темы, и читается через [of] или `PersonalizationTheme.of(context).colors`.
 @immutable
-class PersonalizationColors extends ThemeExtension<PersonalizationColors> {
+class PersonalizationColors {
   final Color brandPrimary;
   final Color semanticWarning;
   final Color backgroundPrimary;
@@ -163,12 +161,11 @@ class PersonalizationColors extends ThemeExtension<PersonalizationColors> {
     textLinkVisited: Color(0xFF4D00F2),
   );
 
-  /// Набор из темы хоста. Если расширение не подключено к ThemeData,
-  /// возвращается светлый — чтобы компоненты не падали на голой теме.
+  /// Цвета действующей темы. Расширение не подключено — берётся светлый набор,
+  /// чтобы компоненты не падали на голой теме.
   static PersonalizationColors of(BuildContext context) =>
-      Theme.of(context).extension<PersonalizationColors>() ?? light;
+      PersonalizationTheme.of(context).colors;
 
-  @override
   PersonalizationColors copyWith({
     Color? brandPrimary,
     Color? semanticWarning,
@@ -245,12 +242,7 @@ class PersonalizationColors extends ThemeExtension<PersonalizationColors> {
     );
   }
 
-  @override
-  PersonalizationColors lerp(
-    ThemeExtension<PersonalizationColors>? other,
-    double t,
-  ) {
-    if (other is! PersonalizationColors) return this;
+  PersonalizationColors lerp(PersonalizationColors other, double t) {
     return PersonalizationColors(
       brandPrimary: Color.lerp(brandPrimary, other.brandPrimary, t)!,
       semanticWarning: Color.lerp(semanticWarning, other.semanticWarning, t)!,

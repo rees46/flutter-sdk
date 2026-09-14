@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../personalization_colors.dart';
+import '../personalization_theme.dart';
 
 /// Заголовок блока.
 ///
@@ -24,7 +24,8 @@ class PersonalizationTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = PersonalizationColors.of(context);
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
@@ -37,6 +38,8 @@ class PersonalizationTitle extends StatelessWidget {
               height: 36 / 24,
               letterSpacing: 0,
               fontWeight: FontWeight.w600,
+              fontFamily: theme.fontFamily.familyFor(FontWeight.w600),
+              package: theme.fontFamily.package,
               color: colors.textPrimary,
             ),
           ),
