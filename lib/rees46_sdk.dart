@@ -48,3 +48,6 @@ export 'src/ui/components/personalization_product_card.dart';
 export 'src/ui/components/personalization_product.dart';
 export 'src/ui/components/personalization_products_list.dart';
 export 'src/ui/components/personalization_recommender_block.dart';
+export 'src/ui/components/personalization_suggestion_row.dart';
+export 'src/ui/components/personalization_search_suggestions.dart';
+export 'src/ui/components/personalization_catalog.dart';

@@ -11,6 +11,7 @@ abstract final class PersonalizationIcons {
   static const String angleLargeRight = 'packages/rees46_sdk/assets/icons/angle-large-right.svg';
   static const String angleUp = 'packages/rees46_sdk/assets/icons/angle-up.svg';
   static const String arrowLeft = 'packages/rees46_sdk/assets/icons/arrow-left.svg';
+  static const String arrowRotateCw = 'packages/rees46_sdk/assets/icons/arrow-rotate-cw.svg';
   static const String arrowsUpDown = 'packages/rees46_sdk/assets/icons/arrows-up-down.svg';
   static const String copy = 'packages/rees46_sdk/assets/icons/copy.svg';
   static const String crossLarge = 'packages/rees46_sdk/assets/icons/cross-large.svg';
@@ -29,6 +30,7 @@ abstract final class PersonalizationIcons {
     angleLargeRight,
     angleUp,
     arrowLeft,
+    arrowRotateCw,
     arrowsUpDown,
     copy,
     crossLarge,
