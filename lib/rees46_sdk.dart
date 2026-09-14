@@ -45,3 +45,6 @@ export 'src/ui/components/personalization_search_results_title.dart';
 export 'src/ui/components/personalization_product_image.dart';
 export 'src/ui/components/personalization_favorites_badge.dart';
 export 'src/ui/components/personalization_product_card.dart';
+export 'src/ui/components/personalization_product.dart';
+export 'src/ui/components/personalization_products_list.dart';
+export 'src/ui/components/personalization_recommender_block.dart';
