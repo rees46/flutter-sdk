@@ -5,6 +5,9 @@ import '../personalization_theme.dart';
 /// Размер бейджа.
 enum PersonalizationBadgeSize { sm, md, lg }
 
+/// Вид: warning — как в секции Badge, danger — бейдж скидки на карточке товара (Card/Product, 126:2263), тот же SM в цвете Semantic/Danger.
+enum PersonalizationBadgeView { warning, danger }
+
 /// Бейдж дизайн-системы.
 ///
 /// Источник: Figma Mobile SDK UI Kit, секция Badge (241:7434).
@@ -17,10 +20,12 @@ class PersonalizationBadge extends StatelessWidget {
     super.key,
     required this.label,
     this.size = PersonalizationBadgeSize.lg,
+    this.view = PersonalizationBadgeView.warning,
   });
 
   final String label;
   final PersonalizationBadgeSize size;
+  final PersonalizationBadgeView view;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +43,9 @@ class PersonalizationBadge extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
       decoration: BoxDecoration(
-        color: colors.semanticWarning,
+        color: view == PersonalizationBadgeView.danger
+            ? colors.semanticDanger
+            : colors.semanticWarning,
         borderRadius: BorderRadius.circular(theme.radius.resolve(radius)),
       ),
       child: Text(

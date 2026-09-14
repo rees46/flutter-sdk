@@ -13,6 +13,7 @@ import 'personalization_theme.dart';
 class PersonalizationColors {
   final Color brandPrimary;
   final Color semanticWarning;
+  final Color semanticDanger;
   final Color backgroundPrimary;
   final Color backgroundGeneric;
   final Color backgroundCard;
@@ -50,6 +51,7 @@ class PersonalizationColors {
   const PersonalizationColors({
     required this.brandPrimary,
     required this.semanticWarning,
+    required this.semanticDanger,
     required this.backgroundPrimary,
     required this.backgroundGeneric,
     required this.backgroundCard,
@@ -88,6 +90,7 @@ class PersonalizationColors {
   static const PersonalizationColors light = PersonalizationColors(
     brandPrimary: Color(0xFF007DF2),
     semanticWarning: Color(0xFFF37A17),
+    semanticDanger: Color(0xFFE51919),
     backgroundPrimary: Color(0xFF007DF2),
     backgroundGeneric: Color(0xFFFAFAFA),
     backgroundCard: Color(0xFFF2F2F2),
@@ -126,6 +129,7 @@ class PersonalizationColors {
   static const PersonalizationColors dark = PersonalizationColors(
     brandPrimary: Color(0xFF007DF2),
     semanticWarning: Color(0xFFF37A17),
+    semanticDanger: Color(0xFFE51919),
     backgroundPrimary: Color(0xFF007DF2),
     backgroundGeneric: Color(0xFF141414),
     backgroundCard: Color(0xFF0D0D0D),
@@ -169,6 +173,7 @@ class PersonalizationColors {
   PersonalizationColors copyWith({
     Color? brandPrimary,
     Color? semanticWarning,
+    Color? semanticDanger,
     Color? backgroundPrimary,
     Color? backgroundGeneric,
     Color? backgroundCard,
@@ -206,6 +211,7 @@ class PersonalizationColors {
     return PersonalizationColors(
       brandPrimary: brandPrimary ?? this.brandPrimary,
       semanticWarning: semanticWarning ?? this.semanticWarning,
+      semanticDanger: semanticDanger ?? this.semanticDanger,
       backgroundPrimary: backgroundPrimary ?? this.backgroundPrimary,
       backgroundGeneric: backgroundGeneric ?? this.backgroundGeneric,
       backgroundCard: backgroundCard ?? this.backgroundCard,
@@ -246,6 +252,7 @@ class PersonalizationColors {
     return PersonalizationColors(
       brandPrimary: Color.lerp(brandPrimary, other.brandPrimary, t)!,
       semanticWarning: Color.lerp(semanticWarning, other.semanticWarning, t)!,
+      semanticDanger: Color.lerp(semanticDanger, other.semanticDanger, t)!,
       backgroundPrimary: Color.lerp(backgroundPrimary, other.backgroundPrimary, t)!,
       backgroundGeneric: Color.lerp(backgroundGeneric, other.backgroundGeneric, t)!,
       backgroundCard: Color.lerp(backgroundCard, other.backgroundCard, t)!,

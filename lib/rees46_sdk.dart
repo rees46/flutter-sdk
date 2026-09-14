@@ -42,3 +42,6 @@ export 'src/ui/components/personalization_dots.dart';
 export 'src/ui/components/personalization_count.dart';
 export 'src/ui/components/personalization_rating.dart';
 export 'src/ui/components/personalization_search_results_title.dart';
+export 'src/ui/components/personalization_product_image.dart';
+export 'src/ui/components/personalization_favorites_badge.dart';
+export 'src/ui/components/personalization_product_card.dart';
