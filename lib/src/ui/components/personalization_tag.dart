@@ -53,7 +53,7 @@ class PersonalizationTag extends StatelessWidget {
       decoration: BoxDecoration(
         color: isPrimary ? colors.buttonPrimary : colors.buttonSecondary,
         borderRadius: BorderRadius.circular(
-          theme.radius.resolve(PersonalizationRadiusToken.md),
+          theme.radius.resolve(PersonalizationRadiusToken.buttonSm),
         ),
       ),
       child: Row(

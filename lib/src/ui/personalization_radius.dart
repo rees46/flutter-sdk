@@ -27,4 +27,14 @@ abstract final class PersonalizationRadius {
   static const double xl6 = 24;
   /// Rounded
   static const double rounded = 999;
+
+  /// Семантические радиусы: переменные Button LG/MD/SM и Segmented Button MD/SM
+  /// из Figma. К ним привязаны Button, Input, Badge, Tag и Button Group —
+  /// дизайнер меняет их отдельно от шкалы, поэтому и здесь они отдельно.
+  /// segmentedSm в макете не снят, выведен по шагу остальных (+2).
+  static const double buttonLg = 12;
+  static const double buttonMd = 10;
+  static const double buttonSm = 8;
+  static const double segmentedMd = 8;
+  static const double segmentedSm = 6;
 }

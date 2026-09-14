@@ -61,7 +61,7 @@ class PersonalizationButtonGroup extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.buttonSecondary,
         borderRadius: BorderRadius.circular(
-          theme.radius.resolve(PersonalizationRadiusToken.lg),
+          theme.radius.resolve(PersonalizationRadiusToken.buttonMd),
         ),
       ),
       child: Row(
@@ -126,7 +126,7 @@ class _GroupMetrics {
 const Map<PersonalizationButtonGroupSize, _GroupMetrics> _groupMetrics =
     <PersonalizationButtonGroupSize, _GroupMetrics>{
   PersonalizationButtonGroupSize.md:
-      _GroupMetrics(radius: PersonalizationRadiusToken.md, padding: 6, iconSize: 24),
+      _GroupMetrics(radius: PersonalizationRadiusToken.segmentedMd, padding: 6, iconSize: 24),
   PersonalizationButtonGroupSize.sm:
-      _GroupMetrics(radius: PersonalizationRadiusToken.sm, padding: 2, iconSize: 20),
+      _GroupMetrics(radius: PersonalizationRadiusToken.segmentedSm, padding: 2, iconSize: 20),
 };

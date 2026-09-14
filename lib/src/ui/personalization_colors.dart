@@ -91,7 +91,7 @@ class PersonalizationColors {
     backgroundPrimary: Color(0xFF007DF2),
     backgroundGeneric: Color(0xFFFAFAFA),
     backgroundCard: Color(0xFFF2F2F2),
-    backgroundInput: Color(0xFFFAFAFA),
+    backgroundInput: Color(0xFFF2F2F2),
     backgroundTransparent: Color(0x00FFFFFF),
     backgroundInputDisabled: Color(0x0D000000),
     buttonPrimary: Color(0xFF007DF2),

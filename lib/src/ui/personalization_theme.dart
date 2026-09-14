@@ -29,7 +29,10 @@ class PersonalizationFontFamily {
 
 /// Ступень шкалы радиусов. Нужна там, где компонент держит метрики в `const`
 /// таблице и не может обратиться к теме на уровне файла.
-enum PersonalizationRadiusToken { xs, sm, md, lg, xl, xl2, xl3, xl4, xl5, xl6, rounded }
+enum PersonalizationRadiusToken {
+  xs, sm, md, lg, xl, xl2, xl3, xl4, xl5, xl6, rounded,
+  buttonLg, buttonMd, buttonSm, segmentedMd, segmentedSm,
+}
 
 /// Радиусы темы. Значения по умолчанию — шкала из макета.
 @immutable
@@ -46,9 +49,17 @@ class PersonalizationRadiusScale {
     this.xl5 = PersonalizationRadius.xl5,
     this.xl6 = PersonalizationRadius.xl6,
     this.rounded = PersonalizationRadius.rounded,
+    this.buttonLg = PersonalizationRadius.buttonLg,
+    this.buttonMd = PersonalizationRadius.buttonMd,
+    this.buttonSm = PersonalizationRadius.buttonSm,
+    this.segmentedMd = PersonalizationRadius.segmentedMd,
+    this.segmentedSm = PersonalizationRadius.segmentedSm,
   });
 
   final double xs, sm, md, lg, xl, xl2, xl3, xl4, xl5, xl6, rounded;
+
+  /// Семантические радиусы кнопочного семейства, см. [PersonalizationRadius].
+  final double buttonLg, buttonMd, buttonSm, segmentedMd, segmentedSm;
 
   /// Значение ступени из действующей темы.
   double resolve(PersonalizationRadiusToken token) => switch (token) {
@@ -63,6 +74,11 @@ class PersonalizationRadiusScale {
         PersonalizationRadiusToken.xl5 => xl5,
         PersonalizationRadiusToken.xl6 => xl6,
         PersonalizationRadiusToken.rounded => rounded,
+        PersonalizationRadiusToken.buttonLg => buttonLg,
+        PersonalizationRadiusToken.buttonMd => buttonMd,
+        PersonalizationRadiusToken.buttonSm => buttonSm,
+        PersonalizationRadiusToken.segmentedMd => segmentedMd,
+        PersonalizationRadiusToken.segmentedSm => segmentedSm,
       };
 
   PersonalizationRadiusScale lerp(PersonalizationRadiusScale other, double t) =>
@@ -78,6 +94,11 @@ class PersonalizationRadiusScale {
         xl5: lerpDouble(xl5, other.xl5, t),
         xl6: lerpDouble(xl6, other.xl6, t),
         rounded: lerpDouble(rounded, other.rounded, t),
+        buttonLg: lerpDouble(buttonLg, other.buttonLg, t),
+        buttonMd: lerpDouble(buttonMd, other.buttonMd, t),
+        buttonSm: lerpDouble(buttonSm, other.buttonSm, t),
+        segmentedMd: lerpDouble(segmentedMd, other.segmentedMd, t),
+        segmentedSm: lerpDouble(segmentedSm, other.segmentedSm, t),
       );
 
   static double lerpDouble(double a, double b, double t) => a + (b - a) * t;

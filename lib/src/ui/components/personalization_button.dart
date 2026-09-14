@@ -131,8 +131,11 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
 
   EdgeInsets _padding(_ButtonMetrics metrics) {
     if (!_hasText) {
-      // Кнопка-иконка: со всех сторон вертикальный отступ, 12/8/4.
-      return EdgeInsets.all(metrics.paddingVertical);
+      // Кнопка-иконка: по вертикали как у текстовой, по горизонтали своё — 12/8/4.
+      return EdgeInsets.symmetric(
+        vertical: metrics.paddingVertical,
+        horizontal: metrics.paddingIconOnly,
+      );
     }
     return EdgeInsets.only(
       left: widget.iconStart != null ? metrics.paddingNarrow : metrics.paddingWide,
@@ -187,6 +190,7 @@ class _ButtonMetrics {
     required this.paddingVertical,
     required this.paddingWide,
     required this.paddingNarrow,
+    required this.paddingIconOnly,
     required this.iconSize,
   });
 
@@ -201,6 +205,10 @@ class _ButtonMetrics {
 
   /// Горизонтальный отступ со стороны с иконкой.
   final double paddingNarrow;
+
+  /// Горизонтальный отступ кнопки-иконки: у LG он 12 при вертикальном 8,
+  /// у остальных равен вертикальному.
+  final double paddingIconOnly;
   final double iconSize;
 }
 
@@ -210,20 +218,22 @@ const Map<PersonalizationButtonSize, _ButtonMetrics> _metrics =
     fontSize: 20,
     lineHeight: 32,
     letterSpacing: 0,
-    radius: PersonalizationRadiusToken.xl,
-    paddingVertical: 12,
+    radius: PersonalizationRadiusToken.buttonLg,
+    paddingVertical: 8,
     paddingWide: 24,
     paddingNarrow: 16,
+    paddingIconOnly: 12,
     iconSize: 32,
   ),
   PersonalizationButtonSize.md: _ButtonMetrics(
     fontSize: 16,
     lineHeight: 24,
     letterSpacing: 0,
-    radius: PersonalizationRadiusToken.lg,
+    radius: PersonalizationRadiusToken.buttonMd,
     paddingVertical: 8,
     paddingWide: 16,
     paddingNarrow: 12,
+    paddingIconOnly: 8,
     iconSize: 24,
   ),
   // SM берёт кегль со ступени sm, а интерлиньяж со ступени base:
@@ -232,10 +242,11 @@ const Map<PersonalizationButtonSize, _ButtonMetrics> _metrics =
     fontSize: 14,
     lineHeight: 24,
     letterSpacing: 0.05,
-    radius: PersonalizationRadiusToken.sm,
+    radius: PersonalizationRadiusToken.buttonSm,
     paddingVertical: 4,
     paddingWide: 12,
     paddingNarrow: 8,
+    paddingIconOnly: 4,
     iconSize: 20,
   ),
 };

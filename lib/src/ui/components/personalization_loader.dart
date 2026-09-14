@@ -13,7 +13,7 @@ import 'package:flutter/widgets.dart';
 class PersonalizationLoader extends StatefulWidget {
   const PersonalizationLoader({
     super.key,
-    this.size = 26,
+    this.size = 32,
     this.period = const Duration(milliseconds: 900),
   });
 
@@ -60,10 +60,15 @@ class _LoaderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Толщина и радиус пропорциональны эталонным 26 из макета.
-    final scale = size.width / 26;
+    // Кольцо 26 лежит в слоте 32 по центру; толщина пропорциональна кольцу.
+    final ringSide = size.width * 26 / 32;
+    final scale = ringSide / 26;
     final strokeWidth = 3.5 * scale;
-    final rect = Offset.zero & size;
+    final rect = Rect.fromCenter(
+      center: size.center(Offset.zero),
+      width: ringSide,
+      height: ringSide,
+    );
     final ring = rect.deflate(strokeWidth / 2);
 
     final paint = Paint()
