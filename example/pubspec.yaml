@@ -29,6 +29,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # The SDK ships its icons as SVG assets and leaves rendering to the host.
+  flutter_svg: ^2.2.0
+
 dev_dependencies:
   integration_test:
     sdk: flutter

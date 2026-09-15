@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
 import 'multi_instance_pane.dart';
+import 'ui_kit_pane.dart';
 
 void main() => runApp(const App());
 
@@ -725,6 +726,14 @@ class _InitPageState extends State<InitPage> {
         title: const Text('REES46 SDK init demo'),
         actions: [
           IconButton(
+            key: const Key('open-ui-kit'),
+            tooltip: 'UI Kit',
+            icon: const Icon(Icons.widgets_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const UiKitPane()),
+            ),
+          ),
+          IconButton(
             key: const Key('open-multi-instance'),
             tooltip: 'Multi-instance (two shops)',
             icon: const Icon(Icons.storefront),
@@ -760,6 +769,15 @@ class _InitPageState extends State<InitPage> {
               ),
               icon: const Icon(Icons.storefront),
               label: const Text('Open multi-instance demo (two shops)'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              key: const Key('open-ui-kit-button'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const UiKitPane()),
+              ),
+              icon: const Icon(Icons.widgets_outlined),
+              label: const Text('Open UI Kit (components and blocks)'),
             ),
             const SizedBox(height: 12),
             _PushTokenCard(
