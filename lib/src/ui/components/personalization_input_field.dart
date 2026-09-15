@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart'
     show InputDecoration, Material, MaterialType, TextField;
+import 'package:flutter/services.dart' show TextInputAction;
 import 'package:flutter/widgets.dart';
 
 import '../personalization_colors.dart';
@@ -41,6 +42,7 @@ class PersonalizationInputField extends StatefulWidget {
     this.type = PersonalizationInputFieldType.search,
     this.enabled = true,
     this.onChanged,
+    this.onSubmitted,
     this.onClear,
     this.onSelectTap,
     this.iconBuilder,
@@ -52,6 +54,9 @@ class PersonalizationInputField extends StatefulWidget {
   final PersonalizationInputFieldType type;
   final bool enabled;
   final ValueChanged<String>? onChanged;
+
+  /// Кнопка «искать» на клавиатуре у типа Search, «готово» у остальных.
+  final ValueChanged<String>? onSubmitted;
 
   /// Нажатие на крестик у типа Search. Поле очищается в любом случае.
   final VoidCallback? onClear;
@@ -191,6 +196,10 @@ class _PersonalizationInputFieldState extends State<PersonalizationInputField> {
         focusNode: _focusNode,
         enabled: widget.enabled,
         onChanged: widget.onChanged,
+        onSubmitted: widget.onSubmitted,
+        textInputAction: widget.type == PersonalizationInputFieldType.search
+            ? TextInputAction.search
+            : TextInputAction.done,
         style: style,
         decoration: InputDecoration.collapsed(
           hintText: widget.placeholder,
