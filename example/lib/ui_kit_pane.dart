@@ -9,7 +9,7 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 ///
 /// "Components" walks through the primitives in every size, view and state the
 /// design file defines; "Blocks" shows the compositions built from them
-/// (product cards, recommender layouts, search suggestions, the catalogue).
+/// (product cards, recommender layouts, instant search, the catalogue, the filters screen).
 /// Mirror of the Android `UiKitPane` / iOS `UIKitShowcaseViewController` /
 /// React Native `UiKitPane`.
 ///
@@ -213,6 +213,12 @@ final List<_Exhibit> _componentExhibits = [
       ],
     );
   }),
+  _Exhibit('Link — text action next to a field or a label', (context) {
+    return _Row(children: [
+      PersonalizationLink(label: 'Cancel', onTap: () {}),
+      PersonalizationLink(label: 'Clear', onTap: () {}),
+    ]);
+  }),
   _Exhibit('Search Results Title', (context) => const _SearchResultsTitleExhibit()),
   _Exhibit('Accordion — collapsed with count, expanded', (context) {
     return _Column(
@@ -320,6 +326,26 @@ final List<_Exhibit> _blockExhibits = [
       ],
     );
   }),
+  _Exhibit('Product Card — image 4:3, 1:1, 3:4 (carousel and list)', (context) {
+    const aspects = [
+      PersonalizationProductImageAspect.landscape,
+      PersonalizationProductImageAspect.square,
+      PersonalizationProductImageAspect.portrait,
+    ];
+    return _Column(
+      children: [
+        _ScrollRow(children: [
+          for (final (index, aspect) in aspects.indexed)
+            SizedBox(
+              width: 220,
+              child: _card(PersonalizationProductCardType.carousel, _products[index + 3], aspect: aspect),
+            ),
+        ]),
+        for (final (index, aspect) in aspects.indexed)
+          _card(PersonalizationProductCardType.list, _products[index + 3], aspect: aspect),
+      ],
+    );
+  }),
   _Exhibit('Recommender Block — carousel', (context) {
     return _recommender(PersonalizationProductsLayout.carousel, 'Recommended for you', _products);
   }),
@@ -329,26 +355,11 @@ final List<_Exhibit> _blockExhibits = [
   _Exhibit('Recommender Block — list', (context) {
     return _recommender(PersonalizationProductsLayout.list, 'Recently viewed', _products.take(3).toList());
   }),
-  _Exhibit('Search Suggestions', (context) {
-    return PersonalizationSearchSuggestions(
-      highlight: 'run',
-      showImages: true,
-      tags: const ['running shoes', 'running jacket', 'run belt'],
-      categories: const [
-        PersonalizationSuggestion(id: 'c1', title: 'Running shoes', subtitle: 'Shoes'),
-        PersonalizationSuggestion(id: 'c2', title: 'Running apparel', subtitle: 'Clothing'),
-      ],
-      products: [
-        for (final p in _products.take(3))
-          PersonalizationSuggestion(id: p.id, title: p.name, subtitle: p.price, image: p.image),
-      ],
-      onTagTap: (_) {},
-      onCategoryTap: (_) {},
-      onProductTap: (_) {},
-      iconBuilder: _icon,
-    );
-  }),
+  _Exhibit('Instant Search — recent searches', (context) => const _InstantSearchExhibit()),
+  _Exhibit('Instant Search — typing, matches in bold', (context) => const _InstantSearchExhibit(typing: true)),
+  _Exhibit('Instant Search — with images', (context) => const _InstantSearchExhibit(images: true)),
   _Exhibit('Catalog — header, grid ⇄ list, count, load more', (context) => const _CatalogExhibit()),
+  _Exhibit('Filters — range, checkbox lists with show more, reset / apply', (context) => _filters()),
 ];
 
 // --- Stateful exhibits ------------------------------------------------------
@@ -423,6 +434,77 @@ class _SearchResultsTitleExhibitState extends State<_SearchResultsTitleExhibit> 
 /// The catalogue as a host would wire it: the results title in the header slot
 /// drives the grid/list switch, "load more" appends a page after a short
 /// simulated delay.
+/// Instant search in its three states: recent searches before typing, suggestions with the
+/// query highlighted while typing, and rows with images. The host owns the data; the kit only
+/// renders what it is given and reports the taps.
+class _InstantSearchExhibit extends StatefulWidget {
+  const _InstantSearchExhibit({this.typing = false, this.images = false});
+
+  final bool typing;
+  final bool images;
+
+  @override
+  State<_InstantSearchExhibit> createState() => _InstantSearchExhibitState();
+}
+
+class _InstantSearchExhibitState extends State<_InstantSearchExhibit> {
+  late final TextEditingController _controller = TextEditingController(text: widget.typing ? 'boots' : '');
+  List<String> _recent = ['mens winter boots', 'kids shoes', 'bag', 'accessories', 'black boots'];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typing = widget.typing;
+    return PersonalizationInstantSearch(
+      controller: _controller,
+      placeholder: 'want to buy...',
+      cancelText: 'Cancel',
+      onCancel: () {},
+      showImages: widget.images,
+      recentLabel: typing ? null : 'Recent searches',
+      clearText: 'Clear',
+      onClearRecent: () => setState(() => _recent = []),
+      recentSearches: typing ? const [] : _recent,
+      moreText: 'more',
+      onMoreRecent: () {},
+      onRecentRemove: (item) => setState(() => _recent = _recent.where((it) => it != item).toList()),
+      suggestions: typing ? const ['winter', 'mens', 'kids', 'for outdoor', 'womens', 'low', 'black', 'orange'] : const [],
+      categoriesLabel: typing ? 'Category' : 'Popular category',
+      categories: typing
+          ? const [
+              PersonalizationSuggestion(id: 'c1', title: 'Womens boots'),
+              PersonalizationSuggestion(id: 'c2', title: 'Mens boots'),
+              PersonalizationSuggestion(id: 'c3', title: 'Kids boots'),
+            ]
+          : [
+              PersonalizationSuggestion(id: 'c1', title: 'Running shoes', subtitle: 'Shoes', image: _products[0].image),
+              PersonalizationSuggestion(id: 'c2', title: 'Running apparel', subtitle: 'Clothing', image: _products[1].image),
+              PersonalizationSuggestion(id: 'c3', title: 'Trail gear', subtitle: 'Outdoor', image: _products[2].image),
+            ],
+      productsLabel: typing ? 'Products' : 'Frequently searched',
+      products: typing
+          ? const [
+              PersonalizationSuggestion(id: 'p1', title: 'winter womens boots'),
+              PersonalizationSuggestion(id: 'p2', title: 'boots for mens'),
+              PersonalizationSuggestion(id: 'p3', title: 'winter boots for mens'),
+              PersonalizationSuggestion(id: 'p4', title: 'kids winter boots'),
+            ]
+          : [
+              for (final p in _products.take(widget.images ? 3 : 5))
+                PersonalizationSuggestion(id: p.id, title: p.name, subtitle: p.price, image: p.image),
+            ],
+      onCategoryTap: (_) {},
+      onProductTap: (_) {},
+      iconBuilder: _icon,
+    );
+  }
+}
+
 class _CatalogExhibit extends StatefulWidget {
   const _CatalogExhibit();
 
@@ -542,10 +624,54 @@ Widget _removeIcon(BuildContext context, String asset) {
   return _icon(context, asset, 16, PersonalizationTheme.of(context).colors.textPrimary);
 }
 
-Widget _card(PersonalizationProductCardType type, PersonalizationProduct product) {
+/// The filters screen with the sections from the design file; toggles and ranges update its own state.
+Widget _filters() {
+  const colors = ['All', 'Black', 'White', 'Red', 'Light blue', 'Green', 'Yellow', 'Brown', 'Grey', 'Pink'];
+  const ratings = ['All', '5 stars', '4+ stars', '3+ stars'];
+  return PersonalizationFilters(
+    title: 'Filters',
+    onClose: () {},
+    resetText: 'Reset',
+    applyText: 'Apply',
+    onReset: () {},
+    onApply: (_) {},
+    sections: [
+      const PersonalizationFilterRange(
+          id: 'size', title: 'Size', fromLabel: 'From', toLabel: 'to', from: '42', to: '43', select: true),
+      PersonalizationFilterOptions(
+        id: 'colors',
+        title: 'Colors',
+        options: [
+          for (final (index, label) in colors.indexed)
+            PersonalizationFilterOption(id: label.toLowerCase(), label: label, checked: index == 1),
+        ],
+        showMoreText: 'Show more',
+        showLessText: 'Show less',
+      ),
+      const PersonalizationFilterRange(
+          id: 'price', title: 'Price (USD)', fromLabel: 'From', toLabel: 'to', from: '50', to: '500'),
+      PersonalizationFilterOptions(
+        id: 'rating',
+        title: 'Rating',
+        options: [
+          for (final (index, label) in ratings.indexed)
+            PersonalizationFilterOption(id: label, label: label, checked: index == 1),
+        ],
+      ),
+    ],
+    iconBuilder: _icon,
+  );
+}
+
+Widget _card(
+  PersonalizationProductCardType type,
+  PersonalizationProduct product, {
+  PersonalizationProductImageAspect aspect = PersonalizationProductImageAspect.square,
+}) {
   return PersonalizationProductCard(
     type: type,
     image: product.image,
+    imageAspect: aspect,
     brand: product.brand,
     name: product.name,
     rating: product.rating,
