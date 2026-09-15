@@ -4,6 +4,8 @@ import '../personalization_icons.dart';
 import 'personalization_button.dart';
 import 'personalization_dots.dart';
 import 'personalization_product.dart';
+import 'personalization_product_card.dart';
+import 'personalization_product_image.dart';
 import 'personalization_products_list.dart';
 import 'personalization_title.dart';
 
@@ -25,6 +27,7 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
     this.onShowAll,
     this.showDots = true,
     required this.products,
+    this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
     this.iconBuilder,
   });
@@ -39,6 +42,9 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
   /// У карусели точки под лентой; выключаются, как в макете (showDots).
   final bool showDots;
   final List<PersonalizationProduct> products;
+
+  /// Пропорция картинок карточек, см. [PersonalizationProductCard.imageAspect].
+  final PersonalizationProductImageAspect imageAspect;
   final ValueChanged<PersonalizationProduct>? onProductAction;
 
   final Widget Function(
@@ -82,6 +88,7 @@ class _PersonalizationRecommenderBlockState extends State<PersonalizationRecomme
         PersonalizationProductsList(
           layout: widget.layout,
           products: widget.products,
+          imageAspect: widget.imageAspect,
           onProductAction: widget.onProductAction,
           onFirstVisibleChanged: carousel ? (int index) => setState(() => _page = index) : null,
           iconBuilder: widget.iconBuilder,

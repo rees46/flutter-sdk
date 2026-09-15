@@ -5,6 +5,8 @@ import 'personalization_button.dart';
 import 'personalization_count.dart';
 import 'personalization_loader.dart';
 import 'personalization_product.dart';
+import 'personalization_product_card.dart';
+import 'personalization_product_image.dart';
 import 'personalization_products_list.dart';
 
 /// Счётчик каталога «показано N из M». Слова — параметры.
@@ -38,6 +40,7 @@ class PersonalizationCatalog extends StatelessWidget {
     this.header,
     this.layout = PersonalizationProductsLayout.grid,
     required this.products,
+    this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
     this.loading = false,
     this.count,
@@ -49,6 +52,9 @@ class PersonalizationCatalog extends StatelessWidget {
   final Widget? header;
   final PersonalizationProductsLayout layout;
   final List<PersonalizationProduct> products;
+
+  /// Пропорция картинок карточек, см. [PersonalizationProductCard.imageAspect].
+  final PersonalizationProductImageAspect imageAspect;
   final ValueChanged<PersonalizationProduct>? onProductAction;
   final bool loading;
   final PersonalizationCatalogCount? count;
@@ -71,6 +77,7 @@ class PersonalizationCatalog extends StatelessWidget {
       PersonalizationProductsList(
         layout: layout,
         products: products,
+        imageAspect: imageAspect,
         onProductAction: onProductAction,
         iconBuilder: iconBuilder,
       ),

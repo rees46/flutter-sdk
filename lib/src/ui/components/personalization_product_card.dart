@@ -21,9 +21,13 @@ class PersonalizationProductRating {
 /// Карточка товара.
 ///
 /// Источник: Figma Mobile SDK UI Kit, секция Card, фрейм Product (126:2263):
-/// carousel — колонка 220 с картинкой 1:1, grid — колонка на всю ширину ячейки,
-/// list — строка с картинкой 120 и ценой с кнопкой внизу справа.
-/// У трёх типов разная типографика цены и названия, поэтому она задана в таблице.
+/// carousel — колонка 220, grid — колонка на всю ширину ячейки, list — строка с картинкой
+/// шириной 120 и ценой с кнопкой внизу справа. Пропорция картинки — [imageAspect]: на
+/// странице ProductCard (88:69) карточка нарисована с 4:3, 1:1 и 3:4, и её высота идёт
+/// за картинкой.
+/// У трёх типов разная типографика названия, цены и старой цены, поэтому она задана
+/// в таблице. Старая цена карусели — 16/24 по страницам ProductCard и Product Carousel;
+/// мастер-компонент Product там же даёт 14/20 — расхождение в макете, взяты страницы.
 ///
 /// Собрана из готовых блоков: [PersonalizationProductImage], [PersonalizationRating],
 /// [PersonalizationBadge] (скидка, вид danger), [PersonalizationButton].
@@ -32,6 +36,7 @@ class PersonalizationProductCard extends StatelessWidget {
     super.key,
     this.type = PersonalizationProductCardType.carousel,
     this.image,
+    this.imageAspect = PersonalizationProductImageAspect.square,
     this.brand,
     required this.name,
     this.rating,
@@ -45,6 +50,9 @@ class PersonalizationProductCard extends StatelessWidget {
 
   final PersonalizationProductCardType type;
   final ImageProvider? image;
+
+  /// Пропорция картинки; высота карточки идёт за ней.
+  final PersonalizationProductImageAspect imageAspect;
   final String? brand;
   final String name;
   final PersonalizationProductRating? rating;
@@ -113,7 +121,8 @@ class PersonalizationProductCard extends StatelessWidget {
         ? null
         : Text(
             oldPrice!,
-            style: style(14, 20, 0.05, FontWeight.w400, colors.textHint)
+            style: style(metrics.oldPriceSize, metrics.oldPriceLineHeight, metrics.oldPriceLetterSpacing,
+                    FontWeight.w400, colors.textHint)
                 .copyWith(decoration: TextDecoration.lineThrough),
           );
     final Widget? discountBadge = discount == null
@@ -132,14 +141,15 @@ class PersonalizationProductCard extends StatelessWidget {
             onPressed: onAction,
           );
 
-    // List: картинка 120 слева, справа колонка — название с рейтингом сверху, цена с кнопкой снизу.
+    // List: картинка шириной 120 слева, справа колонка — название с рейтингом сверху,
+    // цена с кнопкой снизу. Высота строки — большее из картинки и текста, поэтому
+    // IntrinsicHeight: колонка тянется до картинки, а низкая картинка её не сжимает.
     if (type == PersonalizationProductCardType.list) {
-      return SizedBox(
-        height: 120,
+      return IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SizedBox(width: 120, child: PersonalizationProductImage(image: image)),
+            SizedBox(width: 120, child: PersonalizationProductImage(image: image, aspect: imageAspect)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -191,7 +201,7 @@ class PersonalizationProductCard extends StatelessWidget {
       children: <Widget>[
         Stack(
           children: <Widget>[
-            PersonalizationProductImage(image: image),
+            PersonalizationProductImage(image: image, aspect: imageAspect),
             if (discountBadge != null)
               Positioned(top: metrics.badgeInset, right: metrics.badgeInset, child: discountBadge),
           ],
@@ -224,18 +234,25 @@ class _CardMetrics {
     required this.nameLetterSpacing,
     required this.priceSize,
     required this.priceLineHeight,
+    required this.oldPriceSize,
+    required this.oldPriceLineHeight,
+    required this.oldPriceLetterSpacing,
     required this.badgeInset,
   });
 
-  final double nameSize, nameLineHeight, nameLetterSpacing, priceSize, priceLineHeight, badgeInset;
+  final double nameSize, nameLineHeight, nameLetterSpacing, priceSize, priceLineHeight;
+  final double oldPriceSize, oldPriceLineHeight, oldPriceLetterSpacing, badgeInset;
 }
 
 const Map<PersonalizationProductCardType, _CardMetrics> _metrics =
     <PersonalizationProductCardType, _CardMetrics>{
   PersonalizationProductCardType.carousel: _CardMetrics(
-      nameSize: 16, nameLineHeight: 24, nameLetterSpacing: 0, priceSize: 20, priceLineHeight: 32, badgeInset: 8),
+      nameSize: 16, nameLineHeight: 24, nameLetterSpacing: 0, priceSize: 20, priceLineHeight: 32,
+      oldPriceSize: 16, oldPriceLineHeight: 24, oldPriceLetterSpacing: 0, badgeInset: 8),
   PersonalizationProductCardType.grid: _CardMetrics(
-      nameSize: 16, nameLineHeight: 24, nameLetterSpacing: 0, priceSize: 18, priceLineHeight: 28, badgeInset: 4),
+      nameSize: 16, nameLineHeight: 24, nameLetterSpacing: 0, priceSize: 18, priceLineHeight: 28,
+      oldPriceSize: 14, oldPriceLineHeight: 20, oldPriceLetterSpacing: 0.05, badgeInset: 4),
   PersonalizationProductCardType.list: _CardMetrics(
-      nameSize: 14, nameLineHeight: 20, nameLetterSpacing: 0.05, priceSize: 16, priceLineHeight: 24, badgeInset: 0),
+      nameSize: 14, nameLineHeight: 20, nameLetterSpacing: 0.05, priceSize: 16, priceLineHeight: 24,
+      oldPriceSize: 14, oldPriceLineHeight: 20, oldPriceLetterSpacing: 0.05, badgeInset: 0),
 };

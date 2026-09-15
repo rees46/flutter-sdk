@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'personalization_product.dart';
 import 'personalization_product_card.dart';
+import 'personalization_product_image.dart';
 
 /// Раскладка каталога.
 enum PersonalizationProductsLayout { carousel, grid, list }
@@ -21,6 +22,7 @@ class PersonalizationProductsList extends StatefulWidget {
     super.key,
     this.layout = PersonalizationProductsLayout.carousel,
     required this.products,
+    this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
     this.onFirstVisibleChanged,
     this.iconBuilder,
@@ -28,6 +30,9 @@ class PersonalizationProductsList extends StatefulWidget {
 
   final PersonalizationProductsLayout layout;
   final List<PersonalizationProduct> products;
+
+  /// Пропорция картинок карточек, см. [PersonalizationProductCard.imageAspect].
+  final PersonalizationProductImageAspect imageAspect;
   final ValueChanged<PersonalizationProduct>? onProductAction;
   final ValueChanged<int>? onFirstVisibleChanged;
 
@@ -77,6 +82,7 @@ class _PersonalizationProductsListState extends State<PersonalizationProductsLis
     return PersonalizationProductCard(
       type: type,
       image: product.image,
+      imageAspect: widget.imageAspect,
       brand: product.brand,
       name: product.name,
       rating: product.rating,
