@@ -101,7 +101,7 @@ class PersonalizationInstantSearch extends StatefulWidget {
   final List<PersonalizationSuggestion> products;
   final ValueChanged<PersonalizationSuggestion>? onProductTap;
 
-  /// Показывать ли картинки у строк: в макете есть оба варианта.
+  /// Показывать ли картинки у строк: в макете есть оба варианта. Строка без картинки идёт без плейсхолдера.
   final bool showImages;
 
   final Widget Function(
@@ -181,7 +181,8 @@ class _PersonalizationInstantSearchState
               title: items[i].title,
               subtitle: items[i].subtitle,
               image: items[i].image,
-              showImage: widget.showImages,
+              // Строка без картинки идёт без плейсхолдера.
+              showImage: widget.showImages && items[i].image != null,
               highlight: highlight,
               onTap: onTap == null ? null : () => onTap(items[i]),
               iconBuilder: widget.iconBuilder,

@@ -29,6 +29,7 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
     required this.products,
     this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
+    this.onProductTap,
     this.iconBuilder,
   });
 
@@ -46,6 +47,9 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
   /// Пропорция картинок карточек, см. [PersonalizationProductCard.imageAspect].
   final PersonalizationProductImageAspect imageAspect;
   final ValueChanged<PersonalizationProduct>? onProductAction;
+
+  /// Нажатие на карточку — открыть товар.
+  final ValueChanged<PersonalizationProduct>? onProductTap;
 
   final Widget Function(
     BuildContext context,
@@ -90,6 +94,7 @@ class _PersonalizationRecommenderBlockState extends State<PersonalizationRecomme
           products: widget.products,
           imageAspect: widget.imageAspect,
           onProductAction: widget.onProductAction,
+          onProductTap: widget.onProductTap,
           onFirstVisibleChanged: carousel ? (int index) => setState(() => _page = index) : null,
           iconBuilder: widget.iconBuilder,
         ),

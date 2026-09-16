@@ -24,6 +24,7 @@ class PersonalizationProductsList extends StatefulWidget {
     required this.products,
     this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
+    this.onProductTap,
     this.onFirstVisibleChanged,
     this.iconBuilder,
   });
@@ -34,6 +35,9 @@ class PersonalizationProductsList extends StatefulWidget {
   /// Пропорция картинок карточек, см. [PersonalizationProductCard.imageAspect].
   final PersonalizationProductImageAspect imageAspect;
   final ValueChanged<PersonalizationProduct>? onProductAction;
+
+  /// Нажатие на карточку — открыть товар.
+  final ValueChanged<PersonalizationProduct>? onProductTap;
   final ValueChanged<int>? onFirstVisibleChanged;
 
   final Widget Function(
@@ -91,6 +95,7 @@ class _PersonalizationProductsListState extends State<PersonalizationProductsLis
       discount: product.discount,
       actionText: product.actionText,
       onAction: widget.onProductAction == null ? null : () => widget.onProductAction!(product),
+      onTap: widget.onProductTap == null ? null : () => widget.onProductTap!(product),
       iconBuilder: widget.iconBuilder,
     );
   }

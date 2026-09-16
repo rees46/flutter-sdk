@@ -45,6 +45,7 @@ class PersonalizationProductCard extends StatelessWidget {
     this.discount,
     this.actionText,
     this.onAction,
+    this.onTap,
     this.iconBuilder,
   });
 
@@ -67,6 +68,9 @@ class PersonalizationProductCard extends StatelessWidget {
   /// Подпись кнопки. `null` — без кнопки.
   final String? actionText;
   final VoidCallback? onAction;
+
+  /// Нажатие на карточку целиком (не на кнопку) — открыть товар.
+  final VoidCallback? onTap;
 
   final Widget Function(
     BuildContext context,
@@ -145,7 +149,7 @@ class PersonalizationProductCard extends StatelessWidget {
     // цена с кнопкой снизу. Высота строки — большее из картинки и текста, поэтому
     // IntrinsicHeight: колонка тянется до картинки, а низкая картинка её не сжимает.
     if (type == PersonalizationProductCardType.list) {
-      return IntrinsicHeight(
+      return _tappable(IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -190,7 +194,7 @@ class PersonalizationProductCard extends StatelessWidget {
             ),
           ],
         ),
-      );
+      ));
     }
 
     // Carousel и Grid: картинка, название, рейтинг, цена, кнопка — колонкой с шагом 8.
@@ -221,10 +225,14 @@ class PersonalizationProductCard extends StatelessWidget {
         if (action != null) ...<Widget>[const SizedBox(height: 8), action],
       ],
     );
-    return type == PersonalizationProductCardType.carousel
-        ? SizedBox(width: 220, child: column)
-        : column;
+    return _tappable(
+      type == PersonalizationProductCardType.carousel ? SizedBox(width: 220, child: column) : column,
+    );
   }
+
+  Widget _tappable(Widget child) => onTap == null
+      ? child
+      : GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: child);
 }
 
 class _CardMetrics {

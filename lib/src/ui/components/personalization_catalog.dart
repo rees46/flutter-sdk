@@ -47,6 +47,7 @@ class PersonalizationCatalog extends StatelessWidget {
     required this.products,
     this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
+    this.onProductTap,
     this.emptyText,
     this.loading = false,
     this.count,
@@ -62,6 +63,9 @@ class PersonalizationCatalog extends StatelessWidget {
   /// Пропорция картинок карточек, см. [PersonalizationProductCard.imageAspect].
   final PersonalizationProductImageAspect imageAspect;
   final ValueChanged<PersonalizationProduct>? onProductAction;
+
+  /// Нажатие на карточку — открыть товар.
+  final ValueChanged<PersonalizationProduct>? onProductTap;
 
   /// Текст пустой выдачи. `null` — без пустого состояния, плитка остаётся на месте.
   final String? emptyText;
@@ -93,6 +97,7 @@ class PersonalizationCatalog extends StatelessWidget {
           products: products,
           imageAspect: imageAspect,
           onProductAction: onProductAction,
+          onProductTap: onProductTap,
           iconBuilder: iconBuilder,
         ),
       if (loading) const PersonalizationLoader(),

@@ -47,6 +47,8 @@ class PersonalizationSearchResultsTitle extends StatelessWidget {
     this.onViewChanged,
     this.onFilters,
     this.onSort,
+    this.showFiltersButton = true,
+    this.showSortButton = true,
     this.results,
     this.filters = const <PersonalizationSearchFilter>[],
     this.iconBuilder,
@@ -60,6 +62,10 @@ class PersonalizationSearchResultsTitle extends StatelessWidget {
   final ValueChanged<int>? onViewChanged;
   final VoidCallback? onFilters;
   final VoidCallback? onSort;
+
+  /// Кнопки фильтров и сортировки; в макете они есть всегда, но виджет может их убрать.
+  final bool showFiltersButton;
+  final bool showSortButton;
   final PersonalizationSearchResults? results;
   final List<PersonalizationSearchFilter> filters;
 
@@ -119,22 +125,24 @@ class PersonalizationSearchResultsTitle extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              PersonalizationButton(
-                size: PersonalizationButtonSize.md,
-                view: PersonalizationButtonView.ghost,
-                iconStart: PersonalizationIcons.equalizerHorizontal,
-                iconBuilder: iconBuilder,
-                onPressed: onFilters,
-              ),
-              const SizedBox(width: 4),
-              PersonalizationButton(
-                size: PersonalizationButtonSize.md,
-                view: PersonalizationButtonView.ghost,
-                iconStart: PersonalizationIcons.arrowsUpDown,
-                iconBuilder: iconBuilder,
-                onPressed: onSort,
-              ),
-              const SizedBox(width: 12),
+              if (showFiltersButton)
+                PersonalizationButton(
+                  size: PersonalizationButtonSize.md,
+                  view: PersonalizationButtonView.ghost,
+                  iconStart: PersonalizationIcons.equalizerHorizontal,
+                  iconBuilder: iconBuilder,
+                  onPressed: onFilters,
+                ),
+              if (showFiltersButton && showSortButton) const SizedBox(width: 4),
+              if (showSortButton)
+                PersonalizationButton(
+                  size: PersonalizationButtonSize.md,
+                  view: PersonalizationButtonView.ghost,
+                  iconStart: PersonalizationIcons.arrowsUpDown,
+                  iconBuilder: iconBuilder,
+                  onPressed: onSort,
+                ),
+              if (showFiltersButton || showSortButton) const SizedBox(width: 12),
               Text(results!.prefix, style: regular),
               const SizedBox(width: 4),
               Text('${results!.count}', style: strong),
