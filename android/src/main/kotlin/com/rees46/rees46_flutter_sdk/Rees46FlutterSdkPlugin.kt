@@ -28,6 +28,7 @@ import com.personalization.api.models.tracking.TrackingSource
 import com.personalization.api.models.tracking.TrackingSourceType
 import com.personalization.api.params.ProfileParams
 import com.personalization.api.params.SearchParams as NativeSearchParams
+import com.personalization.SearchParams as LegacySearchParams
 import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.push.Rees46PushNotifier
 import com.rees46.rees46_flutter_sdk.push.Rees46ShopStore
@@ -325,15 +326,25 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            val params = buildSearchParams(paramsJson)
-            sdk(shopId).searchManager.searchFull(
-                query = query,
-                searchParams = params,
-                onSearchFull = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("search_failed", message ?: "error $code", null)))
+            // The typed searchManager.searchFull hands back a data class, and whatever that class
+            // does not model (the shop's facets in `filters`, old price, discount…) is lost before
+            // it reaches Dart. The bridge is a JSON pipe, so it takes the raw response instead:
+            // the legacy search entry point returns the server JSON as is. Move to a raw variant of
+            // the search manager once the native SDK offers one.
+            val params = buildLegacySearchParams(paramsJson)
+            @Suppress("DEPRECATION")
+            sdk(shopId).search(
+                query,
+                LegacySearchParams.TYPE.FULL,
+                params,
+                object : OnApiCallbackListener() {
+                    override fun onSuccess(response: JSONObject?) {
+                        callback(Result.success(response?.toString() ?: "{}"))
+                    }
+
+                    override fun onError(code: Int, msg: String?) {
+                        callback(Result.failure(FlutterError("search_failed", msg ?: "error $code", null)))
+                    }
                 },
             )
         } catch (t: Throwable) {
@@ -888,6 +899,58 @@ private fun buildSearchParams(paramsJson: String?): NativeSearchParams {
             }
         }
         if (any) params.put(NativeSearchParams.Parameter.FILTERS, searchFilters)
+    }
+    return params
+}
+
+/**
+ * The same parameters as [buildSearchParams], on the legacy params class the raw search entry
+ * point takes. Keys come from the current parameter enum — both implement the same interface —
+ * so the wire names stay identical.
+ */
+@Suppress("DEPRECATION")
+private fun buildLegacySearchParams(paramsJson: String?): LegacySearchParams {
+    val params = LegacySearchParams()
+    if (paramsJson.isNullOrBlank()) return params
+    val json = JSONObject(paramsJson)
+    json.optInt("limit").takeIf { it > 0 }
+        ?.let { params.put(NativeSearchParams.Parameter.LIMIT, it) }
+    json.optInt("page").takeIf { it > 0 }
+        ?.let { params.put(NativeSearchParams.Parameter.PAGE, it) }
+    json.optInt("category_limit").takeIf { it > 0 }
+        ?.let { params.put(NativeSearchParams.Parameter.CATEGORY_LIMIT, it) }
+    json.optInt("brand_limit").takeIf { it > 0 }
+        ?.let { params.put(NativeSearchParams.Parameter.BRAND_LIMIT, it) }
+    json.optString("sort_by").takeIf { it.isNotEmpty() }
+        ?.let { params.put(NativeSearchParams.Parameter.SORT_BY, it) }
+    json.optString("sort_dir").takeIf { it.isNotEmpty() }
+        ?.let { params.put(NativeSearchParams.Parameter.SORT_DIR, it) }
+    json.optString("locations").takeIf { it.isNotEmpty() }
+        ?.let { params.put(NativeSearchParams.Parameter.LOCATIONS, it) }
+    json.optString("brands").takeIf { it.isNotEmpty() }
+        ?.let { params.put(NativeSearchParams.Parameter.BRANDS, it) }
+    if (json.has("price_min"))
+        params.put(NativeSearchParams.Parameter.PRICE_MIN, json.getDouble("price_min").toString())
+    if (json.has("price_max"))
+        params.put(NativeSearchParams.Parameter.PRICE_MAX, json.getDouble("price_max").toString())
+    jsonArrayToStringArray(json.optJSONArray("categories"))
+        ?.let { params.put(NativeSearchParams.Parameter.CATEGORIES, it) }
+    jsonArrayToStringArray(json.optJSONArray("excluded_brands"))
+        ?.let { params.put(NativeSearchParams.Parameter.EXCLUDED_BRANDS, it) }
+    jsonArrayToStringArray(json.optJSONArray("colors"))
+        ?.let { params.put(NativeSearchParams.Parameter.COLORS, it) }
+    jsonArrayToStringArray(json.optJSONArray("fashion_sizes"))
+        ?.let { params.put(NativeSearchParams.Parameter.FASHION_SIZES, it) }
+    json.optJSONObject("filters")?.let { facets ->
+        val searchFilters = NativeSearchParams.SearchFilters()
+        var any = false
+        facets.keys().forEach { name ->
+            jsonArrayToStringArray(facets.optJSONArray(name))?.let {
+                searchFilters.put(name, it)
+                any = true
+            }
+        }
+        if (any) params.put(NativeSearchParams.Parameter.FILTERS, searchFilters.toString())
     }
     return params
 }
