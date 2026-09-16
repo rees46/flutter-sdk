@@ -11,12 +11,16 @@ PODS:
   - rees46_sdk (0.0.1):
     - Flutter
     - REES46 (= 3.33.0)
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - patrol (from `.symlinks/plugins/patrol/darwin`)
   - rees46_sdk (from `.symlinks/plugins/rees46_sdk/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -32,6 +36,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/patrol/darwin"
   rees46_sdk:
     :path: ".symlinks/plugins/rees46_sdk/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
 
 SPEC CHECKSUMS:
   CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
@@ -40,6 +46,7 @@ SPEC CHECKSUMS:
   patrol: cea8074f183a2a4232d0ebd10569ae05149ada42
   REES46: 92331668908a711e67515f368a9b00ed775fcffc
   rees46_sdk: 8ad2e581dcb34d936af65c5c7af8c9c4c84f5255
+  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
 
 PODFILE CHECKSUM: b6e248ac4c1eff5807c8b044b39b8bc326af3f5f
 

@@ -730,7 +730,7 @@ class _InitPageState extends State<InitPage> {
             tooltip: 'UI Kit',
             icon: const Icon(Icons.widgets_outlined),
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const UiKitPane()),
+              MaterialPageRoute<void>(builder: (_) => const UiKitPane(shopId: _shopId)),
             ),
           ),
           IconButton(
@@ -774,7 +774,7 @@ class _InitPageState extends State<InitPage> {
             FilledButton.tonalIcon(
               key: const Key('open-ui-kit-button'),
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const UiKitPane()),
+                MaterialPageRoute<void>(builder: (_) => const UiKitPane(shopId: _shopId)),
               ),
               icon: const Icon(Icons.widgets_outlined),
               label: const Text('Open UI Kit (components and blocks)'),

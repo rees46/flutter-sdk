@@ -9,7 +9,9 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 ///
 /// "Components" walks through the primitives in every size, view and state the
 /// design file defines; "Blocks" shows the compositions built from them
-/// (product cards, recommender layouts, instant search, the catalogue, the filters screen).
+/// (product cards, recommender layouts, instant search, the catalogue, the filters screen);
+/// "Search" runs the two data-bound search widgets against the demo shop: the
+/// instant search field, and the results screen it opens on submit.
 /// Mirror of the Android `UiKitPane` / iOS `UIKitShowcaseViewController` /
 /// React Native `UiKitPane`.
 ///
@@ -18,12 +20,15 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 /// images are plain [ImageProvider]s — the kit does not fetch or format
 /// anything.
 class UiKitPane extends StatelessWidget {
-  const UiKitPane({super.key});
+  const UiKitPane({super.key, required this.shopId});
+
+  /// Shop the Search tab's widgets resolve their SDK instance by.
+  final String shopId;
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('UI Kit'),
@@ -31,6 +36,7 @@ class UiKitPane extends StatelessWidget {
             tabs: [
               Tab(text: 'Components'),
               Tab(text: 'Blocks'),
+              Tab(text: 'Search'),
             ],
           ),
         ),
@@ -38,9 +44,83 @@ class UiKitPane extends StatelessWidget {
           children: [
             _Showcase(exhibits: _componentExhibits),
             _Showcase(exhibits: _blockExhibits),
+            _SearchFlow(shopId: shopId),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The search flow as a host would wire it: the instant search field resolves the SDK by
+/// shopId and searches on its own; submitting a phrase swaps it for the results screen,
+/// whose back button returns. Taps on products and categories only show a snackbar —
+/// navigation is the host's.
+class _SearchFlow extends StatefulWidget {
+  const _SearchFlow({required this.shopId});
+
+  final String shopId;
+
+  @override
+  State<_SearchFlow> createState() => _SearchFlowState();
+}
+
+class _SearchFlowState extends State<_SearchFlow> {
+  String? _query;
+  String? _sortBy;
+  String? _sortDir;
+
+  void _say(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _query;
+    if (query == null) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: PersonalizationInstantSearchField(
+          shopId: widget.shopId,
+          placeholder: 'Search',
+          cancelText: 'Cancel',
+          recentLabel: 'Recent searches',
+          clearText: 'Clear',
+          moreText: 'more',
+          categoriesLabel: 'Categories',
+          productsLabel: 'Products',
+          onSubmit: (text) => setState(() => _query = text),
+          onProductTap: (product) => _say('Product: ${product.name}'),
+          onCategoryTap: (category) => _say('Category: ${category.name}'),
+          onError: (error) => _say('Search error: $error'),
+          iconBuilder: _icon,
+        ),
+      );
+    }
+    return PersonalizationSearchResultsScreen(
+      shopId: widget.shopId,
+      query: query,
+      sortBy: _sortBy,
+      sortDir: _sortDir,
+      productActionText: 'Add to cart',
+      onBack: () => setState(() => _query = null),
+      onProductTap: (product) => _say('Product: ${product.name}'),
+      onProductAction: (product) => _say('Add to cart: ${product.name}'),
+      // No sort picker in the design file: cycle relevance → price ↑ → price ↓ on tap.
+      onSortTap: () => setState(() {
+        if (_sortBy == null) {
+          _sortBy = 'price';
+          _sortDir = 'asc';
+        } else if (_sortDir == 'asc') {
+          _sortDir = 'desc';
+        } else {
+          _sortBy = null;
+          _sortDir = null;
+        }
+      }),
+      onError: (error) => _say('Search error: $error'),
+      iconBuilder: _icon,
     );
   }
 }
@@ -60,8 +140,8 @@ class _Showcase extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final caption = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        );
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       itemCount: exhibits.length,
@@ -214,21 +294,33 @@ final List<_Exhibit> _componentExhibits = [
     );
   }),
   _Exhibit('Link — text action next to a field or a label', (context) {
-    return _Row(children: [
-      PersonalizationLink(label: 'Cancel', onTap: () {}),
-      PersonalizationLink(label: 'Clear', onTap: () {}),
-    ]);
+    return _Row(
+      children: [
+        PersonalizationLink(label: 'Cancel', onTap: () {}),
+        PersonalizationLink(label: 'Clear', onTap: () {}),
+      ],
+    );
   }),
-  _Exhibit('Search Results Title', (context) => const _SearchResultsTitleExhibit()),
+  _Exhibit(
+    'Search Results Title',
+    (context) => const _SearchResultsTitleExhibit(),
+  ),
   _Exhibit('Accordion — collapsed with count, expanded', (context) {
     return _Column(
       children: [
         PersonalizationAccordion(label: 'Brand', count: 12, iconBuilder: _icon),
-        PersonalizationAccordion(label: 'Size', expanded: true, iconBuilder: _icon),
+        PersonalizationAccordion(
+          label: 'Size',
+          expanded: true,
+          iconBuilder: _icon,
+        ),
       ],
     );
   }),
-  _Exhibit('List Label', (context) => const PersonalizationListLabel(label: 'Popular categories')),
+  _Exhibit(
+    'List Label',
+    (context) => const PersonalizationListLabel(label: 'Popular categories'),
+  ),
   _Exhibit('Badge — warning LG / MD / SM, danger', (context) {
     return const _Row(
       children: [
@@ -246,41 +338,65 @@ final List<_Exhibit> _componentExhibits = [
   _Exhibit('Tag — primary with remove, secondary', (context) {
     return _Row(
       children: [
-        PersonalizationTag(label: 'Nike', onRemove: () {}, removeIconBuilder: _removeIcon),
+        PersonalizationTag(
+          label: 'Nike',
+          onRemove: () {},
+          removeIconBuilder: _removeIcon,
+        ),
         PersonalizationTag(
           label: 'Size 42',
           view: PersonalizationTagView.secondary,
           onRemove: () {},
           removeIconBuilder: _removeIcon,
         ),
-        const PersonalizationTag(label: 'Running', view: PersonalizationTagView.secondary),
-      ],
-    );
-  }),
-  _Exhibit('Checkbox — unchecked, checked, indeterminate, disabled; with label', (context) {
-    return const _Column(
-      children: [
-        _Row(
-          children: [
-            PersonalizationCheckbox(state: PersonalizationCheckboxState.unchecked),
-            PersonalizationCheckbox(state: PersonalizationCheckboxState.checked),
-            PersonalizationCheckbox(state: PersonalizationCheckboxState.indeterminate),
-            PersonalizationCheckbox(state: PersonalizationCheckboxState.checked, disabled: true),
-          ],
-        ),
-        PersonalizationCheckboxWithLabel(
-          label: 'In stock only',
-          state: PersonalizationCheckboxState.checked,
+        const PersonalizationTag(
+          label: 'Running',
+          view: PersonalizationTagView.secondary,
         ),
       ],
     );
   }),
+  _Exhibit(
+    'Checkbox — unchecked, checked, indeterminate, disabled; with label',
+    (context) {
+      return const _Column(
+        children: [
+          _Row(
+            children: [
+              PersonalizationCheckbox(
+                state: PersonalizationCheckboxState.unchecked,
+              ),
+              PersonalizationCheckbox(
+                state: PersonalizationCheckboxState.checked,
+              ),
+              PersonalizationCheckbox(
+                state: PersonalizationCheckboxState.indeterminate,
+              ),
+              PersonalizationCheckbox(
+                state: PersonalizationCheckboxState.checked,
+                disabled: true,
+              ),
+            ],
+          ),
+          PersonalizationCheckboxWithLabel(
+            label: 'In stock only',
+            state: PersonalizationCheckboxState.checked,
+          ),
+        ],
+      );
+    },
+  ),
   _Exhibit('Dots, Count, Rating', (context) {
     return _Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const PersonalizationDots(count: 5, selectedIndex: 1),
-        const PersonalizationCount(prefix: 'Showing', shown: 12, separator: 'of', total: 128),
+        const PersonalizationCount(
+          prefix: 'Showing',
+          shown: 12,
+          separator: 'of',
+          total: 128,
+        ),
         PersonalizationRating(value: '4.7', reviews: 128, iconBuilder: _icon),
       ],
     );
@@ -296,20 +412,30 @@ final List<_Exhibit> _componentExhibits = [
   _Exhibit('Product Image — 1:1, 4:3, 3:4', (context) {
     return _Row(
       children: [
-        for (final (index, aspect) in PersonalizationProductImageAspect.values.indexed)
+        for (final (index, aspect)
+            in PersonalizationProductImageAspect.values.indexed)
           SizedBox(
             width: 104,
-            child: PersonalizationProductImage(aspect: aspect, image: _products[index].image),
+            child: PersonalizationProductImage(
+              aspect: aspect,
+              image: _products[index].image,
+            ),
           ),
       ],
     );
   }),
-  _Exhibit('Empty State', (context) => const PersonalizationEmptyState(message: 'No results for your request.')),
+  _Exhibit(
+    'Empty State',
+    (context) => const PersonalizationEmptyState(
+      message: 'No results for your request.',
+    ),
+  ),
   _Exhibit('Icons — the full set, 24 dp', (context) {
     final color = PersonalizationTheme.of(context).colors.textPrimary;
     return _ScrollRow(
       children: [
-        for (final asset in PersonalizationIcons.all) _icon(context, asset, 24, color),
+        for (final asset in PersonalizationIcons.all)
+          _icon(context, asset, 24, color),
       ],
     );
   }),
@@ -320,8 +446,14 @@ final List<_Exhibit> _blockExhibits = [
     return _Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 220, child: _card(PersonalizationProductCardType.carousel, _products[0])),
-        SizedBox(width: 161, child: _card(PersonalizationProductCardType.grid, _products[1])),
+        SizedBox(
+          width: 220,
+          child: _card(PersonalizationProductCardType.carousel, _products[0]),
+        ),
+        SizedBox(
+          width: 161,
+          child: _card(PersonalizationProductCardType.grid, _products[1]),
+        ),
         _card(PersonalizationProductCardType.list, _products[2]),
       ],
     );
@@ -334,31 +466,65 @@ final List<_Exhibit> _blockExhibits = [
     ];
     return _Column(
       children: [
-        _ScrollRow(children: [
-          for (final (index, aspect) in aspects.indexed)
-            SizedBox(
-              width: 220,
-              child: _card(PersonalizationProductCardType.carousel, _products[index + 3], aspect: aspect),
-            ),
-        ]),
+        _ScrollRow(
+          children: [
+            for (final (index, aspect) in aspects.indexed)
+              SizedBox(
+                width: 220,
+                child: _card(
+                  PersonalizationProductCardType.carousel,
+                  _products[index + 3],
+                  aspect: aspect,
+                ),
+              ),
+          ],
+        ),
         for (final (index, aspect) in aspects.indexed)
-          _card(PersonalizationProductCardType.list, _products[index + 3], aspect: aspect),
+          _card(
+            PersonalizationProductCardType.list,
+            _products[index + 3],
+            aspect: aspect,
+          ),
       ],
     );
   }),
   _Exhibit('Recommender Block — carousel', (context) {
-    return _recommender(PersonalizationProductsLayout.carousel, 'Recommended for you', _products);
+    return _recommender(
+      PersonalizationProductsLayout.carousel,
+      'Recommended for you',
+      _products,
+    );
   }),
   _Exhibit('Recommender Block — grid', (context) {
-    return _recommender(PersonalizationProductsLayout.grid, 'Similar products', _products.take(4).toList());
+    return _recommender(
+      PersonalizationProductsLayout.grid,
+      'Similar products',
+      _products.take(4).toList(),
+    );
   }),
   _Exhibit('Recommender Block — list', (context) {
-    return _recommender(PersonalizationProductsLayout.list, 'Recently viewed', _products.take(3).toList());
+    return _recommender(
+      PersonalizationProductsLayout.list,
+      'Recently viewed',
+      _products.take(3).toList(),
+    );
   }),
-  _Exhibit('Instant Search — recent searches', (context) => const _InstantSearchExhibit()),
-  _Exhibit('Instant Search — typing, matches in bold', (context) => const _InstantSearchExhibit(typing: true)),
-  _Exhibit('Instant Search — with images', (context) => const _InstantSearchExhibit(images: true)),
-  _Exhibit('Catalog — header, grid ⇄ list, count, load more', (context) => const _CatalogExhibit()),
+  _Exhibit(
+    'Instant Search — recent searches',
+    (context) => const _InstantSearchExhibit(),
+  ),
+  _Exhibit(
+    'Instant Search — typing, matches in bold',
+    (context) => const _InstantSearchExhibit(typing: true),
+  ),
+  _Exhibit(
+    'Instant Search — with images',
+    (context) => const _InstantSearchExhibit(images: true),
+  ),
+  _Exhibit(
+    'Catalog — header, grid ⇄ list, count, load more',
+    (context) => const _CatalogExhibit(),
+  ),
   _Exhibit(
     'Catalog — empty state',
     (context) => const PersonalizationCatalog(
@@ -368,7 +534,10 @@ final List<_Exhibit> _blockExhibits = [
       iconBuilder: _icon,
     ),
   ),
-  _Exhibit('Filters — range, checkbox lists with show more, reset / apply', (context) => _filters()),
+  _Exhibit(
+    'Filters — range, checkbox lists with show more, reset / apply',
+    (context) => _filters(),
+  ),
 ];
 
 // --- Stateful exhibits ------------------------------------------------------
@@ -413,10 +582,12 @@ class _SearchResultsTitleExhibit extends StatefulWidget {
   final int count;
 
   @override
-  State<_SearchResultsTitleExhibit> createState() => _SearchResultsTitleExhibitState();
+  State<_SearchResultsTitleExhibit> createState() =>
+      _SearchResultsTitleExhibitState();
 }
 
-class _SearchResultsTitleExhibitState extends State<_SearchResultsTitleExhibit> {
+class _SearchResultsTitleExhibitState
+    extends State<_SearchResultsTitleExhibit> {
   int _view = 0;
 
   @override
@@ -431,7 +602,11 @@ class _SearchResultsTitleExhibitState extends State<_SearchResultsTitleExhibit> 
       onBack: () {},
       onFilters: () {},
       onSort: () {},
-      results: PersonalizationSearchResults(prefix: 'Found', count: widget.count, suffix: 'products'),
+      results: PersonalizationSearchResults(
+        prefix: 'Found',
+        count: widget.count,
+        suffix: 'products',
+      ),
       filters: [
         PersonalizationSearchFilter(label: 'Nike', onRemove: () {}),
         PersonalizationSearchFilter(label: 'Size 42', onRemove: () {}),
@@ -458,8 +633,16 @@ class _InstantSearchExhibit extends StatefulWidget {
 }
 
 class _InstantSearchExhibitState extends State<_InstantSearchExhibit> {
-  late final TextEditingController _controller = TextEditingController(text: widget.typing ? 'boots' : '');
-  List<String> _recent = ['mens winter boots', 'kids shoes', 'bag', 'accessories', 'black boots'];
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.typing ? 'boots' : '',
+  );
+  List<String> _recent = [
+    'mens winter boots',
+    'kids shoes',
+    'bag',
+    'accessories',
+    'black boots',
+  ];
 
   @override
   void dispose() {
@@ -482,8 +665,20 @@ class _InstantSearchExhibitState extends State<_InstantSearchExhibit> {
       recentSearches: typing ? const [] : _recent,
       moreText: 'more',
       onMoreRecent: () {},
-      onRecentRemove: (item) => setState(() => _recent = _recent.where((it) => it != item).toList()),
-      suggestions: typing ? const ['winter', 'mens', 'kids', 'for outdoor', 'womens', 'low', 'black', 'orange'] : const [],
+      onRecentRemove: (item) =>
+          setState(() => _recent = _recent.where((it) => it != item).toList()),
+      suggestions: typing
+          ? const [
+              'winter',
+              'mens',
+              'kids',
+              'for outdoor',
+              'womens',
+              'low',
+              'black',
+              'orange',
+            ]
+          : const [],
       categoriesLabel: typing ? 'Category' : 'Popular category',
       categories: typing
           ? const [
@@ -492,21 +687,44 @@ class _InstantSearchExhibitState extends State<_InstantSearchExhibit> {
               PersonalizationSuggestion(id: 'c3', title: 'Kids boots'),
             ]
           : [
-              PersonalizationSuggestion(id: 'c1', title: 'Running shoes', subtitle: 'Shoes', image: _products[0].image),
-              PersonalizationSuggestion(id: 'c2', title: 'Running apparel', subtitle: 'Clothing', image: _products[1].image),
-              PersonalizationSuggestion(id: 'c3', title: 'Trail gear', subtitle: 'Outdoor', image: _products[2].image),
+              PersonalizationSuggestion(
+                id: 'c1',
+                title: 'Running shoes',
+                subtitle: 'Shoes',
+                image: _products[0].image,
+              ),
+              PersonalizationSuggestion(
+                id: 'c2',
+                title: 'Running apparel',
+                subtitle: 'Clothing',
+                image: _products[1].image,
+              ),
+              PersonalizationSuggestion(
+                id: 'c3',
+                title: 'Trail gear',
+                subtitle: 'Outdoor',
+                image: _products[2].image,
+              ),
             ],
       productsLabel: typing ? 'Products' : 'Frequently searched',
       products: typing
           ? const [
               PersonalizationSuggestion(id: 'p1', title: 'winter womens boots'),
               PersonalizationSuggestion(id: 'p2', title: 'boots for mens'),
-              PersonalizationSuggestion(id: 'p3', title: 'winter boots for mens'),
+              PersonalizationSuggestion(
+                id: 'p3',
+                title: 'winter boots for mens',
+              ),
               PersonalizationSuggestion(id: 'p4', title: 'kids winter boots'),
             ]
           : [
               for (final p in _products.take(widget.images ? 3 : 5))
-                PersonalizationSuggestion(id: p.id, title: p.name, subtitle: p.price, image: p.image),
+                PersonalizationSuggestion(
+                  id: p.id,
+                  title: p.name,
+                  subtitle: p.price,
+                  image: p.image,
+                ),
             ],
       onCategoryTap: (_) {},
       onProductTap: (_) {},
@@ -546,7 +764,9 @@ class _CatalogExhibitState extends State<_CatalogExhibit> {
     return PersonalizationCatalog(
       header: _SearchResultsTitleExhibit(
         onViewChanged: (index) => setState(() {
-          _layout = index == 0 ? PersonalizationProductsLayout.grid : PersonalizationProductsLayout.list;
+          _layout = index == 0
+              ? PersonalizationProductsLayout.grid
+              : PersonalizationProductsLayout.list;
         }),
       ),
       layout: _layout,
@@ -601,7 +821,10 @@ class _ScrollRow extends StatelessWidget {
 }
 
 class _Column extends StatelessWidget {
-  const _Column({required this.children, this.crossAxisAlignment = CrossAxisAlignment.stretch});
+  const _Column({
+    required this.children,
+    this.crossAxisAlignment = CrossAxisAlignment.stretch,
+  });
 
   final List<Widget> children;
   final CrossAxisAlignment crossAxisAlignment;
@@ -631,12 +854,28 @@ Widget _icon(BuildContext context, String asset, double size, Color color) {
 }
 
 Widget _removeIcon(BuildContext context, String asset) {
-  return _icon(context, asset, 16, PersonalizationTheme.of(context).colors.textPrimary);
+  return _icon(
+    context,
+    asset,
+    16,
+    PersonalizationTheme.of(context).colors.textPrimary,
+  );
 }
 
 /// The filters screen with the sections from the design file; toggles and ranges update its own state.
 Widget _filters() {
-  const colors = ['All', 'Black', 'White', 'Red', 'Light blue', 'Green', 'Yellow', 'Brown', 'Grey', 'Pink'];
+  const colors = [
+    'All',
+    'Black',
+    'White',
+    'Red',
+    'Light blue',
+    'Green',
+    'Yellow',
+    'Brown',
+    'Grey',
+    'Pink',
+  ];
   const ratings = ['All', '5 stars', '4+ stars', '3+ stars'];
   return PersonalizationFilters(
     title: 'Filters',
@@ -647,25 +886,46 @@ Widget _filters() {
     onApply: (_) {},
     sections: [
       const PersonalizationFilterRange(
-          id: 'size', title: 'Size', fromLabel: 'From', toLabel: 'to', from: '42', to: '43', select: true),
+        id: 'size',
+        title: 'Size',
+        fromLabel: 'From',
+        toLabel: 'to',
+        from: '42',
+        to: '43',
+        select: true,
+      ),
       PersonalizationFilterOptions(
         id: 'colors',
         title: 'Colors',
         options: [
           for (final (index, label) in colors.indexed)
-            PersonalizationFilterOption(id: label.toLowerCase(), label: label, checked: index == 1),
+            PersonalizationFilterOption(
+              id: label.toLowerCase(),
+              label: label,
+              checked: index == 1,
+            ),
         ],
         showMoreText: 'Show more',
         showLessText: 'Show less',
       ),
       const PersonalizationFilterRange(
-          id: 'price', title: 'Price (USD)', fromLabel: 'From', toLabel: 'to', from: '50', to: '500'),
+        id: 'price',
+        title: 'Price (USD)',
+        fromLabel: 'From',
+        toLabel: 'to',
+        from: '50',
+        to: '500',
+      ),
       PersonalizationFilterOptions(
         id: 'rating',
         title: 'Rating',
         options: [
           for (final (index, label) in ratings.indexed)
-            PersonalizationFilterOption(id: label, label: label, checked: index == 1),
+            PersonalizationFilterOption(
+              id: label,
+              label: label,
+              checked: index == 1,
+            ),
         ],
       ),
     ],
@@ -676,7 +936,8 @@ Widget _filters() {
 Widget _card(
   PersonalizationProductCardType type,
   PersonalizationProduct product, {
-  PersonalizationProductImageAspect aspect = PersonalizationProductImageAspect.square,
+  PersonalizationProductImageAspect aspect =
+      PersonalizationProductImageAspect.square,
 }) {
   return PersonalizationProductCard(
     type: type,
@@ -694,7 +955,11 @@ Widget _card(
   );
 }
 
-Widget _recommender(PersonalizationProductsLayout layout, String title, List<PersonalizationProduct> products) {
+Widget _recommender(
+  PersonalizationProductsLayout layout,
+  String title,
+  List<PersonalizationProduct> products,
+) {
   return PersonalizationRecommenderBlock(
     layout: layout,
     title: title,
@@ -710,18 +975,91 @@ Widget _recommender(PersonalizationProductsLayout layout, String title, List<Per
 
 const int _totalProducts = 128;
 
-ImageProvider _image(String seed) => NetworkImage('https://picsum.photos/seed/$seed/600/600');
+ImageProvider _image(String seed) =>
+    NetworkImage('https://picsum.photos/seed/$seed/600/600');
 
 /// Static products for the exhibits. Strings arrive formatted — that is the kit's contract.
 final List<PersonalizationProduct> _products = [
-  PersonalizationProduct(id: '1', name: 'Air Zoom Pegasus 41 running shoes', price: r'$140', image: _image('pegasus'), brand: 'Nike', rating: const PersonalizationProductRating(value: '4.7', reviews: 128), oldPrice: r'$165', discount: '-15%', actionText: 'Add to cart'),
-  PersonalizationProduct(id: '2', name: 'Wireless over-ear headphones', price: r'$299', image: _image('headphones'), brand: 'Sony', rating: const PersonalizationProductRating(value: '4.8', reviews: 2140), actionText: 'Add to cart'),
-  PersonalizationProduct(id: '3', name: 'Everyday backpack 20 L', price: r'$89', image: _image('backpack'), brand: 'Peak Design', rating: const PersonalizationProductRating(value: '4.6', reviews: 412), oldPrice: r'$110', discount: '-19%', actionText: 'Add to cart'),
-  PersonalizationProduct(id: '4', name: 'Trail running jacket', price: r'$175', image: _image('jacket'), brand: 'Salomon', rating: const PersonalizationProductRating(value: '4.5', reviews: 77), actionText: 'Add to cart'),
-  PersonalizationProduct(id: '5', name: 'Polarized sunglasses', price: r'$120', image: _image('sunglasses'), brand: 'Oakley', rating: const PersonalizationProductRating(value: '4.4', reviews: 305), oldPrice: r'$150', discount: '-20%', actionText: 'Add to cart'),
-  PersonalizationProduct(id: '6', name: 'Insulated bottle 750 ml', price: r'$35', image: _image('bottle'), brand: 'Hydro Flask', rating: const PersonalizationProductRating(value: '4.9', reviews: 980), actionText: 'Add to cart'),
-  PersonalizationProduct(id: '7', name: 'GPS running watch', price: r'$449', image: _image('watch'), brand: 'Garmin', rating: const PersonalizationProductRating(value: '4.7', reviews: 1532), actionText: 'Add to cart'),
-  PersonalizationProduct(id: '8', name: 'Court sneakers', price: r'$95', image: _image('sneakers'), brand: 'Adidas', rating: const PersonalizationProductRating(value: '4.3', reviews: 64), oldPrice: r'$120', discount: '-21%', actionText: 'Add to cart'),
+  PersonalizationProduct(
+    id: '1',
+    name: 'Air Zoom Pegasus 41 running shoes',
+    price: r'$140',
+    image: _image('pegasus'),
+    brand: 'Nike',
+    rating: const PersonalizationProductRating(value: '4.7', reviews: 128),
+    oldPrice: r'$165',
+    discount: '-15%',
+    actionText: 'Add to cart',
+  ),
+  PersonalizationProduct(
+    id: '2',
+    name: 'Wireless over-ear headphones',
+    price: r'$299',
+    image: _image('headphones'),
+    brand: 'Sony',
+    rating: const PersonalizationProductRating(value: '4.8', reviews: 2140),
+    actionText: 'Add to cart',
+  ),
+  PersonalizationProduct(
+    id: '3',
+    name: 'Everyday backpack 20 L',
+    price: r'$89',
+    image: _image('backpack'),
+    brand: 'Peak Design',
+    rating: const PersonalizationProductRating(value: '4.6', reviews: 412),
+    oldPrice: r'$110',
+    discount: '-19%',
+    actionText: 'Add to cart',
+  ),
+  PersonalizationProduct(
+    id: '4',
+    name: 'Trail running jacket',
+    price: r'$175',
+    image: _image('jacket'),
+    brand: 'Salomon',
+    rating: const PersonalizationProductRating(value: '4.5', reviews: 77),
+    actionText: 'Add to cart',
+  ),
+  PersonalizationProduct(
+    id: '5',
+    name: 'Polarized sunglasses',
+    price: r'$120',
+    image: _image('sunglasses'),
+    brand: 'Oakley',
+    rating: const PersonalizationProductRating(value: '4.4', reviews: 305),
+    oldPrice: r'$150',
+    discount: '-20%',
+    actionText: 'Add to cart',
+  ),
+  PersonalizationProduct(
+    id: '6',
+    name: 'Insulated bottle 750 ml',
+    price: r'$35',
+    image: _image('bottle'),
+    brand: 'Hydro Flask',
+    rating: const PersonalizationProductRating(value: '4.9', reviews: 980),
+    actionText: 'Add to cart',
+  ),
+  PersonalizationProduct(
+    id: '7',
+    name: 'GPS running watch',
+    price: r'$449',
+    image: _image('watch'),
+    brand: 'Garmin',
+    rating: const PersonalizationProductRating(value: '4.7', reviews: 1532),
+    actionText: 'Add to cart',
+  ),
+  PersonalizationProduct(
+    id: '8',
+    name: 'Court sneakers',
+    price: r'$95',
+    image: _image('sneakers'),
+    brand: 'Adidas',
+    rating: const PersonalizationProductRating(value: '4.3', reviews: 64),
+    oldPrice: r'$120',
+    discount: '-21%',
+    actionText: 'Add to cart',
+  ),
 ];
 
 extension on PersonalizationProduct {
