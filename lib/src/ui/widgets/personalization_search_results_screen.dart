@@ -394,6 +394,8 @@ class _PersonalizationSearchResultsScreenState
     if (source?.priceRange != null ||
         applied.priceMin != null ||
         applied.priceMax != null) {
+      // Границы диапазона — подсказками: в запрос уходит только то, что ввёл пользователь.
+      final range = source?.priceRange;
       sections.add(
         PersonalizationFilterRange(
           id: _sectionPrice,
@@ -402,6 +404,8 @@ class _PersonalizationSearchResultsScreenState
           toLabel: widget.toLabel,
           from: applied.priceMin,
           to: applied.priceMax,
+          fromPlaceholder: range == null ? null : _bound(range.min),
+          toPlaceholder: range == null ? null : _bound(range.max),
         ),
       );
     }
@@ -462,6 +466,11 @@ class _PersonalizationSearchResultsScreenState
     }
     return sections;
   }
+
+  /// Граница цены без хвоста «.0»: сервер отдаёт число, форматированной строки у него нет.
+  static String _bound(double value) => value == value.floorToDouble()
+      ? value.toInt().toString()
+      : value.toString();
 
   PersonalizationSearchApplied _fromSections(
     List<PersonalizationFilterSection> sections,

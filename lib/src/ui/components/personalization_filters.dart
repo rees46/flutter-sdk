@@ -41,6 +41,7 @@ sealed class PersonalizationFilterSection {
 }
 
 /// Два поля «от — до». [select] — поля типа Select, список открывает хост.
+/// [fromPlaceholder] / [toPlaceholder] — подсказки в пустых полях, например границы диапазона.
 class PersonalizationFilterRange extends PersonalizationFilterSection {
   const PersonalizationFilterRange({
     required super.id,
@@ -50,6 +51,8 @@ class PersonalizationFilterRange extends PersonalizationFilterSection {
     this.from,
     this.to,
     this.select = false,
+    this.fromPlaceholder,
+    this.toPlaceholder,
   });
 
   final String fromLabel;
@@ -57,6 +60,8 @@ class PersonalizationFilterRange extends PersonalizationFilterSection {
   final String? from;
   final String? to;
   final bool select;
+  final String? fromPlaceholder;
+  final String? toPlaceholder;
 
   PersonalizationFilterRange copyWith({String? from, String? to}) =>
       PersonalizationFilterRange(
@@ -67,6 +72,8 @@ class PersonalizationFilterRange extends PersonalizationFilterSection {
         from: from ?? this.from,
         to: to ?? this.to,
         select: select,
+        fromPlaceholder: fromPlaceholder,
+        toPlaceholder: toPlaceholder,
       );
 }
 
@@ -231,6 +238,7 @@ class _PersonalizationFiltersState extends State<PersonalizationFilters> {
       return Expanded(
         child: PersonalizationInputField(
           controller: controller,
+          placeholder: isFrom ? section.fromPlaceholder : section.toPlaceholder,
           size: PersonalizationInputFieldSize.md,
           type: section.select
               ? PersonalizationInputFieldType.select
