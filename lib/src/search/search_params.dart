@@ -9,8 +9,11 @@ import 'dart:convert';
 ///   iOS converts them to integers internally.
 /// - [page]: maps to Android `PAGE` param and iOS `offset` param.
 ///
+/// [filters] are the shop's own facets by name — `{"Материал корпуса": ["Металл"]}` —
+/// as the full search response lists them in `filters`.
+///
 /// Excluded Android-only params: `extended`, `exclude`, `excludedMerchants`,
-/// `noClarification`, `filters` (complex SearchFilters object).
+/// `noClarification`.
 class SearchParams {
   final int? limit;
   final int? page;
@@ -26,6 +29,7 @@ class SearchParams {
   final double? priceMax;
   final List<String>? colors;
   final List<String>? fashionSizes;
+  final Map<String, List<String>>? filters;
 
   const SearchParams({
     this.limit,
@@ -42,6 +46,7 @@ class SearchParams {
     this.priceMax,
     this.colors,
     this.fashionSizes,
+    this.filters,
   });
 
   String toJson() => jsonEncode({
@@ -61,6 +66,7 @@ class SearchParams {
     if (colors != null && colors!.isNotEmpty) 'colors': colors,
     if (fashionSizes != null && fashionSizes!.isNotEmpty)
       'fashion_sizes': fashionSizes,
+    if (filters != null && filters!.isNotEmpty) 'filters': filters,
   });
 }
 

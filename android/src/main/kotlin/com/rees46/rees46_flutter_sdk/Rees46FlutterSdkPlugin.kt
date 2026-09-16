@@ -877,6 +877,18 @@ private fun buildSearchParams(paramsJson: String?): NativeSearchParams {
         ?.let { params.put(NativeSearchParams.Parameter.COLORS, it) }
     jsonArrayToStringArray(json.optJSONArray("fashion_sizes"))
         ?.let { params.put(NativeSearchParams.Parameter.FASHION_SIZES, it) }
+    // Facets by name: {"Material": ["Metal", "Plastic"]}.
+    json.optJSONObject("filters")?.let { facets ->
+        val searchFilters = NativeSearchParams.SearchFilters()
+        var any = false
+        facets.keys().forEach { name ->
+            jsonArrayToStringArray(facets.optJSONArray(name))?.let {
+                searchFilters.put(name, it)
+                any = true
+            }
+        }
+        if (any) params.put(NativeSearchParams.Parameter.FILTERS, searchFilters)
+    }
     return params
 }
 
