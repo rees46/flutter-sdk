@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../personalization_icons.dart';
 import 'personalization_button.dart';
 import 'personalization_count.dart';
+import 'personalization_empty_state.dart';
 import 'personalization_loader.dart';
 import 'personalization_product.dart';
 import 'personalization_product_card.dart';
@@ -34,6 +35,10 @@ class PersonalizationCatalogCount {
 /// переключателем вида. Поэтому заголовок здесь — слот, а не вариант.
 /// Три нижних элемента в макете скрываемые (showLoader, showCount, showLoadMore).
 /// Шаг блока 12.
+///
+/// Пустая выдача — страница SearchResultsScreen, Search Results/Empty State (319:7743):
+/// заголовок тот же, вместо плитки [PersonalizationEmptyState]. Показывается, когда
+/// задан [emptyText] и товаров нет.
 class PersonalizationCatalog extends StatelessWidget {
   const PersonalizationCatalog({
     super.key,
@@ -42,6 +47,7 @@ class PersonalizationCatalog extends StatelessWidget {
     required this.products,
     this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
+    this.emptyText,
     this.loading = false,
     this.count,
     this.loadMoreText,
@@ -56,6 +62,9 @@ class PersonalizationCatalog extends StatelessWidget {
   /// Пропорция картинок карточек, см. [PersonalizationProductCard.imageAspect].
   final PersonalizationProductImageAspect imageAspect;
   final ValueChanged<PersonalizationProduct>? onProductAction;
+
+  /// Текст пустой выдачи. `null` — без пустого состояния, плитка остаётся на месте.
+  final String? emptyText;
   final bool loading;
   final PersonalizationCatalogCount? count;
 
@@ -68,19 +77,24 @@ class PersonalizationCatalog extends StatelessWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   Widget build(BuildContext context) {
+    final bool empty = products.isEmpty && (emptyText ?? '').isNotEmpty;
     final sections = <Widget>[
       ?header,
-      PersonalizationProductsList(
-        layout: layout,
-        products: products,
-        imageAspect: imageAspect,
-        onProductAction: onProductAction,
-        iconBuilder: iconBuilder,
-      ),
+      if (empty)
+        PersonalizationEmptyState(message: emptyText!)
+      else
+        PersonalizationProductsList(
+          layout: layout,
+          products: products,
+          imageAspect: imageAspect,
+          onProductAction: onProductAction,
+          iconBuilder: iconBuilder,
+        ),
       if (loading) const PersonalizationLoader(),
       if (count != null)
         PersonalizationCount(
