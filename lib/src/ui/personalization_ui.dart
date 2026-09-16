@@ -50,3 +50,8 @@ export 'components/personalization_suggestion_row.dart';
 export 'components/personalization_instant_search.dart';
 export 'components/personalization_filters.dart';
 export 'components/personalization_catalog.dart';
+
+// Виджеты с данными SDK: сами резолвят инстанс по shopId, ходят в поиск и держат состояние.
+export 'widgets/search_support.dart' show PersonalizationSearchCategory;
+export 'widgets/personalization_instant_search_field.dart';
+export 'widgets/personalization_search_results_screen.dart';
