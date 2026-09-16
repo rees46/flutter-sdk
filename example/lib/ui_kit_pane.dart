@@ -359,6 +359,15 @@ final List<_Exhibit> _blockExhibits = [
   _Exhibit('Instant Search — typing, matches in bold', (context) => const _InstantSearchExhibit(typing: true)),
   _Exhibit('Instant Search — with images', (context) => const _InstantSearchExhibit(images: true)),
   _Exhibit('Catalog — header, grid ⇄ list, count, load more', (context) => const _CatalogExhibit()),
+  _Exhibit(
+    'Catalog — empty state',
+    (context) => const PersonalizationCatalog(
+      header: _SearchResultsTitleExhibit(count: 0),
+      products: [],
+      emptyText: 'No results for your request.',
+      iconBuilder: _icon,
+    ),
+  ),
   _Exhibit('Filters — range, checkbox lists with show more, reset / apply', (context) => _filters()),
 ];
 
@@ -398,9 +407,10 @@ class _ButtonGroupExhibitState extends State<_ButtonGroupExhibit> {
 }
 
 class _SearchResultsTitleExhibit extends StatefulWidget {
-  const _SearchResultsTitleExhibit({this.onViewChanged});
+  const _SearchResultsTitleExhibit({this.onViewChanged, this.count = 128});
 
   final ValueChanged<int>? onViewChanged;
+  final int count;
 
   @override
   State<_SearchResultsTitleExhibit> createState() => _SearchResultsTitleExhibitState();
@@ -421,7 +431,7 @@ class _SearchResultsTitleExhibitState extends State<_SearchResultsTitleExhibit> 
       onBack: () {},
       onFilters: () {},
       onSort: () {},
-      results: const PersonalizationSearchResults(prefix: 'Found', count: 128, suffix: 'products'),
+      results: PersonalizationSearchResults(prefix: 'Found', count: widget.count, suffix: 'products'),
       filters: [
         PersonalizationSearchFilter(label: 'Nike', onRemove: () {}),
         PersonalizationSearchFilter(label: 'Size 42', onRemove: () {}),
