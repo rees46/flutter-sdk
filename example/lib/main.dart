@@ -4,6 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
 import 'multi_instance_pane.dart';
+// The kit is private until release: the theme comes from the src barrel.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/ui/personalization_ui.dart'
+    show PersonalizationTheme;
 import 'ui_kit_pane.dart';
 
 void main() => runApp(const App());
@@ -15,8 +19,18 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'REES46 Flutter SDK',
+      // The kit's theme extension rides on ThemeData: light and dark sets
+      // switch together with the app's brightness.
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        extensions: const <ThemeExtension<dynamic>>[PersonalizationTheme.light],
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        extensions: const <ThemeExtension<dynamic>>[PersonalizationTheme.dark],
       ),
       home: const InitPage(),
     );

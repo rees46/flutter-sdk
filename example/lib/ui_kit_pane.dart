@@ -576,9 +576,8 @@ class _ButtonGroupExhibitState extends State<_ButtonGroupExhibit> {
 }
 
 class _SearchResultsTitleExhibit extends StatefulWidget {
-  const _SearchResultsTitleExhibit({this.onViewChanged, this.count = 128});
+  const _SearchResultsTitleExhibit({this.count = 128});
 
-  final ValueChanged<int>? onViewChanged;
   final int count;
 
   @override
@@ -595,10 +594,7 @@ class _SearchResultsTitleExhibitState
     return PersonalizationSearchResultsTitle(
       title: 'Sneakers',
       selectedViewIndex: _view,
-      onViewChanged: (index) {
-        setState(() => _view = index);
-        widget.onViewChanged?.call(index);
-      },
+      onViewChanged: (index) => setState(() => _view = index),
       onBack: () {},
       onFilters: () {},
       onSort: () {},
@@ -687,23 +683,22 @@ class _InstantSearchExhibitState extends State<_InstantSearchExhibit> {
               PersonalizationSuggestion(id: 'c3', title: 'Kids boots'),
             ]
           : [
+              // Categories come without pictures: the search API returns none for
+              // them, so the "with images" state only illustrates product rows.
               PersonalizationSuggestion(
                 id: 'c1',
                 title: 'Running shoes',
                 subtitle: 'Shoes',
-                image: _products[0].image,
               ),
               PersonalizationSuggestion(
                 id: 'c2',
                 title: 'Running apparel',
                 subtitle: 'Clothing',
-                image: _products[1].image,
               ),
               PersonalizationSuggestion(
                 id: 'c3',
                 title: 'Trail gear',
                 subtitle: 'Outdoor',
-                image: _products[2].image,
               ),
             ],
       productsLabel: typing ? 'Products' : 'Frequently searched',
@@ -740,8 +735,12 @@ class _CatalogExhibit extends StatefulWidget {
   State<_CatalogExhibit> createState() => _CatalogExhibitState();
 }
 
+/// The catalogue as a host would wire it: the category title (title + view switch, as on
+/// the CatalogGrid page) sits in the header slot and drives the grid/list switch. The
+/// search results title with back, filters and sort belongs to the search flow.
 class _CatalogExhibitState extends State<_CatalogExhibit> {
   PersonalizationProductsLayout _layout = PersonalizationProductsLayout.grid;
+  int _view = 0;
   List<PersonalizationProduct> _shown = _products.take(4).toList();
   bool _loading = false;
 
@@ -762,12 +761,29 @@ class _CatalogExhibitState extends State<_CatalogExhibit> {
   @override
   Widget build(BuildContext context) {
     return PersonalizationCatalog(
-      header: _SearchResultsTitleExhibit(
-        onViewChanged: (index) => setState(() {
-          _layout = index == 0
-              ? PersonalizationProductsLayout.grid
-              : PersonalizationProductsLayout.list;
-        }),
+      header: PersonalizationTitle(
+        title: 'Sneakers',
+        trailing: PersonalizationButtonGroup(
+          size: PersonalizationButtonGroupSize.md,
+          selectedIndex: _view,
+          onSelected: (index) => setState(() {
+            _view = index;
+            _layout = index == 0
+                ? PersonalizationProductsLayout.grid
+                : PersonalizationProductsLayout.list;
+          }),
+          iconBuilder: _icon,
+          items: const [
+            PersonalizationButtonGroupItem(
+              icon: PersonalizationIcons.grid2x2,
+              activeIcon: PersonalizationIcons.grid2x2Fill,
+            ),
+            PersonalizationButtonGroupItem(
+              icon: PersonalizationIcons.list,
+              activeIcon: PersonalizationIcons.listFill,
+            ),
+          ],
+        ),
       ),
       layout: _layout,
       products: _shown,
@@ -975,8 +991,8 @@ Widget _recommender(
 
 const int _totalProducts = 128;
 
-ImageProvider _image(String seed) =>
-    NetworkImage('https://picsum.photos/seed/$seed/600/600');
+/// Photos ship with the app: the showcase must not depend on the network.
+ImageProvider _image(String seed) => AssetImage('assets/uikit/$seed.jpg');
 
 /// Static products for the exhibits. Strings arrive formatted — that is the kit's contract.
 final List<PersonalizationProduct> _products = [
