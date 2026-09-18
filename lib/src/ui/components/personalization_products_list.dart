@@ -45,13 +45,16 @@ class PersonalizationProductsList extends StatefulWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
-  State<PersonalizationProductsList> createState() => _PersonalizationProductsListState();
+  State<PersonalizationProductsList> createState() =>
+      _PersonalizationProductsListState();
 }
 
-class _PersonalizationProductsListState extends State<PersonalizationProductsList> {
+class _PersonalizationProductsListState
+    extends State<PersonalizationProductsList> {
   final ScrollController _controller = ScrollController();
   int _lastFirst = -1;
 
@@ -75,14 +78,20 @@ class _PersonalizationProductsListState extends State<PersonalizationProductsLis
     if (widget.layout != PersonalizationProductsLayout.carousel) return;
     // Первая полностью видимая карточка: шаг ленты — ширина карточки плюс зазор.
     final first = (_controller.offset / (_carouselCard + _gap)).ceil();
-    final clamped = first.clamp(0, widget.products.isEmpty ? 0 : widget.products.length - 1);
+    final clamped = first.clamp(
+      0,
+      widget.products.isEmpty ? 0 : widget.products.length - 1,
+    );
     if (clamped != _lastFirst) {
       _lastFirst = clamped;
       widget.onFirstVisibleChanged?.call(clamped);
     }
   }
 
-  Widget _card(PersonalizationProduct product, PersonalizationProductCardType type) {
+  Widget _card(
+    PersonalizationProduct product,
+    PersonalizationProductCardType type,
+  ) {
     return PersonalizationProductCard(
       type: type,
       image: product.image,
@@ -94,8 +103,12 @@ class _PersonalizationProductsListState extends State<PersonalizationProductsLis
       oldPrice: product.oldPrice,
       discount: product.discount,
       actionText: product.actionText,
-      onAction: widget.onProductAction == null ? null : () => widget.onProductAction!(product),
-      onTap: widget.onProductTap == null ? null : () => widget.onProductTap!(product),
+      onAction: widget.onProductAction == null
+          ? null
+          : () => widget.onProductAction!(product),
+      onTap: widget.onProductTap == null
+          ? null
+          : () => widget.onProductTap!(product),
       iconBuilder: widget.iconBuilder,
     );
   }
@@ -126,11 +139,19 @@ class _PersonalizationProductsListState extends State<PersonalizationProductsLis
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Expanded(child: _card(products[row], PersonalizationProductCardType.grid)),
+                  Expanded(
+                    child: _card(
+                      products[row],
+                      PersonalizationProductCardType.grid,
+                    ),
+                  ),
                   const SizedBox(width: _gap),
                   Expanded(
                     child: row + 1 < products.length
-                        ? _card(products[row + 1], PersonalizationProductCardType.grid)
+                        ? _card(
+                            products[row + 1],
+                            PersonalizationProductCardType.grid,
+                          )
                         : const SizedBox.shrink(),
                   ),
                 ],

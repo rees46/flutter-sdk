@@ -11,7 +11,10 @@ enum PersonalizationProductCardType { carousel, grid, list }
 
 /// Оценка товара для карточки.
 class PersonalizationProductRating {
-  const PersonalizationProductRating({required this.value, required this.reviews});
+  const PersonalizationProductRating({
+    required this.value,
+    required this.reviews,
+  });
 
   /// Уже отформатированная оценка: в макете «4,7» с запятой.
   final String value;
@@ -77,7 +80,8 @@ class PersonalizationProductCard extends StatelessWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -85,49 +89,76 @@ class PersonalizationProductCard extends StatelessWidget {
     final colors = theme.colors;
     final metrics = _metrics[type]!;
 
-    TextStyle style(double fontSize, double lineHeight, double letterSpacing, FontWeight weight, Color color) =>
-        TextStyle(
-          fontFamily: theme.fontFamily.familyFor(weight),
-          package: theme.fontFamily.package,
-          fontSize: fontSize,
-          height: lineHeight / fontSize,
-          letterSpacing: letterSpacing,
-          fontWeight: weight,
-          color: color,
-        );
+    TextStyle style(
+      double fontSize,
+      double lineHeight,
+      double letterSpacing,
+      FontWeight weight,
+      Color color,
+    ) => TextStyle(
+      fontFamily: theme.fontFamily.familyFor(weight),
+      package: theme.fontFamily.package,
+      fontSize: fontSize,
+      height: lineHeight / fontSize,
+      letterSpacing: letterSpacing,
+      fontWeight: weight,
+      color: color,
+    );
 
     Widget nameBlock(double gap) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if (brand != null && brand!.isNotEmpty) ...<Widget>[
-              Text(brand!, style: style(12, 16, 0.05, FontWeight.w400, colors.textSecondary)),
-              SizedBox(height: gap),
-            ],
-            Text(
-              name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: style(metrics.nameSize, metrics.nameLineHeight, metrics.nameLetterSpacing,
-                  FontWeight.w400, colors.textPrimary),
-            ),
-          ],
-        );
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (brand != null && brand!.isNotEmpty) ...<Widget>[
+          Text(
+            brand!,
+            style: style(12, 16, 0.05, FontWeight.w400, colors.textSecondary),
+          ),
+          SizedBox(height: gap),
+        ],
+        Text(
+          name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: style(
+            metrics.nameSize,
+            metrics.nameLineHeight,
+            metrics.nameLetterSpacing,
+            FontWeight.w400,
+            colors.textPrimary,
+          ),
+        ),
+      ],
+    );
 
     final Widget? ratingRow = rating == null
         ? null
-        : PersonalizationRating(value: rating!.value, reviews: rating!.reviews, iconBuilder: iconBuilder);
+        : PersonalizationRating(
+            value: rating!.value,
+            reviews: rating!.reviews,
+            iconBuilder: iconBuilder,
+          );
     final Widget priceText = Text(
       price,
-      style: style(metrics.priceSize, metrics.priceLineHeight, 0, FontWeight.w600, colors.textPrimary),
+      style: style(
+        metrics.priceSize,
+        metrics.priceLineHeight,
+        0,
+        FontWeight.w600,
+        colors.textPrimary,
+      ),
     );
     final Widget? oldPriceText = oldPrice == null
         ? null
         : Text(
             oldPrice!,
-            style: style(metrics.oldPriceSize, metrics.oldPriceLineHeight, metrics.oldPriceLetterSpacing,
-                    FontWeight.w400, colors.textHint)
-                .copyWith(decoration: TextDecoration.lineThrough),
+            style: style(
+              metrics.oldPriceSize,
+              metrics.oldPriceLineHeight,
+              metrics.oldPriceLetterSpacing,
+              FontWeight.w400,
+              colors.textHint,
+            ).copyWith(decoration: TextDecoration.lineThrough),
           );
     final Widget? discountBadge = discount == null
         ? null
@@ -149,52 +180,66 @@ class PersonalizationProductCard extends StatelessWidget {
     // цена с кнопкой снизу. Высота строки — большее из картинки и текста, поэтому
     // IntrinsicHeight: колонка тянется до картинки, а низкая картинка её не сжимает.
     if (type == PersonalizationProductCardType.list) {
-      return _tappable(IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            SizedBox(width: 120, child: PersonalizationProductImage(image: image, aspect: imageAspect)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      nameBlock(2),
-                      if (ratingRow != null) ...<Widget>[const SizedBox(height: 4), ratingRow],
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              priceText,
-                              if (discountBadge != null) ...<Widget>[const SizedBox(width: 8), discountBadge],
-                            ],
-                          ),
-                          ?oldPriceText,
-                        ],
-                      ),
-                      ?action,
-                    ],
-                  ),
-                ],
+      return _tappable(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              SizedBox(
+                width: 120,
+                child: PersonalizationProductImage(
+                  image: image,
+                  aspect: imageAspect,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        nameBlock(2),
+                        if (ratingRow != null) ...<Widget>[
+                          const SizedBox(height: 4),
+                          ratingRow,
+                        ],
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                priceText,
+                                if (discountBadge != null) ...<Widget>[
+                                  const SizedBox(width: 8),
+                                  discountBadge,
+                                ],
+                              ],
+                            ),
+                            ?oldPriceText,
+                          ],
+                        ),
+                        ?action,
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      ));
+      );
     }
 
     // Carousel и Grid: картинка, название, рейтинг, цена, кнопка — колонкой с шагом 8.
@@ -207,32 +252,48 @@ class PersonalizationProductCard extends StatelessWidget {
           children: <Widget>[
             PersonalizationProductImage(image: image, aspect: imageAspect),
             if (discountBadge != null)
-              Positioned(top: metrics.badgeInset, right: metrics.badgeInset, child: discountBadge),
+              Positioned(
+                top: metrics.badgeInset,
+                right: metrics.badgeInset,
+                child: discountBadge,
+              ),
           ],
         ),
         const SizedBox(height: 8),
         nameBlock(2),
-        if (ratingRow != null) ...<Widget>[const SizedBox(height: 8), ratingRow],
+        if (ratingRow != null) ...<Widget>[
+          const SizedBox(height: 8),
+          ratingRow,
+        ],
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: <Widget>[
             priceText,
-            if (oldPriceText != null) ...<Widget>[const SizedBox(width: 8), oldPriceText],
+            if (oldPriceText != null) ...<Widget>[
+              const SizedBox(width: 8),
+              oldPriceText,
+            ],
           ],
         ),
         if (action != null) ...<Widget>[const SizedBox(height: 8), action],
       ],
     );
     return _tappable(
-      type == PersonalizationProductCardType.carousel ? SizedBox(width: 220, child: column) : column,
+      type == PersonalizationProductCardType.carousel
+          ? SizedBox(width: 220, child: column)
+          : column,
     );
   }
 
   Widget _tappable(Widget child) => onTap == null
       ? child
-      : GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: child);
+      : GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: child,
+        );
 }
 
 class _CardMetrics {
@@ -248,19 +309,50 @@ class _CardMetrics {
     required this.badgeInset,
   });
 
-  final double nameSize, nameLineHeight, nameLetterSpacing, priceSize, priceLineHeight;
-  final double oldPriceSize, oldPriceLineHeight, oldPriceLetterSpacing, badgeInset;
+  final double nameSize,
+      nameLineHeight,
+      nameLetterSpacing,
+      priceSize,
+      priceLineHeight;
+  final double oldPriceSize,
+      oldPriceLineHeight,
+      oldPriceLetterSpacing,
+      badgeInset;
 }
 
 const Map<PersonalizationProductCardType, _CardMetrics> _metrics =
     <PersonalizationProductCardType, _CardMetrics>{
-  PersonalizationProductCardType.carousel: _CardMetrics(
-      nameSize: 16, nameLineHeight: 24, nameLetterSpacing: 0, priceSize: 20, priceLineHeight: 32,
-      oldPriceSize: 16, oldPriceLineHeight: 24, oldPriceLetterSpacing: 0, badgeInset: 8),
-  PersonalizationProductCardType.grid: _CardMetrics(
-      nameSize: 16, nameLineHeight: 24, nameLetterSpacing: 0, priceSize: 18, priceLineHeight: 28,
-      oldPriceSize: 14, oldPriceLineHeight: 20, oldPriceLetterSpacing: 0.05, badgeInset: 4),
-  PersonalizationProductCardType.list: _CardMetrics(
-      nameSize: 14, nameLineHeight: 20, nameLetterSpacing: 0.05, priceSize: 16, priceLineHeight: 24,
-      oldPriceSize: 14, oldPriceLineHeight: 20, oldPriceLetterSpacing: 0.05, badgeInset: 0),
-};
+      PersonalizationProductCardType.carousel: _CardMetrics(
+        nameSize: 16,
+        nameLineHeight: 24,
+        nameLetterSpacing: 0,
+        priceSize: 20,
+        priceLineHeight: 32,
+        oldPriceSize: 16,
+        oldPriceLineHeight: 24,
+        oldPriceLetterSpacing: 0,
+        badgeInset: 8,
+      ),
+      PersonalizationProductCardType.grid: _CardMetrics(
+        nameSize: 16,
+        nameLineHeight: 24,
+        nameLetterSpacing: 0,
+        priceSize: 18,
+        priceLineHeight: 28,
+        oldPriceSize: 14,
+        oldPriceLineHeight: 20,
+        oldPriceLetterSpacing: 0.05,
+        badgeInset: 4,
+      ),
+      PersonalizationProductCardType.list: _CardMetrics(
+        nameSize: 14,
+        nameLineHeight: 20,
+        nameLetterSpacing: 0.05,
+        priceSize: 16,
+        priceLineHeight: 24,
+        oldPriceSize: 14,
+        oldPriceLineHeight: 20,
+        oldPriceLetterSpacing: 0.05,
+        badgeInset: 0,
+      ),
+    };

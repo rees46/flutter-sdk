@@ -9,7 +9,11 @@ import 'personalization_radius.dart';
 /// Хост может подставить свой, в том числе из другого пакета.
 @immutable
 class PersonalizationFontFamily {
-  const PersonalizationFontFamily({this.regular, this.emphasized, this.package});
+  const PersonalizationFontFamily({
+    this.regular,
+    this.emphasized,
+    this.package,
+  });
 
   /// Семейство для FontWeight.w400. `null` — системный.
   final String? regular;
@@ -30,8 +34,22 @@ class PersonalizationFontFamily {
 /// Ступень шкалы радиусов. Нужна там, где компонент держит метрики в `const`
 /// таблице и не может обратиться к теме на уровне файла.
 enum PersonalizationRadiusToken {
-  xs, sm, md, lg, xl, xl2, xl3, xl4, xl5, xl6, rounded,
-  buttonLg, buttonMd, buttonSm, segmentedMd, segmentedSm,
+  xs,
+  sm,
+  md,
+  lg,
+  xl,
+  xl2,
+  xl3,
+  xl4,
+  xl5,
+  xl6,
+  rounded,
+  buttonLg,
+  buttonMd,
+  buttonSm,
+  segmentedMd,
+  segmentedSm,
 }
 
 /// Радиусы темы. Значения по умолчанию — шкала из макета.
@@ -63,23 +81,23 @@ class PersonalizationRadiusScale {
 
   /// Значение ступени из действующей темы.
   double resolve(PersonalizationRadiusToken token) => switch (token) {
-        PersonalizationRadiusToken.xs => xs,
-        PersonalizationRadiusToken.sm => sm,
-        PersonalizationRadiusToken.md => md,
-        PersonalizationRadiusToken.lg => lg,
-        PersonalizationRadiusToken.xl => xl,
-        PersonalizationRadiusToken.xl2 => xl2,
-        PersonalizationRadiusToken.xl3 => xl3,
-        PersonalizationRadiusToken.xl4 => xl4,
-        PersonalizationRadiusToken.xl5 => xl5,
-        PersonalizationRadiusToken.xl6 => xl6,
-        PersonalizationRadiusToken.rounded => rounded,
-        PersonalizationRadiusToken.buttonLg => buttonLg,
-        PersonalizationRadiusToken.buttonMd => buttonMd,
-        PersonalizationRadiusToken.buttonSm => buttonSm,
-        PersonalizationRadiusToken.segmentedMd => segmentedMd,
-        PersonalizationRadiusToken.segmentedSm => segmentedSm,
-      };
+    PersonalizationRadiusToken.xs => xs,
+    PersonalizationRadiusToken.sm => sm,
+    PersonalizationRadiusToken.md => md,
+    PersonalizationRadiusToken.lg => lg,
+    PersonalizationRadiusToken.xl => xl,
+    PersonalizationRadiusToken.xl2 => xl2,
+    PersonalizationRadiusToken.xl3 => xl3,
+    PersonalizationRadiusToken.xl4 => xl4,
+    PersonalizationRadiusToken.xl5 => xl5,
+    PersonalizationRadiusToken.xl6 => xl6,
+    PersonalizationRadiusToken.rounded => rounded,
+    PersonalizationRadiusToken.buttonLg => buttonLg,
+    PersonalizationRadiusToken.buttonMd => buttonMd,
+    PersonalizationRadiusToken.buttonSm => buttonSm,
+    PersonalizationRadiusToken.segmentedMd => segmentedMd,
+    PersonalizationRadiusToken.segmentedSm => segmentedSm,
+  };
 
   PersonalizationRadiusScale lerp(PersonalizationRadiusScale other, double t) =>
       PersonalizationRadiusScale(
@@ -141,11 +159,13 @@ class PersonalizationTheme extends ThemeExtension<PersonalizationTheme> {
   final PersonalizationRadiusScale radius;
   final PersonalizationFontFamily fontFamily;
 
-  static const PersonalizationTheme light =
-      PersonalizationTheme(colors: PersonalizationColors.light);
+  static const PersonalizationTheme light = PersonalizationTheme(
+    colors: PersonalizationColors.light,
+  );
 
-  static const PersonalizationTheme dark =
-      PersonalizationTheme(colors: PersonalizationColors.dark);
+  static const PersonalizationTheme dark = PersonalizationTheme(
+    colors: PersonalizationColors.dark,
+  );
 
   /// Тема из контекста. Расширение не подключено — берётся светлая по умолчанию,
   /// поэтому компоненты работают и у хоста, которому тема не нужна.
@@ -166,7 +186,10 @@ class PersonalizationTheme extends ThemeExtension<PersonalizationTheme> {
   }
 
   @override
-  PersonalizationTheme lerp(ThemeExtension<PersonalizationTheme>? other, double t) {
+  PersonalizationTheme lerp(
+    ThemeExtension<PersonalizationTheme>? other,
+    double t,
+  ) {
     if (other is! PersonalizationTheme) return this;
     return PersonalizationTheme(
       colors: colors.lerp(other.colors, t),
