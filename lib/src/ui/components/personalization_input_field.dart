@@ -71,10 +71,12 @@ class PersonalizationInputField extends StatefulWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
-  State<PersonalizationInputField> createState() => _PersonalizationInputFieldState();
+  State<PersonalizationInputField> createState() =>
+      _PersonalizationInputFieldState();
 }
 
 class _PersonalizationInputFieldState extends State<PersonalizationInputField> {
@@ -111,8 +113,9 @@ class _PersonalizationInputFieldState extends State<PersonalizationInputField> {
     final colors = theme.colors;
     final metrics = _inputMetrics[widget.size]!;
     final filled = _controller.text.isNotEmpty;
-    final foreground =
-        filled && widget.enabled ? colors.textPrimary : colors.textHint;
+    final foreground = filled && widget.enabled
+        ? colors.textPrimary
+        : colors.textHint;
 
     final style = TextStyle(
       fontSize: metrics.fontSize,
@@ -138,10 +141,16 @@ class _PersonalizationInputFieldState extends State<PersonalizationInputField> {
     final field = Container(
       padding: _padding(metrics),
       decoration: BoxDecoration(
-        color: widget.enabled ? colors.backgroundInput : colors.backgroundInputDisabled,
-        borderRadius: BorderRadius.circular(theme.radius.resolve(metrics.radius)),
+        color: widget.enabled
+            ? colors.backgroundInput
+            : colors.backgroundInputDisabled,
+        borderRadius: BorderRadius.circular(
+          theme.radius.resolve(metrics.radius),
+        ),
         border: Border.all(
-          color: _focused && widget.enabled ? colors.lineInputFocus : colors.lineInput,
+          color: _focused && widget.enabled
+              ? colors.lineInputFocus
+              : colors.lineInput,
           width: _border,
         ),
       ),
@@ -283,34 +292,34 @@ class _InputMetrics {
 // тогда как ступень lg — это 18/28. SM так же смешан: 14/24 против 14/20.
 const Map<PersonalizationInputFieldSize, _InputMetrics> _inputMetrics =
     <PersonalizationInputFieldSize, _InputMetrics>{
-  PersonalizationInputFieldSize.lg: _InputMetrics(
-    fontSize: 18,
-    lineHeight: 32,
-    letterSpacing: 0,
-    radius: PersonalizationRadiusToken.buttonLg,
-    paddingVertical: 12,
-    paddingInput: 16,
-    paddingSelectStart: 16,
-    iconSize: 32,
-  ),
-  PersonalizationInputFieldSize.md: _InputMetrics(
-    fontSize: 16,
-    lineHeight: 24,
-    letterSpacing: 0,
-    radius: PersonalizationRadiusToken.buttonMd,
-    paddingVertical: 8,
-    paddingInput: 12,
-    paddingSelectStart: 12,
-    iconSize: 24,
-  ),
-  PersonalizationInputFieldSize.sm: _InputMetrics(
-    fontSize: 14,
-    lineHeight: 24,
-    letterSpacing: 0.05,
-    radius: PersonalizationRadiusToken.buttonSm,
-    paddingVertical: 4,
-    paddingInput: 12,
-    paddingSelectStart: 8,
-    iconSize: 24,
-  ),
-};
+      PersonalizationInputFieldSize.lg: _InputMetrics(
+        fontSize: 18,
+        lineHeight: 32,
+        letterSpacing: 0,
+        radius: PersonalizationRadiusToken.buttonLg,
+        paddingVertical: 12,
+        paddingInput: 16,
+        paddingSelectStart: 16,
+        iconSize: 32,
+      ),
+      PersonalizationInputFieldSize.md: _InputMetrics(
+        fontSize: 16,
+        lineHeight: 24,
+        letterSpacing: 0,
+        radius: PersonalizationRadiusToken.buttonMd,
+        paddingVertical: 8,
+        paddingInput: 12,
+        paddingSelectStart: 12,
+        iconSize: 24,
+      ),
+      PersonalizationInputFieldSize.sm: _InputMetrics(
+        fontSize: 14,
+        lineHeight: 24,
+        letterSpacing: 0.05,
+        radius: PersonalizationRadiusToken.buttonSm,
+        paddingVertical: 4,
+        paddingInput: 12,
+        paddingSelectStart: 8,
+        iconSize: 24,
+      ),
+    };

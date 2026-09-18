@@ -32,7 +32,8 @@ class PersonalizationAccordion extends StatelessWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +48,9 @@ class PersonalizationAccordion extends StatelessWidget {
       package: theme.fontFamily.package,
       color: colors.textPrimary,
     );
-    final asset =
-        expanded ? PersonalizationIcons.angleUp : PersonalizationIcons.angleDown;
+    final asset = expanded
+        ? PersonalizationIcons.angleUp
+        : PersonalizationIcons.angleDown;
 
     return GestureDetector(
       onTap: onToggle == null ? null : () => onToggle!(!expanded),
@@ -59,7 +61,10 @@ class PersonalizationAccordion extends StatelessWidget {
           Text(label, style: style),
           if (count != null) ...<Widget>[
             const SizedBox(width: 4),
-            Text('($count)', style: style.copyWith(color: colors.textSecondary)),
+            Text(
+              '($count)',
+              style: style.copyWith(color: colors.textSecondary),
+            ),
           ],
           const SizedBox(width: 4),
           SizedBox(

@@ -24,10 +24,10 @@ class PersonalizationProductImage extends StatelessWidget {
   final PersonalizationProductImageAspect aspect;
 
   double get _ratio => switch (aspect) {
-        PersonalizationProductImageAspect.square => 1,
-        PersonalizationProductImageAspect.landscape => 4 / 3,
-        PersonalizationProductImageAspect.portrait => 3 / 4,
-      };
+    PersonalizationProductImageAspect.square => 1,
+    PersonalizationProductImageAspect.landscape => 4 / 3,
+    PersonalizationProductImageAspect.portrait => 3 / 4,
+  };
 
   @override
   Widget build(BuildContext context) {

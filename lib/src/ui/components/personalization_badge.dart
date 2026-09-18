@@ -32,12 +32,27 @@ class PersonalizationBadge extends StatelessWidget {
     final theme = PersonalizationTheme.of(context);
     final colors = theme.colors;
     final (padH, padV, radius, fontSize, lineHeight) = switch (size) {
-      PersonalizationBadgeSize.lg =>
-        (12.0, 8.0, PersonalizationRadiusToken.buttonLg, 20.0, 24.0),
-      PersonalizationBadgeSize.md =>
-        (8.0, 4.0, PersonalizationRadiusToken.buttonMd, 16.0, 20.0),
-      PersonalizationBadgeSize.sm =>
-        (4.0, 2.0, PersonalizationRadiusToken.buttonSm, 14.0, 16.0),
+      PersonalizationBadgeSize.lg => (
+        12.0,
+        8.0,
+        PersonalizationRadiusToken.buttonLg,
+        20.0,
+        24.0,
+      ),
+      PersonalizationBadgeSize.md => (
+        8.0,
+        4.0,
+        PersonalizationRadiusToken.buttonMd,
+        16.0,
+        20.0,
+      ),
+      PersonalizationBadgeSize.sm => (
+        4.0,
+        2.0,
+        PersonalizationRadiusToken.buttonSm,
+        14.0,
+        16.0,
+      ),
     };
 
     return Container(

@@ -30,7 +30,8 @@ class PersonalizationRating extends StatelessWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +47,9 @@ class PersonalizationRating extends StatelessWidget {
       package: theme.fontFamily.package,
       color: colors.textHint,
     );
-    final Color starColor =
-        reviews > 0 ? colors.semanticWarning : colors.lineGeneric;
+    final Color starColor = reviews > 0
+        ? colors.semanticWarning
+        : colors.lineGeneric;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),

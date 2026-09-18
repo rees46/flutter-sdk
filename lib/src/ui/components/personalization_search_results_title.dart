@@ -9,7 +9,10 @@ import 'personalization_title.dart';
 
 /// Применённый фильтр: подпись и снятие по крестику.
 class PersonalizationSearchFilter {
-  const PersonalizationSearchFilter({required this.label, required this.onRemove});
+  const PersonalizationSearchFilter({
+    required this.label,
+    required this.onRemove,
+  });
 
   final String label;
   final VoidCallback onRemove;
@@ -74,7 +77,8 @@ class PersonalizationSearchResultsTitle extends StatelessWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +146,8 @@ class PersonalizationSearchResultsTitle extends StatelessWidget {
                   iconBuilder: iconBuilder,
                   onPressed: onSort,
                 ),
-              if (showFiltersButton || showSortButton) const SizedBox(width: 12),
+              if (showFiltersButton || showSortButton)
+                const SizedBox(width: 12),
               Text(results!.prefix, style: regular),
               const SizedBox(width: 4),
               Text('${results!.count}', style: strong),
@@ -165,11 +170,11 @@ class PersonalizationSearchResultsTitle extends StatelessWidget {
                   removeIconBuilder: iconBuilder == null
                       ? null
                       : (BuildContext context, String asset) => iconBuilder!(
-                            context,
-                            asset,
-                            16,
-                            colors.textPrimary,
-                          ),
+                          context,
+                          asset,
+                          16,
+                          colors.textPrimary,
+                        ),
                 ),
             ],
           ),

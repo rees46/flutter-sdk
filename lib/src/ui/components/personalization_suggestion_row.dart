@@ -45,7 +45,8 @@ class PersonalizationSuggestionRow extends StatelessWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -54,14 +55,14 @@ class PersonalizationSuggestionRow extends StatelessWidget {
     final category = kind == PersonalizationSuggestionKind.category;
 
     TextStyle style(FontWeight weight, Color color) => TextStyle(
-          fontFamily: theme.fontFamily.familyFor(weight),
-          package: theme.fontFamily.package,
-          fontSize: 14,
-          height: 20 / 14,
-          letterSpacing: 0.05,
-          fontWeight: weight,
-          color: color,
-        );
+      fontFamily: theme.fontFamily.familyFor(weight),
+      package: theme.fontFamily.package,
+      fontSize: 14,
+      height: 20 / 14,
+      letterSpacing: 0.05,
+      fontWeight: weight,
+      color: color,
+    );
     final regular = style(FontWeight.w400, colors.textPrimary);
     final bold = style(FontWeight.w600, colors.textPrimary);
 
@@ -69,7 +70,9 @@ class PersonalizationSuggestionRow extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Row(
-        crossAxisAlignment: category ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        crossAxisAlignment: category
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
         children: <Widget>[
           if (showImage) ...<Widget>[
             SizedBox(
@@ -77,7 +80,9 @@ class PersonalizationSuggestionRow extends StatelessWidget {
               height: 40,
               child: ColoredBox(
                 color: colors.backgroundCard,
-                child: image == null ? null : Image(image: image!, fit: BoxFit.cover),
+                child: image == null
+                    ? null
+                    : Image(image: image!, fit: BoxFit.cover),
               ),
             ),
             const SizedBox(width: 10),
@@ -87,14 +92,20 @@ class PersonalizationSuggestionRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text.rich(_highlighted(regular, bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text.rich(
+                  _highlighted(regular, bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 if (showImage && subtitle != null && subtitle!.isNotEmpty)
                   // У товара это цена полужирным, у категории — родитель серым.
                   Text(
                     subtitle!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: category ? style(FontWeight.w400, colors.textHint) : bold,
+                    style: category
+                        ? style(FontWeight.w400, colors.textHint)
+                        : bold,
                   ),
               ],
             ),
@@ -104,7 +115,12 @@ class PersonalizationSuggestionRow extends StatelessWidget {
             SizedBox(
               width: 24,
               height: 24,
-              child: iconBuilder?.call(context, PersonalizationIcons.angleLargeRight, 24, colors.textHint),
+              child: iconBuilder?.call(
+                context,
+                PersonalizationIcons.angleLargeRight,
+                24,
+                colors.textHint,
+              ),
             ),
           ],
         ],
@@ -114,13 +130,18 @@ class PersonalizationSuggestionRow extends StatelessWidget {
 
   TextSpan _highlighted(TextStyle regular, TextStyle bold) {
     final query = highlight ?? '';
-    final index = query.isEmpty ? -1 : title.toLowerCase().indexOf(query.toLowerCase());
+    final index = query.isEmpty
+        ? -1
+        : title.toLowerCase().indexOf(query.toLowerCase());
     if (index < 0) return TextSpan(text: title, style: regular);
     return TextSpan(
       style: regular,
       children: <TextSpan>[
         TextSpan(text: title.substring(0, index)),
-        TextSpan(text: title.substring(index, index + query.length), style: bold),
+        TextSpan(
+          text: title.substring(index, index + query.length),
+          style: bold,
+        ),
         TextSpan(text: title.substring(index + query.length)),
       ],
     );

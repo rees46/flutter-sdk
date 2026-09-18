@@ -40,7 +40,9 @@ class PersonalizationCheckbox extends StatelessWidget {
         state: state,
         fill: isFilled
             ? (disabled ? colors.buttonPrimaryDisabled : colors.buttonPrimary)
-            : (disabled ? colors.backgroundInputDisabled : colors.backgroundInput),
+            : (disabled
+                  ? colors.backgroundInputDisabled
+                  : colors.backgroundInput),
         border: isFilled ? null : colors.lineInput,
         glyph: colors.textLightPrimary,
         radius: theme.radius.resolve(PersonalizationRadiusToken.sm),

@@ -47,7 +47,8 @@ class PersonalizationButtonGroup extends StatelessWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +98,9 @@ class PersonalizationButtonGroup extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: active ? colors.buttonPrimary : colors.backgroundTransparent,
-          borderRadius: BorderRadius.circular(theme.radius.resolve(metrics.radius)),
+          borderRadius: BorderRadius.circular(
+            theme.radius.resolve(metrics.radius),
+          ),
         ),
         child: SizedBox(
           width: metrics.iconSize,
@@ -125,8 +128,14 @@ class _GroupMetrics {
 
 const Map<PersonalizationButtonGroupSize, _GroupMetrics> _groupMetrics =
     <PersonalizationButtonGroupSize, _GroupMetrics>{
-  PersonalizationButtonGroupSize.md:
-      _GroupMetrics(radius: PersonalizationRadiusToken.segmentedMd, padding: 6, iconSize: 24),
-  PersonalizationButtonGroupSize.sm:
-      _GroupMetrics(radius: PersonalizationRadiusToken.segmentedSm, padding: 2, iconSize: 20),
-};
+      PersonalizationButtonGroupSize.md: _GroupMetrics(
+        radius: PersonalizationRadiusToken.segmentedMd,
+        padding: 6,
+        iconSize: 24,
+      ),
+      PersonalizationButtonGroupSize.sm: _GroupMetrics(
+        radius: PersonalizationRadiusToken.segmentedSm,
+        padding: 2,
+        iconSize: 20,
+      ),
+    };

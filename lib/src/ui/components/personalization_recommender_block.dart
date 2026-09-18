@@ -56,20 +56,26 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
-  State<PersonalizationRecommenderBlock> createState() => _PersonalizationRecommenderBlockState();
+  State<PersonalizationRecommenderBlock> createState() =>
+      _PersonalizationRecommenderBlockState();
 }
 
-class _PersonalizationRecommenderBlockState extends State<PersonalizationRecommenderBlock> {
+class _PersonalizationRecommenderBlockState
+    extends State<PersonalizationRecommenderBlock> {
   int _page = 0;
 
   @override
   Widget build(BuildContext context) {
     final carousel = widget.layout == PersonalizationProductsLayout.carousel;
     final double gap = carousel ? 16 : 12;
-    final bool showAll = carousel && widget.showAllText != null && widget.showAllText!.isNotEmpty;
+    final bool showAll =
+        carousel &&
+        widget.showAllText != null &&
+        widget.showAllText!.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,12 +101,17 @@ class _PersonalizationRecommenderBlockState extends State<PersonalizationRecomme
           imageAspect: widget.imageAspect,
           onProductAction: widget.onProductAction,
           onProductTap: widget.onProductTap,
-          onFirstVisibleChanged: carousel ? (int index) => setState(() => _page = index) : null,
+          onFirstVisibleChanged: carousel
+              ? (int index) => setState(() => _page = index)
+              : null,
           iconBuilder: widget.iconBuilder,
         ),
         if (carousel && widget.showDots) ...<Widget>[
           SizedBox(height: gap),
-          PersonalizationDots(count: widget.products.length, selectedIndex: _page),
+          PersonalizationDots(
+            count: widget.products.length,
+            selectedIndex: _page,
+          ),
         ],
       ],
     );

@@ -10,6 +10,7 @@ import 'package:flutter/painting.dart';
 abstract final class PersonalizationElevation {
   /// None
   static const List<BoxShadow> none = <BoxShadow>[];
+
   /// Elevation 1
   static const List<BoxShadow> e1 = <BoxShadow>[
     BoxShadow(
@@ -23,6 +24,7 @@ abstract final class PersonalizationElevation {
       blurRadius: 2,
     ),
   ];
+
   /// Elevation 2
   static const List<BoxShadow> e2 = <BoxShadow>[
     BoxShadow(
@@ -36,6 +38,7 @@ abstract final class PersonalizationElevation {
       blurRadius: 6,
     ),
   ];
+
   /// Elevation 3
   static const List<BoxShadow> e3 = <BoxShadow>[
     BoxShadow(
@@ -49,6 +52,7 @@ abstract final class PersonalizationElevation {
       blurRadius: 6,
     ),
   ];
+
   /// Elevation 4
   static const List<BoxShadow> e4 = <BoxShadow>[
     BoxShadow(
@@ -62,6 +66,7 @@ abstract final class PersonalizationElevation {
       blurRadius: 8,
     ),
   ];
+
   /// Elevation 5
   static const List<BoxShadow> e5 = <BoxShadow>[
     BoxShadow(

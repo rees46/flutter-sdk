@@ -51,7 +51,8 @@ class PersonalizationButton extends StatefulWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   State<PersonalizationButton> createState() => _PersonalizationButtonState();
@@ -72,7 +73,8 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
     final foreground = _foreground(colors);
 
     final children = <Widget>[
-      if (widget.iconStart != null) _icon(context, widget.iconStart!, metrics, foreground),
+      if (widget.iconStart != null)
+        _icon(context, widget.iconStart!, metrics, foreground),
       if (_hasText)
         Text(
           widget.label!,
@@ -87,7 +89,8 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
             color: foreground,
           ),
         ),
-      if (widget.iconEnd != null) _icon(context, widget.iconEnd!, metrics, foreground),
+      if (widget.iconEnd != null)
+        _icon(context, widget.iconEnd!, metrics, foreground),
     ];
 
     return GestureDetector(
@@ -99,7 +102,9 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
         padding: _padding(metrics),
         decoration: BoxDecoration(
           color: _background(colors),
-          borderRadius: BorderRadius.circular(theme.radius.resolve(metrics.radius)),
+          borderRadius: BorderRadius.circular(
+            theme.radius.resolve(metrics.radius),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -138,8 +143,12 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
       );
     }
     return EdgeInsets.only(
-      left: widget.iconStart != null ? metrics.paddingNarrow : metrics.paddingWide,
-      right: widget.iconEnd != null ? metrics.paddingNarrow : metrics.paddingWide,
+      left: widget.iconStart != null
+          ? metrics.paddingNarrow
+          : metrics.paddingWide,
+      right: widget.iconEnd != null
+          ? metrics.paddingNarrow
+          : metrics.paddingWide,
       top: metrics.paddingVertical,
       bottom: metrics.paddingVertical,
     );
@@ -214,39 +223,39 @@ class _ButtonMetrics {
 
 const Map<PersonalizationButtonSize, _ButtonMetrics> _metrics =
     <PersonalizationButtonSize, _ButtonMetrics>{
-  PersonalizationButtonSize.lg: _ButtonMetrics(
-    fontSize: 20,
-    lineHeight: 32,
-    letterSpacing: 0,
-    radius: PersonalizationRadiusToken.buttonLg,
-    paddingVertical: 8,
-    paddingWide: 24,
-    paddingNarrow: 16,
-    paddingIconOnly: 12,
-    iconSize: 32,
-  ),
-  PersonalizationButtonSize.md: _ButtonMetrics(
-    fontSize: 16,
-    lineHeight: 24,
-    letterSpacing: 0,
-    radius: PersonalizationRadiusToken.buttonMd,
-    paddingVertical: 8,
-    paddingWide: 16,
-    paddingNarrow: 12,
-    paddingIconOnly: 8,
-    iconSize: 24,
-  ),
-  // SM берёт кегль со ступени sm, а интерлиньяж со ступени base:
-  // в макете 14/24, тогда как ступень sm — это 14/20.
-  PersonalizationButtonSize.sm: _ButtonMetrics(
-    fontSize: 14,
-    lineHeight: 24,
-    letterSpacing: 0.05,
-    radius: PersonalizationRadiusToken.buttonSm,
-    paddingVertical: 4,
-    paddingWide: 12,
-    paddingNarrow: 8,
-    paddingIconOnly: 4,
-    iconSize: 20,
-  ),
-};
+      PersonalizationButtonSize.lg: _ButtonMetrics(
+        fontSize: 20,
+        lineHeight: 32,
+        letterSpacing: 0,
+        radius: PersonalizationRadiusToken.buttonLg,
+        paddingVertical: 8,
+        paddingWide: 24,
+        paddingNarrow: 16,
+        paddingIconOnly: 12,
+        iconSize: 32,
+      ),
+      PersonalizationButtonSize.md: _ButtonMetrics(
+        fontSize: 16,
+        lineHeight: 24,
+        letterSpacing: 0,
+        radius: PersonalizationRadiusToken.buttonMd,
+        paddingVertical: 8,
+        paddingWide: 16,
+        paddingNarrow: 12,
+        paddingIconOnly: 8,
+        iconSize: 24,
+      ),
+      // SM берёт кегль со ступени sm, а интерлиньяж со ступени base:
+      // в макете 14/24, тогда как ступень sm — это 14/20.
+      PersonalizationButtonSize.sm: _ButtonMetrics(
+        fontSize: 14,
+        lineHeight: 24,
+        letterSpacing: 0.05,
+        radius: PersonalizationRadiusToken.buttonSm,
+        paddingVertical: 4,
+        paddingWide: 12,
+        paddingNarrow: 8,
+        paddingIconOnly: 4,
+        iconSize: 20,
+      ),
+    };

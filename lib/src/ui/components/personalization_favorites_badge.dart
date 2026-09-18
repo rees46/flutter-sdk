@@ -14,7 +14,8 @@ class PersonalizationFavoritesBadge extends StatelessWidget {
     String asset,
     double size,
     Color color,
-  )? iconBuilder;
+  )?
+  iconBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +25,10 @@ class PersonalizationFavoritesBadge extends StatelessWidget {
       width: 24,
       height: 24,
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(shape: BoxShape.circle, color: colors.semanticWarning),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: colors.semanticWarning,
+      ),
       child: iconBuilder?.call(
         context,
         PersonalizationIcons.starFill,
