@@ -167,10 +167,14 @@ class PersonalizationTheme extends ThemeExtension<PersonalizationTheme> {
     colors: PersonalizationColors.dark,
   );
 
-  /// Тема из контекста. Расширение не подключено — берётся светлая по умолчанию,
-  /// поэтому компоненты работают и у хоста, которому тема не нужна.
-  static PersonalizationTheme of(BuildContext context) =>
-      Theme.of(context).extension<PersonalizationTheme>() ?? light;
+  /// Тема из контекста. Расширение не подключено — берётся набор по яркости темы
+  /// приложения, поэтому компоненты работают и у хоста, которому тема не нужна, и
+  /// в тёмной схеме не остаются светлыми.
+  static PersonalizationTheme of(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.extension<PersonalizationTheme>() ??
+        (theme.brightness == Brightness.dark ? dark : light);
+  }
 
   @override
   PersonalizationTheme copyWith({

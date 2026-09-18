@@ -118,17 +118,21 @@ class _PersonalizationProductsListState
     final products = widget.products;
     switch (widget.layout) {
       case PersonalizationProductsLayout.carousel:
+        // IntrinsicHeight + stretch: соседние карточки одной высоты, и карточка
+        // сама держит цену с кнопкой у нижнего края (см. PersonalizationProductCard).
         return SingleChildScrollView(
           controller: _controller,
           scrollDirection: Axis.horizontal,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              for (int i = 0; i < products.length; i++) ...<Widget>[
-                if (i > 0) const SizedBox(width: _gap),
-                _card(products[i], PersonalizationProductCardType.carousel),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (int i = 0; i < products.length; i++) ...<Widget>[
+                  if (i > 0) const SizedBox(width: _gap),
+                  _card(products[i], PersonalizationProductCardType.carousel),
+                ],
               ],
-            ],
+            ),
           ),
         );
       case PersonalizationProductsLayout.grid:
@@ -136,25 +140,27 @@ class _PersonalizationProductsListState
           children: <Widget>[
             for (int row = 0; row < products.length; row += 2) ...<Widget>[
               if (row > 0) const SizedBox(height: _gap),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(
-                    child: _card(
-                      products[row],
-                      PersonalizationProductCardType.grid,
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Expanded(
+                      child: _card(
+                        products[row],
+                        PersonalizationProductCardType.grid,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: _gap),
-                  Expanded(
-                    child: row + 1 < products.length
-                        ? _card(
-                            products[row + 1],
-                            PersonalizationProductCardType.grid,
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
+                    const SizedBox(width: _gap),
+                    Expanded(
+                      child: row + 1 < products.length
+                          ? _card(
+                              products[row + 1],
+                              PersonalizationProductCardType.grid,
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
               ),
             ],
           ],

@@ -100,15 +100,17 @@ class PersonalizationCatalog extends StatelessWidget {
           onProductTap: onProductTap,
           iconBuilder: iconBuilder,
         ),
+      // Во фреймах с лоадером (296:3544, 299:6606) счётчика и кнопки нет — на время
+      // загрузки лоадер встаёт на их место.
       if (loading) const PersonalizationLoader(),
-      if (count != null)
+      if (count != null && !loading)
         PersonalizationCount(
           prefix: count!.prefix,
           shown: count!.shown,
           separator: count!.separator,
           total: count!.total,
         ),
-      if (loadMoreText != null && loadMoreText!.isNotEmpty)
+      if (loadMoreText != null && loadMoreText!.isNotEmpty && !loading)
         PersonalizationButton(
           label: loadMoreText,
           size: PersonalizationButtonSize.md,

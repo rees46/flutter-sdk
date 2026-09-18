@@ -244,40 +244,58 @@ class PersonalizationProductCard extends StatelessWidget {
 
     // Carousel и Grid: картинка, название, рейтинг, цена, кнопка — колонкой с шагом 8.
     // У колонок скидка лежит на картинке: отступ 8 у carousel и 4 у grid.
+    // Колонка из двух групп: верх (картинка, название, рейтинг) и низ (цена, кнопка).
+    // Когда ряд или карусель растягивают карточку до самой высокой соседки, лишнее
+    // уходит между группами — цена с кнопкой остаются на одной линии, даже если
+    // название ушло на две строки. В макете такой случай не нарисован: там названия
+    // в одну строку. Сама по себе (без растяжения) колонка остаётся по содержимому.
     final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        Stack(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            PersonalizationProductImage(image: image, aspect: imageAspect),
-            if (discountBadge != null)
-              Positioned(
-                top: metrics.badgeInset,
-                right: metrics.badgeInset,
-                child: discountBadge,
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        nameBlock(2),
-        if (ratingRow != null) ...<Widget>[
-          const SizedBox(height: 8),
-          ratingRow,
-        ],
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: <Widget>[
-            priceText,
-            if (oldPriceText != null) ...<Widget>[
-              const SizedBox(width: 8),
-              oldPriceText,
+            Stack(
+              children: <Widget>[
+                PersonalizationProductImage(image: image, aspect: imageAspect),
+                if (discountBadge != null)
+                  Positioned(
+                    top: metrics.badgeInset,
+                    right: metrics.badgeInset,
+                    child: discountBadge,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            nameBlock(2),
+            if (ratingRow != null) ...<Widget>[
+              const SizedBox(height: 8),
+              ratingRow,
             ],
           ],
         ),
-        if (action != null) ...<Widget>[const SizedBox(height: 8), action],
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                priceText,
+                if (oldPriceText != null) ...<Widget>[
+                  const SizedBox(width: 8),
+                  oldPriceText,
+                ],
+              ],
+            ),
+            if (action != null) ...<Widget>[const SizedBox(height: 8), action],
+          ],
+        ),
       ],
     );
     return _tappable(
