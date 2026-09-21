@@ -23,6 +23,7 @@ export 'personalization_icons.dart';
 export 'personalization_colors.dart';
 export 'personalization_theme.dart';
 
+export 'components/personalization_in_app_popup.dart';
 export 'components/personalization_badge.dart';
 export 'components/personalization_tag.dart';
 export 'components/personalization_checkbox.dart';

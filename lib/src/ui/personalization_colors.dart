@@ -17,12 +17,20 @@ class PersonalizationColors {
   final Color backgroundPrimary;
   final Color backgroundGeneric;
   final Color backgroundCard;
+
+  /// Поверхности поверх карточки. В светлой все три белые, различаются только
+  /// в тёмной: Card #1A1A1A, Float #262626, Modal #333333.
+  final Color backgroundFloat;
+  final Color backgroundModal;
   final Color backgroundInput;
   final Color backgroundTransparent;
   final Color backgroundInputDisabled;
   final Color buttonPrimary;
   final Color buttonPrimaryFocus;
   final Color buttonSecondary;
+
+  /// Secondary поверх тёмного (картинки-фона): белая 5%, как в тёмном режиме файла.
+  final Color buttonSecondaryOnDark;
   final Color buttonSecondaryFocus;
   final Color buttonPrimaryDisabled;
   final Color buttonSecondaryDisabled;
@@ -55,12 +63,15 @@ class PersonalizationColors {
     required this.backgroundPrimary,
     required this.backgroundGeneric,
     required this.backgroundCard,
+    required this.backgroundFloat,
+    required this.backgroundModal,
     required this.backgroundInput,
     required this.backgroundTransparent,
     required this.backgroundInputDisabled,
     required this.buttonPrimary,
     required this.buttonPrimaryFocus,
     required this.buttonSecondary,
+    required this.buttonSecondaryOnDark,
     required this.buttonSecondaryFocus,
     required this.buttonPrimaryDisabled,
     required this.buttonSecondaryDisabled,
@@ -94,12 +105,15 @@ class PersonalizationColors {
     backgroundPrimary: Color(0xFF007DF2),
     backgroundGeneric: Color(0xFFFAFAFA),
     backgroundCard: Color(0xFFF2F2F2),
+    backgroundFloat: Color(0xFFFFFFFF),
+    backgroundModal: Color(0xFFFFFFFF),
     backgroundInput: Color(0xFFF2F2F2),
     backgroundTransparent: Color(0x00FFFFFF),
     backgroundInputDisabled: Color(0x0D000000),
     buttonPrimary: Color(0xFF007DF2),
     buttonPrimaryFocus: Color(0xFF004BC0),
     buttonSecondary: Color(0x0D000000),
+    buttonSecondaryOnDark: Color(0x0DFFFFFF),
     buttonSecondaryFocus: Color(0x1A000000),
     buttonPrimaryDisabled: Color(0xFF32AFFF),
     buttonSecondaryDisabled: Color(0x0D000000),
@@ -133,12 +147,15 @@ class PersonalizationColors {
     backgroundPrimary: Color(0xFF007DF2),
     backgroundGeneric: Color(0xFF141414),
     backgroundCard: Color(0xFF0D0D0D),
+    backgroundFloat: Color(0xFF262626),
+    backgroundModal: Color(0xFF333333),
     backgroundInput: Color(0xFF141414),
     backgroundTransparent: Color(0x00FFFFFF),
     backgroundInputDisabled: Color(0x0DFFFFFF),
     buttonPrimary: Color(0xFF007DF2),
     buttonPrimaryFocus: Color(0xFF32AFFF),
     buttonSecondary: Color(0x0DFFFFFF),
+    buttonSecondaryOnDark: Color(0x0DFFFFFF),
     buttonSecondaryFocus: Color(0x1AFFFFFF),
     buttonPrimaryDisabled: Color(0xFF32AFFF),
     buttonSecondaryDisabled: Color(0x0DFFFFFF),
@@ -177,12 +194,15 @@ class PersonalizationColors {
     Color? backgroundPrimary,
     Color? backgroundGeneric,
     Color? backgroundCard,
+    Color? backgroundFloat,
+    Color? backgroundModal,
     Color? backgroundInput,
     Color? backgroundTransparent,
     Color? backgroundInputDisabled,
     Color? buttonPrimary,
     Color? buttonPrimaryFocus,
     Color? buttonSecondary,
+    Color? buttonSecondaryOnDark,
     Color? buttonSecondaryFocus,
     Color? buttonPrimaryDisabled,
     Color? buttonSecondaryDisabled,
@@ -215,6 +235,8 @@ class PersonalizationColors {
       backgroundPrimary: backgroundPrimary ?? this.backgroundPrimary,
       backgroundGeneric: backgroundGeneric ?? this.backgroundGeneric,
       backgroundCard: backgroundCard ?? this.backgroundCard,
+      backgroundFloat: backgroundFloat ?? this.backgroundFloat,
+      backgroundModal: backgroundModal ?? this.backgroundModal,
       backgroundInput: backgroundInput ?? this.backgroundInput,
       backgroundTransparent:
           backgroundTransparent ?? this.backgroundTransparent,
@@ -223,6 +245,8 @@ class PersonalizationColors {
       buttonPrimary: buttonPrimary ?? this.buttonPrimary,
       buttonPrimaryFocus: buttonPrimaryFocus ?? this.buttonPrimaryFocus,
       buttonSecondary: buttonSecondary ?? this.buttonSecondary,
+      buttonSecondaryOnDark:
+          buttonSecondaryOnDark ?? this.buttonSecondaryOnDark,
       buttonSecondaryFocus: buttonSecondaryFocus ?? this.buttonSecondaryFocus,
       buttonPrimaryDisabled:
           buttonPrimaryDisabled ?? this.buttonPrimaryDisabled,
@@ -269,6 +293,8 @@ class PersonalizationColors {
         t,
       )!,
       backgroundCard: Color.lerp(backgroundCard, other.backgroundCard, t)!,
+      backgroundFloat: Color.lerp(backgroundFloat, other.backgroundFloat, t)!,
+      backgroundModal: Color.lerp(backgroundModal, other.backgroundModal, t)!,
       backgroundInput: Color.lerp(backgroundInput, other.backgroundInput, t)!,
       backgroundTransparent: Color.lerp(
         backgroundTransparent,
@@ -287,6 +313,11 @@ class PersonalizationColors {
         t,
       )!,
       buttonSecondary: Color.lerp(buttonSecondary, other.buttonSecondary, t)!,
+      buttonSecondaryOnDark: Color.lerp(
+        buttonSecondaryOnDark,
+        other.buttonSecondaryOnDark,
+        t,
+      )!,
       buttonSecondaryFocus: Color.lerp(
         buttonSecondaryFocus,
         other.buttonSecondaryFocus,

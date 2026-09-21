@@ -29,6 +29,7 @@ class PersonalizationButton extends StatefulWidget {
     this.iconStart,
     this.iconEnd,
     this.iconBuilder,
+    this.onDark = false,
   });
 
   final String? label;
@@ -37,6 +38,11 @@ class PersonalizationButton extends StatefulWidget {
 
   /// Не задан — кнопка недоступна.
   final VoidCallback? onPressed;
+
+  /// Кнопка стоит поверх тёмного (картинки-фона). В макете такие контролы берут
+  /// инвертированную палитру: заливка Secondary белая 5%, подпись и иконка светлые.
+  /// На [PersonalizationButtonView.primary] не влияет — она и так светлая по тексту.
+  final bool onDark;
 
   /// Ассет иконки перед текстом. Без текста кнопка становится кнопкой-иконкой.
   final String? iconStart;
@@ -176,14 +182,16 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
       case PersonalizationButtonView.primary:
         return colors.brandPrimary;
       case PersonalizationButtonView.secondary:
-        return colors.buttonSecondary;
+        return widget.onDark
+            ? colors.buttonSecondaryOnDark
+            : colors.buttonSecondary;
       case PersonalizationButtonView.ghost:
         return colors.backgroundTransparent;
     }
   }
 
   Color _foreground(PersonalizationColors colors) {
-    if (widget.view == PersonalizationButtonView.primary) {
+    if (widget.view == PersonalizationButtonView.primary || widget.onDark) {
       return _enabled ? colors.textLightPrimary : colors.textLightHint;
     }
     return _enabled ? colors.textPrimary : colors.textHint;
