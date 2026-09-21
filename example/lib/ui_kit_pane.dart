@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+import 'app_theme_mode.dart';
 // The kit stays out of the package barrel until its release; the example reaches
 // it directly, which the analyzer flags as an implementation import on purpose.
 // ignore: implementation_imports
@@ -32,6 +34,7 @@ class UiKitPane extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('UI Kit'),
+          actions: const <Widget>[_AppearanceSwitch()],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Components'),
@@ -47,6 +50,26 @@ class UiKitPane extends StatelessWidget {
             _SearchFlow(shopId: shopId),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Switch cycling the app between the system scheme, light and dark.
+///
+/// It writes to [appThemeMode], which [MaterialApp] listens to, so the whole
+/// demo repaints — the kit's components included, since their palette comes
+/// from the theme extension attached to each [ThemeData].
+class _AppearanceSwitch extends StatelessWidget {
+  const _AppearanceSwitch();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: appThemeMode,
+      builder: (context, mode, _) => TextButton(
+        onPressed: () => appThemeMode.value = nextThemeMode(mode),
+        child: Text(themeModeLabel(mode)),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
+import 'app_theme_mode.dart';
 import 'multi_instance_pane.dart';
 // The kit is private until release: the theme comes from the src barrel.
 // ignore: implementation_imports
@@ -17,22 +18,32 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'REES46 Flutter SDK',
-      // The kit's theme extension rides on ThemeData: light and dark sets
-      // switch together with the app's brightness.
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        extensions: const <ThemeExtension<dynamic>>[PersonalizationTheme.light],
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
+    // themeMode is driven by the switch on the UI Kit screen, so the kit's dark
+    // set can be checked without changing the device setting.
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: appThemeMode,
+      builder: (context, mode, _) => MaterialApp(
+        title: 'REES46 Flutter SDK',
+        // The kit's theme extension rides on ThemeData: light and dark sets
+        // switch together with the app's brightness.
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          extensions: const <ThemeExtension<dynamic>>[
+            PersonalizationTheme.light,
+          ],
         ),
-        extensions: const <ThemeExtension<dynamic>>[PersonalizationTheme.dark],
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+          extensions: const <ThemeExtension<dynamic>>[
+            PersonalizationTheme.dark,
+          ],
+        ),
+        themeMode: mode,
+        home: const InitPage(),
       ),
-      home: const InitPage(),
     );
   }
 }
