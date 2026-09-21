@@ -589,6 +589,39 @@ final List<_Exhibit> _blockExhibits = [
       actionText: null,
     ),
   ),
+  _Exhibit(
+    'In App Popup, fullscreen — image',
+    (context) => _inAppPopup(
+      context,
+      PersonalizationInAppPopupView.image,
+      fullscreen: true,
+    ),
+  ),
+  _Exhibit(
+    'In App Popup, fullscreen — image background, both buttons',
+    (context) => _inAppPopup(
+      context,
+      PersonalizationInAppPopupView.imageBackground,
+      closeText: 'Not now',
+      fullscreen: true,
+    ),
+  ),
+  _Exhibit(
+    'In App Popup, fullscreen — text only',
+    (context) => _inAppPopup(
+      context,
+      PersonalizationInAppPopupView.text,
+      fullscreen: true,
+    ),
+  ),
+  _Exhibit(
+    'In App Popup, fullscreen — icon',
+    (context) => _inAppPopup(
+      context,
+      PersonalizationInAppPopupView.icon,
+      fullscreen: true,
+    ),
+  ),
 ];
 
 void _snack(BuildContext context, String message) => ScaffoldMessenger.of(
@@ -603,11 +636,16 @@ Widget _inAppPopup(
   PersonalizationInAppPopupView view, {
   String? actionText = 'Action',
   String? closeText,
+  bool fullscreen = false,
 }) {
   return SizedBox(
-    height: 460,
+    // Полноэкранному нужно больше места: отступы и кегли там на ступень крупнее.
+    height: fullscreen ? 620 : 460,
     child: PersonalizationInAppPopup(
       view: view,
+      presentation: fullscreen
+          ? PersonalizationInAppPopupPresentation.fullscreen
+          : PersonalizationInAppPopupPresentation.modal,
       title: 'Pizza ipsum dolor meat lovers',
       text: 'Cheese ranch Philly roll pepperoni hand thin garlic bacon.',
       actionText: actionText,
