@@ -34,6 +34,19 @@ enum PersonalizationInAppPopupPresentation { modal, fullscreen }
 ///
 /// Отступ 20 у модалки и интерлиньяж 48 у полноэкранного заголовка вне шкал
 /// кита — взяты из макета как есть.
+// TODO: связать виджет с данными SDK. Сейчас попап приходит только в натив, а через
+// pigeon едет один булев флаг enableAutoPopupPresentation — payload до Dart не доходит,
+// поэтому виджет пока только свёрстан и показывается в витрине примера.
+// Чтобы включить:
+//   1. android-sdk: завести точку перехвата попапа. Её там нет — shopPopUp(popupDto)
+//      вызывается напрямую из RegisterManager и TrackEventManagerImpl и сразу рисует
+//      диалог; ни делегата, ни флага подавления, и самого enableAutoPopupPresentation
+//      на Android тоже нет. Нужен листенер по образцу iOS PopupPresentationDelegate
+//      (sdk(_:shouldPresentPopup:) -> вернул nil, натив не показывает).
+//   2. pigeon: PopupWire (id, position, delay, components, popupActions) и
+//      onPopup(shopId, popup) в PersonalizationFlutterApi.
+//   3. Плагины: подписаться на перехват, показ подавить, payload переслать в Dart.
+//      trackPopupShown оставить нативу, чтобы показ не считался дважды.
 class PersonalizationInAppPopup extends StatelessWidget {
   const PersonalizationInAppPopup({
     super.key,
