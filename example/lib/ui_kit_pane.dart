@@ -561,7 +561,73 @@ final List<_Exhibit> _blockExhibits = [
     'Filters — range, checkbox lists with show more, reset / apply',
     (context) => _filters(),
   ),
+  _Exhibit(
+    'In App Popup — image, one button',
+    (context) => _inAppPopup(context, PersonalizationInAppPopupView.image),
+  ),
+  _Exhibit(
+    'In App Popup — image background, both buttons',
+    (context) => _inAppPopup(
+      context,
+      PersonalizationInAppPopupView.imageBackground,
+      closeText: 'Not now',
+    ),
+  ),
+  _Exhibit(
+    'In App Popup — text only, close button with text',
+    (context) => _inAppPopup(
+      context,
+      PersonalizationInAppPopupView.text,
+      closeText: 'Maybe later',
+    ),
+  ),
+  _Exhibit(
+    'In App Popup — icon, no buttons (cross only)',
+    (context) => _inAppPopup(
+      context,
+      PersonalizationInAppPopupView.icon,
+      actionText: null,
+    ),
+  ),
 ];
+
+void _snack(BuildContext context, String message) => ScaffoldMessenger.of(
+  context,
+).showSnackBar(SnackBar(content: Text(message)));
+
+/// The popup as the SDK will hand it over: the host supplies the image and wires the
+/// two callbacks. Fixed height here only because the showcase is a scrolling column —
+/// on screen the popup is sized by whoever presents it.
+Widget _inAppPopup(
+  BuildContext context,
+  PersonalizationInAppPopupView view, {
+  String? actionText = 'Action',
+  String? closeText,
+}) {
+  return SizedBox(
+    height: 460,
+    child: PersonalizationInAppPopup(
+      view: view,
+      title: 'Pizza ipsum dolor meat lovers',
+      text: 'Cheese ranch Philly roll pepperoni hand thin garlic bacon.',
+      actionText: actionText,
+      closeText: closeText,
+      image:
+          view == PersonalizationInAppPopupView.text ||
+              view == PersonalizationInAppPopupView.icon
+          ? null
+          : _image('jacket'),
+      icon: const Icon(
+        Icons.verified_user,
+        size: 100,
+        color: Color(0xFF16AE13),
+      ),
+      iconBuilder: _icon,
+      onAction: () => _snack(context, 'Popup action'),
+      onClose: () => _snack(context, 'Popup closed'),
+    ),
+  );
+}
 
 // --- Stateful exhibits ------------------------------------------------------
 
