@@ -216,7 +216,11 @@ class _PersonalizationSearchResultsScreenState
   bool _answered = false;
   SearchFullResponse? _facetSource;
   PersonalizationSearchApplied _applied = const PersonalizationSearchApplied();
-  bool _filtersOpen = false;
+
+  /// Секции открытого экрана фильтров, `null` — закрыт. Собираются на открытии и на новых
+  /// фасетах, а не в каждом build: новый список сбрасывает в [PersonalizationFilters]
+  /// несохранённые галочки и введённые цены.
+  List<PersonalizationFilterSection>? _filterSections;
   int _seq = 0;
   final ScrollController _scroll = ScrollController();
 
@@ -338,6 +342,8 @@ class _PersonalizationSearchResultsScreenState
         if (nextPage == 1) {
           _answered = true;
           _facetSource = response;
+          // Фасеты сменились под открытым экраном фильтров — секции из нового ответа.
+          if (_filterSections != null) _filterSections = _buildSections();
         }
       });
     } catch (error) {
@@ -350,7 +356,7 @@ class _PersonalizationSearchResultsScreenState
   void _apply(PersonalizationSearchApplied next) {
     setState(() {
       _applied = next;
-      _filtersOpen = false;
+      _filterSections = null;
     });
     _reload();
   }
@@ -598,7 +604,7 @@ class _PersonalizationSearchResultsScreenState
             : PersonalizationProductsLayout.list;
       }),
       onBack: widget.onBack,
-      onFilters: () => setState(() => _filtersOpen = true),
+      onFilters: () => setState(() => _filterSections = _buildSections()),
       onSort: widget.onSortTap,
       showFiltersButton: widget.showFilters,
       showSortButton: widget.showSort,
@@ -644,6 +650,7 @@ class _PersonalizationSearchResultsScreenState
       iconBuilder: widget.iconBuilder,
     );
 
+    final filterSections = _filterSections;
     return ColoredBox(
       color: colors.backgroundGeneric,
       child: Stack(
@@ -654,17 +661,17 @@ class _PersonalizationSearchResultsScreenState
             padding: const EdgeInsets.all(16),
             child: catalog,
           ),
-          if (_filtersOpen)
+          if (filterSections != null)
             ColoredBox(
               color: colors.backgroundGeneric,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: PersonalizationFilters(
                   title: widget.filtersTitle,
-                  sections: _buildSections(),
+                  sections: filterSections,
                   resetText: widget.resetText,
                   applyText: widget.applyText,
-                  onClose: () => setState(() => _filtersOpen = false),
+                  onClose: () => setState(() => _filterSections = null),
                   onReset: () => _apply(const PersonalizationSearchApplied()),
                   onApply: (sections) => _apply(_fromSections(sections)),
                   iconBuilder: widget.iconBuilder,
