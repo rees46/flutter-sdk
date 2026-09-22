@@ -326,11 +326,19 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            // The typed searchManager.searchFull hands back a data class, and whatever that class
-            // does not model (the shop's facets in `filters`, old price, discount…) is lost before
-            // it reaches Dart. The bridge is a JSON pipe, so it takes the raw response instead:
-            // the legacy search entry point returns the server JSON as is. Move to a raw variant of
-            // the search manager once the native SDK offers one.
+            // The raw, deprecated SDK.search entry point rather than the typed
+            // searchManager.searchFull: android-sdk v2.38.0, which this plugin pins, has no
+            // `filters`, `industrial_filters`, `oldprice`, `oldprice_formatted`, `discount` or
+            // `discount_formatted` on SearchFullResponse and Product, so Gson drops them before they
+            // reach Dart, and the results screen needs the facets and the old price. The raw entry
+            // point returns the server JSON as is.
+            // TODO: once an android-sdk release after v2.38.0 ships those fields (commit 9e5d6ac,
+            //  "feat(search): old price, discount, suggested queries and facets in search
+            //  responses": SearchFullResponse.filters / industrialFilters, Product.oldPrice /
+            //  oldPriceFormatted / discount / discountFormatted), bump rees46AndroidSdkVersion in
+            //  build.gradle.kts and switch to sdk(shopId).searchManager.searchFull(query,
+            //  NativeSearchParams, …) with Gson().toJson(response), as searchInstant does; move the
+            //  params builder to NativeSearchParams.
             val params = buildLegacySearchParams(paramsJson)
             @Suppress("DEPRECATION")
             sdk(shopId).search(
@@ -856,56 +864,9 @@ class Rees46FlutterSdkPlugin :
 
 }
 
-private fun buildSearchParams(paramsJson: String?): NativeSearchParams {
-    val params = NativeSearchParams()
-    if (paramsJson.isNullOrBlank()) return params
-    val json = JSONObject(paramsJson)
-    json.optInt("limit").takeIf { it > 0 }
-        ?.let { params.put(NativeSearchParams.Parameter.LIMIT, it) }
-    json.optInt("page").takeIf { it > 0 }
-        ?.let { params.put(NativeSearchParams.Parameter.PAGE, it) }
-    json.optInt("category_limit").takeIf { it > 0 }
-        ?.let { params.put(NativeSearchParams.Parameter.CATEGORY_LIMIT, it) }
-    json.optInt("brand_limit").takeIf { it > 0 }
-        ?.let { params.put(NativeSearchParams.Parameter.BRAND_LIMIT, it) }
-    json.optString("sort_by").takeIf { it.isNotEmpty() }
-        ?.let { params.put(NativeSearchParams.Parameter.SORT_BY, it) }
-    json.optString("sort_dir").takeIf { it.isNotEmpty() }
-        ?.let { params.put(NativeSearchParams.Parameter.SORT_DIR, it) }
-    json.optString("locations").takeIf { it.isNotEmpty() }
-        ?.let { params.put(NativeSearchParams.Parameter.LOCATIONS, it) }
-    json.optString("brands").takeIf { it.isNotEmpty() }
-        ?.let { params.put(NativeSearchParams.Parameter.BRANDS, it) }
-    if (json.has("price_min"))
-        params.put(NativeSearchParams.Parameter.PRICE_MIN, json.getDouble("price_min").toString())
-    if (json.has("price_max"))
-        params.put(NativeSearchParams.Parameter.PRICE_MAX, json.getDouble("price_max").toString())
-    jsonArrayToStringArray(json.optJSONArray("categories"))
-        ?.let { params.put(NativeSearchParams.Parameter.CATEGORIES, it) }
-    jsonArrayToStringArray(json.optJSONArray("excluded_brands"))
-        ?.let { params.put(NativeSearchParams.Parameter.EXCLUDED_BRANDS, it) }
-    jsonArrayToStringArray(json.optJSONArray("colors"))
-        ?.let { params.put(NativeSearchParams.Parameter.COLORS, it) }
-    jsonArrayToStringArray(json.optJSONArray("fashion_sizes"))
-        ?.let { params.put(NativeSearchParams.Parameter.FASHION_SIZES, it) }
-    // Facets by name: {"Material": ["Metal", "Plastic"]}.
-    json.optJSONObject("filters")?.let { facets ->
-        val searchFilters = NativeSearchParams.SearchFilters()
-        var any = false
-        facets.keys().forEach { name ->
-            jsonArrayToStringArray(facets.optJSONArray(name))?.let {
-                searchFilters.put(name, it)
-                any = true
-            }
-        }
-        if (any) params.put(NativeSearchParams.Parameter.FILTERS, searchFilters)
-    }
-    return params
-}
-
 /**
- * The same parameters as [buildSearchParams], on the legacy params class the raw search entry
- * point takes. Keys come from the current parameter enum — both implement the same interface —
+ * Search parameters from the bridge JSON, on the legacy params class the raw search entry point
+ * takes. Keys come from the current parameter enum — both classes implement the same interface —
  * so the wire names stay identical.
  */
 @Suppress("DEPRECATION")
