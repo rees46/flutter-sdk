@@ -7,7 +7,9 @@ import 'dart:convert';
 /// Cross-platform notes:
 /// - [categories]: list of category ID strings. Android joins them with commas;
 ///   iOS converts them to integers internally.
-/// - [page]: maps to Android `PAGE` param and iOS `offset` param.
+/// - [page]: 1-based. Android sends it as `page`; the iOS search only takes an
+///   offset, so iOS sends `(page - 1) * limit` and rejects a [page] past the first
+///   without a [limit].
 ///
 /// [filters] are the shop's own facets by name — `{"Материал корпуса": ["Металл"]}` —
 /// as the full search response lists them in `filters`.

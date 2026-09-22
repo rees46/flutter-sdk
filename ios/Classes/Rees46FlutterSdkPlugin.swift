@@ -459,8 +459,19 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     let colors = p?["colors"] as? [String]
     let fashionSizes = p?["fashion_sizes"] as? [String]
     let filters = p?["filters"] as? [String: Any]
-    // The native iOS search paginates by product offset, not by page number.
-    let offset = page.map { limit != nil ? ($0 - 1) * limit! : $0 }
+    // The native iOS search pages by product offset, while page is 1-based as on Android:
+    // page N starts at (N - 1) * limit, and the first page (or page <= 0) has no offset. The
+    // server's default page size isn't pinned down anywhere, so a later page without a limit is
+    // rejected rather than guessed: no offset would return page 1 again, and the page number as
+    // the offset would shift by N products.
+    var offset: Int?
+    if let page = page, page > 1 {
+      guard let limit = limit, limit > 0 else {
+        completion(.failure(PigeonError(code: "bad_args", message: "page > 1 requires limit on iOS", details: nil)))
+        return
+      }
+      offset = (page - 1) * limit
+    }
 
     sdk.search(
       query: query,
