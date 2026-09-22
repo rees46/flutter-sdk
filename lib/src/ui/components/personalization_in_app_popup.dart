@@ -38,15 +38,18 @@ enum PersonalizationInAppPopupPresentation { modal, fullscreen }
 // pigeon едет один булев флаг enableAutoPopupPresentation — payload до Dart не доходит,
 // поэтому виджет пока только свёрстан и показывается в витрине примера.
 // Чтобы включить:
-//   1. android-sdk: завести точку перехвата попапа. Её там нет — shopPopUp(popupDto)
-//      вызывается напрямую из RegisterManager и TrackEventManagerImpl и сразу рисует
-//      диалог; ни делегата, ни флага подавления, и самого enableAutoPopupPresentation
-//      на Android тоже нет. Нужен листенер по образцу iOS PopupPresentationDelegate
-//      (sdk(_:shouldPresentPopup:) -> вернул nil, натив не показывает).
+//   1. android-sdk: точка перехвата готова, но ещё не в релизе — плагин сидит на
+//      v2.38.0. Нужен релиз с SDK.popupPresentationListener и
+//      Rees46Config.enableAutoPopupPresentation (контракт тот же, что у iOS
+//      PopupPresentationDelegate: вернул null — натив не показывает).
 //   2. pigeon: PopupWire (id, position, delay, components, popupActions) и
 //      onPopup(shopId, popup) в PersonalizationFlutterApi.
-//   3. Плагины: подписаться на перехват, показ подавить, payload переслать в Dart.
-//      trackPopupShown оставить нативу, чтобы показ не считался дважды.
+//   3. Плагины: поставить листенер / делегат, возвращать null, payload переслать в
+//      Dart. На Android заодно прокинуть в Rees46Config флаг
+//      enableAutoPopupPresentation — сейчас плагин его игнорирует.
+//   4. Показ трекает Dart, когда виджет действительно на экране: придержанный попап
+//      натив не трекает и не запоминает (так и на iOS). Значит, дедуп на 60 секунд
+//      тоже на стороне Dart, иначе повтор с сервера покажется дважды.
 class PersonalizationInAppPopup extends StatelessWidget {
   const PersonalizationInAppPopup({
     super.key,
