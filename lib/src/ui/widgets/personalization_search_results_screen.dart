@@ -210,6 +210,10 @@ class _PersonalizationSearchResultsScreenState
   int _total = 0;
   int _page = 0;
   bool _loading = false;
+
+  /// Первая страница текущей фразы пришла: только тогда пустая выдача — «ничего не найдено»,
+  /// а не загрузка, пустая фраза или ошибка.
+  bool _answered = false;
   SearchFullResponse? _facetSource;
   PersonalizationSearchApplied _applied = const PersonalizationSearchApplied();
   bool _filtersOpen = false;
@@ -262,10 +266,14 @@ class _PersonalizationSearchResultsScreenState
 
   /// Первая страница заново.
   void _reload() {
+    // Ответ запроса в полёте отбросится по _seq и флаг не снимет — снимаем здесь, иначе
+    // на пустой фразе лоадер крутится вечно, а loadMore заблокирован.
     setState(() {
       _products = const <SearchProduct>[];
       _total = 0;
       _page = 0;
+      _loading = false;
+      _answered = false;
     });
     final sdk = _sdk;
     if (sdk == null || _text.isEmpty) {
@@ -327,7 +335,10 @@ class _PersonalizationSearchResultsScreenState
         _products = nextPage == 1
             ? response.products
             : <SearchProduct>[..._products, ...response.products];
-        if (nextPage == 1) _facetSource = response;
+        if (nextPage == 1) {
+          _answered = true;
+          _facetSource = response;
+        }
       });
     } catch (error) {
       if (!mounted || seq != _seq) return;
@@ -608,7 +619,7 @@ class _PersonalizationSearchResultsScreenState
           toCardProduct(product, widget.productActionText),
       ],
       imageAspect: widget.imageAspect,
-      emptyText: widget.emptyText,
+      emptyText: _answered ? widget.emptyText : null,
       loading: _loading,
       count: _products.isEmpty
           ? null
