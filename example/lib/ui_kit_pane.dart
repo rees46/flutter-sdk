@@ -555,6 +555,8 @@ final List<_Exhibit> _blockExhibits = [
       products: [],
       emptyText: 'No results for your request.',
       iconBuilder: _icon,
+      // Inside the showcase's scroll: laid out whole, no scrolling of its own.
+      scrollable: false,
     ),
   ),
   _Exhibit(
@@ -925,6 +927,8 @@ class _CatalogExhibitState extends State<_CatalogExhibit> {
       onLoadMore: _loadMore,
       onProductAction: (_) {},
       iconBuilder: _icon,
+      // Inside the showcase's scroll: laid out whole, no scrolling of its own.
+      scrollable: false,
     );
   }
 }
