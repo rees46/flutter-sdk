@@ -32,8 +32,9 @@ enum PersonalizationInAppPopupPresentation { modal, fullscreen }
 /// поэтому она здесь вторичной кнопкой под основной. Пустой текст — кнопки нет,
 /// остаётся один крестик.
 ///
-/// Отступ 20 у модалки и интерлиньяж 48 у полноэкранного заголовка вне шкал
-/// кита — взяты из макета как есть.
+/// Поля и зазор между блоками — семантические отступы Padding/Gap Modal (20) и
+/// Padding/Gap Full Screen (24), скругление модалки — радиус Modal, фон —
+/// Background/Card.
 // TODO: связать виджет с данными SDK. Сейчас попап приходит только в натив, а через
 // pigeon едет один булев флаг enableAutoPopupPresentation — payload до Dart не доходит,
 // поэтому виджет пока только свёрстан и показывается в витрине примера.
@@ -109,15 +110,16 @@ class PersonalizationInAppPopup extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = PersonalizationTheme.of(context);
     final colors = theme.colors;
-    final pad = _modal ? 20.0 : PersonalizationSpacing.xl2;
-    final gapSection = _modal ? 20.0 : PersonalizationSpacing.xl2;
+    final pad = _modal
+        ? PersonalizationSpacing.paddingModal
+        : PersonalizationSpacing.paddingFullScreen;
+    final gapSection = _modal
+        ? PersonalizationSpacing.gapModal
+        : PersonalizationSpacing.gapFullScreen;
 
-    // Background/Modal, а не Card: в светлой они совпадают (белый), в тёмной у
-    // модалки своя ступень. В Figma компонент привязан к Card, но значение Card
-    // в ките отстало от файла (там уже белый) — ресинк цветов отдельной задачей.
-    final surface = colors.backgroundModal;
+    final surface = colors.backgroundCard;
     final radius = _modal
-        ? BorderRadius.circular(PersonalizationRadius.xl6)
+        ? BorderRadius.circular(PersonalizationRadius.modal)
         : BorderRadius.zero;
 
     Widget content;
@@ -139,7 +141,7 @@ class PersonalizationInAppPopup extends StatelessWidget {
                   SizedBox(
                     height: _modal
                         ? PersonalizationSpacing.xl
-                        : PersonalizationSpacing.xl2,
+                        : PersonalizationSpacing.xl3,
                   ),
                   _buttons(context),
                 ],
@@ -189,7 +191,7 @@ class PersonalizationInAppPopup extends StatelessWidget {
               height: _modal ? 100 : 120,
               child: icon,
             ),
-            const SizedBox(height: PersonalizationSpacing.xl2),
+            const SizedBox(height: PersonalizationSpacing.xl3),
           ],
           _textBlock(context),
         ];
@@ -237,11 +239,9 @@ class PersonalizationInAppPopup extends StatelessWidget {
 
   Widget _textBlock(BuildContext context) {
     final colors = PersonalizationTheme.of(context).colors;
-    // Полноэкранный заголовок в макете 36/48, а ступень 4XL кита — 36/52:
-    // кегль с одной ступени, интерлиньяж с другой, как и в остальном файле.
     final titleStyle = _modal
         ? PersonalizationTypography.xl3Emphasized
-        : PersonalizationTypography.xl4Emphasized.copyWith(height: 48 / 36);
+        : PersonalizationTypography.xl4Emphasized;
     final textStyle = _modal
         ? PersonalizationTypography.lgDefault
         : PersonalizationTypography.xl2Default;

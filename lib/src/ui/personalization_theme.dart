@@ -44,12 +44,17 @@ enum PersonalizationRadiusToken {
   xl4,
   xl5,
   xl6,
+  xl7,
   rounded,
   buttonLg,
   buttonMd,
   buttonSm,
+  segmentedLg,
   segmentedMd,
   segmentedSm,
+  card,
+  toast,
+  modal,
 }
 
 /// Радиусы темы. Значения по умолчанию — шкала из макета.
@@ -66,18 +71,24 @@ class PersonalizationRadiusScale {
     this.xl4 = PersonalizationRadius.xl4,
     this.xl5 = PersonalizationRadius.xl5,
     this.xl6 = PersonalizationRadius.xl6,
+    this.xl7 = PersonalizationRadius.xl7,
     this.rounded = PersonalizationRadius.rounded,
     this.buttonLg = PersonalizationRadius.buttonLg,
     this.buttonMd = PersonalizationRadius.buttonMd,
     this.buttonSm = PersonalizationRadius.buttonSm,
+    this.segmentedLg = PersonalizationRadius.segmentedLg,
     this.segmentedMd = PersonalizationRadius.segmentedMd,
     this.segmentedSm = PersonalizationRadius.segmentedSm,
+    this.card = PersonalizationRadius.card,
+    this.toast = PersonalizationRadius.toast,
+    this.modal = PersonalizationRadius.modal,
   });
 
-  final double xs, sm, md, lg, xl, xl2, xl3, xl4, xl5, xl6, rounded;
+  final double xs, sm, md, lg, xl, xl2, xl3, xl4, xl5, xl6, xl7, rounded;
 
-  /// Семантические радиусы кнопочного семейства, см. [PersonalizationRadius].
-  final double buttonLg, buttonMd, buttonSm, segmentedMd, segmentedSm;
+  /// Семантические радиусы, см. [PersonalizationRadius].
+  final double buttonLg, buttonMd, buttonSm, segmentedLg, segmentedMd, segmentedSm;
+  final double card, toast, modal;
 
   /// Значение ступени из действующей темы.
   double resolve(PersonalizationRadiusToken token) => switch (token) {
@@ -91,12 +102,17 @@ class PersonalizationRadiusScale {
     PersonalizationRadiusToken.xl4 => xl4,
     PersonalizationRadiusToken.xl5 => xl5,
     PersonalizationRadiusToken.xl6 => xl6,
+    PersonalizationRadiusToken.xl7 => xl7,
     PersonalizationRadiusToken.rounded => rounded,
     PersonalizationRadiusToken.buttonLg => buttonLg,
     PersonalizationRadiusToken.buttonMd => buttonMd,
     PersonalizationRadiusToken.buttonSm => buttonSm,
+    PersonalizationRadiusToken.segmentedLg => segmentedLg,
     PersonalizationRadiusToken.segmentedMd => segmentedMd,
     PersonalizationRadiusToken.segmentedSm => segmentedSm,
+    PersonalizationRadiusToken.card => card,
+    PersonalizationRadiusToken.toast => toast,
+    PersonalizationRadiusToken.modal => modal,
   };
 
   PersonalizationRadiusScale lerp(PersonalizationRadiusScale other, double t) =>
@@ -111,12 +127,17 @@ class PersonalizationRadiusScale {
         xl4: lerpDouble(xl4, other.xl4, t),
         xl5: lerpDouble(xl5, other.xl5, t),
         xl6: lerpDouble(xl6, other.xl6, t),
+        xl7: lerpDouble(xl7, other.xl7, t),
         rounded: lerpDouble(rounded, other.rounded, t),
         buttonLg: lerpDouble(buttonLg, other.buttonLg, t),
         buttonMd: lerpDouble(buttonMd, other.buttonMd, t),
         buttonSm: lerpDouble(buttonSm, other.buttonSm, t),
+        segmentedLg: lerpDouble(segmentedLg, other.segmentedLg, t),
         segmentedMd: lerpDouble(segmentedMd, other.segmentedMd, t),
         segmentedSm: lerpDouble(segmentedSm, other.segmentedSm, t),
+        card: lerpDouble(card, other.card, t),
+        toast: lerpDouble(toast, other.toast, t),
+        modal: lerpDouble(modal, other.modal, t),
       );
 
   static double lerpDouble(double a, double b, double t) => a + (b - a) * t;

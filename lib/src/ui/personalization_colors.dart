@@ -4,17 +4,20 @@ import 'personalization_theme.dart';
 
 /// Цвета дизайн-системы.
 ///
-/// Figma Mobile SDK UI Kit (SSwS49L1fG1psWA7xbakV6), страница Colors,
-/// фреймы 57:141 (Light) и 187:362 (Dark). Снято 2026-09-09.
+/// Figma Mobile SDK UI Kit (SSwS49L1fG1psWA7xbakV6), коллекция переменных Color,
+/// режимы Light и Dark. Сверено 2026-09-23.
 ///
 /// Набор цветов внутри [PersonalizationTheme]: подключается не сам по себе,
 /// а полем темы, и читается через [of] или `PersonalizationTheme.of(context).colors`.
 @immutable
 class PersonalizationColors {
   final Color brandPrimary;
+
+  /// Neutral 50: полупрозрачная ступень, одинаково заметна на любом фоне — заглушки картинок.
+  final Color neutral50;
+
   final Color semanticWarning;
   final Color semanticDanger;
-  final Color backgroundPrimary;
   final Color backgroundGeneric;
   final Color backgroundCard;
 
@@ -56,11 +59,14 @@ class PersonalizationColors {
   final Color textLink;
   final Color textLinkVisited;
 
+  /// Shadow/Heavy: цвет тени вместе с её прозрачностью — 8% в светлой, 50% в тёмной.
+  final Color shadowHeavy;
+
   const PersonalizationColors({
     required this.brandPrimary,
+    required this.neutral50,
     required this.semanticWarning,
     required this.semanticDanger,
-    required this.backgroundPrimary,
     required this.backgroundGeneric,
     required this.backgroundCard,
     required this.backgroundFloat,
@@ -96,15 +102,16 @@ class PersonalizationColors {
     required this.textBrand,
     required this.textLink,
     required this.textLinkVisited,
+    required this.shadowHeavy,
   });
 
   static const PersonalizationColors light = PersonalizationColors(
     brandPrimary: Color(0xFF007DF2),
+    neutral50: Color(0x0D000000),
     semanticWarning: Color(0xFFF37A17),
     semanticDanger: Color(0xFFE51919),
-    backgroundPrimary: Color(0xFF007DF2),
-    backgroundGeneric: Color(0xFFFAFAFA),
-    backgroundCard: Color(0xFFF2F2F2),
+    backgroundGeneric: Color(0xFFF2F2F2),
+    backgroundCard: Color(0xFFFFFFFF),
     backgroundFloat: Color(0xFFFFFFFF),
     backgroundModal: Color(0xFFFFFFFF),
     backgroundInput: Color(0xFFF2F2F2),
@@ -115,7 +122,8 @@ class PersonalizationColors {
     buttonSecondary: Color(0x0D000000),
     buttonSecondaryOnDark: Color(0x0DFFFFFF),
     buttonSecondaryFocus: Color(0x1A000000),
-    buttonPrimaryDisabled: Color(0xFF32AFFF),
+    // Brand/Primary с прозрачностью 65%.
+    buttonPrimaryDisabled: Color(0xA6007DF2),
     buttonSecondaryDisabled: Color(0x0D000000),
     buttonGhost: Color(0x00FFFFFF),
     lineBrand: Color(0xFF007DF2),
@@ -138,18 +146,19 @@ class PersonalizationColors {
     textBrand: Color(0xFF007DF2),
     textLink: Color(0xFF007DF2),
     textLinkVisited: Color(0xFF4D00F2),
+    shadowHeavy: Color(0x14000000),
   );
 
   static const PersonalizationColors dark = PersonalizationColors(
     brandPrimary: Color(0xFF007DF2),
+    neutral50: Color(0x0DFFFFFF),
     semanticWarning: Color(0xFFF37A17),
     semanticDanger: Color(0xFFE51919),
-    backgroundPrimary: Color(0xFF007DF2),
-    backgroundGeneric: Color(0xFF141414),
-    backgroundCard: Color(0xFF0D0D0D),
+    backgroundGeneric: Color(0xFF0D0D0D),
+    backgroundCard: Color(0xFF1A1A1A),
     backgroundFloat: Color(0xFF262626),
     backgroundModal: Color(0xFF333333),
-    backgroundInput: Color(0xFF141414),
+    backgroundInput: Color(0xFF0D0D0D),
     backgroundTransparent: Color(0x00FFFFFF),
     backgroundInputDisabled: Color(0x0DFFFFFF),
     buttonPrimary: Color(0xFF007DF2),
@@ -157,7 +166,8 @@ class PersonalizationColors {
     buttonSecondary: Color(0x0DFFFFFF),
     buttonSecondaryOnDark: Color(0x0DFFFFFF),
     buttonSecondaryFocus: Color(0x1AFFFFFF),
-    buttonPrimaryDisabled: Color(0xFF32AFFF),
+    // Brand/Primary с прозрачностью 65%.
+    buttonPrimaryDisabled: Color(0xA6007DF2),
     buttonSecondaryDisabled: Color(0x0DFFFFFF),
     buttonGhost: Color(0x00FFFFFF),
     lineBrand: Color(0xFF007DF2),
@@ -180,6 +190,7 @@ class PersonalizationColors {
     textBrand: Color(0xFF007DF2),
     textLink: Color(0xFF007DF2),
     textLinkVisited: Color(0xFF4D00F2),
+    shadowHeavy: Color(0x80000000),
   );
 
   /// Цвета действующей темы. Расширение не подключено — берётся светлый набор,
@@ -189,9 +200,9 @@ class PersonalizationColors {
 
   PersonalizationColors copyWith({
     Color? brandPrimary,
+    Color? neutral50,
     Color? semanticWarning,
     Color? semanticDanger,
-    Color? backgroundPrimary,
     Color? backgroundGeneric,
     Color? backgroundCard,
     Color? backgroundFloat,
@@ -227,12 +238,13 @@ class PersonalizationColors {
     Color? textBrand,
     Color? textLink,
     Color? textLinkVisited,
+    Color? shadowHeavy,
   }) {
     return PersonalizationColors(
       brandPrimary: brandPrimary ?? this.brandPrimary,
+      neutral50: neutral50 ?? this.neutral50,
       semanticWarning: semanticWarning ?? this.semanticWarning,
       semanticDanger: semanticDanger ?? this.semanticDanger,
-      backgroundPrimary: backgroundPrimary ?? this.backgroundPrimary,
       backgroundGeneric: backgroundGeneric ?? this.backgroundGeneric,
       backgroundCard: backgroundCard ?? this.backgroundCard,
       backgroundFloat: backgroundFloat ?? this.backgroundFloat,
@@ -274,19 +286,16 @@ class PersonalizationColors {
       textBrand: textBrand ?? this.textBrand,
       textLink: textLink ?? this.textLink,
       textLinkVisited: textLinkVisited ?? this.textLinkVisited,
+      shadowHeavy: shadowHeavy ?? this.shadowHeavy,
     );
   }
 
   PersonalizationColors lerp(PersonalizationColors other, double t) {
     return PersonalizationColors(
       brandPrimary: Color.lerp(brandPrimary, other.brandPrimary, t)!,
+      neutral50: Color.lerp(neutral50, other.neutral50, t)!,
       semanticWarning: Color.lerp(semanticWarning, other.semanticWarning, t)!,
       semanticDanger: Color.lerp(semanticDanger, other.semanticDanger, t)!,
-      backgroundPrimary: Color.lerp(
-        backgroundPrimary,
-        other.backgroundPrimary,
-        t,
-      )!,
       backgroundGeneric: Color.lerp(
         backgroundGeneric,
         other.backgroundGeneric,
@@ -382,6 +391,7 @@ class PersonalizationColors {
       textBrand: Color.lerp(textBrand, other.textBrand, t)!,
       textLink: Color.lerp(textLink, other.textLink, t)!,
       textLinkVisited: Color.lerp(textLinkVisited, other.textLinkVisited, t)!,
+      shadowHeavy: Color.lerp(shadowHeavy, other.shadowHeavy, t)!,
     );
   }
 }

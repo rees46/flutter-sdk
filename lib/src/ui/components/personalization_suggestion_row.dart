@@ -79,7 +79,7 @@ class PersonalizationSuggestionRow extends StatelessWidget {
               width: 40,
               height: 40,
               child: ColoredBox(
-                color: colors.backgroundCard,
+                color: colors.neutral50,
                 child: image == null
                     ? null
                     : Image(image: image!, fit: BoxFit.cover),

@@ -101,13 +101,13 @@ abstract final class PersonalizationTypography {
   // 4XL — 36/52
   static const TextStyle xl4Default = TextStyle(
     fontSize: 36,
-    height: 1.4444, // 52 / 36
+    height: 1.3333, // 48 / 36
     fontWeight: FontWeight.w400,
     letterSpacing: -0.5,
   );
   static const TextStyle xl4Emphasized = TextStyle(
     fontSize: 36,
-    height: 1.4444, // 52 / 36
+    height: 1.3333, // 48 / 36
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
   );
@@ -115,13 +115,13 @@ abstract final class PersonalizationTypography {
   // 5XL — 48/64
   static const TextStyle xl5Default = TextStyle(
     fontSize: 48,
-    height: 1.3333, // 64 / 48
+    height: 1.1667, // 56 / 48
     fontWeight: FontWeight.w400,
     letterSpacing: -0.5,
   );
   static const TextStyle xl5Emphasized = TextStyle(
     fontSize: 48,
-    height: 1.3333, // 64 / 48
+    height: 1.1667, // 56 / 48
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
   );
@@ -129,13 +129,13 @@ abstract final class PersonalizationTypography {
   // 6XL — 60/72
   static const TextStyle xl6Default = TextStyle(
     fontSize: 60,
-    height: 1.2000, // 72 / 60
+    height: 1.0667, // 64 / 60
     fontWeight: FontWeight.w400,
     letterSpacing: -0.5,
   );
   static const TextStyle xl6Emphasized = TextStyle(
     fontSize: 60,
-    height: 1.2000, // 72 / 60
+    height: 1.0667, // 64 / 60
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
   );

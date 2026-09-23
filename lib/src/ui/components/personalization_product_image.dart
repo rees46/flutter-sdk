@@ -34,8 +34,10 @@ class PersonalizationProductImage extends StatelessWidget {
     final colors = PersonalizationTheme.of(context).colors;
     return AspectRatio(
       aspectRatio: _ratio,
+      // Заглушка до загрузки. В макете она нетокенный серый, здесь — Neutral 50:
+      // полупрозрачная, поэтому видна и на карточке, и прямо на фоне экрана.
       child: ColoredBox(
-        color: colors.backgroundCard,
+        color: colors.neutral50,
         child: image == null ? null : Image(image: image!, fit: BoxFit.cover),
       ),
     );
