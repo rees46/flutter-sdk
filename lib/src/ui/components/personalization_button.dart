@@ -30,6 +30,7 @@ class PersonalizationButton extends StatefulWidget {
     this.iconEnd,
     this.iconBuilder,
     this.onDark = false,
+    this.rounded = false,
   });
 
   final String? label;
@@ -43,6 +44,11 @@ class PersonalizationButton extends StatefulWidget {
   /// инвертированную палитру: заливка Secondary белая 5%, подпись и иконка светлые.
   /// На [PersonalizationButtonView.primary] не влияет — она и так светлая по тексту.
   final bool onDark;
+
+  /// Скругление Rounded вместо радиуса размера: кнопка-иконка становится кругом.
+  /// Так в макете устроен крестик Close (секция Button) — кнопка MD Secondary,
+  /// у которой радиус переопределён на Rounded.
+  final bool rounded;
 
   /// Ассет иконки перед текстом. Без текста кнопка становится кнопкой-иконкой.
   final String? iconStart;
@@ -109,7 +115,11 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
         decoration: BoxDecoration(
           color: _background(colors),
           borderRadius: BorderRadius.circular(
-            theme.radius.resolve(metrics.radius),
+            theme.radius.resolve(
+              widget.rounded
+                  ? PersonalizationRadiusToken.rounded
+                  : metrics.radius,
+            ),
           ),
         ),
         child: Row(

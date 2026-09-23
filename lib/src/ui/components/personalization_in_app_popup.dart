@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../personalization_elevation.dart';
 import '../personalization_icons.dart';
 import '../personalization_radius.dart';
 import '../personalization_spacing.dart';
@@ -27,14 +28,18 @@ enum PersonalizationInAppPopupPresentation { modal, fullscreen }
 ///
 /// Крестик стоит **всегда** и принадлежит самому попапу, а не контейнеру
 /// картинки: в макете виды «только текст» и «иконка» картинки не имеют, но
-/// крестик у них нарисован. Текстовая кнопка закрытия ([closeText]) в макете не
-/// нарисована — её даёт админка отдельным тумблером рядом с кнопкой действия,
-/// поэтому она здесь вторичной кнопкой под основной. Пустой текст — кнопки нет,
-/// остаётся один крестик.
+/// крестик у них нарисован. Он круглый (компонент Close: кнопка MD с радиусом
+/// Rounded) и во всех видах лежит поверх содержимого в правом верхнем углу, на
+/// отступе попапа; над фотографией — в тёмном варианте. Текстовая кнопка
+/// закрытия ([closeText]) в макете не нарисована — её даёт админка отдельным
+/// тумблером рядом с кнопкой действия, поэтому она здесь вторичной кнопкой под
+/// основной, на шаге 12 у модалки и 16 у полноэкранного. Пустой текст — кнопки
+/// нет, остаётся один крестик.
 ///
 /// Поля и зазор между блоками — семантические отступы Padding/Gap Modal (20) и
 /// Padding/Gap Full Screen (24), скругление модалки — радиус Modal, фон —
-/// Background/Card.
+/// Background/Card. У модалки тень Elevation 3 цветом Shadow/Heavy темы, у
+/// полноэкранного тени нет.
 // TODO: связать виджет с данными SDK. Сейчас попап приходит только в натив, а через
 // pigeon едет один булев флаг enableAutoPopupPresentation — payload до Dart не доходит,
 // поэтому виджет пока только свёрстан и показывается в витрине примера.
@@ -160,12 +165,6 @@ class PersonalizationInAppPopup extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  // Здесь крестик не накладкой, а первой строкой: в макете он
-                  // занимает свою строку, иначе заголовок заезжает под него.
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: _closeIcon(context),
-                  ),
                   // Текст прижат к низу, над кнопками.
                   Expanded(
                     child: Align(
@@ -216,18 +215,30 @@ class PersonalizationInAppPopup extends StatelessWidget {
         );
     }
 
-    return ClipRRect(
-      borderRadius: radius,
-      child: Container(
-        color: surface,
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(child: content),
-            // Крестик всегда на месте — у видов без картинки тоже. У фона-картинки
-            // он уже стоит в колонке.
-            if (!_overImage)
+    // Тень снаружи карточки, поэтому она на обёртке, а не под ClipRRect — обрезка
+    // срезала бы её. Цвет берётся из темы: в тёмной схеме Shadow/Heavy плотнее.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: _modal
+            ? <BoxShadow>[
+                for (final shadow in PersonalizationElevation.e3)
+                  shadow.copyWith(color: colors.shadowHeavy),
+              ]
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Container(
+          color: surface,
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(child: content),
+              // Крестик всегда на месте — у видов без картинки тоже, накладкой
+              // поверх содержимого.
               Positioned(top: pad, right: pad, child: _closeIcon(context)),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -290,7 +301,12 @@ class PersonalizationInAppPopup extends StatelessWidget {
             onPressed: onAction,
             iconBuilder: iconBuilder,
           ),
-        if (action && close) const SizedBox(height: PersonalizationSpacing.md),
+        if (action && close)
+          SizedBox(
+            height: _modal
+                ? PersonalizationSpacing.lg
+                : PersonalizationSpacing.xl,
+          ),
         if (close)
           PersonalizationButton(
             label: closeText,
@@ -303,10 +319,13 @@ class PersonalizationInAppPopup extends StatelessWidget {
     );
   }
 
+  // Над фотографией — и фоном, и сверху — крестик в тёмной палитре: в макете у
+  // него там тёмный режим.
   Widget _closeIcon(BuildContext context) => PersonalizationButton(
     size: PersonalizationButtonSize.md,
     view: PersonalizationButtonView.secondary,
-    onDark: _overImage,
+    onDark: _overImage || view == PersonalizationInAppPopupView.image,
+    rounded: true,
     iconStart: PersonalizationIcons.crossLarge,
     iconBuilder: iconBuilder,
     onPressed: onClose,
