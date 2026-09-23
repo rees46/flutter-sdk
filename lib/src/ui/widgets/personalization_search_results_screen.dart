@@ -279,6 +279,7 @@ class _PersonalizationSearchResultsScreenState
       _loading = false;
       _answered = false;
     });
+    _toTop();
     final sdk = _sdk;
     if (sdk == null || _text.isEmpty) {
       _seq++;
@@ -286,6 +287,14 @@ class _PersonalizationSearchResultsScreenState
     }
     sdk.tracking.search(_text);
     _request(sdk, 1);
+  }
+
+  /// Новая выдача — с начала ленты, а не с места, где пользователь бросил прошлую.
+  /// После кадра: перезапрос приходит и из didUpdateWidget, посреди сборки.
+  void _toTop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _scroll.hasClients) _scroll.jumpTo(0);
+    });
   }
 
   /// Следующая страница, если она есть и запрос не в полёте.
@@ -300,6 +309,8 @@ class _PersonalizationSearchResultsScreenState
     _request(sdk, _page + 1);
   }
 
+  /// Бесконечная прокрутка: следующая страница — за полэкрана до конца ленты. Запрос в
+  /// полёте повторно не уходит, это держит [_loadMore].
   void _onScroll() {
     if (!widget.infiniteScroll || !_scroll.hasClients) return;
     final position = _scroll.position;
@@ -618,6 +629,9 @@ class _PersonalizationSearchResultsScreenState
     );
 
     final catalog = PersonalizationCatalog(
+      controller: _scroll,
+      // Поля экрана — поля ленты: карточки прокручиваются под ними.
+      padding: const EdgeInsets.all(16),
       header: header,
       layout: _layout,
       products: <PersonalizationProduct>[
@@ -656,11 +670,10 @@ class _PersonalizationSearchResultsScreenState
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          SingleChildScrollView(
-            controller: _scroll,
-            padding: const EdgeInsets.all(16),
-            child: catalog,
-          ),
+          // Каталог прокручивается сам, а не во внешнем скролле: там его лента
+          // раскладывалась бы целиком, и каждая догруженная страница оставалась бы
+          // построенной всеми карточками.
+          catalog,
           if (filterSections != null)
             ColoredBox(
               color: colors.backgroundGeneric,
