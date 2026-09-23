@@ -11,7 +11,8 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 ///
 /// "Components" walks through the primitives in every size, view and state the
 /// design file defines; "Blocks" shows the compositions built from them
-/// (product cards, recommender layouts, instant search, the catalogue, the filters screen);
+/// (product cards, recommender layouts, instant search, the catalogue, the filters screen,
+/// in-app popups, the toast, the loyalty card);
 /// "Search" runs the two data-bound search widgets against the demo shop: the
 /// instant search field, and the results screen it opens on submit.
 /// Mirror of the Android `UiKitPane` / iOS `UIKitShowcaseViewController` /
@@ -453,6 +454,23 @@ final List<_Exhibit> _componentExhibits = [
       message: 'No results for your request.',
     ),
   ),
+  _Exhibit('Barcode — Code 128', (context) {
+    // The barcode brings no background of its own: scanners want white in
+    // either theme, so it sits on a white box, as it does on the loyalty card.
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(PersonalizationRadius.lg),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(20),
+          child: PersonalizationBarcode(code: _loyaltyCardNumber),
+        ),
+      ),
+    );
+  }),
   _Exhibit('Icons — the full set, 24 dp', (context) {
     final color = PersonalizationTheme.of(context).colors.textPrimary;
     return _ScrollRow(
@@ -624,6 +642,42 @@ final List<_Exhibit> _blockExhibits = [
       fullscreen: true,
     ),
   ),
+  _Exhibit('Toast — top and bottom', (context) {
+    return _Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PersonalizationToast(text: 'Copied'),
+        _ScrollRow(
+          children: [
+            PersonalizationButton(
+              label: 'Show at the bottom',
+              size: PersonalizationButtonSize.md,
+              view: PersonalizationButtonView.secondary,
+              onPressed: () => PersonalizationToast.show(context, 'Copied'),
+            ),
+            PersonalizationButton(
+              label: 'Show at the top',
+              size: PersonalizationButtonSize.md,
+              view: PersonalizationButtonView.secondary,
+              onPressed: () => PersonalizationToast.show(
+                context,
+                'Code copied to clipboard',
+                position: PersonalizationToastPosition.top,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }),
+  _Exhibit(
+    'Loyalty Card — light, stamps 0 of 5',
+    (context) => _loyaltyCard(context, stamps: 0),
+  ),
+  _Exhibit(
+    'Loyalty Card — brand colour, stamps 4 of 5',
+    (context) => _loyaltyCard(context, stamps: 4, brand: true),
+  ),
 ];
 
 void _snack(BuildContext context, String message) => ScaffoldMessenger.of(
@@ -666,6 +720,45 @@ Widget _inAppPopup(
       onAction: () => _snack(context, 'Popup action'),
       onClose: () => _snack(context, 'Popup closed'),
     ),
+  );
+}
+
+/// The card number the loyalty exhibits encode.
+const String _loyaltyCardNumber = '2000012345678';
+
+/// The loyalty card as a host fills it. The SDK's loyalty status carries only
+/// membership and the level, so the balance, the stamps and the card number
+/// are the host's own data; the logo, stripe and emblem are demo art bundled
+/// with the example — brand art does not ship in the SDK.
+Widget _loyaltyCard(
+  BuildContext context, {
+  required int stamps,
+  bool brand = false,
+}) {
+  // Semantic/Info from the design file's dark example; the kit has no token for it.
+  const brandBlue = Color(0xFF0087E8);
+  const white = Color(0xFFFFFFFF);
+  // The kit never tints the host's logo, so the demo tints it itself to the
+  // content colour: Text/Primary by default, white on the brand card.
+  final content = brand
+      ? white
+      : PersonalizationTheme.of(context).colors.textPrimary;
+  return PersonalizationLoyaltyCard(
+    logo: Image.asset('assets/uikit/loyalty_logo.png', color: content),
+    balanceLabel: 'Бонусы',
+    balanceValue: '50 550',
+    stripe: const AssetImage('assets/uikit/loyalty_stripe.jpg'),
+    emblem: const AssetImage('assets/uikit/loyalty_emblem.png'),
+    stamps: stamps,
+    stampsTotal: 5,
+    fields: const [
+      PersonalizationLoyaltyCardField(label: 'Владелец', value: 'Олег'),
+      PersonalizationLoyaltyCardField(label: 'Уровень', value: 'Базовый'),
+    ],
+    code: _loyaltyCardNumber,
+    cardColor: brand ? brandBlue : null,
+    contentColor: brand ? white : null,
+    iconBuilder: _icon,
   );
 }
 

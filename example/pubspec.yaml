@@ -65,7 +65,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Photos for the UI Kit showcase — bundled so the demo does not depend on the network.
+  # Photos and loyalty-card art (logo, stripe, level emblem) for the UI Kit
+  # showcase — bundled so the demo does not depend on the network. Brand art is
+  # demo-only: the SDK does not ship it.
   assets:
     - assets/uikit/
 
