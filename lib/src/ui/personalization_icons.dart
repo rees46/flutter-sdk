@@ -18,6 +18,8 @@ abstract final class PersonalizationIcons {
       'packages/rees46_sdk/assets/icons/arrow-rotate-cw.svg';
   static const String arrowsUpDown =
       'packages/rees46_sdk/assets/icons/arrows-up-down.svg';
+  static const String checkRosetteFill =
+      'packages/rees46_sdk/assets/icons/check-rosette-fill.svg';
   static const String copy = 'packages/rees46_sdk/assets/icons/copy.svg';
   static const String crossLarge =
       'packages/rees46_sdk/assets/icons/cross-large.svg';
@@ -32,6 +34,7 @@ abstract final class PersonalizationIcons {
   static const String list = 'packages/rees46_sdk/assets/icons/list.svg';
   static const String magnifier =
       'packages/rees46_sdk/assets/icons/magnifier.svg';
+  static const String rosette = 'packages/rees46_sdk/assets/icons/rosette.svg';
   static const String spacingMd =
       'packages/rees46_sdk/assets/icons/spacing-md.svg';
   static const String starFill =
@@ -44,6 +47,7 @@ abstract final class PersonalizationIcons {
     arrowLeft,
     arrowRotateCw,
     arrowsUpDown,
+    checkRosetteFill,
     copy,
     crossLarge,
     cross,
@@ -53,6 +57,7 @@ abstract final class PersonalizationIcons {
     listFill,
     list,
     magnifier,
+    rosette,
     spacingMd,
     starFill,
   ];

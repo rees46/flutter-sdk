@@ -51,6 +51,11 @@ export 'components/personalization_suggestion_row.dart';
 export 'components/personalization_instant_search.dart';
 export 'components/personalization_filters.dart';
 export 'components/personalization_catalog.dart';
+export 'components/personalization_toast.dart';
+// Кодировщик Code 128 (personalization_code128.dart) не экспортируется — это
+// внутренность штрихкода.
+export 'components/personalization_barcode.dart';
+export 'components/personalization_loyalty_card.dart';
 
 // Виджеты с данными SDK: сами резолвят инстанс по shopId, ходят в поиск и держат состояние.
 export 'widgets/search_support.dart' show PersonalizationSearchCategory;
