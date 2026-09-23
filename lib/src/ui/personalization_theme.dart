@@ -87,7 +87,12 @@ class PersonalizationRadiusScale {
   final double xs, sm, md, lg, xl, xl2, xl3, xl4, xl5, xl6, xl7, rounded;
 
   /// Семантические радиусы, см. [PersonalizationRadius].
-  final double buttonLg, buttonMd, buttonSm, segmentedLg, segmentedMd, segmentedSm;
+  final double buttonLg,
+      buttonMd,
+      buttonSm,
+      segmentedLg,
+      segmentedMd,
+      segmentedSm;
   final double card, toast, modal;
 
   /// Значение ступени из действующей темы.
