@@ -29,8 +29,8 @@ import 'stories_support.dart';
 /// - Слайды с медиа (`image` / `video`) всегда в тёмных токенах кита — белые хром и
 ///   текст, тёмный лист товаров: поддерево переключается на тёмную тему. Бренд темы
 ///   хоста (Brand/Primary и кнопки) сохраняется.
-/// - Слайд с товаром следует теме приложения: фон Background/Generic, текст
-///   Text/Primary. Сверху шапка (бренд SemiBold 20, название SemiBold 16, межстрочный
+/// - Слайд с товаром следует теме приложения: фон Background/Card (белый в светлой,
+///   #1A1A1A в тёмной), под ним нет картинки; текст Text/Primary. Сверху шапка (бренд SemiBold 20, название SemiBold 16, межстрочный
 ///   140%, шаг 8), посередине белая карточка картинки (скругление 12, поля 16,
 ///   квадрат по ширине — на низком экране ужимается), внизу с шагом 16
 ///   [PersonalizationStoryPrice] и кнопка LG — подпись кнопки слайда, без неё
@@ -69,6 +69,7 @@ class PersonalizationStoryViewer extends StatefulWidget {
     this.moreInfoText = 'More info',
     this.promoCodeCaption = 'Promo code',
     this.promoCopiedText = 'Copied',
+    this.promoToastPosition = PersonalizationToastPosition.top,
     this.usedProductsText = 'Used products',
     this.hideProductsText = 'Hide products',
     this.imageProvider,
@@ -110,6 +111,9 @@ class PersonalizationStoryViewer extends StatefulWidget {
 
   /// Текст тоста после копирования промокода.
   final String promoCopiedText;
+
+  /// У какого края показать этот тост.
+  final PersonalizationToastPosition promoToastPosition;
 
   /// Подписи переключателя товаров, когда их не прислал сервер.
   final String usedProductsText;
@@ -574,7 +578,7 @@ class _StoryPageState extends State<_StoryPage>
     final colors = PersonalizationTheme.of(context).colors;
     final background =
         parseStoryColor(slide.backgroundColor) ??
-        (media ? const Color(0xFF000000) : colors.backgroundGeneric);
+        (media ? const Color(0xFF000000) : colors.backgroundCard);
     final light = colors.textPrimary.computeLuminance() > 0.5;
     final product = slide.product;
 
@@ -741,6 +745,7 @@ class _StoryPageState extends State<_StoryPage>
             promoCode: price.promoCode,
             promoCodeCaption: _config.promoCodeCaption,
             copiedText: _config.promoCopiedText,
+            copiedToastPosition: _config.promoToastPosition,
             onPromoCopied: _promoCopied,
             iconBuilder: _config.iconBuilder,
           ),
@@ -874,7 +879,11 @@ class _StoryPageState extends State<_StoryPage>
       behavior: HitTestBehavior.opaque,
       onTap: () {
         Clipboard.setData(ClipboardData(text: code));
-        PersonalizationToast.show(context, _config.promoCopiedText);
+        PersonalizationToast.show(
+          context,
+          _config.promoCopiedText,
+          position: _config.promoToastPosition,
+        );
         _promoCopied(code);
       },
       child: block,

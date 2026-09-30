@@ -6,6 +6,7 @@ import '../../multi_instance/rees46.dart';
 import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
 import '../components/personalization_stories_bar.dart';
+import '../components/personalization_toast.dart';
 import 'personalization_story_viewer.dart';
 import 'stories_support.dart';
 
@@ -36,6 +37,7 @@ class PersonalizationStories extends StatefulWidget {
     this.onPromoCopied,
     this.onError,
     this.promoCopiedText = 'Copied',
+    this.promoToastPosition = PersonalizationToastPosition.top,
     this.promoCodeCaption = 'Promo code',
     this.moreInfoText = 'More info',
     this.usedProductsText = 'Used products',
@@ -63,6 +65,9 @@ class PersonalizationStories extends StatefulWidget {
   final ValueChanged<Object>? onError;
 
   final String promoCopiedText;
+
+  /// См. [PersonalizationStoryViewer.promoToastPosition].
+  final PersonalizationToastPosition promoToastPosition;
   final String promoCodeCaption;
   final String moreInfoText;
   final String usedProductsText;
@@ -203,6 +208,7 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
       moreInfoText: widget.moreInfoText,
       promoCodeCaption: widget.promoCodeCaption,
       promoCopiedText: widget.promoCopiedText,
+      promoToastPosition: widget.promoToastPosition,
       usedProductsText: widget.usedProductsText,
       hideProductsText: widget.hideProductsText,
       imageProvider: widget.imageProvider,

@@ -103,6 +103,13 @@ void main() {
       expect(clipboard, 'YAGODA-MALINA');
       expect(copied, <String>['YAGODA-MALINA']);
       expect(find.text('Code copied'), findsOneWidget);
+      expect(
+        tester.getCenter(find.text('Code copied')).dy,
+        lessThan(
+          tester.view.physicalSize.height / tester.view.devicePixelRatio / 2,
+        ),
+        reason: 'the toast shows at the top by default',
+      );
       expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 1);
       // The toast leaves by itself.
       await tester.pump(const Duration(seconds: 3));
@@ -216,6 +223,27 @@ void main() {
           const PersonalizationStoryTextBlock(
             text: 'Small',
             size: PersonalizationStoryTextSize.small,
+            background: green,
+          ),
+        ),
+      );
+      expect(
+        tester
+            .widget<Padding>(
+              find.descendant(
+                of: find.byType(PersonalizationStoryTextBlock),
+                matching: find.byType(Padding),
+              ),
+            )
+            .padding,
+        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      );
+
+      // Medium (30) is not above 30: the small padding, as in the design file.
+      await tester.pumpWidget(
+        _host(
+          const PersonalizationStoryTextBlock(
+            text: 'Medium',
             background: green,
           ),
         ),

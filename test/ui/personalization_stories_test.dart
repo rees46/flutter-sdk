@@ -348,6 +348,18 @@ void main() {
       expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
       expect(find.text('Product 2'), findsOneWidget);
       expect(find.text('More info'), findsOneWidget);
+      // A product slide sits on Background/Card of the app theme.
+      expect(
+        find.descendant(
+          of: find.byType(PersonalizationStoryViewer),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is ColoredBox &&
+                widget.color == PersonalizationColors.light.backgroundCard,
+          ),
+        ),
+        findsWidgets,
+      );
       expect(api.views, <String>['2/2_0/block']);
 
       await tester.pump(const Duration(milliseconds: 1100)); // the slide

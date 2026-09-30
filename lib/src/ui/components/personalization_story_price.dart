@@ -38,8 +38,9 @@ enum PersonalizationStoryPriceType {
 ///   Text/Light Secondary и код SemiBold 24 Text/Light Primary по центру, иконка copy 24
 ///   (глиф 20) Text/Light Hint в правом верхнем углу с отступом 4. Колонки делят ширину
 ///   поровну, длинный код забирает сколько нужно. Нажатие слегка увеличивает блок (как
-///   Tap Zoom Effect макета), копирует код в буфер, показывает тост [copiedText] и
-///   зовёт [onPromoCopied].
+///   Tap Zoom Effect макета), копирует код в буфер, показывает тост [copiedText] — по
+///   умолчанию у верхнего края, как во фрейме «Code copied to clipboard» (367:16106), —
+///   и зовёт [onPromoCopied].
 class PersonalizationStoryPrice extends StatefulWidget {
   const PersonalizationStoryPrice({
     super.key,
@@ -50,6 +51,7 @@ class PersonalizationStoryPrice extends StatefulWidget {
     this.promoCode,
     this.promoCodeCaption = 'Promo code',
     this.copiedText = 'Copied',
+    this.copiedToastPosition = PersonalizationToastPosition.top,
     this.onPromoCopied,
     this.iconBuilder,
   });
@@ -73,6 +75,9 @@ class PersonalizationStoryPrice extends StatefulWidget {
 
   /// Текст тоста после копирования.
   final String copiedText;
+
+  /// У какого края показать тост.
+  final PersonalizationToastPosition copiedToastPosition;
 
   /// Код скопирован.
   final ValueChanged<String>? onPromoCopied;
@@ -124,7 +129,11 @@ class _PersonalizationStoryPriceState extends State<PersonalizationStoryPrice> {
   void _copy() {
     final code = _code;
     Clipboard.setData(ClipboardData(text: code));
-    PersonalizationToast.show(context, widget.copiedText);
+    PersonalizationToast.show(
+      context,
+      widget.copiedText,
+      position: widget.copiedToastPosition,
+    );
     widget.onPromoCopied?.call(code);
   }
 
