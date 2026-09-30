@@ -494,6 +494,18 @@ interface PersonalizationHostApi {
    */
   fun getCollection(collectionId: String, shopId: String?, callback: (Result<String>) -> Unit)
   /**
+   * Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
+   * untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
+   * over the same raw payload, so Dart parses one shape.
+   * Dart layer parses the result into [StoriesBlock].
+   */
+  fun getStories(code: String, shopId: String?, callback: (Result<String>) -> Unit)
+  /**
+   * Opens [url] with the system handler (browser or the app that claims the link).
+   * Returns false when nothing could open it.
+   */
+  fun openUrl(url: String, callback: (Result<Boolean>) -> Unit)
+  /**
    * Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
    * via the native `REES46.handlePush`. [event] is the index of the Dart
    * `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
@@ -900,6 +912,47 @@ interface PersonalizationHostApi {
             val collectionIdArg = args[0] as String
             val shopIdArg = args[1] as String?
             api.getCollection(collectionIdArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStories$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.getStories(codeArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val urlArg = args[0] as String
+            api.openUrl(urlArg) { result: Result<Boolean> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))

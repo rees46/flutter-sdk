@@ -530,6 +530,14 @@ protocol PersonalizationHostApi {
   /// Returns a merchandised collection's products as a JSON string.
   /// Dart layer parses the result into [CollectionResponse].
   func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
+  /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
+  /// over the same raw payload, so Dart parses one shape.
+  /// Dart layer parses the result into [StoriesBlock].
+  func getStories(code: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// Opens [url] with the system handler (browser or the app that claims the link).
+  /// Returns false when nothing could open it.
+  func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void)
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
   /// via the native `REES46.handlePush`. [event] is the index of the Dart
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
@@ -933,6 +941,47 @@ class PersonalizationHostApiSetup {
       }
     } else {
       getCollectionChannel.setMessageHandler(nil)
+    }
+    /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
+    /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
+    /// over the same raw payload, so Dart parses one shape.
+    /// Dart layer parses the result into [StoriesBlock].
+    let getStoriesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStories\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getStoriesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.getStories(code: codeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getStoriesChannel.setMessageHandler(nil)
+    }
+    /// Opens [url] with the system handler (browser or the app that claims the link).
+    /// Returns false when nothing could open it.
+    let openUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      openUrlChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let urlArg = args[0] as! String
+        api.openUrl(url: urlArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      openUrlChannel.setMessageHandler(nil)
     }
     /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
     /// via the native `REES46.handlePush`. [event] is the index of the Dart

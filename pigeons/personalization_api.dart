@@ -250,6 +250,18 @@ abstract class PersonalizationHostApi {
   @async
   String getCollection(String collectionId, String? shopId);
 
+  /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
+  /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
+  /// over the same raw payload, so Dart parses one shape.
+  /// Dart layer parses the result into [StoriesBlock].
+  @async
+  String getStories(String code, String? shopId);
+
+  /// Opens [url] with the system handler (browser or the app that claims the link).
+  /// Returns false when nothing could open it.
+  @async
+  bool openUrl(String url);
+
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
   /// via the native `REES46.handlePush`. [event] is the index of the Dart
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side

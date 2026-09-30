@@ -1036,6 +1036,68 @@ class PersonalizationHostApi {
     }
   }
 
+  /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
+  /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
+  /// over the same raw payload, so Dart parses one shape.
+  /// Dart layer parses the result into [StoriesBlock].
+  Future<String> getStories(String code, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStories$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as String?)!;
+    }
+  }
+
+  /// Opens [url] with the system handler (browser or the app that claims the link).
+  /// Returns false when nothing could open it.
+  Future<bool> openUrl(String url) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[url]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as bool?)!;
+    }
+  }
+
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
   /// via the native `REES46.handlePush`. [event] is the index of the Dart
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side

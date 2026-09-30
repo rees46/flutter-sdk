@@ -1,7 +1,9 @@
 package com.rees46.rees46_flutter_sdk
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
@@ -489,6 +491,50 @@ class Rees46FlutterSdkPlugin :
             )
         } catch (t: Throwable) {
             callback(Result.failure(FlutterError("get_collection_failed", t.message, null)))
+        }
+    }
+
+    override fun getStories(code: String, shopId: String?, callback: (Result<String>) -> Unit) {
+        if (code.isBlank()) {
+            callback(Result.failure(FlutterError("bad_args", "code is required", null)))
+            return
+        }
+        try {
+            // The public raw entry point: the listener gets the server JSON as is, the same payload
+            // the iOS bridge hands over, so Dart parses one shape. The typed loader
+            // (storiesManager.loadStories) is internal to the SDK module.
+            sdk(shopId).stories(
+                code,
+                object : OnApiCallbackListener() {
+                    override fun onSuccess(response: JSONObject?) {
+                        callback(Result.success(response?.toString() ?: "{}"))
+                    }
+
+                    override fun onError(code: Int, msg: String?) {
+                        callback(Result.failure(FlutterError("get_stories_failed", msg ?: "error $code", null)))
+                    }
+                },
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("get_stories_failed", t.message, null)))
+        }
+    }
+
+    override fun openUrl(url: String, callback: (Result<Boolean>) -> Unit) {
+        val uri = Uri.parse(url)
+        if (url.isBlank() || uri.scheme.isNullOrEmpty()) {
+            callback(Result.success(false))
+            return
+        }
+        // The activity when there is one: from the application context a new task is required.
+        val activity = activityBinding?.activity
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        if (activity == null) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            (activity ?: applicationContext).startActivity(intent)
+            callback(Result.success(true))
+        } catch (e: ActivityNotFoundException) {
+            callback(Result.success(false))
         }
     }
 

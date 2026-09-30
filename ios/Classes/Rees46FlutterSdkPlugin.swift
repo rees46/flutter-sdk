@@ -721,6 +721,45 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
+  func getStories(code: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    if code.isEmpty {
+      completion(.failure(PigeonError(code: "bad_args", message: "code is required", details: nil)))
+      return
+    }
+    // The same request `getStories(code:)` sends, through the SDK's public raw entry point,
+    // so the server JSON reaches Dart as is — the payload the Android bridge hands over.
+    // `StoryContent` keeps most of the fields internal and drops the rest, so it cannot be
+    // re-encoded. Queued on the session queue like `getStories`: it waits for the init that
+    // provides the device id.
+    sdk.sessionQueue.addOperation {
+      let params: [String: String] = ["shop_id": sdk.shopId, "did": sdk.deviceId]
+      sdk.getRequest(path: "stories/\(code)", params: params, false) { result in
+        switch result {
+        case .success(let dict):
+          Self._encodeCatalog(dict, errorCode: "get_stories_failed", completion: completion)
+        case .failure(let err):
+          completion(.failure(PigeonError(code: "get_stories_failed", message: String(describing: err), details: nil)))
+        }
+      }
+    }
+  }
+
+  func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+    guard let target = URL(string: url), target.scheme?.isEmpty == false else {
+      completion(.success(false))
+      return
+    }
+    DispatchQueue.main.async {
+      UIApplication.shared.open(target, options: [:]) { opened in
+        completion(.success(opened))
+      }
+    }
+  }
+
   private static func _profileResponseToDict(_ p: GetProfileResponse) -> [String: Any] {
     var d: [String: Any] = [:]
     if let v = p.id { d["id"] = v }
