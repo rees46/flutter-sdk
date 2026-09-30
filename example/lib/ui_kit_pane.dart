@@ -905,22 +905,25 @@ class _InstantSearchExhibitState extends State<_InstantSearchExhibit> {
               PersonalizationSuggestion(id: 'c3', title: 'Kids boots'),
             ]
           : [
-              // Categories come without pictures: the search API returns none for
-              // them, so the "with images" state only illustrates product rows.
+              // The design gives categories pictures too. Photos other than the
+              // three products below, so the two sections do not repeat each other.
               PersonalizationSuggestion(
                 id: 'c1',
                 title: 'Running shoes',
                 subtitle: 'Shoes',
+                image: _image('sneakers'),
               ),
               PersonalizationSuggestion(
                 id: 'c2',
                 title: 'Running apparel',
                 subtitle: 'Clothing',
+                image: _image('jacket'),
               ),
               PersonalizationSuggestion(
                 id: 'c3',
                 title: 'Trail gear',
                 subtitle: 'Outdoor',
+                image: _image('watch'),
               ),
             ],
       productsLabel: typing ? 'Products' : 'Frequently searched',
