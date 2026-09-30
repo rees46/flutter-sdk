@@ -14,7 +14,9 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 /// (product cards, recommender layouts, instant search, the catalogue, the filters screen,
 /// in-app popups, the toast, the loyalty card);
 /// "Search" runs the two data-bound search widgets against the demo shop: the
-/// instant search field, and the results screen it opens on submit.
+/// instant search field, and the results screen it opens on submit;
+/// "Stories" shows the Stories V2 components one by one, a sample viewer that runs
+/// offline and the live stories block of the demo shop.
 /// Mirror of the Android `UiKitPane` / iOS `UIKitShowcaseViewController` /
 /// React Native `UiKitPane`.
 ///
@@ -25,13 +27,13 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 class UiKitPane extends StatelessWidget {
   const UiKitPane({super.key, required this.shopId});
 
-  /// Shop the Search tab's widgets resolve their SDK instance by.
+  /// Shop the Search and Stories tabs' widgets resolve their SDK instance by.
   final String shopId;
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('UI Kit'),
@@ -41,6 +43,7 @@ class UiKitPane extends StatelessWidget {
               Tab(text: 'Components'),
               Tab(text: 'Blocks'),
               Tab(text: 'Search'),
+              Tab(text: 'Stories'),
             ],
           ),
         ),
@@ -49,6 +52,7 @@ class UiKitPane extends StatelessWidget {
             _Showcase(exhibits: _componentExhibits),
             _Showcase(exhibits: _blockExhibits),
             _SearchFlow(shopId: shopId),
+            _Showcase(exhibits: _storyExhibits(shopId)),
           ],
         ),
       ),
@@ -680,6 +684,459 @@ final List<_Exhibit> _blockExhibits = [
   ),
 ];
 
+/// The Stories V2 block the demo shop serves (api.rees46.ru).
+const String _storiesCode = '115bd0b67cf5989a1b60c841790b2af6';
+
+/// End of the timer exhibits: fixed on first use, so a rebuild does not restart them.
+final DateTime _timerEnd = DateTime.now().add(
+  const Duration(days: 2, hours: 18, minutes: 33, seconds: 24),
+);
+
+List<_Exhibit> _storyExhibits(String shopId) => [
+  _Exhibit(
+    'Stories — live block $_storiesCode (demo shop); '
+    'links open in the system browser',
+    (context) => PersonalizationStories(
+      code: _storiesCode,
+      shopId: shopId,
+      padding: EdgeInsets.zero,
+      promoCopiedText: 'Code copied to clipboard',
+      onProductClick: (product) =>
+          PersonalizationToast.show(context, 'Product: ${product.name}'),
+      onError: (error) => _snack(context, 'Stories error: $error'),
+      iconBuilder: _icon,
+    ),
+  ),
+  _Exhibit(
+    'Story Viewer — sample slides: price, promo code, discount, text blocks, '
+    'used products (offline)',
+    (context) => Align(
+      alignment: Alignment.centerLeft,
+      child: PersonalizationButton(
+        label: 'Open sample stories',
+        size: PersonalizationButtonSize.md,
+        onPressed: () => _openSampleStories(context),
+      ),
+    ),
+  ),
+  _Exhibit('Story Cover — default, pinned, viewed, skeleton', (context) {
+    return _ScrollRow(
+      children: [
+        PersonalizationStoryCover(image: _image('jacket')),
+        PersonalizationStoryCover(
+          image: _image('jacket'),
+          pinned: true,
+          iconBuilder: _icon,
+        ),
+        PersonalizationStoryCover(
+          image: _image('jacket'),
+          state: PersonalizationStoryCoverState.viewed,
+        ),
+        const PersonalizationStoryCover(
+          state: PersonalizationStoryCoverState.skeleton,
+        ),
+      ],
+    );
+  }),
+  _Exhibit('Story Cover — segments: 5 slides, 2 seen', (context) {
+    return _ScrollRow(
+      children: [
+        PersonalizationStoryCover(
+          image: _image('sneakers'),
+          segments: 5,
+          seenSegments: 2,
+        ),
+        PersonalizationStoryCover(
+          image: _image('sneakers'),
+          pinned: true,
+          segments: 5,
+          seenSegments: 2,
+          iconBuilder: _icon,
+        ),
+        PersonalizationStoryCover(
+          image: _image('sneakers'),
+          state: PersonalizationStoryCoverState.viewed,
+          segments: 5,
+          seenSegments: 5,
+        ),
+      ],
+    );
+  }),
+  _Exhibit('Story Preview and Stories Bar — pinned, default, viewed', (
+    context,
+  ) {
+    return PersonalizationStoriesBar(
+      padding: EdgeInsets.zero,
+      items: [
+        PersonalizationStoryItem(
+          id: '1',
+          label: 'Pinned',
+          image: _image('watch'),
+          pinned: true,
+          segments: 3,
+        ),
+        PersonalizationStoryItem(
+          id: '2',
+          label: 'Default',
+          image: _image('headphones'),
+          segments: 4,
+          seenSegments: 1,
+        ),
+        PersonalizationStoryItem(
+          id: '3',
+          label: 'Viewed',
+          image: _image('backpack'),
+          viewed: true,
+        ),
+        PersonalizationStoryItem(
+          id: '4',
+          label: 'A label too long for one line',
+          image: _image('bottle'),
+        ),
+      ],
+      onItemTap: (item) => _snack(context, 'Story: ${item.label}'),
+      iconBuilder: _icon,
+    );
+  }),
+  _Exhibit(
+    'Stories Bar — loading',
+    (context) => const PersonalizationStoriesBar(
+      loading: true,
+      padding: EdgeInsets.zero,
+    ),
+  ),
+  _Exhibit(
+    'Story Progress — 5 slides, the second at 40%',
+    (context) =>
+        const PersonalizationStoryProgress(count: 5, current: 1, progress: 0.4),
+  ),
+  _Exhibit('Story Navigation — progress and the cross', (context) {
+    return PersonalizationStoryNavigation(
+      count: 5,
+      current: 1,
+      progress: 0.4,
+      onClose: () => _snack(context, 'Close'),
+      iconBuilder: _icon,
+    );
+  }),
+  _Exhibit('Story Price — price, discount, promo code, long promo code', (
+    context,
+  ) {
+    return _Column(
+      children: [
+        const PersonalizationStoryPrice(
+          price: '1 190 900 ₽',
+          oldPrice: '245 000 ₽',
+        ),
+        const PersonalizationStoryPrice(
+          type: PersonalizationStoryPriceType.discount,
+          price: '1 190 900 ₽',
+          oldPrice: '245 000 ₽',
+          discount: '10%',
+        ),
+        PersonalizationStoryPrice(
+          type: PersonalizationStoryPriceType.promoCode,
+          price: '1 190 900 ₽',
+          oldPrice: '245 000 ₽',
+          promoCode: 'PROMO',
+          iconBuilder: _icon,
+        ),
+        PersonalizationStoryPrice(
+          type: PersonalizationStoryPriceType.promoCode,
+          price: '1 190 900 ₽',
+          oldPrice: '245 000 ₽',
+          promoCode: 'YAGODA-MALINA',
+          copiedText: 'Code copied to clipboard',
+          onPromoCopied: (code) => _snack(context, 'Copied: $code'),
+          iconBuilder: _icon,
+        ),
+      ],
+    );
+  }),
+  _Exhibit('Story Timer — merged and separate', (context) {
+    return _Column(
+      children: [
+        PersonalizationStoryTimer(endTime: _timerEnd),
+        PersonalizationStoryTimer(
+          endTime: _timerEnd,
+          view: PersonalizationStoryTimerView.separate,
+        ),
+      ],
+    );
+  }),
+  _Exhibit(
+    'Story Text Block — solid large / medium / small, transparent; '
+    'on a media slide (dark tokens)',
+    (context) => _OnMediaSlide(
+      child: _Column(
+        children: [
+          const PersonalizationStoryTextBlock(
+            text: 'Open eat dear winding belonging.',
+            size: PersonalizationStoryTextSize.large,
+            background: Color(0xFF16AE13),
+          ),
+          PersonalizationStoryTextBlock(
+            text: 'Open eat dear winding belonging though differed stand left.',
+            background: PersonalizationColors.light.semanticWarning,
+          ),
+          PersonalizationStoryTextBlock(
+            text: 'Open eat dear winding belonging though differed stand left.',
+            size: PersonalizationStoryTextSize.small,
+            background: PersonalizationColors.light.semanticInfo,
+          ),
+          const PersonalizationStoryTextBlock(
+            text: 'Open eat dear winding belonging.',
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    ),
+  ),
+  _Exhibit(
+    'Story Used Products — collapsed with the sound button, expanded',
+    (context) => _OnMediaSlide(
+      padding: EdgeInsets.zero,
+      child: _Column(
+        children: [
+          const _SoundedUsedProducts(),
+          PersonalizationStoryUsedProducts(
+            products: _products.take(4).toList(),
+            showText: 'Used products',
+            hideText: 'Hide products',
+            initiallyExpanded: true,
+            onProductTap: (product) =>
+                _snack(context, 'Product: ${product.name}'),
+            iconBuilder: _icon,
+          ),
+        ],
+      ),
+    ),
+  ),
+  _Exhibit('Badge "Sale!" — LG warning, as on the Action slides', (context) {
+    return const _Row(children: [PersonalizationBadge(label: 'Sale!')]);
+  }),
+];
+
+/// A stand-in for a media slide: a photo under the kit's dark tokens, the way the
+/// viewer renders image and video slides.
+class _OnMediaSlide extends StatelessWidget {
+  const _OnMediaSlide({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context);
+    return Theme(
+      data: base.copyWith(extensions: [PersonalizationTheme.dark]),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(PersonalizationRadius.xl2),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: _image('jacket'),
+              fit: BoxFit.cover,
+              colorFilter: const ColorFilter.mode(
+                Color(0x66000000),
+                BlendMode.darken,
+              ),
+            ),
+          ),
+          child: Padding(padding: padding, child: child),
+        ),
+      ),
+    );
+  }
+}
+
+/// Collapsed used products with a working mute toggle at the start of the row.
+class _SoundedUsedProducts extends StatefulWidget {
+  const _SoundedUsedProducts();
+
+  @override
+  State<_SoundedUsedProducts> createState() => _SoundedUsedProductsState();
+}
+
+class _SoundedUsedProductsState extends State<_SoundedUsedProducts> {
+  bool _muted = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return PersonalizationStoryUsedProducts(
+      products: _products.take(4).toList(),
+      showText: 'Used products',
+      hideText: 'Hide products',
+      leading: PersonalizationStorySoundButton(
+        muted: _muted,
+        onPressed: () => setState(() => _muted = !_muted),
+        iconBuilder: _icon,
+      ),
+      iconBuilder: _icon,
+    );
+  }
+}
+
+/// Photos of the sample stories ship with the app: `asset:<name>` stands for
+/// `assets/uikit/<name>.jpg`, anything else loads from the network.
+ImageProvider _sampleImage(String url) => url.startsWith('asset:')
+    ? _image(url.substring('asset:'.length))
+    : NetworkImage(url);
+
+Map<String, dynamic> _sampleProductSlide(
+  String id,
+  Map<String, dynamic> product,
+) => {
+  'id': id,
+  'duration': 6,
+  'type': '',
+  'elements': [
+    {'type': 'button', 'title': 'More info', 'link': 'https://example.com'},
+    {'type': 'product', 'item': product},
+  ],
+};
+
+/// Stories in the server's shape, so the sample runs through the same parsing as
+/// the live block: product slides of every price kind, and a media slide with text
+/// blocks, a button and used products.
+final List<Story> _sampleStories = StoriesBlock.fromJson({
+  'id': 'sample',
+  'stories': [
+    {
+      'id': 'products',
+      'name': 'Products',
+      'avatar': 'asset:headphones',
+      'slides': [
+        _sampleProductSlide('price', {
+          'id': 'h1',
+          'brand': 'Sony',
+          'name': 'Wireless over-ear headphones, noise cancelling',
+          'picture': 'asset:headphones',
+          'price': 299,
+          'price_formatted': r'299 $',
+          'oldprice': 349,
+          'oldprice_formatted': r'349 $',
+          'url': 'https://example.com/headphones',
+        }),
+        _sampleProductSlide('promo', {
+          'id': 'w1',
+          'brand': 'Garmin',
+          'name': 'GPS running watch',
+          'picture': 'asset:watch',
+          'price': 449,
+          'price_formatted': r'449 $',
+          'oldprice': 499,
+          'oldprice_formatted': r'499 $',
+          'promocode': 'YAGODA-MALINA',
+          'price_with_promocode_formatted': r'399 $',
+          'url': 'https://example.com/watch',
+        }),
+        _sampleProductSlide('discount', {
+          'id': 's1',
+          'brand': 'Nike',
+          'name': 'Air Zoom Pegasus 41 running shoes',
+          'picture': 'asset:pegasus',
+          'price': 140,
+          'price_formatted': r'140 $',
+          'oldprice': 165,
+          'oldprice_formatted': r'165 $',
+          'discount_percent': 15,
+          'url': 'https://example.com/pegasus',
+        }),
+      ],
+    },
+    {
+      'id': 'media',
+      'name': 'Media',
+      'avatar': 'asset:jacket',
+      'slides': [
+        {
+          'id': 'text',
+          'duration': 8,
+          'type': 'image',
+          'background': 'asset:jacket',
+          'elements': [
+            {
+              'type': 'text_block',
+              'text_input': 'Open eat dear winding belonging.',
+              'font_size': 36,
+              'text_background_color': '#16AE13',
+              'text_background_color_opacity': '100%',
+              'y_offset': 9,
+            },
+            {
+              'type': 'text_block',
+              'text_input': 'Tap to copy the code SALE10',
+              'font_size': 20,
+              'text_align': 'center',
+              'text_background_color': '#0087E8',
+              'text_background_color_opacity': '100%',
+              'y_offset': 30,
+              'promocode': 'SALE10',
+            },
+            {
+              'type': 'text_block',
+              'text_input': 'Open eat dear winding belonging though differed.',
+              'font_size': 24,
+              'y_offset': 45,
+            },
+            {
+              'type': 'button',
+              'title': 'Go shopping',
+              'link': 'https://example.com',
+            },
+            {
+              'type': 'products',
+              'labels': {
+                'show_carousel': 'Used products',
+                'hide_carousel': 'Hide products',
+              },
+              'products': [
+                for (final (index, name) in [
+                  'backpack',
+                  'bottle',
+                  'sunglasses',
+                ].indexed)
+                  {
+                    'id': 'm$index',
+                    'brand': 'Brand',
+                    'name': 'Product ${index + 1}',
+                    'picture': 'asset:$name',
+                    'price': 99,
+                    'price_formatted': r'99 $',
+                    'oldprice': 120,
+                    'oldprice_formatted': r'120 $',
+                    'discount_percent': 18,
+                  },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}).stories;
+
+void _openSampleStories(BuildContext context) {
+  Navigator.of(context, rootNavigator: true).push(
+    PersonalizationStoryViewer.route(
+      PersonalizationStoryViewer(
+        stories: _sampleStories,
+        // No SDK: the sample does not track; links and products come back here.
+        onLinkClick: (url) => PersonalizationToast.show(context, 'Link: $url'),
+        onProductClick: (product) =>
+            PersonalizationToast.show(context, 'Product: ${product.name}'),
+        promoCopiedText: 'Code copied to clipboard',
+        imageProvider: _sampleImage,
+        iconBuilder: _icon,
+      ),
+    ),
+  );
+}
+
 void _snack(BuildContext context, String message) => ScaffoldMessenger.of(
   context,
 ).showSnackBar(SnackBar(content: Text(message)));
@@ -735,8 +1192,8 @@ Widget _loyaltyCard(
   required int stamps,
   bool brand = false,
 }) {
-  // Semantic/Info from the design file's dark example; the kit has no token for it.
-  const brandBlue = Color(0xFF0087E8);
+  // Semantic/Info, as in the design file's dark example.
+  final brandBlue = PersonalizationTheme.of(context).colors.semanticInfo;
   const white = Color(0xFFFFFFFF);
   // The kit never tints the host's logo, so the demo tints it itself to the
   // content colour: Text/Primary by default, white on the brand card.
