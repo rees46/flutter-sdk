@@ -48,8 +48,8 @@ class PersonalizationLoyaltyCardField {
 /// Скругление 2XL, обводка 1 внутрь цветом Line/Generic Subtle, тень Elevation 3
 /// цветом Shadow/Heavy темы. Фон — Background/Card, подписи и значения —
 /// Text/Primary; оба переопределяются через [cardColor] и [contentColor]. Так в
-/// тёмном примере макета карта фирменная синяя: #0087E8 — Semantic/Info, такого
-/// токена в ките нет, цвет передаёт хост.
+/// тёмном примере макета карта фирменная синяя — Semantic/Info
+/// ([PersonalizationColors.semanticInfo]), цвет передаёт хост.
 class PersonalizationLoyaltyCard extends StatelessWidget {
   const PersonalizationLoyaltyCard({
     super.key,

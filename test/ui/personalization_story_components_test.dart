@@ -1,0 +1,307 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+
+Widget _host(Widget child) => MaterialApp(
+  home: Scaffold(
+    body: Align(
+      alignment: Alignment.topLeft,
+      child: SizedBox(width: 400, child: child),
+    ),
+  ),
+);
+
+void main() {
+  group('StoryPrice', () {
+    test('the currency is the trailing non-digit token', () {
+      expect(PersonalizationStoryPrice.splitCurrency('1 190 900 ₽'), (
+        '1 190 900',
+        '₽',
+      ));
+      expect(PersonalizationStoryPrice.splitCurrency('9 999₽'), ('9 999', '₽'));
+      expect(PersonalizationStoryPrice.splitCurrency('1,190.00 USD'), (
+        '1,190.00',
+        'USD',
+      ));
+      expect(PersonalizationStoryPrice.splitCurrency('10 000 тг.'), (
+        '10 000',
+        'тг.',
+      ));
+      expect(PersonalizationStoryPrice.splitCurrency(r'$140'), (r'$140', ''));
+      expect(PersonalizationStoryPrice.splitCurrency(''), ('', ''));
+    });
+
+    testWidgets('discount draws the percent on the brand block', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const PersonalizationStoryPrice(
+            type: PersonalizationStoryPriceType.discount,
+            price: '1 190 900 ₽',
+            oldPrice: '245 000 ₽',
+            discount: '10%',
+          ),
+        ),
+      );
+      expect(find.text('10%'), findsOneWidget);
+      expect(find.text('1 190 900'), findsOneWidget);
+      expect(find.text('245 000'), findsOneWidget);
+      expect(find.text('₽'), findsNWidgets(2));
+      final brand = find.byWidgetPredicate(
+        (widget) =>
+            widget is DecoratedBox &&
+            widget.decoration is BoxDecoration &&
+            (widget.decoration as BoxDecoration).color ==
+                PersonalizationColors.light.brandPrimary,
+      );
+      expect(brand, findsOneWidget);
+    });
+
+    testWidgets('tapping the promo code copies it, toasts and reports', (
+      tester,
+    ) async {
+      String? clipboard;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            clipboard = (call.arguments as Map)['text'] as String;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      final copied = <String>[];
+      await tester.pumpWidget(
+        _host(
+          PersonalizationStoryPrice(
+            type: PersonalizationStoryPriceType.promoCode,
+            price: '1 190 900 ₽',
+            promoCode: 'YAGODA-MALINA',
+            copiedText: 'Code copied',
+            onPromoCopied: copied.add,
+          ),
+        ),
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('YAGODA-MALINA')),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      final scale = tester.widget<AnimatedScale>(find.byType(AnimatedScale));
+      expect(scale.scale, PersonalizationStoryPrice.pressedScale);
+      await gesture.up();
+      await tester.pump();
+
+      expect(clipboard, 'YAGODA-MALINA');
+      expect(copied, <String>['YAGODA-MALINA']);
+      expect(find.text('Code copied'), findsOneWidget);
+      expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 1);
+      // The toast leaves by itself.
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('Code copied'), findsNothing);
+    });
+
+    testWidgets('columns share the width; a long code takes more', (
+      tester,
+    ) async {
+      Future<double> promoWidth(String code) async {
+        await tester.pumpWidget(
+          _host(
+            PersonalizationStoryPrice(
+              type: PersonalizationStoryPriceType.promoCode,
+              price: '1 190 900 ₽',
+              promoCode: code,
+            ),
+          ),
+        );
+        return tester.getSize(find.byType(AnimatedScale)).width;
+      }
+
+      expect(await promoWidth('PROMO'), 200);
+      final long = await promoWidth('A-VERY-LONG-PROMO-CODE-2026');
+      expect(long, greaterThan(200));
+      expect(long, lessThanOrEqualTo(400 * 0.7));
+    });
+  });
+
+  test('the timer splits the rest into days and two-digit units', () {
+    expect(
+      PersonalizationStoryTimer.format(
+        const Duration(days: 2, hours: 18, minutes: 33, seconds: 24),
+      ),
+      ('2', '18', '33', '24'),
+    );
+    expect(
+      PersonalizationStoryTimer.format(
+        const Duration(hours: 1, minutes: 2, seconds: 3),
+      ),
+      ('0', '01', '02', '03'),
+    );
+    expect(PersonalizationStoryTimer.format(const Duration(seconds: -5)), (
+      '0',
+      '00',
+      '00',
+      '00',
+    ));
+  });
+
+  testWidgets('a finished timer shows zeros and reports once', (tester) async {
+    var finished = 0;
+    await tester.pumpWidget(
+      _host(
+        PersonalizationStoryTimer(
+          endTime: DateTime.now().subtract(const Duration(seconds: 1)),
+          view: PersonalizationStoryTimerView.separate,
+          onFinished: () => finished++,
+        ),
+      ),
+    );
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('00'), findsNWidgets(3));
+    expect(find.text('d'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    expect(finished, 0, reason: 'already over when shown: nothing to count');
+  });
+
+  group('StoryTextBlock', () {
+    BoxDecoration? frame(WidgetTester tester) {
+      final boxes = find.descendant(
+        of: find.byType(PersonalizationStoryTextBlock),
+        matching: find.byType(DecoratedBox),
+      );
+      if (boxes.evaluate().isEmpty) return null;
+      return tester.widget<DecoratedBox>(boxes.first).decoration
+          as BoxDecoration;
+    }
+
+    testWidgets('solid: server colour, radius 12, padding by size', (
+      tester,
+    ) async {
+      const green = Color(0x6616AE13);
+      await tester.pumpWidget(
+        _host(
+          const PersonalizationStoryTextBlock(
+            text: 'Open eat dear winding belonging.',
+            size: PersonalizationStoryTextSize.large,
+            background: green,
+          ),
+        ),
+      );
+      expect(frame(tester)!.color, green);
+      expect(frame(tester)!.borderRadius, BorderRadius.circular(12));
+      final padding = tester.widget<Padding>(
+        find.descendant(
+          of: find.byType(PersonalizationStoryTextBlock),
+          matching: find.byType(Padding),
+        ),
+      );
+      expect(
+        padding.padding,
+        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      );
+      final text = tester.widget<Text>(find.byType(Text));
+      expect(text.style!.color, PersonalizationColors.light.textLightPrimary);
+      expect(text.style!.fontSize, 48);
+
+      await tester.pumpWidget(
+        _host(
+          const PersonalizationStoryTextBlock(
+            text: 'Small',
+            size: PersonalizationStoryTextSize.small,
+            background: green,
+          ),
+        ),
+      );
+      expect(
+        tester
+            .widget<Padding>(
+              find.descendant(
+                of: find.byType(PersonalizationStoryTextBlock),
+                matching: find.byType(Padding),
+              ),
+            )
+            .padding,
+        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      );
+    });
+
+    testWidgets('transparent: no frame, Text/Primary', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const PersonalizationStoryTextBlock(
+            text: 'Plain',
+            background: Color(0x0016AE13),
+          ),
+        ),
+      );
+      expect(frame(tester), isNull);
+      final text = tester.widget<Text>(find.byType(Text));
+      expect(text.style!.color, PersonalizationColors.light.textPrimary);
+      expect(text.style!.fontSize, 30);
+    });
+  });
+
+  testWidgets('a pinned cover wears the star; a skeleton has none', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const Align(
+          alignment: Alignment.topLeft,
+          child: PersonalizationStoryPreview(
+            label: 'Pinned',
+            pinned: true,
+            segments: 5,
+            seenSegments: 2,
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(PersonalizationFavoritesBadge), findsOneWidget);
+    expect(find.text('Pinned'), findsOneWidget);
+    expect(
+      tester.getSize(find.byType(PersonalizationStoryPreview)),
+      const Size(88, 88 + 8 + 16),
+    );
+
+    await tester.pumpWidget(
+      _host(
+        const Align(
+          alignment: Alignment.topLeft,
+          child: PersonalizationStoryPreview(
+            state: PersonalizationStoryCoverState.skeleton,
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(PersonalizationFavoritesBadge), findsNothing);
+    expect(
+      tester.getSize(find.byType(PersonalizationStoryPreview)),
+      const Size(88, 88 + 8 + 16),
+      reason: 'the skeleton keeps the height of a labelled preview',
+    );
+  });
+
+  testWidgets('progress fills the passed segments and part of the current', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const PersonalizationStoryProgress(count: 4, current: 1, progress: 0.5),
+      ),
+    );
+    final fills = tester
+        .widgetList<FractionallySizedBox>(find.byType(FractionallySizedBox))
+        .map((box) => box.widthFactor)
+        .toList();
+    expect(fills, <double>[1, 0.5, 0, 0]);
+  });
+}

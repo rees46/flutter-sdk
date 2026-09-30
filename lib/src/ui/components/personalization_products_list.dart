@@ -26,6 +26,7 @@ class PersonalizationProductsList extends StatefulWidget {
     this.onProductAction,
     this.onProductTap,
     this.onFirstVisibleChanged,
+    this.carouselPadding,
     this.iconBuilder,
   });
 
@@ -39,6 +40,10 @@ class PersonalizationProductsList extends StatefulWidget {
   /// Нажатие на карточку — открыть товар.
   final ValueChanged<PersonalizationProduct>? onProductTap;
   final ValueChanged<int>? onFirstVisibleChanged;
+
+  /// Поля карусели внутри её прокрутки: крайние карточки уезжают под край, а не
+  /// обрезаются полем. У плитки и списка поля задаёт разметка хоста.
+  final EdgeInsetsGeometry? carouselPadding;
 
   final Widget Function(
     BuildContext context,
@@ -123,6 +128,7 @@ class _PersonalizationProductsListState
         return SingleChildScrollView(
           controller: _controller,
           scrollDirection: Axis.horizontal,
+          padding: widget.carouselPadding,
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,

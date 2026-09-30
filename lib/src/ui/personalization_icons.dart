@@ -37,6 +37,11 @@ abstract final class PersonalizationIcons {
   static const String rosette = 'packages/rees46_sdk/assets/icons/rosette.svg';
   static const String spacingMd =
       'packages/rees46_sdk/assets/icons/spacing-md.svg';
+
+  /// Звук видео-слайда сторис: включён / выключен. Страница Stories (1:32).
+  static const String speaker = 'packages/rees46_sdk/assets/icons/speaker.svg';
+  static const String speakerOff =
+      'packages/rees46_sdk/assets/icons/speaker-off.svg';
   static const String starFill =
       'packages/rees46_sdk/assets/icons/star-fill.svg';
 
@@ -59,6 +64,8 @@ abstract final class PersonalizationIcons {
     magnifier,
     rosette,
     spacingMd,
+    speaker,
+    speakerOff,
     starFill,
   ];
 }

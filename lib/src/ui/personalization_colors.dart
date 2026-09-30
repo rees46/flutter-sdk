@@ -16,8 +16,17 @@ class PersonalizationColors {
   /// Neutral 50: полупрозрачная ступень, одинаково заметна на любом фоне — заглушки картинок.
   final Color neutral50;
 
+  /// Neutral 100: вдвое плотнее Neutral 50 — подложка таймера сторис.
+  final Color neutral100;
+
   final Color semanticWarning;
   final Color semanticDanger;
+
+  /// Semantic/Info: синий для информационных плашек — фон текстовых блоков сторис.
+  final Color semanticInfo;
+
+  /// Semantic/Neutral Subtle: приглушённый нейтральный — кольцо просмотренной сторис.
+  final Color neutralSubtle;
   final Color backgroundGeneric;
   final Color backgroundCard;
 
@@ -65,8 +74,11 @@ class PersonalizationColors {
   const PersonalizationColors({
     required this.brandPrimary,
     required this.neutral50,
+    required this.neutral100,
     required this.semanticWarning,
     required this.semanticDanger,
+    required this.semanticInfo,
+    required this.neutralSubtle,
     required this.backgroundGeneric,
     required this.backgroundCard,
     required this.backgroundFloat,
@@ -108,8 +120,11 @@ class PersonalizationColors {
   static const PersonalizationColors light = PersonalizationColors(
     brandPrimary: Color(0xFF007DF2),
     neutral50: Color(0x0D000000),
+    neutral100: Color(0x1A000000),
     semanticWarning: Color(0xFFF37A17),
     semanticDanger: Color(0xFFE51919),
+    semanticInfo: Color(0xFF0087E8),
+    neutralSubtle: Color(0xFFCCCCCC),
     backgroundGeneric: Color(0xFFF2F2F2),
     backgroundCard: Color(0xFFFFFFFF),
     backgroundFloat: Color(0xFFFFFFFF),
@@ -152,8 +167,11 @@ class PersonalizationColors {
   static const PersonalizationColors dark = PersonalizationColors(
     brandPrimary: Color(0xFF007DF2),
     neutral50: Color(0x0DFFFFFF),
+    neutral100: Color(0x1AFFFFFF),
     semanticWarning: Color(0xFFF37A17),
     semanticDanger: Color(0xFFE51919),
+    semanticInfo: Color(0xFF0087E8),
+    neutralSubtle: Color(0xFF262626),
     backgroundGeneric: Color(0xFF0D0D0D),
     backgroundCard: Color(0xFF1A1A1A),
     backgroundFloat: Color(0xFF262626),
@@ -201,8 +219,11 @@ class PersonalizationColors {
   PersonalizationColors copyWith({
     Color? brandPrimary,
     Color? neutral50,
+    Color? neutral100,
     Color? semanticWarning,
     Color? semanticDanger,
+    Color? semanticInfo,
+    Color? neutralSubtle,
     Color? backgroundGeneric,
     Color? backgroundCard,
     Color? backgroundFloat,
@@ -243,8 +264,11 @@ class PersonalizationColors {
     return PersonalizationColors(
       brandPrimary: brandPrimary ?? this.brandPrimary,
       neutral50: neutral50 ?? this.neutral50,
+      neutral100: neutral100 ?? this.neutral100,
       semanticWarning: semanticWarning ?? this.semanticWarning,
       semanticDanger: semanticDanger ?? this.semanticDanger,
+      semanticInfo: semanticInfo ?? this.semanticInfo,
+      neutralSubtle: neutralSubtle ?? this.neutralSubtle,
       backgroundGeneric: backgroundGeneric ?? this.backgroundGeneric,
       backgroundCard: backgroundCard ?? this.backgroundCard,
       backgroundFloat: backgroundFloat ?? this.backgroundFloat,
@@ -294,8 +318,11 @@ class PersonalizationColors {
     return PersonalizationColors(
       brandPrimary: Color.lerp(brandPrimary, other.brandPrimary, t)!,
       neutral50: Color.lerp(neutral50, other.neutral50, t)!,
+      neutral100: Color.lerp(neutral100, other.neutral100, t)!,
       semanticWarning: Color.lerp(semanticWarning, other.semanticWarning, t)!,
       semanticDanger: Color.lerp(semanticDanger, other.semanticDanger, t)!,
+      semanticInfo: Color.lerp(semanticInfo, other.semanticInfo, t)!,
+      neutralSubtle: Color.lerp(neutralSubtle, other.neutralSubtle, t)!,
       backgroundGeneric: Color.lerp(
         backgroundGeneric,
         other.backgroundGeneric,

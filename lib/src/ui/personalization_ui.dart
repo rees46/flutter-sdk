@@ -56,6 +56,18 @@ export 'components/personalization_toast.dart';
 // внутренность штрихкода.
 export 'components/personalization_barcode.dart';
 export 'components/personalization_loyalty_card.dart';
+// Сторис V2. Заглушка-переливание (personalization_story_shimmer.dart) не
+// экспортируется — это внутренность обложки и превью.
+export 'components/personalization_story_cover.dart';
+export 'components/personalization_story_preview.dart';
+export 'components/personalization_stories_bar.dart';
+export 'components/personalization_story_progress.dart';
+export 'components/personalization_story_navigation.dart';
+export 'components/personalization_story_sound_button.dart';
+export 'components/personalization_story_price.dart';
+export 'components/personalization_story_timer.dart';
+export 'components/personalization_story_text_block.dart';
+export 'components/personalization_story_used_products.dart';
 
 // Виджеты с данными SDK: сами резолвят инстанс по shopId, ходят в поиск и держат состояние.
 export 'widgets/search_support.dart' show PersonalizationSearchCategory;
