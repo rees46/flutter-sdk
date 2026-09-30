@@ -21,14 +21,16 @@ enum PersonalizationStoryCoverState { unviewed, viewed, skeleton }
 ///
 /// Круг 88. Кольцо — обводка 4 внутрь; картинка — круг 76 с отступом 6, то есть между
 /// ними зазор 2. Цвет кольца: Button/Primary у непросмотренной, Semantic/Warning у
-/// закреплённой, Semantic/Neutral Subtle у просмотренной. Закреплённой в правом нижнем
+/// закреплённой — и после просмотра, Semantic/Neutral Subtle у просмотренной
+/// незакреплённой. Закреплённой в правом нижнем
 /// углу (x62, y62) — метка Favorites 24: звезда на Semantic/Warning. У заглушки кольцо и
 /// картинка переливаются градиентом (см. [PersonalizationStoryShimmer]).
 ///
 /// Сегменты: при [segments] > 1 кольцо делится на столько дуг с небольшими зазорами —
 /// по дуге на слайд. Первые [seenSegments] — уже показанные слайды — красятся в
 /// Button/Primary Disabled (Brand/Primary 65%), остальные в цвет состояния. У
-/// просмотренной все дуги цвета Viewed.
+/// просмотренной незакреплённой кольцо всегда сплошное, без дуг и зазоров, — так
+/// состояние Viewed нарисовано в макете.
 class PersonalizationStoryCover extends StatelessWidget {
   const PersonalizationStoryCover({
     super.key,
@@ -95,16 +97,18 @@ class PersonalizationStoryCover extends StatelessWidget {
       );
     }
 
-    final viewed = state == PersonalizationStoryCoverState.viewed;
+    // Просмотренная незакреплённая — сплошное кольцо Viewed; закреплённая остаётся
+    // в Warning и после просмотра.
+    final viewed = state == PersonalizationStoryCoverState.viewed && !pinned;
     final stateColor = viewed
         ? colors.neutralSubtle
         : pinned
         ? colors.semanticWarning
         : colors.buttonPrimary;
-    final count = math.max(1, segments);
+    final count = viewed ? 1 : math.max(1, segments);
     final ringColors = <Color>[
       for (int i = 0; i < count; i++)
-        !viewed && segments > 1 && i < seenSegments
+        count > 1 && i < seenSegments
             ? colors.buttonPrimaryDisabled
             : stateColor,
     ];

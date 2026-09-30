@@ -277,6 +277,68 @@ void main() {
     });
   });
 
+  testWidgets('a viewed cover rings solid; a pinned one keeps its segments', (
+    tester,
+  ) async {
+    const light = PersonalizationColors.light;
+    RenderObject ring() => tester.renderObject(
+      find
+          .descendant(
+            of: find.byType(PersonalizationStoryCover),
+            matching: find.byType(CustomPaint),
+          )
+          .first,
+    );
+    // Paint keeps its colour as floats: compare the packed value.
+    PaintPatternPredicate drawn(Symbol call, Color color) =>
+        (method, arguments) =>
+            method == call &&
+            arguments.whereType<Paint>().single.color.toARGB32() ==
+                color.toARGB32();
+
+    await tester.pumpWidget(
+      _host(
+        const Align(
+          alignment: Alignment.topLeft,
+          child: PersonalizationStoryCover(
+            state: PersonalizationStoryCoverState.viewed,
+            segments: 5,
+            seenSegments: 2,
+          ),
+        ),
+      ),
+    );
+    expect(ring(), paints..something(drawn(#drawOval, light.neutralSubtle)));
+    expect(ring(), isNot(paints..arc()));
+
+    await tester.pumpWidget(
+      _host(
+        const Align(
+          alignment: Alignment.topLeft,
+          child: PersonalizationStoryCover(
+            state: PersonalizationStoryCoverState.viewed,
+            pinned: true,
+            segments: 5,
+            seenSegments: 2,
+          ),
+        ),
+      ),
+    );
+    expect(
+      ring(),
+      paints
+        ..something(drawn(#drawArc, light.buttonPrimaryDisabled))
+        ..something(drawn(#drawArc, light.buttonPrimaryDisabled))
+        ..something(drawn(#drawArc, light.semanticWarning))
+        ..something(drawn(#drawArc, light.semanticWarning))
+        ..something(drawn(#drawArc, light.semanticWarning)),
+    );
+    expect(
+      ring(),
+      isNot(paints..something(drawn(#drawOval, light.neutralSubtle))),
+    );
+  });
+
   testWidgets('a pinned cover wears the star; a skeleton has none', (
     tester,
   ) async {
