@@ -327,18 +327,16 @@ class Rees46FlutterSdkPlugin :
         }
         try {
             // The raw, deprecated SDK.search entry point rather than the typed
-            // searchManager.searchFull: android-sdk v2.38.0, which this plugin pins, has no
-            // `filters`, `industrial_filters`, `oldprice`, `oldprice_formatted`, `discount` or
-            // `discount_formatted` on SearchFullResponse and Product, so Gson drops them before they
-            // reach Dart, and the results screen needs the facets and the old price. The raw entry
-            // point returns the server JSON as is.
-            // TODO: once an android-sdk release after v2.38.0 ships those fields (commit 9e5d6ac,
-            //  "feat(search): old price, discount, suggested queries and facets in search
-            //  responses": SearchFullResponse.filters / industrialFilters, Product.oldPrice /
-            //  oldPriceFormatted / discount / discountFormatted), bump rees46AndroidSdkVersion in
-            //  build.gradle.kts and switch to sdk(shopId).searchManager.searchFull(query,
-            //  NativeSearchParams, …) with Gson().toJson(response), as searchInstant does; move the
-            //  params builder to NativeSearchParams.
+            // searchManager.searchFull: up to android-sdk v2.38.0 the typed SearchFullResponse and
+            // Product had no `filters`, `industrial_filters`, `oldprice`, `oldprice_formatted`,
+            // `discount` or `discount_formatted`, so Gson dropped them before they reached Dart,
+            // and the results screen needs the facets and the old price. The raw entry point
+            // returns the server JSON as is.
+            // TODO: v2.39.0, which this plugin now pins, has those fields. Switch to
+            //  sdk(shopId).searchManager.searchFull(query, NativeSearchParams, …) with
+            //  Gson().toJson(response), as searchInstant does, and move the params builder to
+            //  NativeSearchParams — after checking against a live shop that the typed response
+            //  carries everything the results screen reads.
             val params = buildLegacySearchParams(paramsJson)
             @Suppress("DEPRECATION")
             sdk(shopId).search(
