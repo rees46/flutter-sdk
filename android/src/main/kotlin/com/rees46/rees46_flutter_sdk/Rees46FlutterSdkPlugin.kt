@@ -142,6 +142,7 @@ class Rees46FlutterSdkPlugin :
                 stream = config.stream,
                 autoSendPushToken = config.autoSendPushToken,
                 needReInitialization = config.needReInitialization,
+                enableAutoPopupPresentation = config.enableAutoPopupPresentation,
             )
             // F3: initialize (and register) the instance through the multi-instance
             // `Rees46` facade so it is reachable by shopId via Rees46.getInstance.
