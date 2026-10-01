@@ -506,6 +506,37 @@ interface PersonalizationHostApi {
    */
   fun openUrl(url: String, callback: (Result<Boolean>) -> Unit)
   /**
+   * The slide ids seen per story id for [shop] — the plugin's own store
+   * (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
+   * survives app restarts.
+   */
+  fun getStoriesSeen(shop: String): Map<String, List<String>>
+  /** Records [slideId] of story [storyId] as seen for [shop]. */
+  fun setStorySlideSeen(shop: String, storyId: String, slideId: String)
+  /**
+   * The app's cache directory: Android `Context.cacheDir`, iOS `Library/Caches`. The
+   * stories viewer keeps its video cache under it.
+   */
+  fun getCacheDirectory(): String
+  /**
+   * Remembers the app's audio session before the stories viewer plays its first video,
+   * so [endStoriesAudio] can put it back. iOS only; a no-op on Android, where a muted
+   * video never takes the audio focus (`mixWithOthers`).
+   */
+  fun beginStoriesAudio()
+  /**
+   * While the viewer plays video: muted — the `ambient` category, which never
+   * interrupts other apps' audio; unmuted — `playback`. Also starts watching the
+   * hardware volume (see [PersonalizationStoriesFlutterApi.onStoriesVolumeUp]). iOS
+   * only; a no-op on Android.
+   */
+  fun updateStoriesAudio(muted: Boolean)
+  /**
+   * The viewer closed: restores the session saved by [beginStoriesAudio] and stops
+   * watching the volume. iOS only; a no-op on Android.
+   */
+  fun endStoriesAudio()
+  /**
    * Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
    * via the native `REES46.handlePush`. [event] is the index of the Dart
    * `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
@@ -967,6 +998,108 @@ interface PersonalizationHostApi {
         }
       }
       run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              listOf(api.getStoriesSeen(shopArg))
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setStorySlideSeen$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopArg = args[0] as String
+            val storyIdArg = args[1] as String
+            val slideIdArg = args[2] as String
+            val wrapped: List<Any?> = try {
+              api.setStorySlideSeen(shopArg, storyIdArg, slideIdArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCacheDirectory$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.getCacheDirectory())
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.beginStoriesAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.beginStoriesAudio()
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.updateStoriesAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val mutedArg = args[0] as Boolean
+            val wrapped: List<Any?> = try {
+              api.updateStoriesAudio(mutedArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.endStoriesAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.endStoriesAudio()
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
@@ -1321,6 +1454,41 @@ class PersonalizationFlutterApi(private val binaryMessenger: BinaryMessenger, pr
     val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
     channel.send(listOf(shopIdArg, payloadArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(PersonalizationApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+}
+/**
+ * Native events of the stories viewer. Separate from [PersonalizationFlutterApi]: the
+ * push dispatcher owns that channel, the UI kit owns this one.
+ *
+ * Generated class from Pigeon that represents Flutter messages that can be called from Kotlin.
+ */
+class PersonalizationStoriesFlutterApi(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
+  companion object {
+    /** The codec used by PersonalizationStoriesFlutterApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      PersonalizationApiPigeonCodec()
+    }
+  }
+  /**
+   * The hardware volume went up while the viewer plays video (iOS: the audio session's
+   * `outputVolume` grew). Android delivers the volume key to Flutter itself.
+   */
+  fun onStoriesVolumeUp(callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStoriesFlutterApi.onStoriesVolumeUp$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(null) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))

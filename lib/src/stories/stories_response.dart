@@ -97,8 +97,9 @@ class StorySlide {
   final Duration duration;
   final List<StoryElement> elements;
 
-  /// Seconds a slide lasts when the server does not say.
-  static const int defaultDurationSeconds = 5;
+  /// Seconds a slide lasts when the server does not say (or says 0) — the same on every
+  /// platform.
+  static const int defaultDurationSeconds = 10;
 
   const StorySlide({
     required this.id,
@@ -328,13 +329,17 @@ class StoryProduct {
   final double oldPrice;
   final String oldPriceFormatted;
 
-  /// Discount in percent (`discount_percent`), 0 when there is none.
-  final int discountPercent;
+  /// Discount in percent (`discount_percent`), 0 when there is none. Kept fractional:
+  /// the admin may send `12.5`.
+  final double discountPercent;
 
   /// Promo code for this product, empty when there is none.
   final String promocode;
 
-  /// Price with the promo code applied.
+  /// Price with the promo code applied (`price_with_promocode`), 0 when not sent.
+  final double priceWithPromocode;
+
+  /// Price with the promo code applied, formatted.
   final String priceWithPromocodeFormatted;
   final String currency;
   final String url;
@@ -353,6 +358,7 @@ class StoryProduct {
     this.oldPriceFormatted = '',
     this.discountPercent = 0,
     this.promocode = '',
+    this.priceWithPromocode = 0,
     this.priceWithPromocodeFormatted = '',
     this.currency = '',
     this.url = '',
@@ -372,8 +378,9 @@ class StoryProduct {
       priceFormatted: text('price_formatted'),
       oldPrice: toDoubleOrNull(json['oldprice']) ?? 0,
       oldPriceFormatted: text('oldprice_formatted'),
-      discountPercent: toIntOrNull(json['discount_percent']) ?? 0,
+      discountPercent: toDoubleOrNull(json['discount_percent']) ?? 0,
       promocode: text('promocode'),
+      priceWithPromocode: toDoubleOrNull(json['price_with_promocode']) ?? 0,
       priceWithPromocodeFormatted: text('price_with_promocode_formatted'),
       currency: text('currency'),
       url: text('url'),

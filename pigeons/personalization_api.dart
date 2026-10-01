@@ -262,6 +262,33 @@ abstract class PersonalizationHostApi {
   @async
   bool openUrl(String url);
 
+  /// The slide ids seen per story id for [shop] — the plugin's own store
+  /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
+  /// survives app restarts.
+  Map<String, List<String>> getStoriesSeen(String shop);
+
+  /// Records [slideId] of story [storyId] as seen for [shop].
+  void setStorySlideSeen(String shop, String storyId, String slideId);
+
+  /// The app's cache directory: Android `Context.cacheDir`, iOS `Library/Caches`. The
+  /// stories viewer keeps its video cache under it.
+  String getCacheDirectory();
+
+  /// Remembers the app's audio session before the stories viewer plays its first video,
+  /// so [endStoriesAudio] can put it back. iOS only; a no-op on Android, where a muted
+  /// video never takes the audio focus (`mixWithOthers`).
+  void beginStoriesAudio();
+
+  /// While the viewer plays video: muted — the `ambient` category, which never
+  /// interrupts other apps' audio; unmuted — `playback`. Also starts watching the
+  /// hardware volume (see [PersonalizationStoriesFlutterApi.onStoriesVolumeUp]). iOS
+  /// only; a no-op on Android.
+  void updateStoriesAudio(bool muted);
+
+  /// The viewer closed: restores the session saved by [beginStoriesAudio] and stops
+  /// watching the volume. iOS only; a no-op on Android.
+  void endStoriesAudio();
+
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
   /// via the native `REES46.handlePush`. [event] is the index of the Dart
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
@@ -367,4 +394,13 @@ abstract class PersonalizationFlutterApi {
   void onPushDelivered(String? shopId, Map<String, String?> payload);
 
   void onPushClicked(String? shopId, Map<String, String?> payload);
+}
+
+/// Native events of the stories viewer. Separate from [PersonalizationFlutterApi]: the
+/// push dispatcher owns that channel, the UI kit owns this one.
+@FlutterApi()
+abstract class PersonalizationStoriesFlutterApi {
+  /// The hardware volume went up while the viewer plays video (iOS: the audio session's
+  /// `outputVolume` grew). Android delivers the volume key to Flutter itself.
+  void onStoriesVolumeUp();
 }

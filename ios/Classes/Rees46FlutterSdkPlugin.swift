@@ -11,12 +11,16 @@ public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplication
   private var messenger: FlutterBinaryMessenger?
   private var api: PersonalizationHostApiImpl?
   private var flutterApi: PersonalizationFlutterApi?
+  private var storiesApi: PersonalizationStoriesFlutterApi?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let instance = Rees46FlutterSdkPlugin()
     instance.messenger = registrar.messenger()
     instance.api = PersonalizationHostApiImpl()
     instance.flutterApi = PersonalizationFlutterApi(binaryMessenger: registrar.messenger())
+    let storiesApi = PersonalizationStoriesFlutterApi(binaryMessenger: registrar.messenger())
+    instance.storiesApi = storiesApi
+    StoriesAudio.shared.onVolumeUp = { storiesApi.onStoriesVolumeUp { _ in } }
     PersonalizationHostApiSetup.setUp(
       binaryMessenger: registrar.messenger(),
       api: instance.api
@@ -758,6 +762,33 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
         completion(.success(opened))
       }
     }
+  }
+
+  // MARK: - Stories viewer (UI kit)
+
+  func getStoriesSeen(shop: String) throws -> [String: [String]] {
+    return StoriesSeenStore.read(shop: shop)
+  }
+
+  func setStorySlideSeen(shop: String, storyId: String, slideId: String) throws {
+    StoriesSeenStore.add(shop: shop, storyId: storyId, slideId: slideId)
+  }
+
+  func getCacheDirectory() throws -> String {
+    let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+    return (caches ?? FileManager.default.temporaryDirectory).path
+  }
+
+  func beginStoriesAudio() throws {
+    StoriesAudio.shared.begin()
+  }
+
+  func updateStoriesAudio(muted: Bool) throws {
+    StoriesAudio.shared.update(muted: muted)
+  }
+
+  func endStoriesAudio() throws {
+    StoriesAudio.shared.end()
   }
 
   private static func _profileResponseToDict(_ p: GetProfileResponse) -> [String: Any] {

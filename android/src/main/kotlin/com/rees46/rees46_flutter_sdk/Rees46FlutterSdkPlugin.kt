@@ -538,6 +538,27 @@ class Rees46FlutterSdkPlugin :
         }
     }
 
+    // region stories viewer (UI kit)
+
+    override fun getStoriesSeen(shop: String): Map<String, List<String>> =
+        StoriesSeenStore.read(applicationContext, shop)
+
+    override fun setStorySlideSeen(shop: String, storyId: String, slideId: String) =
+        StoriesSeenStore.add(applicationContext, shop, storyId, slideId)
+
+    override fun getCacheDirectory(): String = applicationContext.cacheDir.absolutePath
+
+    // The audio session calls are iOS-only. On Android video_player plays with
+    // `mixWithOthers: true` and so never requests the audio focus: a muted video leaves the
+    // user's music alone, and there is no session to restore.
+    override fun beginStoriesAudio() = Unit
+
+    override fun updateStoriesAudio(muted: Boolean) = Unit
+
+    override fun endStoriesAudio() = Unit
+
+    // endregion
+
     override fun getSid(shopId: String?): String = sdk(shopId).getSid()
 
     override fun getDid(shopId: String?): String? = sdk(shopId).getDid()

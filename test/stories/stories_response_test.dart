@@ -141,11 +141,28 @@ final Map<String, dynamic> _block = <String, dynamic>{
 
 class _FakeHostApi extends pigeon.PersonalizationHostApi {
   final List<(String, String?)> requests = <(String, String?)>[];
+  final Map<String, Map<String, List<String>>> seen =
+      <String, Map<String, List<String>>>{};
 
   @override
   Future<String> getStories(String code, String? shopId) async {
     requests.add((code, shopId));
     return jsonEncode(_block);
+  }
+
+  @override
+  Future<Map<String, List<String>>> getStoriesSeen(String shop) async =>
+      seen[shop] ?? <String, List<String>>{};
+
+  @override
+  Future<void> setStorySlideSeen(
+    String shop,
+    String storyId,
+    String slideId,
+  ) async {
+    (seen[shop] ??= <String, List<String>>{})
+        .putIfAbsent(storyId, () => <String>[])
+        .add(slideId);
   }
 }
 
@@ -268,5 +285,31 @@ void main() {
     ]);
     expect(block.stories, hasLength(2));
     expect(() => sdk.getStories(''), throwsArgumentError);
+  });
+
+  test('seen slides go through the bridge, per shop', () async {
+    final api = _FakeHostApi();
+    final sdk = PersonalizationSdk(api: api, shopId: 'shop-a');
+
+    await sdk.setStorySlideSeen('shop-a', '40', '36');
+    await sdk.setStorySlideSeen('shop-a', '40', '37');
+
+    expect(await sdk.getStoriesSeen('shop-a'), <String, List<String>>{
+      '40': <String>['36', '37'],
+    });
+    expect(await sdk.getStoriesSeen('shop-b'), isEmpty);
+  });
+
+  test('numbers are read as decimals; the default duration is 10 s', () {
+    final product = StoryProduct.fromJson(const <String, dynamic>{
+      'id': 1,
+      'price': '99.9',
+      'discount_percent': '12.5',
+      'price_with_promocode': 89.5,
+    });
+    expect(product.price, 99.9);
+    expect(product.discountPercent, 12.5);
+    expect(product.priceWithPromocode, 89.5);
+    expect(StorySlide.defaultDurationSeconds, 10);
   });
 }

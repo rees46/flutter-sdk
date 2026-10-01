@@ -361,4 +361,13 @@ extension PersonalizationStoriesBridge on PersonalizationSdk {
 
   /// Opens [url] with the system handler; `false` when nothing could open it.
   Future<bool> openUrl(String url) => _api.openUrl(url);
+
+  /// The stories slides seen on this device for [shop] (slide ids by story id), from the
+  /// plugin's own persistent store.
+  Future<Map<String, List<String>>> getStoriesSeen(String shop) =>
+      _api.getStoriesSeen(shop);
+
+  /// Records slide [slideId] of story [storyId] as seen for [shop].
+  Future<void> setStorySlideSeen(String shop, String storyId, String slideId) =>
+      _api.setStorySlideSeen(shop, storyId, slideId);
 }
