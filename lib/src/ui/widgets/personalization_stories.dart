@@ -230,8 +230,9 @@ class PersonalizationStories extends StatefulWidget {
   /// Показать сторис блока [code] без ленты: загрузить блок и открыть просмотр — со
   /// сторис [startStoryId] (нет такой — с первой). Тексты, колбэки и [controller] — как
   /// у виджета. Ошибка (пустой код, магазин не зарегистрирован за 15 с или неоднозначен,
-  /// загрузка не удалась или дольше 15 с) уходит в [onError], просмотр не открывается.
-  /// Future завершается, когда просмотр закроют.
+  /// загрузка не удалась или дольше 15 с, в блоке нет сторис) уходит в [onError],
+  /// просмотр не открывается, Future завершается. Иначе Future завершается, когда
+  /// просмотр закроют.
   static Future<void> show(
     BuildContext context, {
     required String code,
@@ -284,12 +285,15 @@ class PersonalizationStories extends StatefulWidget {
     try {
       resolved = await _resolve(sdk, shopId);
       stories = await _fetch(resolved, code);
+      if (stories.isEmpty) {
+        throw StateError('stories block "$code" has no stories');
+      }
     } catch (error) {
       debugPrint('PersonalizationStories.show: $code — $error');
       onError?.call(error);
       return;
     }
-    if (stories.isEmpty || !context.mounted) return;
+    if (!context.mounted) return;
     final index = stories.indexWhere((story) => story.id == startStoryId);
     await _present(
       context,

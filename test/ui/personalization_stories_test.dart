@@ -727,6 +727,45 @@ void main() {
       });
     });
 
+    testWidgets('show() reports an empty block and completes', (tester) async {
+      final api = _FakeHostApi(jsonEncode(<String, dynamic>{'stories': []}));
+      await tester.pumpWidget(_host(const Placeholder()));
+      final errors = <Object>[];
+      var done = false;
+      unawaited(
+        PersonalizationStories.show(
+          tester.element(find.byType(Placeholder)),
+          code: 'block',
+          sdk: PersonalizationSdk(api: api, shopId: 'shop'),
+          onError: errors.add,
+        ).then((_) => done = true),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(errors.single, isA<StateError>());
+      expect(done, isTrue);
+      expect(find.byType(PersonalizationStoryViewer), findsNothing);
+    });
+
+    testWidgets('show() with an unknown start story opens the first', (
+      tester,
+    ) async {
+      final api = _FakeHostApi(_blockJson());
+      await tester.pumpWidget(_host(const Placeholder()));
+      unawaited(
+        PersonalizationStories.show(
+          tester.element(find.byType(Placeholder)),
+          code: 'block',
+          sdk: PersonalizationSdk(api: api, shopId: 'shop'),
+          startStoryId: 'missing',
+          imageProvider: _offline,
+        ),
+      );
+      await tester.pump();
+      await _closed(tester);
+      expect(find.text('Product 1'), findsOneWidget);
+    });
+
     testWidgets('show() opens a block without the bar', (tester) async {
       final api = _FakeHostApi(_blockJson());
       await tester.pumpWidget(_host(const Placeholder()));
