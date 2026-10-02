@@ -360,9 +360,12 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     final onClose = widget.onClose;
     if (onClose != null) {
       onClose();
-    } else {
-      Navigator.maybePop(context);
+      return;
     }
+    // Не maybePop: при раскрытой шторке PopScope держит маршрут, а закрыть просмотр
+    // нужно и из карусели товаров.
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop();
   }
 
   /// Закрыть просмотр, потом [action] — переход по ссылке или к товару.
@@ -499,6 +502,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _sync();
     if (storyMediaOf(_playback.slide) == StoryMedia.video) {
       // Видео повторяет загрузку и само.
+      _autoRetry?.cancel();
       _autoRetry = Timer(_videoRetry, _retry);
     }
     setState(() {});
@@ -520,7 +524,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     final video = _video;
     if (video == null) return;
     final value = video.value;
-    if (value.hasError) return _failed(_playback.generation);
+    if (value.hasError) {
+      video.removeListener(_onVideo);
+      return _failed(_playback.generation);
+    }
     _playback.syncVideoPosition(value.position);
     _progress.value = _playback.progress;
     final ended =

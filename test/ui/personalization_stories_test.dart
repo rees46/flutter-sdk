@@ -289,6 +289,43 @@ void main() {
       expect(find.text('Used products'), findsOneWidget, reason: 'closed');
       expect(find.text('Slide 70'), findsOneWidget, reason: 'no navigation');
     });
+
+    testWidgets(
+      'a carousel product closes the viewer even with the sheet open',
+      (tester) async {
+        final products = <String>[];
+        final api = _FakeHostApi(null);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  PersonalizationStoryViewer.route(
+                    PersonalizationStoryViewer(
+                      stories: <Story>[story],
+                      code: 'block',
+                      sdk: PersonalizationSdk(api: api),
+                      imageProvider: _offline,
+                      onProductClick: (product) => products.add(product.id),
+                    ),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await _closed(tester);
+        await tester.tap(find.text('Used products'));
+        await tester.pump();
+        await tester.tap(find.text('Mouse'));
+        await _closed(tester);
+        expect(find.byType(PersonalizationStoryViewer), findsNothing);
+        expect(products, <String>['m1']);
+        expect(api.clicks, <String>['7/70/block']);
+      },
+    );
   });
 
   group('PersonalizationStories', () {
