@@ -37,7 +37,8 @@ import 'stories_support.dart';
 /// - часы слайда стартуют, когда медиа готово; не загрузилось или не успело за 10 с — пауза
 ///   и кнопка [retryText]; видео ещё и само повторяет загрузку через 15 с;
 /// - видео длится по своей реальной длине, прогресс идёт за воспроизведением и стоит на
-///   подгрузке; видео кэшируется на диске ([StoriesMediaCache]), следующий слайд
+///   подгрузке; видео не ждёт загрузки целиком: играет по сети, пока кэш на диске
+///   ([StoriesMediaCache]) заполняется в фоне, и из файла в следующий раз; следующий слайд
 ///   подгружается заранее. Звук выключен при первом открытии, выбор помнится до конца
 ///   процесса, кнопка громкости «вверх» включает звук ([StoriesSound]).
 ///
@@ -451,11 +452,15 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     ).then((_) => failed ? _failed(generation) : _ready(generation));
   }
 
+  /// Видео из кэша, а нет файла — сразу по сети, пока кэш заполняется в фоне: загрузка
+  /// целиком не ждётся. Готово — когда плеер готов играть.
   Future<void> _loadVideo(String url, int generation) async {
     try {
       await StoriesSound.instance.beforeVideo();
-      final file = await StoriesMediaCache.instance.fetch(url);
+      final cache = StoriesMediaCache.instance;
+      final file = await cache.cached(url);
       if (!_current(generation)) return;
+      if (file == null) cache.fill(url);
       final options = VideoPlayerOptions(mixWithOthers: true);
       final video = file != null
           ? VideoPlayerController.file(file, videoPlayerOptions: options)
