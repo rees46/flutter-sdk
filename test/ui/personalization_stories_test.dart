@@ -639,6 +639,31 @@ void main() {
       expect(done, isTrue);
     });
 
+    testWidgets('a controller handed to a loaded block runs its open', (
+      tester,
+    ) async {
+      final controller = PersonalizationStoriesController();
+      unawaited(controller.openStory('2'));
+      final sdk = PersonalizationSdk(api: _FakeHostApi(_blockJson()));
+      Widget block(PersonalizationStoriesController? controller) => _host(
+        PersonalizationStories(
+          code: 'block',
+          sdk: sdk,
+          controller: controller,
+          imageProvider: _offline,
+        ),
+      );
+      await tester.pumpWidget(block(null));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Story 2'), findsOneWidget);
+      expect(find.byType(PersonalizationStoryViewer), findsNothing);
+
+      await tester.pumpWidget(block(controller));
+      await _closed(tester);
+      expect(find.text('Product 2'), findsOneWidget);
+    });
+
     testWidgets('open with the viewer open turns to that story inside it', (
       tester,
     ) async {

@@ -420,15 +420,21 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
   @override
   void didUpdateWidget(PersonalizationStories oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
+    final controllerChanged = oldWidget.controller != widget.controller;
+    if (controllerChanged) {
       if (oldWidget.controller?._bar == this) oldWidget.controller?._bar = null;
       widget.controller?._bar = this;
-      if (!_loading) widget.controller?._flush();
     }
     if (oldWidget.sdk != widget.sdk ||
         oldWidget.shopId != widget.shopId ||
         oldWidget.code != widget.code) {
       _load();
+    } else if (controllerChanged) {
+      // Новый контроллер мог ждать загрузки, а блок уже загружен. После кадра: открытие
+      // просмотра посреди сборки запрещено.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_loading) widget.controller?._flush();
+      });
     }
   }
 
