@@ -36,7 +36,8 @@ import 'stories_support.dart';
 /// - пауза и когда приложение свёрнуто или потеряло фокус, и когда просмотр закрыт другим
 ///   экраном, и по [paused] от хоста; время слайда в паузе не идёт;
 /// - часы слайда стартуют, когда медиа готово; не загрузилось или не успело за 10 с — пауза
-///   и кнопка [retryText]; видео ещё и само повторяет загрузку через 15 с;
+///   и кнопка [retryText]; видео ещё и само повторяет загрузку через 15 с. Оба отсчёта в
+///   фоне и под другим экраном стоят и потом досчитывают остаток;
 /// - видео длится по своей реальной длине, прогресс идёт за воспроизведением и стоит на
 ///   подгрузке; видео не ждёт загрузки целиком: играет по сети, пока кэш на диске
 ///   ([StoriesMediaCache]) заполняется в фоне, и из файла в следующий раз; следующий слайд
@@ -199,8 +200,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   VideoPlayerController? _video;
   bool _videoReady = false;
   bool _videoPlaying = false;
-  Timer? _timeout;
-  Timer? _autoRetry;
+
+  /// 10 с на готовность медиа и 15 с до самоповтора видео; в фоне замирают.
+  StoriesTimer? _timeout;
+  StoriesTimer? _autoRetry;
   bool _closing = false;
 
   static const Duration _turn = Duration(milliseconds: 300);
@@ -287,8 +290,29 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   /// Поставить или снять паузу [reason]; часы и видео меняются только на переходе.
   void _setPaused(StoriesPauseReason reason, bool paused) {
     final changed = paused ? _playback.pause(reason) : _playback.resume(reason);
+    if (reason == StoriesPauseReason.background ||
+        reason == StoriesPauseReason.covered) {
+      _freezeTimers();
+    }
     if (changed) _sync();
   }
+
+  /// Просмотра не видно: приложение в фоне или сверху другой экран.
+  bool get _hidden =>
+      _playback.pausedBy(StoriesPauseReason.background) ||
+      _playback.pausedBy(StoriesPauseReason.covered);
+
+  /// Пока просмотра не видно, таймеры готовности и самоповтора стоят; потом
+  /// досчитывают остаток.
+  void _freezeTimers() {
+    for (final timer in <StoriesTimer?>[_timeout, _autoRetry]) {
+      if (timer == null) continue;
+      _hidden ? timer.freeze() : timer.resume();
+    }
+  }
+
+  StoriesTimer _timer(Duration duration, void Function() onFire) =>
+      StoriesTimer(duration, onFire, frozen: _hidden);
 
   /// Часы и видео идут, только пока слайд не стоит. Вызывается на переходах, не на кадре.
   void _sync() {
@@ -440,10 +464,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       case StoryMedia.none:
         _ready(generation);
       case StoryMedia.image:
-        _timeout = Timer(_readyTimeout, () => _failed(generation));
+        _timeout = _timer(_readyTimeout, () => _failed(generation));
         _loadImage(slide.background, generation);
       case StoryMedia.video:
-        _timeout = Timer(_readyTimeout, () => _failed(generation));
+        _timeout = _timer(_readyTimeout, () => _failed(generation));
         _loadVideo(slide.background, generation);
     }
   }
@@ -515,7 +539,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     if (storyMediaOf(_playback.slide) == StoryMedia.video) {
       // Видео повторяет загрузку и само.
       _autoRetry?.cancel();
-      _autoRetry = Timer(_videoRetry, _retry);
+      _autoRetry = _timer(_videoRetry, _retry);
     }
     setState(() {});
   }

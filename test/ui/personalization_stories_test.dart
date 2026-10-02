@@ -23,6 +23,19 @@ final ImageProvider _pixel = MemoryImage(
 
 ImageProvider _offline(String url) => _pixel;
 
+/// An image that never arrives: its slide waits for the readiness timeout.
+class _NeverImage extends ImageProvider<_NeverImage> {
+  @override
+  Future<_NeverImage> obtainKey(ImageConfiguration configuration) =>
+      Future<_NeverImage>.value(this);
+
+  @override
+  ImageStreamCompleter loadImage(
+    _NeverImage key,
+    ImageDecoderCallback decode,
+  ) => OneFrameImageStreamCompleter(Completer<ImageInfo>().future);
+}
+
 /// A product slide (no background: no media to wait for) with numeric id [id].
 Map<String, dynamic> _productSlide(
   Object id,
@@ -302,6 +315,46 @@ void main() {
       await _wait(tester, const Duration(seconds: 6));
       await tester.pump();
       expect(find.text('Slide 71'), findsOneWidget);
+    });
+
+    testWidgets('the readiness timeout stands still in the background', (
+      tester,
+    ) async {
+      final stuck = Story.fromJson(<String, dynamic>{
+        'id': 9,
+        'name': 'Stuck',
+        'avatar': '',
+        'slides': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 90,
+            'duration': 5,
+            'type': 'image',
+            'background': 'https://cdn.example/90.jpg',
+            'elements': <Object>[],
+          },
+        ],
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PersonalizationStoryViewer(
+            stories: <Story>[stuck],
+            imageProvider: (_) => _NeverImage(),
+            onClose: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 6));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 30));
+      expect(find.text('Retry'), findsNothing);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('Retry'), findsNothing, reason: '9 of 10 seconds');
+      await tester.pump(const Duration(milliseconds: 1200));
+      await tester.pump();
+      expect(find.text('Retry'), findsOneWidget);
     });
 
     testWidgets('the open sheet pauses; a tap outside only closes it', (

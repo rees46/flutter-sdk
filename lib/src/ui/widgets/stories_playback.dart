@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../stories/stories_response.dart';
 
 /// Почему стоит текущий слайд. Часы слайда идут, только когда причин нет.
@@ -325,5 +327,58 @@ class StoriesPlayback {
       ..remove(StoriesPauseReason.error)
       ..add(StoriesPauseReason.loading);
     (_seen[story.id] ??= <String>{}).add(slide.id);
+  }
+}
+
+/// Таймер просмотра, который замирает: пока приложение в фоне или просмотр закрыт другим
+/// экраном, время не идёт, а после возврата досчитывается остаток ([freeze], [resume]).
+///
+/// Считает шагами по [step] — так он идёт и на подменённых часах тестов; на заморозке
+/// теряется не больше шага.
+class StoriesTimer {
+  /// Через [duration] — [onFire]; [frozen] — создать замороженным.
+  StoriesTimer(Duration duration, void Function() onFire, {bool frozen = false})
+    : _left = duration,
+      _onFire = onFire {
+    if (!frozen) _run();
+  }
+
+  static const Duration step = Duration(milliseconds: 100);
+
+  final void Function() _onFire;
+  Duration _left;
+  Timer? _timer;
+  bool _done = false;
+
+  /// Сколько осталось.
+  Duration get remaining => _left;
+
+  /// Таймер ещё не сработал и не отменён.
+  bool get isActive => !_done;
+
+  /// Остановить отсчёт, сохранив остаток.
+  void freeze() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  /// Продолжить отсчёт с остатка.
+  void resume() {
+    if (_done || _timer != null) return;
+    _run();
+  }
+
+  void cancel() {
+    _done = true;
+    freeze();
+  }
+
+  void _run() {
+    _timer = Timer.periodic(step, (_) {
+      _left -= step;
+      if (_left > Duration.zero) return;
+      cancel();
+      _onFire();
+    });
   }
 }
