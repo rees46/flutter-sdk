@@ -277,7 +277,44 @@ void main() {
     });
   });
 
-  testWidgets('a viewed cover rings solid; a pinned one keeps its segments', (
+  test('ring colours: viewed solid, pinned always warning, seen by index', () {
+    const c = PersonalizationColors.light;
+    List<Color> ring(
+      PersonalizationStoryCoverState state, {
+      bool pinned = false,
+      Set<int> seen = const <int>{},
+    }) => PersonalizationStoryCover.ringColors(
+      c,
+      state: state,
+      pinned: pinned,
+      segments: 4,
+      seen: seen,
+    );
+
+    expect(ring(PersonalizationStoryCoverState.viewed), [c.neutralSubtle]);
+    expect(
+      ring(PersonalizationStoryCoverState.viewed, pinned: true, seen: {0, 1}),
+      [c.semanticWarning],
+      reason: 'a fully viewed pinned story: a plain warning ring',
+    );
+    expect(ring(PersonalizationStoryCoverState.unviewed, seen: {1, 3}), [
+      c.buttonPrimary,
+      c.buttonPrimaryDisabled,
+      c.buttonPrimary,
+      c.buttonPrimaryDisabled,
+    ]);
+    expect(
+      ring(PersonalizationStoryCoverState.unviewed, pinned: true, seen: {0}),
+      [
+        c.buttonPrimaryDisabled,
+        c.semanticWarning,
+        c.semanticWarning,
+        c.semanticWarning,
+      ],
+    );
+  });
+
+  testWidgets('a viewed cover rings solid; a partly seen one in arcs', (
     tester,
   ) async {
     const light = PersonalizationColors.light;
@@ -302,40 +339,30 @@ void main() {
           alignment: Alignment.topLeft,
           child: PersonalizationStoryCover(
             state: PersonalizationStoryCoverState.viewed,
+            pinned: true,
             segments: 5,
-            seenSegments: 2,
+            seenSegments: {0, 1, 2, 3, 4},
           ),
         ),
       ),
     );
-    expect(ring(), paints..something(drawn(#drawOval, light.neutralSubtle)));
+    expect(ring(), paints..something(drawn(#drawOval, light.semanticWarning)));
     expect(ring(), isNot(paints..arc()));
 
     await tester.pumpWidget(
       _host(
         const Align(
           alignment: Alignment.topLeft,
-          child: PersonalizationStoryCover(
-            state: PersonalizationStoryCoverState.viewed,
-            pinned: true,
-            segments: 5,
-            seenSegments: 2,
-          ),
+          child: PersonalizationStoryCover(segments: 3, seenSegments: {2}),
         ),
       ),
     );
     expect(
       ring(),
       paints
-        ..something(drawn(#drawArc, light.buttonPrimaryDisabled))
-        ..something(drawn(#drawArc, light.buttonPrimaryDisabled))
-        ..something(drawn(#drawArc, light.semanticWarning))
-        ..something(drawn(#drawArc, light.semanticWarning))
-        ..something(drawn(#drawArc, light.semanticWarning)),
-    );
-    expect(
-      ring(),
-      isNot(paints..something(drawn(#drawOval, light.neutralSubtle))),
+        ..something(drawn(#drawArc, light.buttonPrimary))
+        ..something(drawn(#drawArc, light.buttonPrimary))
+        ..something(drawn(#drawArc, light.buttonPrimaryDisabled)),
     );
   });
 
@@ -350,7 +377,7 @@ void main() {
             label: 'Pinned',
             pinned: true,
             segments: 5,
-            seenSegments: 2,
+            seenSegments: {0, 1},
           ),
         ),
       ),
@@ -378,6 +405,35 @@ void main() {
       const Size(88, 88 + 8 + 16),
       reason: 'the skeleton keeps the height of a labelled preview',
     );
+  });
+
+  testWidgets('a cover label takes up to two lines, as wide as the cover', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const Align(
+          alignment: Alignment.topLeft,
+          child: PersonalizationStoryPreview(
+            label: 'A label far too long for one line or even two of them',
+          ),
+        ),
+      ),
+    );
+    final text = tester.widget<Text>(find.byType(Text));
+    expect(text.maxLines, 2);
+    expect(text.overflow, TextOverflow.ellipsis);
+    expect(text.textAlign, TextAlign.center);
+    expect(
+      tester.getSize(find.byType(PersonalizationStoryPreview)),
+      const Size(88, 88 + 8 + 32),
+    );
+  });
+
+  test('a text block without a line spacing takes the preset for its size', () {
+    expect(PersonalizationStoryTextBlock.presetLineHeight(48), 1);
+    expect(PersonalizationStoryTextBlock.presetLineHeight(30), 1.2);
+    expect(PersonalizationStoryTextBlock.presetLineHeight(14), 1.2);
   });
 
   testWidgets('progress fills the passed segments and part of the current', (

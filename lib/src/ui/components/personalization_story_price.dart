@@ -49,7 +49,7 @@ class PersonalizationStoryPrice extends StatefulWidget {
     this.oldPrice,
     this.discount,
     this.promoCode,
-    this.promoCodeCaption = 'Promo code',
+    this.promoCaption = 'Promo code',
     this.copiedText = 'Copied',
     this.copiedToastPosition = PersonalizationToastPosition.top,
     this.onPromoCopied,
@@ -71,7 +71,7 @@ class PersonalizationStoryPrice extends StatefulWidget {
   final String? promoCode;
 
   /// Подпись над кодом.
-  final String promoCodeCaption;
+  final String promoCaption;
 
   /// Текст тоста после копирования.
   final String copiedText;
@@ -327,7 +327,7 @@ class _PersonalizationStoryPriceState extends State<PersonalizationStoryPrice> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Text(
-                  widget.promoCodeCaption,
+                  widget.promoCaption,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,

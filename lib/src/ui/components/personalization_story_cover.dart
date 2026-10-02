@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../personalization_colors.dart';
 import '../personalization_theme.dart';
 import 'personalization_favorites_badge.dart';
 import 'personalization_story_shimmer.dart';
@@ -21,16 +22,17 @@ enum PersonalizationStoryCoverState { unviewed, viewed, skeleton }
 ///
 /// Круг 88. Кольцо — обводка 4 внутрь; картинка — круг 76 с отступом 6, то есть между
 /// ними зазор 2. Цвет кольца: Button/Primary у непросмотренной, Semantic/Warning у
-/// закреплённой — и после просмотра, Semantic/Neutral Subtle у просмотренной
-/// незакреплённой. Закреплённой в правом нижнем
-/// углу (x62, y62) — метка Favorites 24: звезда на Semantic/Warning. У заглушки кольцо и
-/// картинка переливаются градиентом (см. [PersonalizationStoryShimmer]).
+/// закреплённой — всегда, и после просмотра, Semantic/Neutral Subtle у просмотренной
+/// незакреплённой. Закреплённой в правом нижнем углу (x62, y62) — метка Favorites 24:
+/// звезда на Semantic/Warning, тоже всегда. У заглушки кольцо и картинка переливаются
+/// градиентом (см. [PersonalizationStoryShimmer]).
 ///
 /// Сегменты: при [segments] > 1 кольцо делится на столько дуг с небольшими зазорами —
-/// по дуге на слайд. Первые [seenSegments] — уже показанные слайды — красятся в
-/// Button/Primary Disabled (Brand/Primary 65%), остальные в цвет состояния. У
-/// просмотренной незакреплённой кольцо всегда сплошное, без дуг и зазоров, — так
-/// состояние Viewed нарисовано в макете.
+/// по дуге на слайд. Дуга i горит — Button/Primary Disabled (Brand/Primary 65%), — если
+/// слайд i просмотрен (его номер есть в [seenSegments]), остальные в цвете состояния.
+/// Просмотренная сторис рисуется сплошным кольцом без дуг и зазоров: незакреплённая —
+/// Neutral Subtle, как состояние Viewed в макете, закреплённая — Warning. Правило
+/// цветов — [ringColors].
 class PersonalizationStoryCover extends StatelessWidget {
   const PersonalizationStoryCover({
     super.key,
@@ -38,7 +40,7 @@ class PersonalizationStoryCover extends StatelessWidget {
     this.state = PersonalizationStoryCoverState.unviewed,
     this.pinned = false,
     this.segments = 0,
-    this.seenSegments = 0,
+    this.seenSegments = const <int>{},
     this.iconBuilder,
   });
 
@@ -46,14 +48,14 @@ class PersonalizationStoryCover extends StatelessWidget {
   final ImageProvider? image;
   final PersonalizationStoryCoverState state;
 
-  /// Закреплена магазином: кольцо Semantic/Warning (пока не просмотрена) и звезда.
+  /// Закреплена магазином: кольцо Semantic/Warning и звезда — и после просмотра.
   final bool pinned;
 
   /// На сколько дуг поделить кольцо; 0 и 1 — сплошное.
   final int segments;
 
-  /// Сколько первых дуг уже показано.
-  final int seenSegments;
+  /// Номера просмотренных слайдов — горящие дуги.
+  final Set<int> seenSegments;
 
   /// Как нарисовать звезду метки закреплённой: пакет не рисует SVG сам.
   final Widget Function(
@@ -66,6 +68,30 @@ class PersonalizationStoryCover extends StatelessWidget {
 
   static const double size = 88;
   static const double _ring = 4;
+
+  /// Цвета дуг кольца по порядку; одна — кольцо сплошное.
+  ///
+  /// - просмотренная незакреплённая — одно Neutral Subtle;
+  /// - просмотренная закреплённая — одно Warning, без горящих дуг;
+  /// - иначе цвет состояния (Warning у закреплённой, Button/Primary у остальных), а при
+  ///   [segments] > 1 дуга i — Button/Primary Disabled, если слайд i в [seen].
+  static List<Color> ringColors(
+    PersonalizationColors colors, {
+    required PersonalizationStoryCoverState state,
+    bool pinned = false,
+    int segments = 0,
+    Set<int> seen = const <int>{},
+  }) {
+    final viewed = state == PersonalizationStoryCoverState.viewed;
+    if (viewed && !pinned) return <Color>[colors.neutralSubtle];
+    final stateColor = pinned ? colors.semanticWarning : colors.buttonPrimary;
+    if (viewed || segments <= 1) return <Color>[stateColor];
+    return <Color>[
+      for (int i = 0; i < segments; i++)
+        seen.contains(i) ? colors.buttonPrimaryDisabled : stateColor,
+    ];
+  }
+
   static const double _imageInset = 6;
   static const double _badgeOffset = 62;
 
@@ -97,21 +123,13 @@ class PersonalizationStoryCover extends StatelessWidget {
       );
     }
 
-    // Просмотренная незакреплённая — сплошное кольцо Viewed; закреплённая остаётся
-    // в Warning и после просмотра.
-    final viewed = state == PersonalizationStoryCoverState.viewed && !pinned;
-    final stateColor = viewed
-        ? colors.neutralSubtle
-        : pinned
-        ? colors.semanticWarning
-        : colors.buttonPrimary;
-    final count = viewed ? 1 : math.max(1, segments);
-    final ringColors = <Color>[
-      for (int i = 0; i < count; i++)
-        count > 1 && i < seenSegments
-            ? colors.buttonPrimaryDisabled
-            : stateColor,
-    ];
+    final ring = ringColors(
+      colors,
+      state: state,
+      pinned: pinned,
+      segments: segments,
+      seen: seenSegments,
+    );
 
     return SizedBox.square(
       dimension: size,
@@ -120,7 +138,7 @@ class PersonalizationStoryCover extends StatelessWidget {
         children: <Widget>[
           Positioned.fill(
             child: CustomPaint(
-              painter: _RingPainter(colors: ringColors, segments: count),
+              painter: _RingPainter(colors: ring, segments: ring.length),
             ),
           ),
           Positioned.fill(

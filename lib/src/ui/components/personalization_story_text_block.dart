@@ -24,8 +24,9 @@ enum PersonalizationStoryTextSize {
 /// сервера со своей прозрачностью. Прозрачный — без полей и фона: текст прямо на картинке слайда.
 ///
 /// Кегль, интерлиньяж, цвет, выключка, жирность и курсив приходят с элементом; для текста
-/// хоста есть заготовки [size]. Цвет по умолчанию — Text/Light Primary на сплошном фоне
-/// и Text/Primary на прозрачном.
+/// хоста есть заготовки [size]. Кегль задан, а интерлиньяж нет — берётся заготовка для
+/// этого кегля ([presetLineHeight]), а не собственный шрифта. Цвет по умолчанию —
+/// Text/Light Primary на сплошном фоне и Text/Primary на прозрачном.
 class PersonalizationStoryTextBlock extends StatelessWidget {
   const PersonalizationStoryTextBlock({
     super.key,
@@ -67,6 +68,10 @@ class PersonalizationStoryTextBlock extends StatelessWidget {
   /// Блок со сплошным фоном: у фона есть непрозрачность.
   bool get solid => background != null && background!.a > 0;
 
+  /// Интерлиньяж заготовки для кегля [fontSize], в долях кегля: больше 30 — Large
+  /// (48/48), иначе Medium и Small (36/30, 24/20).
+  static double presetLineHeight(double fontSize) => fontSize > 30 ? 1 : 1.2;
+
   @override
   Widget build(BuildContext context) {
     final theme = PersonalizationTheme.of(context);
@@ -85,7 +90,10 @@ class PersonalizationStoryTextBlock extends StatelessWidget {
       style: TextStyle(
         fontSize: effectiveSize,
         height:
-            lineHeight ?? (fontSize == null ? presetHeight / presetSize : null),
+            lineHeight ??
+            (fontSize == null
+                ? presetHeight / presetSize
+                : presetLineHeight(effectiveSize)),
         fontWeight: weight,
         fontStyle: italic ? FontStyle.italic : FontStyle.normal,
         letterSpacing: 0,

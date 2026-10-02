@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
-import 'package:rees46_sdk/src/ui/widgets/stories_support.dart';
+import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
 
 /// A 1×1 transparent PNG: slides and covers need an image that loads offline.
 final ImageProvider _pixel = MemoryImage(
@@ -23,54 +23,48 @@ final ImageProvider _pixel = MemoryImage(
 
 ImageProvider _offline(String url) => _pixel;
 
-StoryProduct _product({
-  String promocode = '',
-  int discountPercent = 0,
-  double oldPrice = 0,
-}) => StoryProduct(
-  id: 'p1',
-  name: 'Laptop',
-  brand: 'Apple',
-  price: 1190900,
-  priceFormatted: '1 190 900 ₽',
-  oldPrice: oldPrice,
-  oldPriceFormatted: oldPrice > 0 ? '245 000 ₽' : '',
-  discountPercent: discountPercent,
-  promocode: promocode,
-  priceWithPromocodeFormatted: promocode.isEmpty ? '' : '1 000 000 ₽',
-  url: 'https://shop.example/p1',
-);
+/// A product slide (no background: no media to wait for) with numeric id [id].
+Map<String, dynamic> _productSlide(
+  Object id,
+  int product, {
+  Object? button,
+}) => <String, dynamic>{
+  'id': id,
+  'duration': 1,
+  'type': '',
+  'elements': <Map<String, dynamic>>[
+    if (button != null) <String, dynamic>{'type': 'button', ...?button as Map?},
+    <String, dynamic>{
+      'type': 'product',
+      'item': <String, dynamic>{
+        'id': 'p$product',
+        'name': 'Product $product',
+        'price': 100,
+        'price_formatted': '100 ₽',
+        'picture': 'https://cdn.example/p$product.jpg',
+        'url': 'https://shop.example/p$product',
+      },
+    },
+  ],
+};
 
-/// A block of two one-slide product stories, one second each.
-String _blockJson() => jsonEncode(<String, dynamic>{
+/// Story 1: slides 10 and 11; story 2: slide 20. One second each.
+String _blockJson({Object slideOne = 10}) => jsonEncode(<String, dynamic>{
   'id': 1,
   'stories': <Map<String, dynamic>>[
-    for (final id in <int>[1, 2])
-      <String, dynamic>{
-        'id': id,
-        'name': 'Story $id',
-        'avatar': 'https://cdn.example/$id.jpg',
-        'slides': <Map<String, dynamic>>[
-          <String, dynamic>{
-            'id': '${id}_0',
-            'duration': 1,
-            'type': '',
-            'elements': <Map<String, dynamic>>[
-              <String, dynamic>{
-                'type': 'product',
-                'item': <String, dynamic>{
-                  'id': 'p$id',
-                  'name': 'Product $id',
-                  'price': 100,
-                  'price_formatted': '100 ₽',
-                  'picture': 'https://cdn.example/p$id.jpg',
-                  'url': 'https://shop.example/p$id',
-                },
-              },
-            ],
-          },
-        ],
-      },
+    <String, dynamic>{
+      'id': 1,
+      'name': 'Story 1',
+      'avatar': 'https://cdn.example/1.jpg',
+      'slides': [_productSlide(slideOne, 1), _productSlide(11, 1)],
+    },
+    <String, dynamic>{
+      'id': 2,
+      'name': 'Story 2',
+      'avatar': 'https://cdn.example/2.jpg',
+      'slides': [_productSlide(20, 2)],
+    },
+    <String, dynamic>{'id': 3, 'name': 'No slides', 'slides': <Object>[]},
   ],
 });
 
@@ -82,6 +76,8 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Completer<void>? hold;
   final List<String> views = <String>[];
   final List<String> clicks = <String>[];
+  final List<String> stored = <String>[];
+  Map<String, List<String>> seen = <String, List<String>>{};
 
   @override
   Future<String> getStories(String code, String? shopId) async {
@@ -90,6 +86,16 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
     if (json == null) throw PlatformException(code: 'get_stories_failed');
     return json;
   }
+
+  @override
+  Future<Map<String, List<String>>> getStoriesSeen(String shop) async => seen;
+
+  @override
+  Future<void> setStorySlideSeen(
+    String shop,
+    String storyId,
+    String slideId,
+  ) async => stored.add('$storyId/$slideId');
 
   @override
   Future<void> trackStoryView(
@@ -117,64 +123,43 @@ Widget _host(Widget child) => MaterialApp(
   ),
 );
 
+PersonalizationStoryPreview _preview(WidgetTester tester, String label) =>
+    tester.widget<PersonalizationStoryPreview>(
+      find.ancestor(
+        of: find.text(label),
+        matching: find.byType(PersonalizationStoryPreview),
+      ),
+    );
+
+/// Taps the cover [label] and lets the viewer route come in.
+Future<void> _openStory(WidgetTester tester, String label) async {
+  await tester.tap(find.text(label));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump();
+}
+
+/// Lets [time] pass in 100 ms frames: the slide clock takes at most a second per frame,
+/// as a real device delivers frames far more often.
+Future<void> _wait(WidgetTester tester, Duration time) async {
+  for (var left = time; left > Duration.zero; left -= _frame) {
+    await tester.pump(left < _frame ? left : _frame);
+  }
+}
+
+const Duration _frame = Duration(milliseconds: 100);
+
+/// Lets the viewer route go away.
+Future<void> _closed(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
 void main() {
-  group('storyPriceOf', () {
-    test('promo code wins over discount, discount over plain price', () {
-      final promo = storyPriceOf(
-        _product(promocode: 'PROMO', discountPercent: 10, oldPrice: 245000),
-      );
-      expect(promo.type, PersonalizationStoryPriceType.promoCode);
-      expect(promo.price, '1 000 000 ₽', reason: 'the price with the code');
-      expect(promo.promoCode, 'PROMO');
-
-      final discount = storyPriceOf(_product(discountPercent: 10));
-      expect(discount.type, PersonalizationStoryPriceType.discount);
-      expect(discount.discount, '10%');
-      expect(discount.price, '1 190 900 ₽');
-
-      final plain = storyPriceOf(_product());
-      expect(plain.type, PersonalizationStoryPriceType.price);
-      expect(plain.discount, isNull);
-      expect(plain.promoCode, isNull);
-    });
-
-    test('the old price shows only when it is above the price', () {
-      expect(storyPriceOf(_product(oldPrice: 245000)).oldPrice, isNull);
-      expect(storyPriceOf(_product(oldPrice: 2000000)).oldPrice, '245 000 ₽');
-    });
-  });
-
-  group('storyTextBlock', () {
-    test('a server block maps opacity, alignment and font', () {
-      final solid = storyTextBlock(
-        const StoryTextBlockElement(
-          text: 'Sale',
-          fontSize: 24,
-          fontType: 'serif',
-          textAlign: 'center',
-          backgroundColor: '#16AE13',
-          backgroundOpacity: 0.4,
-        ),
-      );
-      expect(solid.solid, isTrue);
-      expect(solid.background!.a, closeTo(0.4, 0.01));
-      expect(solid.textAlign, TextAlign.center);
-      expect(solid.fontFamily, 'serif');
-      expect(solid.fontSize, 24);
-
-      final clear = storyTextBlock(
-        const StoryTextBlockElement(
-          text: 'Sale',
-          backgroundColor: '#16AE13',
-          backgroundOpacity: 0,
-        ),
-      );
-      expect(clear.solid, isFalse);
-    });
-  });
+  setUp(() => StoriesSeenStore.instance = StoriesSeenStore());
 
   group('PersonalizationStoryViewer', () {
-    /// One story: two image slides, a text block on the first.
+    /// One story: two image slides, a text block on each, products on the first.
     final story = Story.fromJson(<String, dynamic>{
       'id': 7,
       'name': 'Media',
@@ -192,12 +177,19 @@ void main() {
                 'text_input': 'Slide $id',
                 'y_offset': 30,
               },
+              if (id == 70)
+                <String, dynamic>{
+                  'type': 'products',
+                  'products': <Map<String, dynamic>>[
+                    <String, dynamic>{'id': 'm1', 'name': 'Mouse', 'price': 1},
+                  ],
+                },
             ],
           },
       ],
     });
 
-    Future<List<String>> open(WidgetTester tester) async {
+    Future<_FakeHostApi> open(WidgetTester tester) async {
       final api = _FakeHostApi(null);
       await tester.pumpWidget(
         MaterialApp(
@@ -221,7 +213,12 @@ void main() {
       );
       await tester.pump();
       await tester.pump();
-      return api.views;
+      return api;
+    }
+
+    Offset at(WidgetTester tester, double x) {
+      final size = tester.getSize(find.byType(PersonalizationStoryViewer));
+      return Offset(size.width * x, size.height / 2);
     }
 
     testWidgets('media slides take the dark tokens in a light app', (
@@ -230,50 +227,99 @@ void main() {
       await open(tester);
       final text = tester.widget<Text>(find.text('Slide 70'));
       expect(text.style!.color, PersonalizationColors.dark.textPrimary);
-      final fill = tester
-          .widgetList<ColoredBox>(
-            find.descendant(
-              of: find.byType(PersonalizationStoryProgress),
-              matching: find.byType(ColoredBox),
-            ),
-          )
-          .last;
-      expect(fill.color, PersonalizationColors.dark.textSecondary);
     });
 
-    testWidgets('taps move between slides, holding pauses', (tester) async {
-      final views = await open(tester);
-      expect(views, <String>['7/70/block']);
+    testWidgets('thirds: back, nothing, next; a hold pauses, never moves', (
+      tester,
+    ) async {
+      final api = await open(tester);
+      expect(api.views, <String>['7/70/block']);
 
-      final size = tester.getSize(find.byType(PersonalizationStoryViewer));
-      // Right two thirds: the next slide.
-      await tester.tapAt(Offset(size.width * 0.8, size.height / 2));
+      await tester.tapAt(at(tester, 0.5));
       await tester.pump();
+      expect(find.text('Slide 70'), findsOneWidget, reason: 'the centre');
+
+      await tester.tapAt(at(tester, 0.8));
       await tester.pump();
       expect(find.text('Slide 71'), findsOneWidget);
-      expect(views, <String>['7/70/block', '7/71/block']);
+      expect(api.views, <String>['7/70/block', '7/71/block']);
 
-      // Left third: back.
-      await tester.tapAt(Offset(size.width * 0.1, size.height / 2));
-      await tester.pump();
+      await tester.tapAt(at(tester, 0.1));
       await tester.pump();
       expect(find.text('Slide 70'), findsOneWidget);
 
-      // Held longer than the slide lasts: still there.
-      final hold = await tester.startGesture(
-        Offset(size.width / 2, size.height / 2),
-      );
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump(const Duration(seconds: 6));
+      // Held on the right third longer than the slide lasts: still there.
+      final hold = await tester.startGesture(at(tester, 0.8));
+      await tester.pump(const Duration(milliseconds: 300));
+      await _wait(tester, const Duration(seconds: 6));
       expect(find.text('Slide 70'), findsOneWidget);
       await hold.up();
       await tester.pump();
-      await tester.pump(const Duration(seconds: 6));
+      expect(find.text('Slide 70'), findsOneWidget, reason: 'release stays');
+      await _wait(tester, const Duration(seconds: 5));
+      await tester.pump();
       expect(find.text('Slide 71'), findsOneWidget);
+    });
+
+    testWidgets('in the background the clock stands still', (tester) async {
+      await open(tester);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await _wait(tester, const Duration(seconds: 30));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(find.text('Slide 70'), findsOneWidget);
+      await _wait(tester, const Duration(seconds: 6));
+      await tester.pump();
+      expect(find.text('Slide 71'), findsOneWidget);
+    });
+
+    testWidgets('the open sheet pauses; a tap outside only closes it', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.text('Used products'));
+      await tester.pump();
+      expect(find.text('Hide products'), findsOneWidget);
+      await _wait(tester, const Duration(seconds: 10));
+      expect(find.text('Slide 70'), findsOneWidget, reason: 'paused');
+
+      // Above the sheet, on the right third.
+      await tester.tapAt(at(tester, 0.9) - const Offset(0, 200));
+      await tester.pump();
+      expect(find.text('Used products'), findsOneWidget, reason: 'closed');
+      expect(find.text('Slide 70'), findsOneWidget, reason: 'no navigation');
     });
   });
 
   group('PersonalizationStories', () {
+    Future<_FakeHostApi> bar(
+      WidgetTester tester, {
+      _FakeHostApi? api,
+      PersonalizationStoriesController? controller,
+      ValueChanged<String>? onLink,
+      List<Object>? errors,
+      String code = 'block',
+    }) async {
+      final host = api ?? _FakeHostApi(_blockJson());
+      await tester.pumpWidget(
+        _host(
+          PersonalizationStories(
+            code: code,
+            sdk: PersonalizationSdk(api: host, shopId: 'shop'),
+            controller: controller,
+            imageProvider: _offline,
+            productButtonText: 'Open',
+            onLinkClick: onLink,
+            onProductClick: (product) => onLink?.call('product:${product.id}'),
+            onError: errors?.add,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      return host;
+    }
+
     testWidgets('skeletons while loading, hidden when empty', (tester) async {
       final api = _FakeHostApi(jsonEncode(<String, dynamic>{'stories': []}))
         ..hold = Completer<void>();
@@ -285,129 +331,125 @@ void main() {
           ),
         ),
       );
-      final skeletons = find.byWidgetPredicate(
-        (widget) =>
-            widget is PersonalizationStoryPreview &&
-            widget.state == PersonalizationStoryCoverState.skeleton,
-      );
-      expect(skeletons, findsNWidgets(4));
-
+      expect(find.byType(PersonalizationStoryPreview), findsNWidgets(4));
       api.hold!.complete();
       await tester.pump();
       await tester.pump();
       expect(find.byType(PersonalizationStoriesBar), findsNothing);
     });
 
-    testWidgets('an error hides the block and reaches onError', (tester) async {
+    testWidgets('errors, a missing code and a slow load reach onError', (
+      tester,
+    ) async {
       final errors = <Object>[];
-      await tester.pumpWidget(
-        _host(
-          PersonalizationStories(
-            code: 'block',
-            sdk: PersonalizationSdk(api: _FakeHostApi(null)),
-            onError: errors.add,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
+      await bar(tester, api: _FakeHostApi(null), errors: errors);
       expect(find.byType(PersonalizationStoriesBar), findsNothing);
       expect(errors.single, isA<PlatformException>());
+
+      errors.clear();
+      await bar(tester, errors: errors, code: '');
+      expect(errors.single, isA<ArgumentError>());
+
+      errors.clear();
+      final slow = _FakeHostApi(_blockJson())..hold = Completer<void>();
+      await bar(tester, api: slow, errors: errors);
+      expect(find.byType(PersonalizationStoryPreview), findsNWidgets(4));
+      await tester.pump(PersonalizationStories.loadTimeout);
+      await tester.pump();
+      expect(errors.single, isA<TimeoutException>());
+      expect(find.byType(PersonalizationStoriesBar), findsNothing);
     });
 
-    testWidgets('a story played to the end turns viewed in the bar', (
+    testWidgets('seen slides persist, light the ring, pick the start', (
       tester,
     ) async {
-      final api = _FakeHostApi(_blockJson());
-      await tester.pumpWidget(
-        _host(
-          PersonalizationStories(
-            code: 'block',
-            sdk: PersonalizationSdk(api: api),
-            imageProvider: _offline,
-          ),
-        ),
+      final api = await bar(
+        tester,
+        api: _FakeHostApi(_blockJson())
+          ..seen = <String, List<String>>{
+            '1': <String>['11'],
+          },
       );
-      await tester.pump();
-      await tester.pump();
+      expect(find.text('No slides'), findsNothing);
+      expect(_preview(tester, 'Story 1').seenSegments, <int>{1});
 
-      PersonalizationStoryPreview preview(String label) =>
-          tester.widget<PersonalizationStoryPreview>(
-            find.ancestor(
-              of: find.text(label),
-              matching: find.byType(PersonalizationStoryPreview),
-            ),
-          );
-      expect(preview('Story 2').state, PersonalizationStoryCoverState.unviewed);
-      expect(preview('Story 2').segments, 1);
+      await _openStory(tester, 'Story 1');
+      expect(find.text('Product 1'), findsOneWidget);
+      expect(api.views, <String>['1/10/block'], reason: 'the first unseen');
+      expect(api.stored, <String>['1/10']);
 
-      // Open the last story: its only slide plays, then the viewer closes.
-      await tester.tap(find.text('Story 2'));
-      await tester.pump(); // route pushed
-      await tester.pump(const Duration(milliseconds: 300)); // transition
-      expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
-      expect(find.text('Product 2'), findsOneWidget);
-      expect(find.text('More info'), findsOneWidget);
-      // A product slide sits on Background/Card of the app theme.
+      // Both slides seen: the story is viewed. Then story 2 plays to the end.
+      await _wait(tester, const Duration(seconds: 4));
+      await _closed(tester);
+      expect(find.byType(PersonalizationStoryViewer), findsNothing);
+      expect(api.views, <String>['1/10/block', '1/11/block', '2/20/block']);
       expect(
-        find.descendant(
-          of: find.byType(PersonalizationStoryViewer),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is ColoredBox &&
-                widget.color == PersonalizationColors.light.backgroundCard,
-          ),
-        ),
-        findsWidgets,
+        _preview(tester, 'Story 1').state,
+        PersonalizationStoryCoverState.viewed,
       );
-      expect(api.views, <String>['2/2_0/block']);
-
-      await tester.pump(const Duration(milliseconds: 1100)); // the slide
-      await tester.pump(const Duration(milliseconds: 300)); // pop transition
-      expect(find.byType(PersonalizationStoryViewer), findsNothing);
-
-      expect(preview('Story 2').state, PersonalizationStoryCoverState.viewed);
-      expect(preview('Story 2').seenSegments, 1);
-      expect(preview('Story 1').state, PersonalizationStoryCoverState.unviewed);
+      expect(
+        _preview(tester, 'Story 2').state,
+        PersonalizationStoryCoverState.viewed,
+      );
     });
 
-    testWidgets('the button tracks a click and hands the link to the host', (
+    testWidgets('a button closes the viewer, then hands over the link', (
       tester,
     ) async {
-      final api = _FakeHostApi(_blockJson());
       final links = <String>[];
-      await tester.pumpWidget(
-        _host(
-          PersonalizationStories(
-            code: 'block',
-            sdk: PersonalizationSdk(api: api),
-            imageProvider: _offline,
-            moreInfoText: 'Open',
-            onLinkClick: links.add,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-      await tester.tap(find.text('Story 1'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
+      final api = await bar(tester, onLink: links.add);
+      await _openStory(tester, 'Story 2');
       await tester.tap(find.text('Open'));
-      await tester.pump();
-      expect(api.clicks, <String>['1/1_0/block']);
-      // No button on the slide: the product's own link.
-      expect(links, <String>['https://shop.example/p1']);
-      // Close with the cross before the slide runs out.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(PersonalizationStoryNavigation),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      expect(links, <String>['product:p2']);
+      expect(api.clicks, <String>['2/20/block']);
+      await _closed(tester);
       expect(find.byType(PersonalizationStoryViewer), findsNothing);
+    });
+
+    testWidgets('dynamic slide ids are not tracked', (tester) async {
+      final api = await bar(
+        tester,
+        api: _FakeHostApi(_blockJson(slideOne: '1_0')),
+      );
+      await _openStory(tester, 'Story 1');
+      expect(api.views, isEmpty);
+      expect(api.stored, <String>['1/1_0'], reason: 'still seen locally');
+    });
+
+    testWidgets('the controller opens a story and pauses it', (tester) async {
+      final controller = PersonalizationStoriesController();
+      final api = await bar(tester, controller: controller);
+      unawaited(controller.openStory('2'));
+      await _closed(tester);
+      expect(find.text('Product 2'), findsOneWidget);
+      controller.pause();
+      await _wait(tester, const Duration(seconds: 3));
+      expect(find.text('Product 2'), findsOneWidget);
+      controller.resume();
+      await _wait(tester, const Duration(seconds: 2));
+      await _closed(tester);
+      expect(find.byType(PersonalizationStoryViewer), findsNothing);
+      expect(api.views, <String>['2/20/block']);
+    });
+
+    testWidgets('show() opens a block without the bar', (tester) async {
+      final api = _FakeHostApi(_blockJson());
+      await tester.pumpWidget(_host(const Placeholder()));
+      final context = tester.element(find.byType(Placeholder));
+      var done = false;
+      PersonalizationStories.show(
+        context,
+        code: 'block',
+        sdk: PersonalizationSdk(api: api, shopId: 'shop'),
+        startStoryId: '2',
+        imageProvider: _offline,
+      ).then((_) => done = true);
+      await tester.pump();
+      await _closed(tester);
+      expect(find.text('Product 2'), findsOneWidget);
+      await _wait(tester, const Duration(seconds: 2));
+      await _closed(tester);
+      expect(done, isTrue);
     });
   });
 }

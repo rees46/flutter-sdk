@@ -1,5 +1,6 @@
-import 'dart:math' as math;
+import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../multi_instance/rees46.dart';
@@ -8,40 +9,79 @@ import '../../stories/stories_response.dart';
 import '../components/personalization_stories_bar.dart';
 import '../components/personalization_toast.dart';
 import 'personalization_story_viewer.dart';
+import 'stories_playback.dart';
+import 'stories_seen_store.dart';
 import 'stories_support.dart';
+
+/// Программное управление блоком сторис: открыть сторис, пауза, продолжение, перезагрузка.
+///
+/// Передаётся в [PersonalizationStories.controller] или в [PersonalizationStories.show].
+/// [pause] и [resume] действуют на открытый просмотр; при закрытии просмотра пауза
+/// снимается.
+class PersonalizationStoriesController {
+  _PersonalizationStoriesState? _bar;
+  final ValueNotifier<bool> _paused = ValueNotifier<bool>(false);
+
+  /// Открыть сторис номер [index] ленты — со стартового слайда по общим правилам. Future
+  /// завершается, когда просмотр закроют. Блок ещё не загружен — ничего.
+  Future<void> open(int index) => _bar?._open(index) ?? Future<void>.value();
+
+  /// Открыть сторис с id [storyId]; нет такой — ничего.
+  Future<void> openStory(String storyId) {
+    final bar = _bar;
+    if (bar == null) return Future<void>.value();
+    final index = bar._stories.indexWhere((story) => story.id == storyId);
+    return index < 0 ? Future<void>.value() : bar._open(index);
+  }
+
+  /// Остановить открытый просмотр.
+  void pause() => _paused.value = true;
+
+  /// Продолжить после [pause].
+  void resume() => _paused.value = false;
+
+  /// Заново загрузить блок.
+  Future<void> reload() => _bar?._load() ?? Future<void>.value();
+}
 
 /// Блок сторис с данными SDK: лента превью, по нажатию — полноэкранный просмотр.
 ///
 /// Паттерн «Блок сторис на странице» из Figma (страница Stories, 1:32), источник —
 /// `stories/{code}`. Визуальный слой — [PersonalizationStoriesBar] и
-/// [PersonalizationStoryViewer]. Прежние сторис SDK не затрагивает.
+/// [PersonalizationStoryViewer]. Без ленты сторис показывает [show].
 ///
 /// Инстанс SDK: [sdk] явно, иначе [shopId] выбирает магазин при нескольких
-/// зарегистрированных; без него берётся единственный (`REES46.getInstance`). Если
-/// магазин не зарегистрирован, виджет остаётся пустым и пишет об этом в лог.
+/// зарегистрированных; без него берётся единственный (`REES46.getInstance`).
 ///
-/// Пока блок грузится, в ленте заглушки; пустой блок или ошибка — виджет исчезает (ошибка
-/// уходит в [onError]). Кольцо обложки поделено по слайдам; показанные слайды и
-/// просмотренные сторис виджет помнит, пока жив: сторис считается просмотренной, когда
-/// показаны все её слайды, а следующее открытие продолжает с первого непоказанного.
-/// Сервер со своей стороны помнит просмотры по трекингу — при новой загрузке они придут в
-/// `viewed` и `start_position`.
+/// Пока блок грузится, в ленте заглушки. Пустой блок — виджет исчезает. Ошибка загрузки,
+/// пустой [code], магазин не найден или неоднозначен, загрузка дольше 15 с — виджет
+/// исчезает и зовёт [onError]; вечных заглушек нет. Сторис без слайдов выпадают.
+///
+/// Просмотренные слайды хранятся на устройстве по магазину и переживают перезапуск:
+/// сторис просмотрена, когда так говорит сервер или просмотрены все её слайды; дуги
+/// кольца горят по просмотренным слайдам; сторис открывается с первого
+/// непросмотренного. Тексты и колбэки уходят в просмотр как есть.
 class PersonalizationStories extends StatefulWidget {
   const PersonalizationStories({
     super.key,
     required this.code,
     this.sdk,
     this.shopId,
+    this.controller,
     this.onLinkClick,
     this.onProductClick,
     this.onPromoCopied,
     this.onError,
     this.promoCopiedText = 'Copied',
     this.promoToastPosition = PersonalizationToastPosition.top,
-    this.promoCodeCaption = 'Promo code',
-    this.moreInfoText = 'More info',
-    this.usedProductsText = 'Used products',
+    this.promoCaption = 'Promo code',
+    this.productButtonText = 'More info',
+    this.showProductsText = 'Used products',
     this.hideProductsText = 'Hide products',
+    this.retryText = 'Retry',
+    this.closeLabel = 'Close',
+    this.soundOnLabel = 'Sound on',
+    this.soundOffLabel = 'Sound off',
     this.padding = const EdgeInsets.all(16),
     this.imageProvider,
     this.iconBuilder,
@@ -56,6 +96,9 @@ class PersonalizationStories extends StatefulWidget {
   /// Магазин при нескольких зарегистрированных; без него — единственный.
   final String? shopId;
 
+  /// Программное управление; см. [PersonalizationStoriesController].
+  final PersonalizationStoriesController? controller;
+
   /// См. [PersonalizationStoryViewer.onLinkClick].
   final ValueChanged<String>? onLinkClick;
 
@@ -64,14 +107,17 @@ class PersonalizationStories extends StatefulWidget {
   final ValueChanged<String>? onPromoCopied;
   final ValueChanged<Object>? onError;
 
+  /// Тексты просмотра — см. одноимённые у [PersonalizationStoryViewer].
   final String promoCopiedText;
-
-  /// См. [PersonalizationStoryViewer.promoToastPosition].
   final PersonalizationToastPosition promoToastPosition;
-  final String promoCodeCaption;
-  final String moreInfoText;
-  final String usedProductsText;
+  final String promoCaption;
+  final String productButtonText;
+  final String showProductsText;
   final String hideProductsText;
+  final String retryText;
+  final String closeLabel;
+  final String soundOnLabel;
+  final String soundOffLabel;
 
   /// Поля ленты.
   final EdgeInsetsGeometry padding;
@@ -87,8 +133,157 @@ class PersonalizationStories extends StatefulWidget {
   )?
   iconBuilder;
 
+  /// Сколько ждать блок, прежде чем сдаться и позвать [onError].
+  static const Duration loadTimeout = Duration(seconds: 15);
+
+  /// Показать сторис блока [code] без ленты: загрузить блок и открыть просмотр — со
+  /// сторис [startStoryId] (нет такой — с первой). Тексты, колбэки и [controller] — как
+  /// у виджета. Ошибка (пустой код, магазин не найден, загрузка не удалась или дольше
+  /// 15 с) уходит в [onError], просмотр не открывается. Future завершается, когда
+  /// просмотр закроют.
+  static Future<void> show(
+    BuildContext context, {
+    required String code,
+    PersonalizationSdk? sdk,
+    String? shopId,
+    String? startStoryId,
+    PersonalizationStoriesController? controller,
+    ValueChanged<String>? onLinkClick,
+    ValueChanged<StoryProduct>? onProductClick,
+    ValueChanged<String>? onPromoCopied,
+    ValueChanged<Object>? onError,
+    String promoCopiedText = 'Copied',
+    PersonalizationToastPosition promoToastPosition =
+        PersonalizationToastPosition.top,
+    String promoCaption = 'Promo code',
+    String productButtonText = 'More info',
+    String showProductsText = 'Used products',
+    String hideProductsText = 'Hide products',
+    String retryText = 'Retry',
+    String closeLabel = 'Close',
+    String soundOnLabel = 'Sound on',
+    String soundOffLabel = 'Sound off',
+    PersonalizationStoryImageProvider? imageProvider,
+    Widget Function(
+      BuildContext context,
+      String asset,
+      double size,
+      Color color,
+    )?
+    iconBuilder,
+  }) async {
+    // Носитель текстов и колбэков для просмотра; в дерево не вставляется.
+    final config = PersonalizationStories(
+      code: code,
+      onLinkClick: onLinkClick,
+      onProductClick: onProductClick,
+      onPromoCopied: onPromoCopied,
+      promoCopiedText: promoCopiedText,
+      promoToastPosition: promoToastPosition,
+      promoCaption: promoCaption,
+      productButtonText: productButtonText,
+      showProductsText: showProductsText,
+      hideProductsText: hideProductsText,
+      retryText: retryText,
+      closeLabel: closeLabel,
+      soundOnLabel: soundOnLabel,
+      soundOffLabel: soundOffLabel,
+      imageProvider: imageProvider,
+      iconBuilder: iconBuilder,
+    );
+    final PersonalizationSdk resolved;
+    final List<Story> stories;
+    try {
+      resolved = _resolve(sdk, shopId);
+      stories = await _fetch(resolved, code);
+    } catch (error) {
+      debugPrint('PersonalizationStories.show: $code — $error');
+      onError?.call(error);
+      return;
+    }
+    if (stories.isEmpty || !context.mounted) return;
+    final index = stories.indexWhere((story) => story.id == startStoryId);
+    try {
+      await _present(
+        context,
+        config: config,
+        sdk: resolved,
+        stories: stories,
+        index: index < 0 ? 0 : index,
+        paused: controller?._paused,
+      );
+    } finally {
+      controller?._paused.value = false;
+    }
+  }
+
   @override
   State<PersonalizationStories> createState() => _PersonalizationStoriesState();
+}
+
+/// Открыть просмотр [stories] со сторис [index] поверх корневого навигатора; тексты и
+/// колбэки — из [config]. Завершается, когда просмотр закроют.
+Future<void> _present(
+  BuildContext context, {
+  required PersonalizationStories config,
+  required PersonalizationSdk? sdk,
+  required List<Story> stories,
+  required int index,
+  ValueListenable<bool>? paused,
+  void Function(Story story, int slideIndex)? onSlideShown,
+}) {
+  final viewer = PersonalizationStoryViewer(
+    stories: stories,
+    initialStory: index,
+    seen: sdk == null
+        ? const <String, Set<String>>{}
+        : StoriesSeenStore.instance.seen(sdk),
+    code: config.code,
+    sdk: sdk,
+    paused: paused,
+    onSlideShown: onSlideShown,
+    onLinkClick: config.onLinkClick,
+    onProductClick: config.onProductClick,
+    onPromoCopied: config.onPromoCopied,
+    productButtonText: config.productButtonText,
+    promoCaption: config.promoCaption,
+    promoCopiedText: config.promoCopiedText,
+    promoToastPosition: config.promoToastPosition,
+    showProductsText: config.showProductsText,
+    hideProductsText: config.hideProductsText,
+    retryText: config.retryText,
+    closeLabel: config.closeLabel,
+    soundOnLabel: config.soundOnLabel,
+    soundOffLabel: config.soundOffLabel,
+    imageProvider: config.imageProvider,
+    iconBuilder: config.iconBuilder,
+  );
+  final navigator = Navigator.of(context, rootNavigator: true);
+  // Тема едет с просмотром: хост мог задать её поддереву, а не приложению.
+  return navigator.push(
+    PersonalizationStoryViewer.route(
+      InheritedTheme.capture(from: context, to: navigator.context).wrap(viewer),
+    ),
+  );
+}
+
+/// SDK по [sdk] или [shopId]; не вышло — ошибка резолва.
+PersonalizationSdk _resolve(PersonalizationSdk? sdk, String? shopId) =>
+    sdk ?? REES46.getInstance(shopId);
+
+/// Блок [code] со сторис, у которых есть слайды, и просмотренное магазина — не дольше
+/// [PersonalizationStories.loadTimeout].
+Future<List<Story>> _fetch(PersonalizationSdk sdk, String code) async {
+  if (code.isEmpty) {
+    throw ArgumentError.value(code, 'code', 'must be non-empty');
+  }
+  // Просмотренное читается вместе с блоком; ошибка блока приходит как есть.
+  final results = await Future.wait<Object>(<Future<Object>>[
+    sdk.getStories(code),
+    StoriesSeenStore.instance.load(sdk),
+  ]).timeout(PersonalizationStories.loadTimeout);
+  final block = results.first as StoriesBlock;
+  return block.stories.where((story) => story.slides.isNotEmpty).toList();
 }
 
 class _PersonalizationStoriesState extends State<PersonalizationStories> {
@@ -96,134 +291,81 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
   List<Story> _stories = const <Story>[];
   bool _loading = true;
   int _seq = 0;
-
-  /// Сколько первых слайдов показано, по id сторис.
-  final Map<String, int> _seen = <String, int>{};
-
-  /// Сторис, досмотренные в этом виджете.
-  final Set<String> _viewed = <String>{};
+  bool _presenting = false;
 
   @override
   void initState() {
     super.initState();
-    _resolve();
+    widget.controller?._bar = this;
+    _load();
   }
 
   @override
   void didUpdateWidget(PersonalizationStories oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      if (oldWidget.controller?._bar == this) oldWidget.controller?._bar = null;
+      widget.controller?._bar = this;
+    }
     if (oldWidget.sdk != widget.sdk ||
         oldWidget.shopId != widget.shopId ||
         oldWidget.code != widget.code) {
-      _resolve();
+      _load();
     }
   }
 
-  void _resolve() {
-    PersonalizationSdk? sdk = widget.sdk;
-    if (sdk == null) {
-      try {
-        sdk = REES46.getInstance(widget.shopId);
-      } catch (error) {
-        debugPrint(
-          'PersonalizationStories: cannot resolve an SDK for '
-          'shopId=${widget.shopId} — $error',
-        );
-        // После кадра: резолв идёт и из initState, а хост в ответ может, например,
-        // показать снекбар — посреди сборки это запрещено.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) widget.onError?.call(error);
-        });
-      }
-    }
-    _sdk = sdk;
-    _load();
+  @override
+  void dispose() {
+    if (widget.controller?._bar == this) widget.controller?._bar = null;
+    super.dispose();
   }
 
   Future<void> _load() async {
     final seq = ++_seq;
-    final sdk = _sdk;
-    _seen.clear();
-    _viewed.clear();
-    if (sdk == null || widget.code.isEmpty) {
-      setState(() {
-        _loading = false;
-        _stories = const <Story>[];
-      });
-      return;
-    }
     setState(() => _loading = true);
     try {
-      final block = await sdk.getStories(widget.code);
+      final sdk = _sdk = _resolve(widget.sdk, widget.shopId);
+      final stories = await _fetch(sdk, widget.code);
       if (!mounted || seq != _seq) return;
       setState(() {
         _loading = false;
-        _stories = block.stories
-            .where((story) => story.slides.isNotEmpty)
-            .toList();
+        _stories = stories;
       });
     } catch (error) {
       if (!mounted || seq != _seq) return;
+      debugPrint('PersonalizationStories: ${widget.code} — $error');
       setState(() {
         _loading = false;
         _stories = const <Story>[];
       });
-      widget.onError?.call(error);
+      // После кадра: ошибка бывает и до первой сборки, а хост в ответ может, например,
+      // показать снекбар — посреди сборки это запрещено.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onError?.call(error);
+      });
     }
   }
 
-  int _seenOf(Story story) => _seen[story.id] ?? story.startPosition;
-
-  bool _isViewed(Story story) => story.viewed || _viewed.contains(story.id);
-
-  /// С какого слайда открыть: первый непоказанный, у досмотренной — с начала.
-  int _startOf(Story story) {
-    final seen = _seenOf(story);
-    return seen >= story.slides.length ? 0 : math.max(0, seen);
-  }
-
-  void _shown(Story story, int slideIndex) {
-    if (!mounted) return;
-    setState(() {
-      final seen = math.max(_seenOf(story), slideIndex + 1);
-      _seen[story.id] = seen;
-      if (seen >= story.slides.length) _viewed.add(story.id);
-    });
-  }
-
-  void _open(int index) {
-    final stories = _stories;
-    final viewer = PersonalizationStoryViewer(
-      stories: stories,
-      initialStory: index,
-      startSlides: <String, int>{
-        for (final story in stories) story.id: _startOf(story),
-      },
-      code: widget.code,
-      sdk: _sdk,
-      onSlideShown: _shown,
-      onLinkClick: widget.onLinkClick,
-      onProductClick: widget.onProductClick,
-      onPromoCopied: widget.onPromoCopied,
-      moreInfoText: widget.moreInfoText,
-      promoCodeCaption: widget.promoCodeCaption,
-      promoCopiedText: widget.promoCopiedText,
-      promoToastPosition: widget.promoToastPosition,
-      usedProductsText: widget.usedProductsText,
-      hideProductsText: widget.hideProductsText,
-      imageProvider: widget.imageProvider,
-      iconBuilder: widget.iconBuilder,
-    );
-    final navigator = Navigator.of(context, rootNavigator: true);
-    // Тема ленты едет с просмотром: хост мог задать её поддереву, а не приложению.
-    navigator.push(
-      PersonalizationStoryViewer.route(
-        InheritedTheme.capture(
-          from: context,
-          to: navigator.context,
-        ).wrap(viewer),
-      ),
-    );
+  Future<void> _open(int index) async {
+    final sdk = _sdk;
+    if (_presenting || index < 0 || index >= _stories.length) return;
+    _presenting = true;
+    try {
+      await _present(
+        context,
+        config: widget,
+        sdk: sdk,
+        stories: _stories,
+        index: index,
+        paused: widget.controller?._paused,
+        onSlideShown: (_, _) {
+          if (mounted) setState(() {});
+        },
+      );
+    } finally {
+      _presenting = false;
+      widget.controller?._paused.value = false;
+    }
   }
 
   @override
@@ -232,26 +374,32 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
       return PersonalizationStoriesBar(loading: true, padding: widget.padding);
     }
     final stories = _stories;
-    if (stories.isEmpty) return const SizedBox.shrink();
+    final sdk = _sdk;
+    if (stories.isEmpty || sdk == null) return const SizedBox.shrink();
+    final seen = StoriesSeenStore.instance.seen(sdk);
     return PersonalizationStoriesBar(
       padding: widget.padding,
       items: <PersonalizationStoryItem>[
         for (final story in stories)
-          PersonalizationStoryItem(
-            id: story.id,
-            label: story.name,
-            image: storyImage(story.avatar, widget.imageProvider),
-            pinned: story.pinned,
-            viewed: _isViewed(story),
-            segments: story.slides.length,
-            seenSegments: _seenOf(story),
-          ),
+          _item(story, seen[story.id] ?? const <String>{}),
       ],
-      onItemTap: (item) {
-        final index = stories.indexWhere((story) => story.id == item.id);
-        if (index >= 0) _open(index);
-      },
+      onItemTap: (item) =>
+          _open(stories.indexWhere((story) => story.id == item.id)),
       iconBuilder: widget.iconBuilder,
     );
   }
+
+  PersonalizationStoryItem _item(Story story, Set<String> seen) =>
+      PersonalizationStoryItem(
+        id: story.id,
+        label: story.name,
+        image: storyImage(story.avatar, widget.imageProvider),
+        pinned: story.pinned,
+        viewed: StoriesPlayback.isViewed(story, seen),
+        segments: story.slides.length,
+        seenSegments: <int>{
+          for (var i = 0; i < story.slides.length; i++)
+            if (seen.contains(story.slides[i].id)) i,
+        },
+      );
 }

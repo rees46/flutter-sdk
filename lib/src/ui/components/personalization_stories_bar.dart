@@ -13,7 +13,7 @@ class PersonalizationStoryItem {
     this.pinned = false,
     this.viewed = false,
     this.segments = 0,
-    this.seenSegments = 0,
+    this.seenSegments = const <int>{},
   });
 
   final String id;
@@ -28,7 +28,7 @@ class PersonalizationStoryItem {
   final int segments;
 
   /// См. [PersonalizationStoryCover.seenSegments].
-  final int seenSegments;
+  final Set<int> seenSegments;
 }
 
 /// Лента сторис: превью в горизонтальной прокрутке.

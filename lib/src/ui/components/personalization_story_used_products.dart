@@ -17,8 +17,10 @@ import 'personalization_products_list.dart';
 /// строка с подписью [hideText] и иконкой angle-down. В начале строки — необязательный
 /// [leading]: во вьюере это кнопка звука видео.
 ///
-/// Раскрытие ведёт сам виджет; [onExpandedChanged] сообщает о нём — вьюер на это время
-/// ставит слайд на паузу.
+/// Раскрытие ведёт сам виджет, начиная с [initiallyExpanded], либо хост — через
+/// [expanded]; [onExpandedChanged] сообщает о нажатии на переключатель. Вьюер ведёт
+/// раскрытие сам: шторка ставит слайд на паузу, закрывается тапом мимо неё и сбрасывается
+/// при смене слайда.
 class PersonalizationStoryUsedProducts extends StatefulWidget {
   const PersonalizationStoryUsedProducts({
     super.key,
@@ -26,6 +28,7 @@ class PersonalizationStoryUsedProducts extends StatefulWidget {
     this.showText = 'Used products',
     this.hideText = 'Hide products',
     this.initiallyExpanded = false,
+    this.expanded,
     this.onExpandedChanged,
     this.onProductTap,
     this.leading,
@@ -40,6 +43,11 @@ class PersonalizationStoryUsedProducts extends StatefulWidget {
   /// Подпись развёрнутого переключателя.
   final String hideText;
   final bool initiallyExpanded;
+
+  /// Раскрытие от хоста; `null` — виджет ведёт его сам.
+  final bool? expanded;
+
+  /// Переключатель нажали: новое раскрытие.
   final ValueChanged<bool>? onExpandedChanged;
 
   /// Нажатие на карточку — открыть товар.
@@ -63,11 +71,14 @@ class PersonalizationStoryUsedProducts extends StatefulWidget {
 
 class _PersonalizationStoryUsedProductsState
     extends State<PersonalizationStoryUsedProducts> {
-  late bool _expanded = widget.initiallyExpanded;
+  late bool _own = widget.initiallyExpanded;
+
+  bool get _expanded => widget.expanded ?? _own;
 
   void _toggle() {
-    setState(() => _expanded = !_expanded);
-    widget.onExpandedChanged?.call(_expanded);
+    final next = !_expanded;
+    if (widget.expanded == null) setState(() => _own = next);
+    widget.onExpandedChanged?.call(next);
   }
 
   @override

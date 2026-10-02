@@ -744,20 +744,20 @@ List<_Exhibit> _storyExhibits(String shopId) => [
         PersonalizationStoryCover(
           image: _image('sneakers'),
           segments: 5,
-          seenSegments: 2,
+          seenSegments: const {0, 1},
         ),
         PersonalizationStoryCover(
           image: _image('sneakers'),
           pinned: true,
           segments: 5,
-          seenSegments: 2,
+          seenSegments: const {0, 1},
           iconBuilder: _icon,
         ),
         PersonalizationStoryCover(
           image: _image('sneakers'),
           state: PersonalizationStoryCoverState.viewed,
           segments: 5,
-          seenSegments: 5,
+          seenSegments: const {0, 1, 2, 3, 4},
         ),
       ],
     );
@@ -780,7 +780,7 @@ List<_Exhibit> _storyExhibits(String shopId) => [
           label: 'Default',
           image: _image('headphones'),
           segments: 4,
-          seenSegments: 1,
+          seenSegments: const {0},
         ),
         PersonalizationStoryItem(
           id: '3',

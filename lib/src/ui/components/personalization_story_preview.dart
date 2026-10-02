@@ -10,8 +10,9 @@ import 'personalization_story_shimmer.dart';
 /// Источник: Figma Mobile SDK UI Kit, страница Stories (1:32), компонент Story/Preview.
 ///
 /// Колонка шириной 88 с шагом 8: [PersonalizationStoryCover] и подпись Regular 12/16
-/// (ступень XS) цветом Text/Primary, по центру, в одну строку с многоточием. У заглушки
-/// вместо подписи — переливающаяся плашка 64×8 со скруглением 5 на месте строки.
+/// (ступень XS) цветом Text/Primary, по центру, шириной с обложку — до двух строк, хвост
+/// с многоточием. У заглушки вместо подписи — переливающаяся плашка 64×8 со скруглением
+/// 5 на месте строки.
 class PersonalizationStoryPreview extends StatelessWidget {
   const PersonalizationStoryPreview({
     super.key,
@@ -20,7 +21,7 @@ class PersonalizationStoryPreview extends StatelessWidget {
     this.state = PersonalizationStoryCoverState.unviewed,
     this.pinned = false,
     this.segments = 0,
-    this.seenSegments = 0,
+    this.seenSegments = const <int>{},
     this.onTap,
     this.iconBuilder,
   });
@@ -34,7 +35,7 @@ class PersonalizationStoryPreview extends StatelessWidget {
   final int segments;
 
   /// См. [PersonalizationStoryCover.seenSegments].
-  final int seenSegments;
+  final Set<int> seenSegments;
 
   /// Нажатие на превью — открыть сторис. У заглушки не вызывается.
   final VoidCallback? onTap;
@@ -89,7 +90,7 @@ class PersonalizationStoryPreview extends StatelessWidget {
           else
             Text(
               label,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: style.copyWith(
