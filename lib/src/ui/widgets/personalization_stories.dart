@@ -400,7 +400,7 @@ Future<List<Story>> _fetch(PersonalizationSdk sdk, String code) async {
     StoriesSeenStore.instance.load(sdk),
   ]).timeout(PersonalizationStories.loadTimeout);
   final block = results.first as StoriesBlock;
-  return block.stories.where((story) => story.slides.isNotEmpty).toList();
+  return playableStories(block.stories);
 }
 
 class _PersonalizationStoriesState extends State<PersonalizationStories> {

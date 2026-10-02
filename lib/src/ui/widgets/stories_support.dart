@@ -276,3 +276,13 @@ PersonalizationStoryTextBlock storyTextBlock(StoryTextBlockElement element) {
     fontFamilyFallback: fallback,
   );
 }
+
+/// Сторис, которые можно показать: со слайдами (C16) и без повторов id — сервер иногда
+/// отдаёт одну сторис дважды; остаётся первая, иначе просмотренность по id склеивается.
+List<Story> playableStories(Iterable<Story> stories) {
+  final ids = <String>{};
+  return <Story>[
+    for (final story in stories)
+      if (story.slides.isNotEmpty && ids.add(story.id)) story,
+  ];
+}

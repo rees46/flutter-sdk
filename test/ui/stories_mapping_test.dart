@@ -173,4 +173,25 @@ void main() {
       expect(storyTextAlign('center'), TextAlign.center);
     });
   });
+
+  test('repeated story ids and stories without slides are dropped', () {
+    Story story(Object id, String name, {bool slides = true}) => Story.fromJson(
+      <String, dynamic>{
+        'id': id,
+        'name': name,
+        'slides': slides
+            ? <Map<String, dynamic>>[
+                <String, dynamic>{'id': 1, 'type': 'image', 'background': 'x'},
+              ]
+            : <Map<String, dynamic>>[],
+      },
+    );
+    final list = playableStories(<Story>[
+      story(7, 'first'),
+      story(8, 'empty', slides: false),
+      story('7', 'again'),
+      story(9, 'other'),
+    ]);
+    expect(list.map((s) => s.name), <String>['first', 'other']);
+  });
 }
