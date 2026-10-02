@@ -692,13 +692,18 @@ final DateTime _timerEnd = DateTime.now().add(
   const Duration(days: 2, hours: 18, minutes: 33, seconds: 24),
 );
 
+/// Drives the live block from the buttons under it.
+final PersonalizationStoriesController _storiesController =
+    PersonalizationStoriesController();
+
 List<_Exhibit> _storyExhibits(String shopId) => [
   _Exhibit(
     'Stories — live block $_storiesCode (demo shop); '
-    'links open in the system browser',
+    'links open in the system browser. Seen slides survive a restart.',
     (context) => PersonalizationStories(
       code: _storiesCode,
       shopId: shopId,
+      controller: _storiesController,
       padding: EdgeInsets.zero,
       promoCopiedText: 'Code copied to clipboard',
       onProductClick: (product) =>
@@ -708,8 +713,52 @@ List<_Exhibit> _storyExhibits(String shopId) => [
     ),
   ),
   _Exhibit(
-    'Story Viewer — sample slides: price, promo code, discount, text blocks, '
-    'used products (offline)',
+    'Stories — programmatic control: open the second story, pause and '
+    'resume it after 3 s, reload the block, show the block without the bar',
+    (context) => Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        PersonalizationButton(
+          label: 'Open #2, pause at 3 s',
+          size: PersonalizationButtonSize.sm,
+          onPressed: () {
+            _storiesController.open(1);
+            Future<void>.delayed(const Duration(seconds: 3), () {
+              _storiesController.pause();
+              Future<void>.delayed(
+                const Duration(seconds: 3),
+                _storiesController.resume,
+              );
+            });
+          },
+        ),
+        PersonalizationButton(
+          label: 'Reload',
+          size: PersonalizationButtonSize.sm,
+          view: PersonalizationButtonView.secondary,
+          onPressed: _storiesController.reload,
+        ),
+        PersonalizationButton(
+          label: 'Show without bar',
+          size: PersonalizationButtonSize.sm,
+          view: PersonalizationButtonView.secondary,
+          onPressed: () => PersonalizationStories.show(
+            context,
+            code: _storiesCode,
+            shopId: shopId,
+            promoCopiedText: 'Code copied to clipboard',
+            onError: (error) => _snack(context, 'Stories error: $error'),
+            iconBuilder: _icon,
+          ),
+        ),
+      ],
+    ),
+  ),
+  _Exhibit(
+    'Story Viewer — sample slides: price, promo code, discount, a product '
+    'video with buttons, carousel and sound, a fitted photo on its letterbox, '
+    'text blocks with a promo code, a failed photo with Retry',
     (context) => Align(
       alignment: Alignment.centerLeft,
       child: PersonalizationButton(
@@ -738,30 +787,47 @@ List<_Exhibit> _storyExhibits(String shopId) => [
       ],
     );
   }),
-  _Exhibit('Story Cover — segments: 5 slides, 2 seen', (context) {
-    return _ScrollRow(
-      children: [
-        PersonalizationStoryCover(
-          image: _image('sneakers'),
-          segments: 5,
-          seenSegments: const {0, 1},
-        ),
-        PersonalizationStoryCover(
-          image: _image('sneakers'),
-          pinned: true,
-          segments: 5,
-          seenSegments: const {0, 1},
-          iconBuilder: _icon,
-        ),
-        PersonalizationStoryCover(
-          image: _image('sneakers'),
-          state: PersonalizationStoryCoverState.viewed,
-          segments: 5,
-          seenSegments: const {0, 1, 2, 3, 4},
-        ),
-      ],
-    );
-  }),
+  _Exhibit(
+    'Story Cover — segments lit by index: slides 1, 2 / 2, 4 seen; pinned with '
+    '1 seen; viewed; pinned and viewed (a plain warning ring)',
+    (context) {
+      return _ScrollRow(
+        children: [
+          PersonalizationStoryCover(
+            image: _image('sneakers'),
+            segments: 5,
+            seenSegments: const {0, 1},
+          ),
+          PersonalizationStoryCover(
+            image: _image('sneakers'),
+            segments: 5,
+            seenSegments: const {1, 3},
+          ),
+          PersonalizationStoryCover(
+            image: _image('sneakers'),
+            pinned: true,
+            segments: 5,
+            seenSegments: const {0},
+            iconBuilder: _icon,
+          ),
+          PersonalizationStoryCover(
+            image: _image('sneakers'),
+            state: PersonalizationStoryCoverState.viewed,
+            segments: 5,
+            seenSegments: const {0, 1, 2, 3, 4},
+          ),
+          PersonalizationStoryCover(
+            image: _image('sneakers'),
+            state: PersonalizationStoryCoverState.viewed,
+            pinned: true,
+            segments: 5,
+            seenSegments: const {0, 1, 2, 3, 4},
+            iconBuilder: _icon,
+          ),
+        ],
+      );
+    },
+  ),
   _Exhibit('Story Preview and Stories Bar — pinned, default, viewed', (
     context,
   ) {
@@ -790,7 +856,7 @@ List<_Exhibit> _storyExhibits(String shopId) => [
         ),
         PersonalizationStoryItem(
           id: '4',
-          label: 'A label too long for one line',
+          label: 'A label too long for one line takes two, then an ellipsis',
           image: _image('bottle'),
         ),
       ],
@@ -1043,9 +1109,42 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
           'price_formatted': r'140 $',
           'oldprice': 165,
           'oldprice_formatted': r'165 $',
-          'discount_percent': 15,
+          'discount_percent': 12.5,
           'url': 'https://example.com/pegasus',
         }),
+        // A product over a video: every slide button, the used products and the
+        // sound toggle; the video streams once and then plays from the disk cache.
+        {
+          'id': 'video',
+          'duration': 10,
+          'type': 'video',
+          'background': _sampleVideo,
+          'background_color': '#1E3A5F',
+          'elements': [
+            {
+              'type': 'button',
+              'title': 'Buy now',
+              'link': 'https://example.com',
+            },
+            {'type': 'button', 'title': 'Open the product'},
+            {
+              'type': 'product',
+              'title': 'Your code',
+              'item': {
+                'id': 'b1',
+                'brand': 'Osprey',
+                'name': 'Daylite backpack',
+                'picture': 'asset:backpack',
+                'price': 80,
+                'price_formatted': r'80 $',
+                'promocode': 'BUTTERFLY',
+                'price_with_promocode_formatted': r'64 $',
+                'url': 'https://example.com/backpack',
+              },
+            },
+            _sampleUsedProducts,
+          ],
+        },
       ],
     },
     {
@@ -1053,11 +1152,21 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
       'name': 'Media',
       'avatar': 'asset:jacket',
       'slides': [
+        // A square photo fitted whole: the rest of the screen is its letterbox
+        // colour, and a bare photo takes the 50% scrim.
+        {
+          'id': 'fitted',
+          'duration': 5,
+          'type': 'image',
+          'background': 'asset:sneakers',
+          'background_color': '#1E3A5F',
+        },
         {
           'id': 'text',
           'duration': 8,
           'type': 'image',
           'background': 'asset:jacket',
+          'background_color': '#3B2A1E',
           'elements': [
             {
               'type': 'text_block',
@@ -1088,37 +1197,47 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
               'title': 'Go shopping',
               'link': 'https://example.com',
             },
-            {
-              'type': 'products',
-              'labels': {
-                'show_carousel': 'Used products',
-                'hide_carousel': 'Hide products',
-              },
-              'products': [
-                for (final (index, name) in [
-                  'backpack',
-                  'bottle',
-                  'sunglasses',
-                ].indexed)
-                  {
-                    'id': 'm$index',
-                    'brand': 'Brand',
-                    'name': 'Product ${index + 1}',
-                    'picture': 'asset:$name',
-                    'price': 99,
-                    'price_formatted': r'99 $',
-                    'oldprice': 120,
-                    'oldprice_formatted': r'120 $',
-                    'discount_percent': 18,
-                  },
-              ],
-            },
+            _sampleUsedProducts,
           ],
+        },
+        // The photo cannot load: the slide stops and offers Retry.
+        {
+          'id': 'retry',
+          'duration': 5,
+          'type': 'image',
+          'background': 'asset:missing',
         },
       ],
     },
   ],
 }).stories;
+
+/// A short public clip (the Flutter docs' butterfly).
+const String _sampleVideo =
+    'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4';
+
+/// The "Used products" carousel of the sample slides.
+final Map<String, dynamic> _sampleUsedProducts = {
+  'type': 'products',
+  'labels': {
+    'show_carousel': 'Used products',
+    'hide_carousel': 'Hide products',
+  },
+  'products': [
+    for (final (index, name) in ['backpack', 'bottle', 'sunglasses'].indexed)
+      {
+        'id': 'm$index',
+        'brand': 'Brand',
+        'name': 'Product ${index + 1}',
+        'picture': 'asset:$name',
+        'price': 99,
+        'price_formatted': r'99 $',
+        'oldprice': 120,
+        'oldprice_formatted': r'120 $',
+        'discount_percent': 17.5,
+      },
+  ],
+};
 
 void _openSampleStories(BuildContext context) {
   Navigator.of(context, rootNavigator: true).push(
