@@ -397,7 +397,7 @@ class StorySlideView extends StatelessWidget {
         PersonalizationToast.show(
           context,
           config.promoCopiedText,
-          position: config.promoToastPosition,
+          position: PersonalizationToastPosition.top,
         );
         onPromoCopied?.call(code);
       },
@@ -487,7 +487,6 @@ class StorySlideView extends StatelessWidget {
             promoCode: price.promoCode,
             promoCaption: storyPromoCaption(element, config.promoCaption),
             copiedText: config.promoCopiedText,
-            copiedToastPosition: config.promoToastPosition,
             onPromoCopied: live ? onPromoCopied : null,
             iconBuilder: config.iconBuilder,
           ),

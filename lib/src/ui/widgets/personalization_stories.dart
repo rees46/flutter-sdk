@@ -7,7 +7,6 @@ import '../../multi_instance/rees46.dart';
 import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
 import '../components/personalization_stories_bar.dart';
-import '../components/personalization_toast.dart';
 import 'personalization_story_viewer.dart';
 import 'stories_playback.dart';
 import 'stories_seen_store.dart';
@@ -73,7 +72,6 @@ class PersonalizationStories extends StatefulWidget {
     this.onPromoCopied,
     this.onError,
     this.promoCopiedText = 'Copied',
-    this.promoToastPosition = PersonalizationToastPosition.top,
     this.promoCaption = 'Promo code',
     this.productButtonText = 'More info',
     this.showProductsText = 'Used products',
@@ -109,7 +107,6 @@ class PersonalizationStories extends StatefulWidget {
 
   /// Тексты просмотра — см. одноимённые у [PersonalizationStoryViewer].
   final String promoCopiedText;
-  final PersonalizationToastPosition promoToastPosition;
   final String promoCaption;
   final String productButtonText;
   final String showProductsText;
@@ -153,8 +150,6 @@ class PersonalizationStories extends StatefulWidget {
     ValueChanged<String>? onPromoCopied,
     ValueChanged<Object>? onError,
     String promoCopiedText = 'Copied',
-    PersonalizationToastPosition promoToastPosition =
-        PersonalizationToastPosition.top,
     String promoCaption = 'Promo code',
     String productButtonText = 'More info',
     String showProductsText = 'Used products',
@@ -179,7 +174,6 @@ class PersonalizationStories extends StatefulWidget {
       onProductClick: onProductClick,
       onPromoCopied: onPromoCopied,
       promoCopiedText: promoCopiedText,
-      promoToastPosition: promoToastPosition,
       promoCaption: promoCaption,
       productButtonText: productButtonText,
       showProductsText: showProductsText,
@@ -248,7 +242,6 @@ Future<void> _present(
     productButtonText: config.productButtonText,
     promoCaption: config.promoCaption,
     promoCopiedText: config.promoCopiedText,
-    promoToastPosition: config.promoToastPosition,
     showProductsText: config.showProductsText,
     hideProductsText: config.hideProductsText,
     retryText: config.retryText,

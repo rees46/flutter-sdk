@@ -8,7 +8,6 @@ import 'package:video_player/video_player.dart';
 
 import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
-import '../components/personalization_toast.dart';
 import 'stories_media_cache.dart';
 import 'stories_playback.dart';
 import 'stories_seen_store.dart';
@@ -72,7 +71,6 @@ class PersonalizationStoryViewer extends StatefulWidget {
     this.productButtonText = 'More info',
     this.promoCaption = 'Promo code',
     this.promoCopiedText = 'Copied',
-    this.promoToastPosition = PersonalizationToastPosition.top,
     this.showProductsText = 'Used products',
     this.hideProductsText = 'Hide products',
     this.retryText = 'Retry',
@@ -124,11 +122,8 @@ class PersonalizationStoryViewer extends StatefulWidget {
   /// Подпись над промокодом, когда в админке у товара нет своей.
   final String promoCaption;
 
-  /// Текст тоста после копирования промокода.
+  /// Текст тоста после копирования промокода; тост всегда сверху.
   final String promoCopiedText;
-
-  /// У какого края показать этот тост.
-  final PersonalizationToastPosition promoToastPosition;
 
   /// Подписи переключателя товаров, когда их не прислал сервер.
   final String showProductsText;
