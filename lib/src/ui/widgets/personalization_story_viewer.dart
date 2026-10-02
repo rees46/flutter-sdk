@@ -63,6 +63,7 @@ class PersonalizationStoryViewer extends StatefulWidget {
     this.code,
     this.sdk,
     this.paused,
+    this.storyRequests,
     this.onSlideShown,
     this.onClose,
     this.onLinkClick,
@@ -99,6 +100,10 @@ class PersonalizationStoryViewer extends StatefulWidget {
 
   /// Пауза от хоста: пока `true`, слайд стоит.
   final ValueListenable<bool>? paused;
+
+  /// Просьбы хоста перелистнуть открытый просмотр на сторис — индекс в [stories].
+  /// Сторис без слайдов и текущая просьбы пропускают.
+  final Stream<int>? storyRequests;
 
   /// Слайд [slideIndex] сторис [story] стал текущим.
   final void Function(Story story, int slideIndex)? onSlideShown;
@@ -192,6 +197,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   /// Насколько просмотр стянут вниз; перестраивает только сдвиг, не страницы.
   final ValueNotifier<double> _drag = ValueNotifier<double>(0);
 
+  StreamSubscription<int>? _requests;
   VideoPlayerController? _video;
   bool _videoReady = false;
   bool _videoPlaying = false;
@@ -227,6 +233,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     StoriesSound.instance.muted.addListener(_onMuted);
     widget.paused?.addListener(_onHostPause);
     _onHostPause();
+    _requests = widget.storyRequests?.listen(_onStoryRequest);
     _onLifecycle(WidgetsBinding.instance.lifecycleState);
     // Первая страница осела сразу: заход после кадра — загрузка картинки читает контекст.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -241,6 +248,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       oldWidget.paused?.removeListener(_onHostPause);
       widget.paused?.addListener(_onHostPause);
       _onHostPause();
+    }
+    if (oldWidget.storyRequests != widget.storyRequests) {
+      _requests?.cancel();
+      _requests = widget.storyRequests?.listen(_onStoryRequest);
     }
   }
 
@@ -270,6 +281,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.paused?.removeListener(_onHostPause);
+    _requests?.cancel();
     StoriesSound.instance.muted.removeListener(_onMuted);
     _timeout?.cancel();
     _autoRetry?.cancel();
@@ -377,6 +389,13 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         _close();
     }
     if (mounted) setState(() {});
+  }
+
+  /// Хост просит сторис [index] исходного списка: листаем к ней, шторка сворачивается.
+  void _onStoryRequest(int index) {
+    if (_closing || index < 0 || index >= widget.stories.length) return;
+    final target = _playback.stories.indexOf(widget.stories[index]);
+    if (target >= 0) _step(_playback.turnTo(target));
   }
 
   void _close() {

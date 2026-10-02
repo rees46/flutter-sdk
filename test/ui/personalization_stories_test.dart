@@ -617,6 +617,116 @@ void main() {
       expect(api.views, <String>['2/20/block']);
     });
 
+    testWidgets('open before the block loads runs after the load', (
+      tester,
+    ) async {
+      final controller = PersonalizationStoriesController();
+      final api = _FakeHostApi(_blockJson())..hold = Completer<void>();
+      await bar(tester, api: api, controller: controller);
+      var done = false;
+      unawaited(controller.openStory('2').then((_) => done = true));
+      await tester.pump();
+      expect(find.byType(PersonalizationStoryViewer), findsNothing);
+
+      api.hold!.complete();
+      await tester.pump();
+      await _closed(tester);
+      expect(find.text('Product 2'), findsOneWidget);
+      expect(done, isFalse);
+      await _wait(tester, const Duration(seconds: 2));
+      await _closed(tester);
+      expect(find.byType(PersonalizationStoryViewer), findsNothing);
+      expect(done, isTrue);
+    });
+
+    testWidgets('open with the viewer open turns to that story inside it', (
+      tester,
+    ) async {
+      final controller = PersonalizationStoriesController();
+      final api = await bar(tester, controller: controller);
+      var first = false;
+      var second = false;
+      unawaited(controller.open(0).then((_) => first = true));
+      await _closed(tester);
+      expect(find.text('Product 1'), findsOneWidget);
+
+      unawaited(controller.openStory('2').then((_) => second = true));
+      await _wait(tester, const Duration(milliseconds: 500));
+      expect(find.text('Product 2'), findsOneWidget);
+      expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+      expect(api.views, <String>['1/10/block', '2/20/block']);
+      expect(second, isFalse, reason: 'done when the viewer closes');
+
+      await _wait(tester, const Duration(seconds: 2));
+      await _closed(tester);
+      expect(find.byType(PersonalizationStoryViewer), findsNothing);
+      expect(first, isTrue);
+      expect(second, isTrue);
+    });
+
+    testWidgets('pause and resume without a viewer do nothing', (tester) async {
+      final controller = PersonalizationStoriesController();
+      await bar(tester, controller: controller);
+      controller.pause();
+      unawaited(controller.openStory('2'));
+      await _closed(tester);
+      expect(find.text('Product 2'), findsOneWidget);
+      await _wait(tester, const Duration(seconds: 2));
+      await _closed(tester);
+      expect(
+        find.byType(PersonalizationStoryViewer),
+        findsNothing,
+        reason: 'the earlier pause did not stick',
+      );
+    });
+
+    group('without an explicit SDK', () {
+      late _FakeHostApi api;
+
+      setUp(() {
+        api = _FakeHostApi(_blockJson());
+        REES46.debugFactory = (config) =>
+            PersonalizationSdk(api: api, shopId: config.shopId);
+      });
+
+      tearDown(REES46.reset);
+
+      Future<List<Object>> pumpBar(WidgetTester tester) async {
+        final errors = <Object>[];
+        await tester.pumpWidget(
+          _host(
+            PersonalizationStories(
+              code: 'block',
+              imageProvider: _offline,
+              onError: errors.add,
+            ),
+          ),
+        );
+        return errors;
+      }
+
+      testWidgets('the widget waits for the SDK registration', (tester) async {
+        final errors = await pumpBar(tester);
+        await tester.pump(const Duration(seconds: 3));
+        expect(find.byType(PersonalizationStoryPreview), findsNWidgets(4));
+
+        REES46.initialize(const REES46Config(shopId: 'shop'));
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
+        expect(find.text('Story 1'), findsOneWidget);
+        expect(errors, isEmpty);
+      });
+
+      testWidgets('no registration in 15 s reaches onError', (tester) async {
+        final errors = await pumpBar(tester);
+        await tester.pump(PersonalizationStories.registrationTimeout);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
+        expect(errors.single, isA<UnknownShopIdException>());
+        expect(find.byType(PersonalizationStoriesBar), findsNothing);
+      });
+    });
+
     testWidgets('show() opens a block without the bar', (tester) async {
       final api = _FakeHostApi(_blockJson());
       await tester.pumpWidget(_host(const Placeholder()));

@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../multi_instance/rees46.dart';
+import '../../multi_instance/sdk_exceptions.dart';
 import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
 import '../components/personalization_stories_bar.dart';
@@ -15,32 +15,120 @@ import 'stories_support.dart';
 /// Программное управление блоком сторис: открыть сторис, пауза, продолжение, перезагрузка.
 ///
 /// Передаётся в [PersonalizationStories.controller] или в [PersonalizationStories.show].
-/// [pause] и [resume] действуют на открытый просмотр; при закрытии просмотра пауза
-/// снимается.
+/// - [open] и [openStory] до загрузки блока ждут её и открывают сторис после; при уже
+///   открытом просмотре листают на эту сторис внутри него. Future завершается, когда
+///   просмотр закроют.
+/// - [pause] и [resume] действуют только на открытый просмотр, без него ничего не
+///   делают; при закрытии просмотра пауза снимается.
 class PersonalizationStoriesController {
   _PersonalizationStoriesState? _bar;
   final ValueNotifier<bool> _paused = ValueNotifier<bool>(false);
 
-  /// Открыть сторис номер [index] ленты — со стартового слайда по общим правилам. Future
-  /// завершается, когда просмотр закроют. Блок ещё не загружен — ничего.
-  Future<void> open(int index) => _bar?._open(index) ?? Future<void>.value();
+  /// Открытый просмотр; `null` — закрыт.
+  _StoriesSession? _session;
 
-  /// Открыть сторис с id [storyId]; нет такой — ничего.
-  Future<void> openStory(String storyId) {
-    final bar = _bar;
-    if (bar == null) return Future<void>.value();
-    final index = bar._stories.indexWhere((story) => story.id == storyId);
-    return index < 0 ? Future<void>.value() : bar._open(index);
+  /// Открытие, которое ждёт загрузки блока.
+  _QueuedOpen? _queued;
+
+  /// Открыть сторис номер [index] ленты — со стартового слайда по общим правилам. Блок
+  /// ещё грузится — откроется после загрузки (новая просьба заменяет прежнюю); просмотр
+  /// уже открыт — перелистнёт в нём. Нет такой сторис — ничего.
+  Future<void> open(int index) => _request(index: index);
+
+  /// Открыть сторис с id [storyId] — как [open]; нет такой — ничего.
+  Future<void> openStory(String storyId) => _request(storyId: storyId);
+
+  /// Остановить открытый просмотр; без него — ничего.
+  void pause() {
+    if (_session != null) _paused.value = true;
   }
 
-  /// Остановить открытый просмотр.
-  void pause() => _paused.value = true;
-
-  /// Продолжить после [pause].
-  void resume() => _paused.value = false;
+  /// Продолжить после [pause]; без открытого просмотра — ничего.
+  void resume() {
+    if (_session != null) _paused.value = false;
+  }
 
   /// Заново загрузить блок.
   Future<void> reload() => _bar?._load() ?? Future<void>.value();
+
+  Future<void> _request({int? index, String? storyId}) {
+    final session = _session;
+    if (session != null) return session.turn(index: index, storyId: storyId);
+    final bar = _bar;
+    if (bar != null && !bar._loading) {
+      return bar._openStory(index: index, storyId: storyId);
+    }
+    final previous = _queued;
+    final queued = _queued = _QueuedOpen(index, storyId);
+    previous?.done.complete();
+    return queued.done.future;
+  }
+
+  /// Блок загрузился или не загрузился: отложенное открытие — сейчас.
+  void _flush() {
+    final queued = _queued;
+    if (queued == null) return;
+    _queued = null;
+    queued.done.complete(
+      _request(index: queued.index, storyId: queued.storyId),
+    );
+  }
+
+  /// Блок ушёл из дерева: отложенное открытие не случится.
+  void _drop() {
+    final queued = _queued;
+    _queued = null;
+    queued?.done.complete();
+  }
+
+  _StoriesSession _begin(List<Story> stories) =>
+      _session = _StoriesSession(stories);
+
+  void _end(_StoriesSession session) {
+    session.end();
+    if (_session != session) return;
+    _session = null;
+    _paused.value = false;
+  }
+}
+
+/// Открытие сторис, которое ждёт загрузки блока.
+class _QueuedOpen {
+  _QueuedOpen(this.index, this.storyId);
+
+  final int? index;
+  final String? storyId;
+  final Completer<void> done = Completer<void>();
+}
+
+/// Открытый просмотр: его сторис, просьбы перелистнуть и конец.
+class _StoriesSession {
+  _StoriesSession(this.stories);
+
+  final List<Story> stories;
+
+  /// Индексы сторис, на которые перелистнуть. Не broadcast: просьба до первой сборки
+  /// просмотра ждёт его подписки.
+  final StreamController<int> turns = StreamController<int>();
+  final Completer<void> _closed = Completer<void>();
+
+  /// Перелистнуть на сторис [index] или с id [storyId]; нет такой — ничего. Завершается,
+  /// когда просмотр закроют.
+  Future<void> turn({int? index, String? storyId}) {
+    final target = storyId != null
+        ? stories.indexWhere((story) => story.id == storyId)
+        : index ?? -1;
+    if (target < 0 || target >= stories.length || turns.isClosed) {
+      return Future<void>.value();
+    }
+    turns.add(target);
+    return _closed.future;
+  }
+
+  void end() {
+    unawaited(turns.close());
+    if (!_closed.isCompleted) _closed.complete();
+  }
 }
 
 /// Блок сторис с данными SDK: лента превью, по нажатию — полноэкранный просмотр.
@@ -50,11 +138,13 @@ class PersonalizationStoriesController {
 /// [PersonalizationStoryViewer]. Без ленты сторис показывает [show].
 ///
 /// Инстанс SDK: [sdk] явно, иначе [shopId] выбирает магазин при нескольких
-/// зарегистрированных; без него берётся единственный (`REES46.getInstance`).
+/// зарегистрированных; без него берётся единственный (`REES46.getInstance`). Магазин ещё
+/// не зарегистрирован — виджет ждёт регистрации до 15 с ([registrationTimeout]).
 ///
 /// Пока блок грузится, в ленте заглушки. Пустой блок — виджет исчезает. Ошибка загрузки,
-/// пустой [code], магазин не найден или неоднозначен, загрузка дольше 15 с — виджет
-/// исчезает и зовёт [onError]; вечных заглушек нет. Сторис без слайдов выпадают.
+/// пустой [code], магазин не зарегистрирован за 15 с или неоднозначен, загрузка дольше
+/// 15 с — виджет исчезает и зовёт [onError]; вечных заглушек нет. Сторис без слайдов
+/// выпадают.
 ///
 /// Просмотренные слайды хранятся на устройстве по магазину и переживают перезапуск:
 /// сторис просмотрена, когда так говорит сервер или просмотрены все её слайды; дуги
@@ -133,11 +223,15 @@ class PersonalizationStories extends StatefulWidget {
   /// Сколько ждать блок, прежде чем сдаться и позвать [onError].
   static const Duration loadTimeout = Duration(seconds: 15);
 
+  /// Сколько ждать регистрации SDK (`REES46.initialize` / `registerShops`), когда
+  /// инстанс не передан явно, прежде чем сдаться и позвать [onError].
+  static const Duration registrationTimeout = Duration(seconds: 15);
+
   /// Показать сторис блока [code] без ленты: загрузить блок и открыть просмотр — со
   /// сторис [startStoryId] (нет такой — с первой). Тексты, колбэки и [controller] — как
-  /// у виджета. Ошибка (пустой код, магазин не найден, загрузка не удалась или дольше
-  /// 15 с) уходит в [onError], просмотр не открывается. Future завершается, когда
-  /// просмотр закроют.
+  /// у виджета. Ошибка (пустой код, магазин не зарегистрирован за 15 с или неоднозначен,
+  /// загрузка не удалась или дольше 15 с) уходит в [onError], просмотр не открывается.
+  /// Future завершается, когда просмотр закроют.
   static Future<void> show(
     BuildContext context, {
     required String code,
@@ -188,7 +282,7 @@ class PersonalizationStories extends StatefulWidget {
     final PersonalizationSdk resolved;
     final List<Story> stories;
     try {
-      resolved = _resolve(sdk, shopId);
+      resolved = await _resolve(sdk, shopId);
       stories = await _fetch(resolved, code);
     } catch (error) {
       debugPrint('PersonalizationStories.show: $code — $error');
@@ -197,18 +291,14 @@ class PersonalizationStories extends StatefulWidget {
     }
     if (stories.isEmpty || !context.mounted) return;
     final index = stories.indexWhere((story) => story.id == startStoryId);
-    try {
-      await _present(
-        context,
-        config: config,
-        sdk: resolved,
-        stories: stories,
-        index: index < 0 ? 0 : index,
-        paused: controller?._paused,
-      );
-    } finally {
-      controller?._paused.value = false;
-    }
+    await _present(
+      context,
+      config: config,
+      sdk: resolved,
+      stories: stories,
+      index: index < 0 ? 0 : index,
+      controller: controller,
+    );
   }
 
   @override
@@ -216,16 +306,18 @@ class PersonalizationStories extends StatefulWidget {
 }
 
 /// Открыть просмотр [stories] со сторис [index] поверх корневого навигатора; тексты и
-/// колбэки — из [config]. Завершается, когда просмотр закроют.
+/// колбэки — из [config]. Пока просмотр открыт, [controller] ставит его на паузу и
+/// листает. Завершается, когда просмотр закроют.
 Future<void> _present(
   BuildContext context, {
   required PersonalizationStories config,
   required PersonalizationSdk? sdk,
   required List<Story> stories,
   required int index,
-  ValueListenable<bool>? paused,
+  PersonalizationStoriesController? controller,
   void Function(Story story, int slideIndex)? onSlideShown,
-}) {
+}) async {
+  final session = controller?._begin(stories);
   final viewer = PersonalizationStoryViewer(
     stories: stories,
     initialStory: index,
@@ -234,7 +326,8 @@ Future<void> _present(
         : StoriesSeenStore.instance.seen(sdk),
     code: config.code,
     sdk: sdk,
-    paused: paused,
+    paused: controller?._paused,
+    storyRequests: session?.turns.stream,
     onSlideShown: onSlideShown,
     onLinkClick: config.onLinkClick,
     onProductClick: config.onProductClick,
@@ -252,17 +345,44 @@ Future<void> _present(
     iconBuilder: config.iconBuilder,
   );
   final navigator = Navigator.of(context, rootNavigator: true);
-  // Тема едет с просмотром: хост мог задать её поддереву, а не приложению.
-  return navigator.push(
-    PersonalizationStoryViewer.route(
-      InheritedTheme.capture(from: context, to: navigator.context).wrap(viewer),
-    ),
-  );
+  try {
+    // Тема едет с просмотром: хост мог задать её поддереву, а не приложению.
+    await navigator.push(
+      PersonalizationStoryViewer.route(
+        InheritedTheme.capture(
+          from: context,
+          to: navigator.context,
+        ).wrap(viewer),
+      ),
+    );
+  } finally {
+    if (session != null) controller?._end(session);
+  }
 }
 
-/// SDK по [sdk] или [shopId]; не вышло — ошибка резолва.
-PersonalizationSdk _resolve(PersonalizationSdk? sdk, String? shopId) =>
-    sdk ?? REES46.getInstance(shopId);
+/// SDK по [sdk] или [shopId]. Магазин ещё не зарегистрирован — ждём регистрации до
+/// [PersonalizationStories.registrationTimeout], проверяя раз в 100 мс; не дождались —
+/// [UnknownShopIdException]. Неоднозначный выбор ([AmbiguousShopException]) — сразу.
+/// [alive] вернул `false` — ждать больше незачем, та же ошибка.
+Future<PersonalizationSdk> _resolve(
+  PersonalizationSdk? sdk,
+  String? shopId, {
+  bool Function()? alive,
+}) async {
+  if (sdk != null) return sdk;
+  const poll = Duration(milliseconds: 100);
+  for (var waited = Duration.zero; ; waited += poll) {
+    try {
+      return REES46.getInstance(shopId);
+    } on UnknownShopIdException {
+      final waiting = alive?.call() ?? true;
+      if (!waiting || waited >= PersonalizationStories.registrationTimeout) {
+        rethrow;
+      }
+    }
+    await Future<void>.delayed(poll);
+  }
+}
 
 /// Блок [code] со сторис, у которых есть слайды, и просмотренное магазина — не дольше
 /// [PersonalizationStories.loadTimeout].
@@ -299,6 +419,7 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
     if (oldWidget.controller != widget.controller) {
       if (oldWidget.controller?._bar == this) oldWidget.controller?._bar = null;
       widget.controller?._bar = this;
+      if (!_loading) widget.controller?._flush();
     }
     if (oldWidget.sdk != widget.sdk ||
         oldWidget.shopId != widget.shopId ||
@@ -309,7 +430,11 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
 
   @override
   void dispose() {
-    if (widget.controller?._bar == this) widget.controller?._bar = null;
+    final controller = widget.controller;
+    if (controller?._bar == this) {
+      controller?._bar = null;
+      controller?._drop();
+    }
     super.dispose();
   }
 
@@ -317,13 +442,19 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
     final seq = ++_seq;
     setState(() => _loading = true);
     try {
-      final sdk = _sdk = _resolve(widget.sdk, widget.shopId);
+      final sdk = await _resolve(
+        widget.sdk,
+        widget.shopId,
+        alive: () => mounted && seq == _seq,
+      );
       final stories = await _fetch(sdk, widget.code);
       if (!mounted || seq != _seq) return;
       setState(() {
+        _sdk = sdk;
         _loading = false;
         _stories = stories;
       });
+      widget.controller?._flush();
     } catch (error) {
       if (!mounted || seq != _seq) return;
       debugPrint('PersonalizationStories: ${widget.code} — $error');
@@ -331,6 +462,7 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
         _loading = false;
         _stories = const <Story>[];
       });
+      widget.controller?._flush();
       // После кадра: ошибка бывает и до первой сборки, а хост в ответ может, например,
       // показать снекбар — посреди сборки это запрещено.
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -338,6 +470,13 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
       });
     }
   }
+
+  /// Открыть сторис номер [index] или с id [storyId]; нет такой — ничего.
+  Future<void> _openStory({int? index, String? storyId}) => _open(
+    storyId != null
+        ? _stories.indexWhere((story) => story.id == storyId)
+        : index ?? -1,
+  );
 
   Future<void> _open(int index) async {
     final sdk = _sdk;
@@ -350,14 +489,13 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
         sdk: sdk,
         stories: _stories,
         index: index,
-        paused: widget.controller?._paused,
+        controller: widget.controller,
         onSlideShown: (_, _) {
           if (mounted) setState(() {});
         },
       );
     } finally {
       _presenting = false;
-      widget.controller?._paused.value = false;
     }
   }
 
