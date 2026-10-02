@@ -194,6 +194,7 @@ void main() {
       List<Story>? stories,
       VoidCallback? onClose,
       ValueChanged<String>? onLink,
+      void Function(Story story, int slideIndex)? onSlideShown,
     }) async {
       final api = _FakeHostApi(null);
       await tester.pumpWidget(
@@ -205,6 +206,7 @@ void main() {
             imageProvider: _offline,
             onClose: onClose ?? () {},
             onLinkClick: onLink,
+            onSlideShown: onSlideShown,
           ),
         ),
       );
@@ -263,6 +265,29 @@ void main() {
       await tester.pump();
       expect(find.text('Slide 70'), findsOneWidget, reason: 'release stays');
       await _wait(tester, const Duration(seconds: 5));
+      await tester.pump();
+      expect(find.text('Slide 71'), findsOneWidget);
+    });
+
+    testWidgets('back on the first slide restarts it without a new view', (
+      tester,
+    ) async {
+      final shown = <int>[];
+      final api = await open(
+        tester,
+        onSlideShown: (_, index) => shown.add(index),
+      );
+      expect(shown, <int>[0]);
+      await _wait(tester, const Duration(seconds: 3));
+      await tester.tapAt(at(tester, 0.1));
+      await tester.pump();
+      expect(api.views, <String>['7/70/block']);
+      expect(shown, <int>[0]);
+
+      // The slide starts over: its five seconds run again.
+      await _wait(tester, const Duration(seconds: 4));
+      expect(find.text('Slide 70'), findsOneWidget);
+      await _wait(tester, const Duration(seconds: 2));
       await tester.pump();
       expect(find.text('Slide 71'), findsOneWidget);
     });

@@ -87,10 +87,11 @@ void main() {
       playback.tick(const Duration(seconds: 2));
       final generation = playback.generation;
 
-      expect(playback.previous(), StoriesStep.slide);
+      expect(playback.previous(), StoriesStep.restart);
       expect(playback.slide.id, 'a0');
-      expect(playback.generation, greaterThan(generation));
+      expect(playback.generation, generation, reason: 'no new entry');
       expect(playback.elapsed, Duration.zero);
+      expect(playback.running, isTrue, reason: 'the media stays ready');
     });
 
     test('back into the previous story opens its start slide', () {
