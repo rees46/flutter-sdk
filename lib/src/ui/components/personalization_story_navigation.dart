@@ -11,6 +11,7 @@ import 'personalization_story_progress.dart';
 ///
 /// Колонка с шагом 12: [PersonalizationStoryProgress] и строка высотой 32, в конце
 /// которой крестик — иконка cross 32 (глиф 18) цвета Text/Secondary с прозрачностью 65%.
+/// Касания ловит только крестик.
 class PersonalizationStoryNavigation extends StatelessWidget {
   const PersonalizationStoryNavigation({
     super.key,
@@ -43,6 +44,10 @@ class PersonalizationStoryNavigation extends StatelessWidget {
 
   static const double _close = 32;
 
+  /// Высота шапки: прогресс, шаг 12 и строка крестика.
+  static const double height =
+      PersonalizationStoryProgress.height + 12 + _close;
+
   @override
   Widget build(BuildContext context) {
     final colors = PersonalizationTheme.of(context).colors;
@@ -50,10 +55,13 @@ class PersonalizationStoryNavigation extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        PersonalizationStoryProgress(
-          count: count,
-          current: current,
-          progress: progress,
+        // Прогресс касаний не ловит: они уходят слайду под шапкой.
+        IgnorePointer(
+          child: PersonalizationStoryProgress(
+            count: count,
+            current: current,
+            progress: progress,
+          ),
         ),
         const SizedBox(height: 12),
         SizedBox(

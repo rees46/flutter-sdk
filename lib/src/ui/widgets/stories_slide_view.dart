@@ -261,6 +261,11 @@ class StorySlideView extends StatelessWidget {
     );
   }
 
+  /// Шапка поверх всего слайда, и подложки шторки тоже: крестик закрывает просмотр и
+  /// при раскрытой шторке; мимо крестика касание доходит до подложки.
+  Widget _header() =>
+      Positioned(left: 16, top: 16, right: 16, child: _navigation());
+
   /// Кнопка звука — только у видео.
   Widget? _sound(StorySlide slide) {
     if (storyMediaOf(slide) != StoryMedia.video) return null;
@@ -292,7 +297,8 @@ class StorySlideView extends StatelessWidget {
   );
 
   /// Нижняя строка: «Используемые товары» со звуком в начале или только звук. Под
-  /// раскрытой шторкой — подложка: тап мимо шторки её закрывает и никуда не листает.
+  /// раскрытой шторкой — подложка: тап мимо шторки её закрывает и никуда не листает;
+  /// крестик шапки над ней и закрывает просмотр.
   List<Widget> _bottomRow(StorySlide slide) {
     final products = storyProducts(slide);
     final sound = _sound(slide);
@@ -366,7 +372,6 @@ class StorySlideView extends StatelessWidget {
               top: constraints.maxHeight * text.yOffset.clamp(0, 100) / 100,
               child: _textBlock(context, text),
             ),
-          Positioned(left: 16, top: 16, right: 16, child: _navigation()),
           Positioned(
             left: 16,
             right: 16,
@@ -374,6 +379,7 @@ class StorySlideView extends StatelessWidget {
             child: _primaryButtons(buttons),
           ),
           ..._bottomRow(slide),
+          _header(),
         ],
       ),
     );
@@ -430,7 +436,8 @@ class StorySlideView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _navigation(),
+          // Место шапки: сама она поверх всего ([_header]).
+          const SizedBox(height: PersonalizationStoryNavigation.height),
           const SizedBox(height: 16),
           if (product.brand.isNotEmpty) ...<Widget>[
             Text(
@@ -500,7 +507,7 @@ class StorySlideView extends StatelessWidget {
     );
     return Stack(
       fit: StackFit.expand,
-      children: <Widget>[column, ..._bottomRow(slide)],
+      children: <Widget>[column, ..._bottomRow(slide), _header()],
     );
   }
 }

@@ -356,6 +356,35 @@ void main() {
       expect(find.text('Nowhere'), findsOneWidget);
     });
 
+    testWidgets('the cross closes the viewer also with the sheet open', (
+      tester,
+    ) async {
+      var closed = 0;
+      await open(tester, onClose: () => closed++);
+      await tester.tap(find.text('Used products'));
+      await tester.pump();
+
+      // The header row beside the cross is outside the sheet: only the sheet goes.
+      final header = tester.getTopLeft(
+        find.byType(PersonalizationStoryNavigation),
+      );
+      await tester.tapAt(header + const Offset(40, 30));
+      await tester.pump();
+      expect(find.text('Used products'), findsOneWidget);
+      expect(closed, 0);
+
+      await tester.tap(find.text('Used products'));
+      await tester.pump();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(PersonalizationStoryNavigation),
+          matching: find.byType(GestureDetector),
+        ),
+      );
+      await tester.pump();
+      expect(closed, 1);
+    });
+
     testWidgets(
       'a carousel product closes the viewer even with the sheet open',
       (tester) async {
