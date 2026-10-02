@@ -431,9 +431,16 @@ void main() {
   });
 
   test('a text block without a line spacing takes the preset for its size', () {
-    expect(PersonalizationStoryTextBlock.presetLineHeight(48), 1);
-    expect(PersonalizationStoryTextBlock.presetLineHeight(30), 1.2);
-    expect(PersonalizationStoryTextBlock.presetLineHeight(14), 1.2);
+    double line(double size) =>
+        PersonalizationStoryTextBlock.presetLineHeight(size) * size;
+    expect(line(48), 48);
+    expect(line(30), closeTo(36, 1e-9));
+    expect(line(20), closeTo(24, 1e-9));
+    // The nearest preset; a tie between Large and Medium goes to Large.
+    expect(line(39), 39, reason: 'tie: Large');
+    expect(line(38), closeTo(46, 1e-9), reason: 'Medium, 45.6 rounded');
+    expect(line(40), 40, reason: 'Large');
+    expect(line(14), closeTo(17, 1e-9), reason: 'Small, 16.8 rounded');
   });
 
   testWidgets('the sound button names the current state and toggles', (

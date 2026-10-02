@@ -68,9 +68,21 @@ class PersonalizationStoryTextBlock extends StatelessWidget {
   /// Блок со сплошным фоном: у фона есть непрозрачность.
   bool get solid => background != null && background!.a > 0;
 
-  /// Интерлиньяж заготовки для кегля [fontSize], в долях кегля: больше 30 — Large
-  /// (48/48), иначе Medium и Small (36/30, 24/20).
-  static double presetLineHeight(double fontSize) => fontSize > 30 ? 1 : 1.2;
+  /// Интерлиньяж заготовки для кегля [fontSize], в долях кегля: берётся ближайшая по
+  /// кеглю заготовка — Large 48/48 (×1), Medium 30/36 и Small 20/24 (×1,2); поровну —
+  /// Large. Высота строки — кегль × доля, округлённая до целого.
+  static double presetLineHeight(double fontSize) {
+    if (fontSize <= 0) return 1.2;
+    // Large первой: при равном расстоянии остаётся она.
+    const presets = <(double, double)>[(48, 1), (30, 1.2), (20, 1.2)];
+    var nearest = presets.first;
+    for (final preset in presets) {
+      if ((fontSize - preset.$1).abs() < (fontSize - nearest.$1).abs()) {
+        nearest = preset;
+      }
+    }
+    return (fontSize * nearest.$2).roundToDouble() / fontSize;
+  }
 
   @override
   Widget build(BuildContext context) {
