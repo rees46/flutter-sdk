@@ -189,16 +189,22 @@ void main() {
       ],
     });
 
-    Future<_FakeHostApi> open(WidgetTester tester) async {
+    Future<_FakeHostApi> open(
+      WidgetTester tester, {
+      List<Story>? stories,
+      VoidCallback? onClose,
+      ValueChanged<String>? onLink,
+    }) async {
       final api = _FakeHostApi(null);
       await tester.pumpWidget(
         MaterialApp(
           home: PersonalizationStoryViewer(
-            stories: <Story>[story],
+            stories: stories ?? <Story>[story],
             code: 'block',
             sdk: PersonalizationSdk(api: api),
             imageProvider: _offline,
-            onClose: () {},
+            onClose: onClose ?? () {},
+            onLinkClick: onLink,
           ),
         ),
       );
@@ -288,6 +294,41 @@ void main() {
       await tester.pump();
       expect(find.text('Used products'), findsOneWidget, reason: 'closed');
       expect(find.text('Slide 70'), findsOneWidget, reason: 'no navigation');
+    });
+
+    testWidgets('a button without a link only counts the click', (
+      tester,
+    ) async {
+      final buttonStory = Story.fromJson(<String, dynamic>{
+        'id': 8,
+        'name': 'Button',
+        'avatar': '',
+        'slides': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 80,
+            'duration': 5,
+            'type': 'image',
+            'background': 'https://cdn.example/80.jpg',
+            'elements': <Map<String, dynamic>>[
+              <String, dynamic>{'type': 'button', 'title': 'Nowhere'},
+            ],
+          },
+        ],
+      });
+      var closed = false;
+      final links = <String>[];
+      final api = await open(
+        tester,
+        stories: <Story>[buttonStory],
+        onClose: () => closed = true,
+        onLink: links.add,
+      );
+      await tester.tap(find.text('Nowhere'));
+      await tester.pump();
+      expect(api.clicks, <String>['8/80/block']);
+      expect(closed, isFalse);
+      expect(links, isEmpty);
+      expect(find.text('Nowhere'), findsOneWidget);
     });
 
     testWidgets(

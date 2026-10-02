@@ -49,7 +49,8 @@ import 'stories_support.dart';
 /// сообщает [onSlideShown].
 ///
 /// Кнопки, товары и карусель сначала закрывают просмотр, потом зовут [onLinkClick] /
-/// [onProductClick]; не заданы — ссылку открывает система через SDK.
+/// [onProductClick]; не заданы — ссылку открывает система через SDK. Кнопка без ссылки
+/// на медиа-слайде ничего не открывает и просмотр не закрывает — только `click`.
 ///
 /// Открывается маршрутом [route] или встраивается как обычный виджет с [onClose].
 class PersonalizationStoryViewer extends StatefulWidget {
@@ -600,12 +601,14 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     setState(() {});
   }
 
+  /// Кнопка слайда: своя ссылка, у товарного слайда без неё — товар. Кнопка без ссылки на
+  /// медиа-слайде — только `click`: просмотр остаётся открытым.
   void _button(StoryButtonElement button) {
     _clicked();
     final product = storyProductElement(_playback.slide)?.item;
     final own = storyButtonLink(button);
-    if (own.isEmpty && product != null) return _closeThen(() => _goTo(product));
-    _closeThen(() => _openLink(own));
+    if (own.isNotEmpty) return _closeThen(() => _openLink(own));
+    if (product != null) _closeThen(() => _goTo(product));
   }
 
   void _product(StoryProduct product) {
