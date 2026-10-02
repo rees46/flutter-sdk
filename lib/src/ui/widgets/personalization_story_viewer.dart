@@ -372,7 +372,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       case StoriesStep.restart:
         // Тот же заход: медиа не перезагружается, `view` не повторяется.
         _progress.value = 0;
-        _video?.seekTo(Duration.zero);
+        if (_videoReady) _video?.seekTo(Duration.zero);
       case StoriesStep.turn:
         _sync();
         final target = _playback.turnTarget!;
