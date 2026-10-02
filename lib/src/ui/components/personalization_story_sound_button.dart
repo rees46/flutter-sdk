@@ -21,8 +21,8 @@ class PersonalizationStorySoundButton extends StatelessWidget {
   final bool muted;
   final VoidCallback? onPressed;
 
-  /// Подписи для скринридера — действие, которое сделает нажатие: без звука —
-  /// [soundOnLabel], со звуком — [soundOffLabel].
+  /// Подписи для скринридера — текущее состояние звука: без звука — [soundOffLabel],
+  /// со звуком — [soundOnLabel]. Сама кнопка — переключатель: включён, когда звук есть.
   final String soundOnLabel;
   final String soundOffLabel;
 
@@ -41,7 +41,8 @@ class PersonalizationStorySoundButton extends StatelessWidget {
     final colors = PersonalizationTheme.of(context).colors;
     return Semantics(
       button: true,
-      label: muted ? soundOnLabel : soundOffLabel,
+      toggled: !muted,
+      label: muted ? soundOffLabel : soundOnLabel,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onPressed,

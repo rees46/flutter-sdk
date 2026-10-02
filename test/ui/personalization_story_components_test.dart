@@ -436,6 +436,28 @@ void main() {
     expect(PersonalizationStoryTextBlock.presetLineHeight(14), 1.2);
   });
 
+  testWidgets('the sound button names the current state and toggles', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    for (final muted in <bool>[true, false]) {
+      await tester.pumpWidget(
+        _host(PersonalizationStorySoundButton(muted: muted, onPressed: () {})),
+      );
+      expect(
+        tester.getSemantics(find.byType(PersonalizationStorySoundButton)),
+        matchesSemantics(
+          label: muted ? 'Sound off' : 'Sound on',
+          isButton: true,
+          hasToggledState: true,
+          isToggled: !muted,
+          hasTapAction: true,
+        ),
+      );
+    }
+    handle.dispose();
+  });
+
   testWidgets('progress fills the passed segments and part of the current', (
     tester,
   ) async {

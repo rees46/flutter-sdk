@@ -136,7 +136,8 @@ class PersonalizationStoryViewer extends StatefulWidget {
   /// Подпись кнопки повтора загрузки медиа.
   final String retryText;
 
-  /// Подписи для скринридера: крестик и кнопка звука (включить / выключить).
+  /// Подписи для скринридера: крестик и кнопка звука — её текущее состояние (звук
+  /// включён / выключен).
   final String closeLabel;
   final String soundOnLabel;
   final String soundOffLabel;
