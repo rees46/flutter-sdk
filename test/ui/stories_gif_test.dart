@@ -6,14 +6,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_gif.dart';
+import 'package:rees46_sdk/src/ui/widgets/stories_gif_player.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_image.dart';
 
-/// The fixture all four SDKs test with: 2×2, 3 frames, delays 10 / 0 / 50 hundredths
-/// of a second → 100 + 100 + 500 = 700 ms per loop.
-final Uint8List gifFixture = base64Decode(
-  'R0lGODlhAgACAIEAAP8AAAD/AAAA/////yH/C05FVFNDQVBFMi4wAwEAAAAh+QQACgAAACwAAAAAAgACAAA'
-  'CAoRRACH5BAAAAAAALAAAAAACAAIAAAICjFMAIfkEADIAAAAsAAAAAAIAAgAAAgKUVQA7',
-);
+import 'gif_fixture.dart';
 
 void main() {
   group('StoryGif', () {
@@ -166,6 +162,103 @@ void main() {
       expect(shown.width, 1);
       expect(const StoryImage('a'), const StoryImage('a'));
       expect(const StoryImage('a'), isNot(const StoryImage('b')));
+    });
+  });
+
+  group('StoryGifPlayer', () {
+    final gif = StoryGif.parse(gifFixture)!;
+    late List<FakeGifCodec> codecs;
+
+    setUp(() {
+      codecs = <FakeGifCodec>[];
+      StoryGifPlayer.codecOf = (_) async {
+        final codec = FakeGifCodec(3);
+        codecs.add(codec);
+        return codec;
+      };
+    });
+    tearDown(() => StoryGifPlayer.codecOf = ui.instantiateImageCodec);
+
+    /// Lets the decoding of the next frame finish.
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    test(
+      'frames follow their delays, loop, and wait while time stands',
+      () async {
+        final player = StoryGifPlayer(gifFixture, gif);
+        expect(player.frame, isNull);
+        await player.start();
+        await settle();
+        expect((player.index, player.frame!.width), (0, 1));
+
+        player.advance(const Duration(milliseconds: 99));
+        expect(player.index, 0);
+        player.advance(const Duration(milliseconds: 1));
+        expect((player.index, player.frame!.width), (1, 2));
+        await settle();
+
+        // No time from the slide (it is paused): the frame stays.
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        expect(player.index, 1);
+        player.advance(const Duration(milliseconds: 60));
+        expect(player.index, 1);
+        player.advance(const Duration(milliseconds: 40));
+        expect(player.index, 2, reason: 'the rest of the paused frame');
+        await settle();
+
+        player.advance(const Duration(milliseconds: 499));
+        expect(player.index, 2, reason: 'the 500 ms frame');
+        player.advance(const Duration(milliseconds: 1));
+        expect(player.index, 0, reason: 'the loop starts over');
+        expect(codecs, hasLength(1));
+        player.dispose();
+        expect(codecs.single.disposed, isTrue);
+      },
+    );
+
+    test('restart begins at the first frame from the same bytes', () async {
+      final player = StoryGifPlayer(gifFixture, gif);
+      await player.start();
+      await settle();
+      player.advance(const Duration(milliseconds: 150));
+      expect(player.index, 1);
+
+      await player.restart();
+      expect((player.index, player.frame!.width), (0, 1));
+      expect(codecs, hasLength(2), reason: 'a new codec, no download');
+      expect(codecs.first.disposed, isTrue);
+      await settle();
+      player.advance(const Duration(milliseconds: 99));
+      expect(player.index, 0);
+      player.advance(const Duration(milliseconds: 1));
+      expect(player.index, 1);
+      player.dispose();
+    });
+
+    test('a GIF the codec cannot read fails its start', () async {
+      StoryGifPlayer.codecOf = (_) async => throw Exception('broken');
+      final player = StoryGifPlayer(gifFixture, gif);
+      await expectLater(player.start(), throwsException);
+      expect(player.frame, isNull);
+      player.dispose();
+    });
+
+    testWidgets('real frames larger than the slide shrink to it', (
+      tester,
+    ) async {
+      StoryGifPlayer.codecOf = ui.instantiateImageCodec;
+      await tester.runAsync(() async {
+        final player = StoryGifPlayer(gifFixture, gif, limit: const Size(1, 1));
+        await player.start();
+        expect(player.index, 0);
+        expect((player.frame!.width, player.frame!.height), (1, 1));
+        player.dispose();
+
+        final full = StoryGifPlayer(gifFixture, gif);
+        await full.start();
+        expect((full.frame!.width, full.frame!.height), (2, 2));
+        full.dispose();
+      });
     });
   });
 }

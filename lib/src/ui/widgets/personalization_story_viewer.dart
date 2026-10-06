@@ -8,6 +8,9 @@ import 'package:video_player/video_player.dart';
 
 import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
+import 'stories_gif.dart';
+import 'stories_gif_player.dart';
+import 'stories_image.dart';
 import 'stories_media_cache.dart';
 import 'stories_playback.dart';
 import 'stories_seen_store.dart';
@@ -41,7 +44,12 @@ import 'stories_support.dart';
 ///   подгрузке; видео не ждёт загрузки целиком: играет по сети, пока кэш на диске
 ///   ([StoriesMediaCache]) заполняется в фоне, и из файла в следующий раз; следующий слайд
 ///   подгружается заранее. Звук выключен при первом открытии, выбор помнится до конца
-///   процесса, кнопка громкости «вверх» включает звук ([StoriesSound]).
+///   процесса, кнопка громкости «вверх» включает звук ([StoriesSound]);
+/// - GIF на фоне слайда (узнаётся по байтам) играет по своим задержкам, а слайд длится
+///   время из админки или один круг GIF — что дольше. Стоит слайд — стоит и GIF на
+///   текущем кадре; перезапуск и новый заход начинают его с первого кадра без новой
+///   загрузки ([StoryGifPlayer]). Обложки, постеры и картинки товаров показывают первый
+///   кадр. С картинками хоста ([imageProvider]) GIF рисует хост, слайд — время админки.
 ///
 /// Трекинг через [sdk] с кодом [code]: `view` — на каждый слайд, ставший текущим на
 /// осевшей странице; `click` — кнопка, товар, карусель, копирование промокода. Id, которые
@@ -202,6 +210,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   bool _videoReady = false;
   bool _videoPlaying = false;
 
+  /// GIF фона текущего слайда; кадр у него есть — когда готов.
+  StoryGifPlayer? _gif;
+
   /// 10 с на готовность медиа и 15 с до самоповтора видео; в фоне замирают.
   StoriesTimer? _timeout;
   StoriesTimer? _autoRetry;
@@ -287,6 +298,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _autoRetry?.cancel();
     _ticker.dispose();
     _disposeVideo();
+    _disposeGif();
     StoriesSound.instance.detach();
     _pages.dispose();
     _progress.dispose();
@@ -345,6 +357,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         (video == null || !video.isPlaying || video.isBuffering)) {
       return;
     }
+    // GIF идёт теми же шагами, что часы слайда: стоят часы — стоит и он.
+    _gif?.advance(
+      delta > StoriesPlayback.maxTick ? StoriesPlayback.maxTick : delta,
+    );
     final ended = _playback.tick(delta);
     _progress.value = _playback.progress;
     if (ended) _step(_playback.next());
@@ -373,6 +389,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         // Тот же заход: медиа не перезагружается, `view` не повторяется.
         _progress.value = 0;
         if (_videoReady) _video?.seekTo(Duration.zero);
+        _gif?.restart();
       case StoriesStep.turn:
         _sync();
         final target = _playback.turnTarget!;
@@ -472,6 +489,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _timeout?.cancel();
     _autoRetry?.cancel();
     _disposeVideo();
+    _disposeGif();
     _sync();
     final slide = _playback.slide;
     switch (storyMediaOf(slide)) {
@@ -486,15 +504,47 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     }
   }
 
-  void _loadImage(String url, int generation) {
-    final image = storyImage(url, widget.imageProvider);
-    if (image == null) return _ready(generation);
+  /// Картинка хоста — как есть, время слайда из админки. Своя — байты один раз: GIF
+  /// играет [StoryGifPlayer] (готов с первым кадром, слайд не короче круга), прочее —
+  /// фото как у [NetworkImage].
+  Future<void> _loadImage(String url, int generation) async {
+    final custom = widget.imageProvider;
+    if (custom != null) return _precache(custom(url), generation);
+    try {
+      final bytes = await StoriesImageBytes.instance.load(url, keep: true);
+      if (!_current(generation)) return;
+      final gif = StoryGif.parse(bytes);
+      if (gif == null) return _precache(StoryImage(url), generation);
+      final player = StoryGifPlayer(bytes, gif, limit: _slideLimit());
+      _gif = player;
+      await player.start();
+      if (!_current(generation) || _gif != player) return;
+      _playback.useGifLoop(gif.loop);
+      _ready(generation);
+    } catch (error) {
+      debugPrint('PersonalizationStoryViewer: image $url — $error');
+      _failed(generation);
+    }
+  }
+
+  void _precache(ImageProvider image, int generation) {
     var failed = false;
     precacheImage(
       image,
       context,
       onError: (_, _) => failed = true,
     ).then((_) => failed ? _failed(generation) : _ready(generation));
+  }
+
+  /// Площадь слайда в пикселях: больше неё кадры GIF не держатся. Слайд — во весь экран.
+  Size? _slideLimit() {
+    final size = View.maybeOf(context)?.physicalSize;
+    return size == null || size.isEmpty ? null : size;
+  }
+
+  void _disposeGif() {
+    _gif?.dispose();
+    _gif = null;
   }
 
   /// Видео из кэша, а нет файла — сразу по сети, пока кэш заполняется в фоне: загрузка
@@ -560,10 +610,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   void _retry() {
     final slide = _playback.slide;
-    final image = storyMediaOf(slide) == StoryMedia.image
-        ? storyImage(slide.background, widget.imageProvider)
-        : null;
-    image?.evict();
+    if (storyMediaOf(slide) == StoryMedia.image) {
+      storyImage(slide.background, widget.imageProvider)?.evict();
+      StoriesImageBytes.instance.evict(slide.background);
+    }
     final generation = _playback.retry();
     _progress.value = 0;
     _load(generation);
@@ -617,6 +667,13 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       case StoryMedia.none:
         break;
       case StoryMedia.image:
+        // Байты своего загрузчика остаются в памяти: GIF следующего слайда не качается
+        // второй раз, а его первый кадр уже готов.
+        if (widget.imageProvider == null) {
+          StoriesImageBytes.instance
+              .load(next.background, keep: true)
+              .then((_) {}, onError: (Object _) {});
+        }
         final image = storyImage(next.background, widget.imageProvider);
         if (image != null) precacheImage(image, context, onError: (_, _) {});
       case StoryMedia.video:
@@ -770,6 +827,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       generation: live ? _playback.generation : 0,
       progress: live ? _progress : null,
       video: live && _videoReady ? _video : null,
+      gif: live ? _gif : null,
       muted: StoriesSound.instance.muted.value,
       sheetOpen: live && _playback.sheetOpen,
       failed: live && _playback.pausedBy(StoriesPauseReason.error),

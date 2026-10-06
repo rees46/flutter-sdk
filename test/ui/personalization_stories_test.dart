@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/ui/widgets/stories_gif_player.dart';
+import 'package:rees46_sdk/src/ui/widgets/stories_image.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
+
+import 'gif_fixture.dart';
 
 /// A 1×1 transparent PNG: slides and covers need an image that loads offline.
 final ImageProvider _pixel = MemoryImage(
@@ -474,6 +479,157 @@ void main() {
         expect(api.clicks, <String>['7/70/block']);
       },
     );
+
+    group('GIF slides', () {
+      late List<String> fetched;
+      late List<FakeGifCodec> codecs;
+
+      setUp(() {
+        fetched = <String>[];
+        codecs = <FakeGifCodec>[];
+        StoriesImageBytes.instance = StoriesImageBytes(
+          fetch: (uri) async {
+            fetched.add(uri.path);
+            return gifFixture;
+          },
+        );
+        StoryGifPlayer.codecOf = (_) async {
+          final codec = FakeGifCodec(3);
+          codecs.add(codec);
+          return codec;
+        };
+      });
+      tearDown(() {
+        StoriesImageBytes.instance = StoriesImageBytes();
+        StoryGifPlayer.codecOf = ui.instantiateImageCodec;
+        PaintingBinding.instance.imageCache.clear();
+      });
+
+      /// A GIF slide the server gives 300 ms (the fixture loops in 100 + 100 + 500 ms),
+      /// then a slide without media. No host imageProvider: the SDK loads the GIF.
+      final gifStory = Story(
+        id: '8',
+        name: 'GIF',
+        avatar: '',
+        slides: const <StorySlide>[
+          StorySlide(
+            id: '80',
+            type: StorySlideType.image,
+            background: 'https://cdn.example/clock.gif',
+            duration: Duration(milliseconds: 300),
+          ),
+          StorySlide(id: '81', type: StorySlideType.image),
+        ],
+      );
+
+      /// The GIF frame on screen by its width: frame i is i + 1 pixels wide.
+      int? frame(WidgetTester tester) {
+        for (final raw in tester.widgetList<RawImage>(find.byType(RawImage))) {
+          final image = raw.image;
+          if (image != null && image.height == 1) return image.width;
+        }
+        return null;
+      }
+
+      Future<List<int>> openGif(
+        WidgetTester tester, {
+        ValueNotifier<bool>? paused,
+      }) async {
+        final shown = <int>[];
+        await tester.pumpWidget(
+          MaterialApp(
+            home: PersonalizationStoryViewer(
+              stories: <Story>[gifStory],
+              paused: paused,
+              onClose: () {},
+              onSlideShown: (_, index) => shown.add(index),
+            ),
+          ),
+        );
+        // The page settles and loads; then the first frame is in and the clock runs.
+        await tester.pump();
+        await tester.pump();
+        return shown;
+      }
+
+      testWidgets('plays one loop at least and stands still with the slide', (
+        tester,
+      ) async {
+        final paused = ValueNotifier<bool>(false);
+        final shown = await openGif(tester, paused: paused);
+        expect(frame(tester), 1);
+        await _wait(tester, const Duration(milliseconds: 100));
+        expect(frame(tester), 2);
+        await _wait(tester, const Duration(milliseconds: 100));
+        expect(frame(tester), 3);
+
+        // pause() from the host: the slide and its GIF stay on the third frame.
+        paused.value = true;
+        await _wait(tester, const Duration(seconds: 2));
+        expect(frame(tester), 3);
+        expect(shown, <int>[0]);
+
+        paused.value = false;
+        await tester.pump();
+        // Past the server's 300 ms the slide goes on: one loop is 700 ms.
+        await _wait(tester, const Duration(milliseconds: 400));
+        expect(shown, <int>[0]);
+        expect(frame(tester), 3, reason: 'the 500 ms frame');
+        await _wait(tester, const Duration(milliseconds: 100));
+        await tester.pump();
+        expect(shown, <int>[0, 1]);
+        expect(fetched, <String>['/clock.gif']);
+      });
+
+      testWidgets('a hold freezes the frame; release goes on from it', (
+        tester,
+      ) async {
+        await openGif(tester);
+        await _wait(tester, const Duration(milliseconds: 100));
+        expect(frame(tester), 2);
+        final hold = await tester.startGesture(at(tester, 0.5));
+        // 100 ms of the press still run; the hold stops the rest.
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(frame(tester), 3);
+        await _wait(tester, const Duration(seconds: 3));
+        expect(frame(tester), 3);
+        await hold.up();
+        await tester.pump();
+        await _wait(tester, const Duration(milliseconds: 400));
+        expect(frame(tester), 3);
+        await _wait(tester, const Duration(milliseconds: 100));
+        expect(frame(tester), isNull, reason: 'the next slide has no GIF');
+      });
+
+      testWidgets('restart and a return begin at the first frame, no download', (
+        tester,
+      ) async {
+        final shown = await openGif(tester);
+        await _wait(tester, const Duration(milliseconds: 200));
+        expect(frame(tester), 3);
+
+        // Back on the first slide of the first story restarts it.
+        await tester.tapAt(at(tester, 0.1));
+        await tester.pump();
+        await tester.pump();
+        expect(frame(tester), 1);
+        await _wait(tester, const Duration(milliseconds: 100));
+        expect(frame(tester), 2);
+
+        // The next slide and back: the GIF starts over from the bytes in memory.
+        await tester.tapAt(at(tester, 0.9));
+        await tester.pump();
+        await tester.tapAt(at(tester, 0.1));
+        await tester.pump();
+        await tester.pump();
+        expect(shown, <int>[0, 1, 0]);
+        expect(frame(tester), 1);
+        expect(fetched, <String>['/clock.gif']);
+        expect(codecs, hasLength(3));
+        expect(codecs.take(2).every((codec) => codec.disposed), isTrue);
+      });
+    });
   });
 
   group('PersonalizationStories', () {

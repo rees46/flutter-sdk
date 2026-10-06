@@ -175,6 +175,58 @@ void main() {
       expect(playback.duration, const Duration(seconds: 30));
     });
 
+    test(
+      'a GIF slide lasts the server time or one loop, whichever is longer',
+      () {
+        // The server says 5 s; an 8 s loop plays exactly once.
+        final playback = _open(StoriesPlayback(stories: [_story('a', 2)]));
+        playback.useGifLoop(const Duration(seconds: 8));
+        expect(playback.duration, const Duration(seconds: 8));
+        expect(playback.followsVideo, isFalse, reason: 'the clock ends it');
+        for (var i = 0; i < 7; i++) {
+          expect(playback.tick(const Duration(seconds: 1)), isFalse);
+        }
+        expect(playback.tick(const Duration(seconds: 1)), isTrue);
+
+        // A 700 ms loop repeats until the server's 5 s are up.
+        playback.next();
+        playback.mediaReady(playback.generation);
+        playback.useGifLoop(const Duration(milliseconds: 700));
+        expect(playback.duration, const Duration(seconds: 5));
+
+        // An unknown loop (a host image, a broken GIF): the server time.
+        playback.useGifLoop(const Duration(seconds: 8));
+        playback.useGifLoop(null);
+        expect(playback.duration, const Duration(seconds: 5));
+      },
+    );
+
+    test('a paused GIF slide keeps its time; retry measures it again', () {
+      final playback = _open(StoriesPlayback(stories: [_story('a', 1)]));
+      playback.useGifLoop(const Duration(seconds: 8));
+      playback.tick(const Duration(seconds: 1));
+      for (final reason in <StoriesPauseReason>[
+        StoriesPauseReason.hold,
+        StoriesPauseReason.sheet,
+        StoriesPauseReason.background,
+        StoriesPauseReason.host,
+      ]) {
+        playback.pause(reason);
+        expect(playback.running, isFalse, reason: '$reason stops the clock');
+        expect(playback.tick(const Duration(seconds: 1)), isFalse);
+        playback.resume(reason);
+      }
+      expect(playback.elapsed, const Duration(seconds: 1));
+
+      playback.mediaFailed(playback.generation);
+      playback.retry();
+      expect(
+        playback.duration,
+        const Duration(seconds: 5),
+        reason: 'unmeasured',
+      );
+    });
+
     test('a failed load pauses until retry; old loads are ignored', () {
       final playback = StoriesPlayback(stories: [_story('a', 1)]);
       playback.settle(0);

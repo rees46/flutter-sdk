@@ -136,7 +136,8 @@ class StoriesPlayback {
   /// Сколько прошло на текущем слайде.
   Duration get elapsed => _elapsed;
 
-  /// Длительность текущего слайда: из админки, у видео — реальная длина ролика.
+  /// Длительность текущего слайда: из админки, у видео — реальная длина ролика, у GIF —
+  /// не меньше одного круга ([useGifLoop]).
   Duration get duration => _duration;
 
   /// Слайд длится столько, сколько ролик: конец — по концу видео, а не по часам.
@@ -297,6 +298,14 @@ class StoriesPlayback {
     if (duration <= Duration.zero) return;
     _duration = duration;
     _byVideo = true;
+  }
+
+  /// Длина одного круга GIF текущего слайда: слайд длится время из админки или круг — что
+  /// дольше; короткий GIF крутится до конца слайда, длинный проходит ровно один круг.
+  /// Неизвестная длина (`null`: битый GIF, картинка хоста) — время из админки.
+  void useGifLoop(Duration? loop) {
+    final server = slide.duration;
+    _duration = loop != null && loop > server ? loop : server;
   }
 
   /// Позиция видео: время слайда идёт за воспроизведением.

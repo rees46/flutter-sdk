@@ -15,6 +15,7 @@ import '../components/personalization_toast.dart';
 import '../personalization_colors.dart';
 import '../personalization_theme.dart';
 import 'personalization_story_viewer.dart';
+import 'stories_gif_player.dart';
 import 'stories_support.dart';
 
 /// Один слайд просмотра сторис: фон, затемнение, содержимое, касания.
@@ -28,6 +29,8 @@ import 'stories_support.dart';
 ///   другом), «Используемые товары» и звук у видео; текстовые блоки на нём не рисуются.
 /// - Медиа-слайд — непустые текстовые блоки на `y_offset`% высоты, кнопки внизу,
 ///   «Используемые товары», звук у видео.
+/// - GIF фона живого слайда рисует [StoryGifPlayer]; у соседних страниц и до готовности
+///   — первый кадр.
 /// - Медиа не загрузилось — по центру кнопка кита [PersonalizationStoryViewer.retryText].
 ///
 /// Живой ([live]) — только текущий слайд осевшей страницы: у него часы, видео, касания и
@@ -42,6 +45,7 @@ class StorySlideView extends StatelessWidget {
     this.generation = 0,
     this.progress,
     this.video,
+    this.gif,
     this.muted = true,
     this.sheetOpen = false,
     this.failed = false,
@@ -69,6 +73,10 @@ class StorySlideView extends StatelessWidget {
 
   /// Готовое видео живого слайда; `null` — постер.
   final VideoPlayerController? video;
+
+  /// GIF живого слайда; с кадром — рисуется он, иначе картинка по адресу (у GIF — его
+  /// первый кадр).
+  final StoryGifPlayer? gif;
   final bool muted;
   final bool sheetOpen;
   final bool failed;
@@ -201,6 +209,15 @@ class StorySlideView extends StatelessWidget {
           height: size.height,
           child: VideoPlayer(video),
         ),
+      );
+    }
+    final gif = this.gif;
+    if (gif != null && gif.frame != null) {
+      // Кадры GIF меняет проигрыватель — перерисовывается только картинка.
+      return ListenableBuilder(
+        listenable: gif,
+        builder: (context, _) =>
+            RawImage(image: gif.frame, fit: BoxFit.contain),
       );
     }
     final url = storyMediaOf(slide) == StoryMedia.video
