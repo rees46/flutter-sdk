@@ -209,7 +209,7 @@ class PersonalizationStories extends StatefulWidget {
   /// Поля ленты.
   final EdgeInsetsGeometry padding;
 
-  /// Картинка по адресу; не задан — [NetworkImage].
+  /// Картинка по адресу; не задан — загрузчик SDK ([PersonalizationStoryImageProvider]).
   final PersonalizationStoryImageProvider? imageProvider;
 
   final Widget Function(

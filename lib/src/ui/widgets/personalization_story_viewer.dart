@@ -143,7 +143,7 @@ class PersonalizationStoryViewer extends StatefulWidget {
   final String soundOnLabel;
   final String soundOffLabel;
 
-  /// Картинка по адресу; не задан — [NetworkImage].
+  /// Картинка по адресу; не задан — загрузчик SDK ([PersonalizationStoryImageProvider]).
   final PersonalizationStoryImageProvider? imageProvider;
 
   final Widget Function(

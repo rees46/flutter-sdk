@@ -5,18 +5,23 @@ import '../../stories/stories_response.dart';
 import '../components/personalization_product.dart';
 import '../components/personalization_story_price.dart';
 import '../components/personalization_story_text_block.dart';
+import 'stories_image.dart';
 
-/// Как получить картинку по адресу из данных сторис. Не задан — [NetworkImage]; хост
-/// подставляет свой провайдер, например с кэшем.
+/// Как получить картинку по адресу из данных сторис. Не задан — свой загрузчик SDK: качает
+/// как [NetworkImage], GIF анимирует только на фоне слайда и по нему же меряет длину
+/// слайда, а обложки, превью, постеры и картинки товаров показывает первым кадром. Хост
+/// подставляет свой провайдер, например с кэшем, — тогда GIF им и рисуется: SDK его не
+/// анимирует, не останавливает и не меряет, слайд длится время из админки.
 typedef PersonalizationStoryImageProvider = ImageProvider Function(String url);
 
-/// Картинка по адресу; пустой адрес — `null`.
+/// Картинка по адресу — провайдер хоста или [StoryImage] (GIF — первым кадром); пустой
+/// адрес — `null`.
 ImageProvider? storyImage(
   String url,
   PersonalizationStoryImageProvider? custom,
 ) {
   if (url.isEmpty) return null;
-  return custom?.call(url) ?? NetworkImage(url);
+  return custom?.call(url) ?? StoryImage(url);
 }
 
 /// Цвет из `#RRGGBB`, `#RGB` или `#AARRGGBB`; не разобрать — `null`.
