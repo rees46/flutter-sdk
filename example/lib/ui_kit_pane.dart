@@ -1,4 +1,8 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'app_theme_mode.dart';
@@ -756,17 +760,31 @@ List<_Exhibit> _storyExhibits(String shopId) => [
     ),
   ),
   _Exhibit(
-    'Story Viewer — sample slides: price, promo code, discount, a product '
+    'Story Viewer — sample block, offline: price, promo code, discount, a product '
     'video with buttons, carousel and sound, a fitted photo on its letterbox, '
-    'text blocks with a promo code, a failed photo with Retry',
-    (context) => Align(
-      alignment: Alignment.centerLeft,
-      child: PersonalizationButton(
-        label: 'Open sample stories',
-        size: PersonalizationButtonSize.md,
-        onPressed: () => _openSampleStories(context),
-      ),
-    ),
+    'text blocks with a promo code, a failed photo with Retry, and a GIF: an 8 s '
+    'dial on a 5 s slide plays its whole loop and stops while held, its cover '
+    'stays on the first frame',
+    (context) {
+      final stories = _sampleStories((file) => 'assets/uikit/$file');
+      return PersonalizationStoriesBar(
+        padding: EdgeInsets.zero,
+        items: [
+          for (final story in stories)
+            PersonalizationStoryItem(
+              id: story.id,
+              label: story.name,
+              image: _FirstFrameAsset(story.avatar),
+              segments: story.slides.length,
+            ),
+        ],
+        onItemTap: (item) => _openSampleStories(
+          context,
+          index: stories.indexWhere((story) => story.id == item.id),
+        ),
+        iconBuilder: _icon,
+      );
+    },
   ),
   _Exhibit('Story Cover — default, pinned, viewed, skeleton', (context) {
     return _ScrollRow(
@@ -1046,11 +1064,65 @@ class _SoundedUsedProductsState extends State<_SoundedUsedProducts> {
   }
 }
 
-/// Photos of the sample stories ship with the app: `asset:<name>` stands for
-/// `assets/uikit/<name>.jpg`, anything else loads from the network.
-ImageProvider _sampleImage(String url) => url.startsWith('asset:')
-    ? _image(url.substring('asset:'.length))
-    : NetworkImage(url);
+/// Where a picture of the sample block lives: its file under `assets/uikit/`.
+typedef _SampleUrl = String Function(String file);
+
+/// The pictures of the sample stories ship with the app and reach the viewer over a
+/// loopback HTTP server: the viewer takes no imageProvider, so they go through the
+/// SDK's own loader. Only that loader plays a GIF slide and stretches the slide to one
+/// loop of it — a host imageProvider takes a GIF over, and its slide keeps the server
+/// duration.
+final Future<String> _sampleServer = _serveSampleAssets();
+
+Future<String> _serveSampleAssets() async {
+  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+  server.listen((request) async {
+    final response = request.response;
+    try {
+      final data = await rootBundle.load('assets/uikit${request.uri.path}');
+      response.add(
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      );
+    } catch (_) {
+      response.statusCode = HttpStatus.notFound;
+    }
+    await response.close();
+  });
+  return 'http://${server.address.address}:${server.port}';
+}
+
+/// A sample bar cover the way the SDK draws covers by default: a GIF stays on its
+/// first frame. The sample bar is the host here, so the host draws its covers.
+@immutable
+class _FirstFrameAsset extends ImageProvider<_FirstFrameAsset> {
+  const _FirstFrameAsset(this.asset);
+
+  final String asset;
+
+  @override
+  Future<_FirstFrameAsset> obtainKey(ImageConfiguration configuration) =>
+      SynchronousFuture<_FirstFrameAsset>(this);
+
+  @override
+  ImageStreamCompleter loadImage(
+    _FirstFrameAsset key,
+    ImageDecoderCallback decode,
+  ) => OneFrameImageStreamCompleter(_load(decode));
+
+  Future<ImageInfo> _load(ImageDecoderCallback decode) async {
+    final codec = await decode(await rootBundle.loadBuffer(asset));
+    final frame = await codec.getNextFrame();
+    codec.dispose();
+    return ImageInfo(image: frame.image);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is _FirstFrameAsset && other.asset == asset;
+
+  @override
+  int get hashCode => asset.hashCode;
+}
 
 Map<String, dynamic> _sampleProductSlide(
   String id,
@@ -1066,21 +1138,21 @@ Map<String, dynamic> _sampleProductSlide(
 };
 
 /// Stories in the server's shape, so the sample runs through the same parsing as
-/// the live block: product slides of every price kind, and a media slide with text
-/// blocks, a button and used products.
-final List<Story> _sampleStories = StoriesBlock.fromJson({
+/// the live block: product slides of every price kind, a media slide with text
+/// blocks, a button and used products, and a GIF slide.
+List<Story> _sampleStories(_SampleUrl url) => StoriesBlock.fromJson({
   'id': 'sample',
   'stories': [
     {
       'id': 'products',
       'name': 'Products',
-      'avatar': 'asset:headphones',
+      'avatar': url('headphones.jpg'),
       'slides': [
         _sampleProductSlide('price', {
           'id': 'h1',
           'brand': 'Sony',
           'name': 'Wireless over-ear headphones, noise cancelling',
-          'picture': 'asset:headphones',
+          'picture': url('headphones.jpg'),
           'price': 299,
           'price_formatted': r'299 $',
           'oldprice': 349,
@@ -1091,7 +1163,7 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
           'id': 'w1',
           'brand': 'Garmin',
           'name': 'GPS running watch',
-          'picture': 'asset:watch',
+          'picture': url('watch.jpg'),
           'price': 449,
           'price_formatted': r'449 $',
           'oldprice': 499,
@@ -1104,7 +1176,7 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
           'id': 's1',
           'brand': 'Nike',
           'name': 'Air Zoom Pegasus 41 running shoes',
-          'picture': 'asset:pegasus',
+          'picture': url('pegasus.jpg'),
           'price': 140,
           'price_formatted': r'140 $',
           'oldprice': 165,
@@ -1134,7 +1206,7 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
                 'id': 'b1',
                 'brand': 'Osprey',
                 'name': 'Daylite backpack',
-                'picture': 'asset:backpack',
+                'picture': url('backpack.jpg'),
                 'price': 80,
                 'price_formatted': r'80 $',
                 'promocode': 'BUTTERFLY',
@@ -1142,7 +1214,7 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
                 'url': 'https://example.com/backpack',
               },
             },
-            _sampleUsedProducts,
+            _sampleUsedProducts(url),
           ],
         },
       ],
@@ -1150,7 +1222,7 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
     {
       'id': 'media',
       'name': 'Media',
-      'avatar': 'asset:jacket',
+      'avatar': url('jacket.jpg'),
       'slides': [
         // A square photo fitted whole: the rest of the screen is its letterbox
         // colour, and a bare photo takes the 50% scrim.
@@ -1158,14 +1230,14 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
           'id': 'fitted',
           'duration': 5,
           'type': 'image',
-          'background': 'asset:sneakers',
+          'background': url('sneakers.jpg'),
           'background_color': '#1E3A5F',
         },
         {
           'id': 'text',
           'duration': 8,
           'type': 'image',
-          'background': 'asset:jacket',
+          'background': url('jacket.jpg'),
           'background_color': '#3B2A1E',
           'elements': [
             {
@@ -1197,7 +1269,7 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
               'title': 'Go shopping',
               'link': 'https://example.com',
             },
-            _sampleUsedProducts,
+            _sampleUsedProducts(url),
           ],
         },
         // The photo cannot load: the slide stops and offers Retry.
@@ -1205,7 +1277,23 @@ final List<Story> _sampleStories = StoriesBlock.fromJson({
           'id': 'retry',
           'duration': 5,
           'type': 'image',
-          'background': 'asset:missing',
+          'background': url('missing.jpg'),
+        },
+      ],
+    },
+    // An 8 s dial GIF on a 5 s slide: the slide lasts the whole loop, the hand stops
+    // while the slide is held, and the cover stays on the first frame.
+    {
+      'id': 'gif',
+      'name': 'GIF',
+      'avatar': url('story_clock.gif'),
+      'slides': [
+        {
+          'id': 'gif',
+          'duration': 5,
+          'type': 'image',
+          'background': url('story_clock.gif'),
+          'background_color': '#1B2A41',
         },
       ],
     },
@@ -1217,7 +1305,7 @@ const String _sampleVideo =
     'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4';
 
 /// The "Used products" carousel of the sample slides.
-final Map<String, dynamic> _sampleUsedProducts = {
+Map<String, dynamic> _sampleUsedProducts(_SampleUrl url) => {
   'type': 'products',
   'labels': {
     'show_carousel': 'Used products',
@@ -1229,7 +1317,7 @@ final Map<String, dynamic> _sampleUsedProducts = {
         'id': 'm$index',
         'brand': 'Brand',
         'name': 'Product ${index + 1}',
-        'picture': 'asset:$name',
+        'picture': url('$name.jpg'),
         'price': 99,
         'price_formatted': r'99 $',
         'oldprice': 120,
@@ -1239,17 +1327,19 @@ final Map<String, dynamic> _sampleUsedProducts = {
   ],
 };
 
-void _openSampleStories(BuildContext context) {
-  Navigator.of(context, rootNavigator: true).push(
+Future<void> _openSampleStories(BuildContext context, {int index = 0}) async {
+  final base = await _sampleServer;
+  if (!context.mounted) return;
+  await Navigator.of(context, rootNavigator: true).push(
     PersonalizationStoryViewer.route(
       PersonalizationStoryViewer(
-        stories: _sampleStories,
+        stories: _sampleStories((file) => '$base/$file'),
+        initialStory: index,
         // No SDK: the sample does not track; links and products come back here.
         onLinkClick: (url) => PersonalizationToast.show(context, 'Link: $url'),
         onProductClick: (product) =>
             PersonalizationToast.show(context, 'Product: ${product.name}'),
         promoCopiedText: 'Code copied to clipboard',
-        imageProvider: _sampleImage,
         iconBuilder: _icon,
       ),
     ),
