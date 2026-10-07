@@ -426,7 +426,8 @@ class StorySlideView extends StatelessWidget {
   /// Товарный слайд: шапка (бренд SemiBold 20, название SemiBold 16, межстрочный 140%,
   /// шаг 8), белая карточка картинки (скругление 12, поля 16, квадрат по ширине — на
   /// низком экране ужимается), цена, кнопки слайда; без своих кнопок — одна
-  /// [PersonalizationStoryViewer.productButtonText], ведёт к товару.
+  /// [PersonalizationStoryViewer.productButtonText], ведёт к товару. Товар открывают
+  /// только кнопки: шапка и картинка не нажимаются, касание по ним листает, как по слайду.
   Widget _productContent(
     BuildContext context,
     StorySlide slide,
@@ -476,22 +477,21 @@ class StorySlideView extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
+              // Картинка не нажимается: касание по ней — касание слайда (листает по
+              // третям, удержание — пауза).
               child: Center(
                 child: AspectRatio(
                   aspectRatio: 1,
-                  child: GestureDetector(
-                    onTap: live ? () => onProduct?.call(product) : null,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFFFFF),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: image == null
-                            ? null
-                            : Image(image: image, fit: BoxFit.contain),
-                      ),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFFFF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: image == null
+                          ? null
+                          : Image(image: image, fit: BoxFit.contain),
                     ),
                   ),
                 ),

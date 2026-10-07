@@ -212,6 +212,7 @@ void main() {
       List<Story>? stories,
       VoidCallback? onClose,
       ValueChanged<String>? onLink,
+      ValueChanged<StoryProduct>? onProduct,
       void Function(Story story, int slideIndex)? onSlideShown,
     }) async {
       final api = _FakeHostApi(null);
@@ -224,6 +225,7 @@ void main() {
             imageProvider: _offline,
             onClose: onClose ?? () {},
             onLinkClick: onLink,
+            onProductClick: onProduct,
             onSlideShown: onSlideShown,
           ),
         ),
@@ -485,6 +487,84 @@ void main() {
       expect(find.text('Product 9'), findsOneWidget, reason: 'still open');
       // Let the toast leave before the test ends.
       await _wait(tester, const Duration(seconds: 3));
+    });
+
+    testWidgets('the product picture pages like the slide and opens nothing', (
+      tester,
+    ) async {
+      // A phone-like portrait screen: the picture spans all three tap zones.
+      tester.view
+        ..physicalSize = const Size(400, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final semantics = tester.ensureSemantics();
+      final cards = Story.fromJson(<String, dynamic>{
+        'id': 1,
+        'name': 'Cards',
+        'avatar': '',
+        'slides': <Map<String, dynamic>>[
+          <String, dynamic>{..._productSlide(10, 1), 'duration': 5},
+          <String, dynamic>{..._productSlide(11, 2), 'duration': 5},
+        ],
+      });
+      var closed = 0;
+      final products = <String>[];
+      final api = await open(
+        tester,
+        stories: <Story>[cards],
+        onClose: () => closed++,
+        onProduct: (product) => products.add(product.id),
+      );
+      expect(find.text('Product 1'), findsOneWidget);
+
+      final picture = find.byType(AspectRatio);
+      expect(picture, findsOneWidget);
+      final width = tester
+          .getSize(find.byType(PersonalizationStoryViewer))
+          .width;
+      final rect = tester.getRect(picture);
+      final left = Offset(rect.left + 8, rect.center.dy);
+      final right = Offset(rect.right - 8, rect.center.dy);
+      expect(left.dx, lessThan(width / 3), reason: 'the left third');
+      expect(right.dx, greaterThan(width * 2 / 3), reason: 'the right third');
+
+      // No node of its own: the picture is no button, and the only tap under it is the
+      // whole slide's (the tap zones), not one sized to the picture.
+      final node = tester.getSemantics(
+        find.descendant(of: picture, matching: find.byType(Image)),
+      );
+      expect(node.flagsCollection.isButton, isFalse);
+      expect(node.rect.size, Size(width, 800), reason: 'the slide surface');
+
+      // The centre third does nothing, the right third pages on, the left one back.
+      await tester.tapAt(rect.center);
+      await tester.pump();
+      expect(find.text('Product 1'), findsOneWidget, reason: 'the centre');
+      await tester.tapAt(right);
+      await tester.pump();
+      expect(find.text('Product 2'), findsOneWidget);
+      await tester.tapAt(left);
+      await tester.pump();
+      expect(find.text('Product 1'), findsOneWidget);
+
+      // A hold on the picture pauses and never moves.
+      final hold = await tester.startGesture(right);
+      await tester.pump(const Duration(milliseconds: 300));
+      await _wait(tester, const Duration(seconds: 6));
+      await hold.up();
+      await tester.pump();
+      expect(find.text('Product 1'), findsOneWidget, reason: 'held, released');
+
+      expect(products, isEmpty, reason: 'the picture opens no product');
+      expect(api.clicks, isEmpty);
+      expect(closed, 0);
+
+      // The product opens only from the slide's button.
+      await tester.tap(find.text('More info'));
+      await tester.pump();
+      expect(products, <String>['p1']);
+      expect(api.clicks, <String>['1/10/block']);
+      semantics.dispose();
     });
 
     testWidgets('the cross closes the viewer also with the sheet open', (
