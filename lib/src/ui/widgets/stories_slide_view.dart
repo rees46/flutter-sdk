@@ -26,7 +26,8 @@ import 'stories_support.dart';
 /// - Затемнение сверху и снизу на каждом слайде: 50% у голого медиа, иначе 30%
 ///   ([storyScrimOpacity]), до прозрачного к 21% и от 86% высоты.
 /// - Товарный слайд — карточка товара кита, все кнопки слайда (Primary LG друг под
-///   другом), «Используемые товары» и звук у видео; текстовые блоки на нём не рисуются.
+///   другом), «Используемые товары» и звук у видео; текстовые блоки на нём не рисуются,
+///   но промокод текстового блока, если у товара своего нет, показывает блок цены.
 /// - Медиа-слайд — непустые текстовые блоки на `y_offset`% высоты, кнопки внизу,
 ///   «Используемые товары», звук у видео.
 /// - GIF фона живого слайда рисует [StoryGifPlayer]; у соседних страниц и до готовности
@@ -434,7 +435,8 @@ class StorySlideView extends StatelessWidget {
     final product = element.item!;
     final theme = PersonalizationTheme.of(context);
     final colors = theme.colors;
-    final price = storyPriceOf(product);
+    // Промокод текстового блока слайда идёт в блок цены: сам блок здесь не рисуется.
+    final price = storyPriceOf(product, slidePromo: storySlidePromocode(slide));
     final image = storyImage(product.image, config.imageProvider);
     final buttons = storyButtons(slide);
 

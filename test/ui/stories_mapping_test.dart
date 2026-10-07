@@ -75,6 +75,80 @@ void main() {
     });
   });
 
+  group('text block promo on a product slide', () {
+    /// A product slide whose text blocks carry [codes] (`null` — a block without one).
+    StorySlide promoSlide(List<String?> codes) => _slide(
+      background: '',
+      elements: <StoryElement>[
+        for (final code in codes)
+          StoryTextBlockElement(text: 'Use the code', promocode: code),
+        StoryProductElement(item: _product()),
+      ],
+    );
+
+    test('a product without a promo takes the text block code', () {
+      final slide = promoSlide(<String?>[null, ' SALE10 ', 'LATER']);
+      final code = storySlidePromocode(slide);
+      expect(code, 'SALE10', reason: 'the first non-blank code, trimmed');
+      final price = storyPriceOf(
+        _product(withPromo: '1 000 000 ₽', withPromoNumber: 1000000),
+        slidePromo: code,
+      );
+      expect(price.type, PersonalizationStoryPriceType.promoCode);
+      expect(price.price, '1 190 900 ₽', reason: 'the regular price, big');
+      expect(price.oldPrice, isNull, reason: 'no old price, nothing crossed');
+      expect(price.promoCode, 'SALE10');
+      // Promo beats discount, as for a product promo.
+      final discounted = storyPriceOf(
+        _product(discountPercent: 15),
+        slidePromo: code,
+      );
+      expect(discounted.type, PersonalizationStoryPriceType.promoCode);
+      expect(discounted.discount, isNull);
+    });
+
+    test('the product promo wins over the text block one', () {
+      final price = storyPriceOf(
+        _product(promocode: 'OWN', withPromo: '1 000 000 ₽'),
+        slidePromo: storySlidePromocode(promoSlide(<String?>['SALE10'])),
+      );
+      expect(price.promoCode, 'OWN');
+      expect(price.price, '1 000 000 ₽');
+      expect(price.oldPrice, '1 190 900 ₽');
+    });
+
+    test('a "null" or blank text block code is no promo', () {
+      final slide = promoSlide(<String?>['null', '   ', '']);
+      expect(storySlidePromocode(slide), isNull);
+      final price = storyPriceOf(
+        _product(discountPercent: 10),
+        slidePromo: storySlidePromocode(slide),
+      );
+      expect(price.type, PersonalizationStoryPriceType.discount);
+      expect(price.promoCode, isNull);
+      expect(
+        storyPriceOf(_product(), slidePromo: '').type,
+        PersonalizationStoryPriceType.price,
+      );
+    });
+
+    test('only an old price above the regular one is crossed out', () {
+      for (final oldPrice in <double>[1190900, 245000]) {
+        final price = storyPriceOf(
+          _product(oldPrice: oldPrice),
+          slidePromo: 'SALE10',
+        );
+        expect(price.oldPrice, isNull, reason: 'oldprice $oldPrice ≤ price');
+      }
+      final greater = storyPriceOf(
+        _product(oldPrice: 2000000),
+        slidePromo: 'SALE10',
+      );
+      expect(greater.oldPrice, '2000000 ₽');
+      expect(greater.price, '1 190 900 ₽');
+    });
+  });
+
   group('slide', () {
     test('media is a non-empty background, not the slide type', () {
       expect(storyMediaOf(_slide()), StoryMedia.image);

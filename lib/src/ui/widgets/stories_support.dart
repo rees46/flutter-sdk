@@ -123,11 +123,26 @@ String storyPercent(double value) {
   return '$text%';
 }
 
+/// Промокод текстового блока слайда для блока цены товара: код первого текстового блока,
+/// где он не пустой. Пробелы и строка «null» — не код. На товарном слайде сами блоки не
+/// рисуются, а их код показывает карточка товара, как в макете ([storyPriceOf]).
+String? storySlidePromocode(StorySlide slide) {
+  for (final element in slide.elements) {
+    if (element is! StoryTextBlockElement) continue;
+    final code = element.promocode?.trim() ?? '';
+    if (code.isNotEmpty && code != 'null') return code;
+  }
+  return null;
+}
+
 /// Цена товара для [PersonalizationStoryPrice]: вид блока и его строки.
 ///
-/// - Промокод — вид promoCode: крупно цена с промокодом
+/// - Промокод товара — вид promoCode: крупно цена с промокодом
 ///   (`price_with_promocode_formatted`, без неё обычная); зачёркнута старая цена, если
 ///   она есть, иначе обычная цена, если она отличается от цены с промокодом.
+/// - Иначе промокод текстового блока слайда ([slidePromo], см. [storySlidePromocode]) —
+///   тоже вид promoCode, но крупно обычная цена: цена с промокодом относится только к
+///   промокоду товара. Зачёркнута только старая цена, если она есть.
 /// - Иначе скидка больше нуля — вид discount с процентом `discount_percent` (дробный
 ///   остаётся дробным: «12.5%»).
 /// - Иначе просто цена.
@@ -141,7 +156,7 @@ String storyPercent(double value) {
   String? discount,
   String? promoCode,
 })
-storyPriceOf(StoryProduct product) {
+storyPriceOf(StoryProduct product, {String? slidePromo}) {
   final regular = product.priceFormatted.isNotEmpty
       ? product.priceFormatted
       : _plainPrice(product);
@@ -160,6 +175,15 @@ storyPriceOf(StoryProduct product) {
       oldPrice: oldPrice ?? (cheaper ? regular : null),
       discount: null,
       promoCode: product.promocode,
+    );
+  }
+  if (slidePromo != null && slidePromo.isNotEmpty) {
+    return (
+      type: PersonalizationStoryPriceType.promoCode,
+      price: regular,
+      oldPrice: oldPrice,
+      discount: null,
+      promoCode: slidePromo,
     );
   }
   if (product.discountPercent > 0) {

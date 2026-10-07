@@ -414,6 +414,79 @@ void main() {
       expect(find.text('Nowhere'), findsOneWidget);
     });
 
+    testWidgets('a product slide shows the text block promo in the card', (
+      tester,
+    ) async {
+      String? clipboard;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            clipboard = (call.arguments as Map)['text'] as String;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      final promoStory = Story.fromJson(<String, dynamic>{
+        'id': 9,
+        'name': 'Promo',
+        'avatar': '',
+        'slides': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 90,
+            'duration': 5,
+            'type': 'product',
+            'elements': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'type': 'text_block',
+                'text_input': 'Your code SALE10',
+                'promocode': 'SALE10',
+                'y_offset': 30,
+              },
+              <String, dynamic>{
+                'type': 'product',
+                'item': <String, dynamic>{
+                  'id': 'p9',
+                  'name': 'Product 9',
+                  'price': 100,
+                  'price_formatted': '100 ₽',
+                  'url': 'https://shop.example/p9',
+                },
+              },
+            ],
+          },
+        ],
+      });
+      final api = await open(tester, stories: <Story>[promoStory]);
+
+      // The text block itself stays hidden on a product slide.
+      expect(find.byType(PersonalizationStoryTextBlock), findsNothing);
+      expect(find.text('Your code SALE10'), findsNothing);
+      final price = tester.widget<PersonalizationStoryPrice>(
+        find.byType(PersonalizationStoryPrice),
+      );
+      expect(price.type, PersonalizationStoryPriceType.promoCode);
+      expect(price.price, '100 ₽');
+      expect(price.oldPrice, isNull);
+      expect(price.promoCode, 'SALE10');
+
+      // A tap copies the code, toasts and counts the click, as a product promo.
+      await tester.tap(find.text('SALE10'));
+      await tester.pump();
+      expect(clipboard, 'SALE10');
+      expect(find.text('Copied'), findsOneWidget);
+      expect(api.clicks, <String>['9/90/block']);
+      expect(find.text('Product 9'), findsOneWidget, reason: 'still open');
+      // Let the toast leave before the test ends.
+      await _wait(tester, const Duration(seconds: 3));
+    });
+
     testWidgets('the cross closes the viewer also with the sheet open', (
       tester,
     ) async {
