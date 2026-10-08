@@ -761,7 +761,7 @@ List<_Exhibit> _storyExhibits(String shopId) => [
   ),
   _Exhibit(
     'Story Viewer — sample block, offline: price, promo code, discount, a product '
-    'video with buttons, carousel and sound, a fitted photo on its letterbox, '
+    'with the promo code of its text block (SOUND10), a product video with buttons, carousel and sound, a fitted photo on its letterbox, '
     'text blocks with a promo code, a failed photo with Retry, and a GIF: an 8 s '
     'dial on a 5 s slide plays its whole loop and stops while held, its cover '
     'stays on the first frame',
@@ -1126,12 +1126,14 @@ class _FirstFrameAsset extends ImageProvider<_FirstFrameAsset> {
 
 Map<String, dynamic> _sampleProductSlide(
   String id,
-  Map<String, dynamic> product,
-) => {
+  Map<String, dynamic> product, {
+  Map<String, dynamic>? textBlock,
+}) => {
   'id': id,
   'duration': 6,
   'type': '',
   'elements': [
+    ?textBlock,
     {'type': 'button', 'title': 'More info', 'link': 'https://example.com'},
     {'type': 'product', 'item': product},
   ],
@@ -1184,6 +1186,27 @@ List<Story> _sampleStories(_SampleUrl url) => StoriesBlock.fromJson({
           'discount_percent': 12.5,
           'url': 'https://example.com/pegasus',
         }),
+        // The product has no promo code of its own: the card shows the code of the
+        // slide's text block, and the text block itself is not drawn.
+        _sampleProductSlide(
+          'text-promo',
+          {
+            'id': 'g1',
+            'brand': 'Ray-Ban',
+            'name': 'Wayfarer sunglasses',
+            'picture': url('sunglasses.jpg'),
+            'price': 159,
+            'price_formatted': r'159 $',
+            'url': 'https://example.com/sunglasses',
+          },
+          textBlock: {
+            'type': 'text_block',
+            'text_input': 'Your promo code SOUND10',
+            'promocode': 'SOUND10',
+            'font_size': 20,
+            'y_offset': 10,
+          },
+        ),
         // A product over a video: every slide button, the used products and the
         // sound toggle; the video streams once and then plays from the disk cache.
         {
