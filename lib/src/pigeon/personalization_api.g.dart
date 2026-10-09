@@ -1100,8 +1100,10 @@ class PersonalizationHostApi {
 
   /// The slide ids seen per story id for [shop] — the plugin's own store
   /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
-  /// survives app restarts.
-  Future<Map<String, List<String>>> getStoriesSeen(String shop) async {
+  /// survives app restarts. The inner lists are untyped on purpose: the channel
+  /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
+  /// generates a lazy cast that throws on the first read.
+  Future<Map<String, List<Object?>>> getStoriesSeen(String shop) async {
     final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
@@ -1125,7 +1127,7 @@ class PersonalizationHostApi {
         message: 'Host platform returned null value for non-null return value.',
       );
     } else {
-      return (pigeonVar_replyList[0] as Map<Object?, Object?>?)!.cast<String, List<String>>();
+      return (pigeonVar_replyList[0] as Map<Object?, Object?>?)!.cast<String, List<Object?>>();
     }
   }
 

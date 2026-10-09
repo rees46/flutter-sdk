@@ -34,15 +34,15 @@ class StoriesSeenStore {
   }
 
   Future<void> _read(PersonalizationSdk sdk, String shop) async {
-    Map<String, List<String>> stored = const <String, List<String>>{};
+    final current = _byShop.putIfAbsent(shop, () => <String, Set<String>>{});
+    // Разбор тоже под try: кривые данные хранилища не должны ронять ленту.
     try {
-      stored = await sdk.getStoriesSeen(shop);
+      final stored = await sdk.getStoriesSeen(shop);
+      for (final entry in stored.entries) {
+        (current[entry.key] ??= <String>{}).addAll(entry.value);
+      }
     } catch (error) {
       debugPrint('PersonalizationStories: seen slides unavailable — $error');
-    }
-    final current = _byShop.putIfAbsent(shop, () => <String, Set<String>>{});
-    for (final entry in stored.entries) {
-      (current[entry.key] ??= <String>{}).addAll(entry.value);
     }
   }
 

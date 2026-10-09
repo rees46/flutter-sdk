@@ -540,8 +540,10 @@ protocol PersonalizationHostApi {
   func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void)
   /// The slide ids seen per story id for [shop] — the plugin's own store
   /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
-  /// survives app restarts.
-  func getStoriesSeen(shop: String) throws -> [String: [String]]
+  /// survives app restarts. The inner lists are untyped on purpose: the channel
+  /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
+  /// generates a lazy cast that throws on the first read.
+  func getStoriesSeen(shop: String) throws -> [String: [Any?]]
   /// Records [slideId] of story [storyId] as seen for [shop].
   func setStorySlideSeen(shop: String, storyId: String, slideId: String) throws
   /// The app's cache directory: Android `Context.cacheDir`, iOS `Library/Caches`. The
@@ -1006,7 +1008,9 @@ class PersonalizationHostApiSetup {
     }
     /// The slide ids seen per story id for [shop] — the plugin's own store
     /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
-    /// survives app restarts.
+    /// survives app restarts. The inner lists are untyped on purpose: the channel
+    /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
+    /// generates a lazy cast that throws on the first read.
     let getStoriesSeenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       getStoriesSeenChannel.setMessageHandler { message, reply in

@@ -264,8 +264,10 @@ abstract class PersonalizationHostApi {
 
   /// The slide ids seen per story id for [shop] — the plugin's own store
   /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
-  /// survives app restarts.
-  Map<String, List<String>> getStoriesSeen(String shop);
+  /// survives app restarts. The inner lists are untyped on purpose: the channel
+  /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
+  /// generates a lazy cast that throws on the first read.
+  Map<String, List<Object?>> getStoriesSeen(String shop);
 
   /// Records [slideId] of story [storyId] as seen for [shop].
   void setStorySlideSeen(String shop, String storyId, String slideId);

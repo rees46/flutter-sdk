@@ -766,8 +766,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
 
   // MARK: - Stories viewer (UI kit)
 
-  func getStoriesSeen(shop: String) throws -> [String: [String]] {
-    return StoriesSeenStore.read(shop: shop)
+  func getStoriesSeen(shop: String) throws -> [String: [Any?]] {
+    return StoriesSeenStore.read(shop: shop).mapValues { $0 as [Any?] }
   }
 
   func setStorySlideSeen(shop: String, storyId: String, slideId: String) throws {

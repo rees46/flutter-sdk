@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/personalization_sdk.dart'
@@ -151,7 +152,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   }
 
   @override
-  Future<Map<String, List<String>>> getStoriesSeen(String shop) async =>
+  Future<Map<String, List<Object?>>> getStoriesSeen(String shop) async =>
       seen[shop] ?? <String, List<String>>{};
 
   @override
@@ -298,6 +299,34 @@ void main() {
       '40': <String>['36', '37'],
     });
     expect(await sdk.getStoriesSeen('shop-b'), isEmpty);
+  });
+
+  test('seen slides read over the real channel, whose lists arrive untyped', () async {
+    // The platform side answers through the standard codec: the inner lists decode
+    // as List<Object?>, not List<String>. A lazy cast of them threw on the first read
+    // once a slide had been seen ("List<Object?> is not a subtype of List<String>").
+    const channel =
+        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen';
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMessageHandler(
+      channel,
+      (_) async => const StandardMessageCodec().encodeMessage(<Object?>[
+        <Object?, Object?>{
+          '40': <Object?>['36', '37'],
+        },
+      ]),
+    );
+    addTearDown(() => messenger.setMockMessageHandler(channel, null));
+
+    final sdk = PersonalizationSdk(
+      api: pigeon.PersonalizationHostApi(),
+      shopId: 'shop-a',
+    );
+
+    final seen = await sdk.getStoriesSeen('shop-a');
+    expect(seen.keys, <String>['40']);
+    expect(seen['40'], <String>['36', '37']);
   });
 
   test('numbers are read as decimals; the default duration is 10 s', () {

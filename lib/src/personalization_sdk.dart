@@ -364,8 +364,13 @@ extension PersonalizationStoriesBridge on PersonalizationSdk {
 
   /// The stories slides seen on this device for [shop] (slide ids by story id), from the
   /// plugin's own persistent store.
-  Future<Map<String, List<String>>> getStoriesSeen(String shop) =>
-      _api.getStoriesSeen(shop);
+  Future<Map<String, List<String>>> getStoriesSeen(String shop) async {
+    final stored = await _api.getStoriesSeen(shop);
+    return <String, List<String>>{
+      for (final entry in stored.entries)
+        entry.key: entry.value.whereType<String>().toList(),
+    };
+  }
 
   /// Records slide [slideId] of story [storyId] as seen for [shop].
   Future<void> setStorySlideSeen(String shop, String storyId, String slideId) =>

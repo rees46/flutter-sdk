@@ -14,7 +14,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   int reads = 0;
 
   @override
-  Future<Map<String, List<String>>> getStoriesSeen(String shop) async {
+  Future<Map<String, List<Object?>>> getStoriesSeen(String shop) async {
     reads++;
     return shop == 'shop-a' ? stored : <String, List<String>>{};
   }
