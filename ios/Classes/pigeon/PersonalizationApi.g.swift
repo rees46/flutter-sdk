@@ -338,6 +338,138 @@ struct ProfileParamsWire: Hashable {
   }
 }
 
+/// Wire format for `subscriptions/manage`: contacts that identify the client and one flag per
+/// channel and mailing type. `true` subscribes, `false` unsubscribes, `null` leaves it unchanged.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ManageSubscriptionParamsWire: Hashable {
+  var email: String? = nil
+  var phone: String? = nil
+  var externalId: String? = nil
+  var loyaltyId: String? = nil
+  var telegramId: String? = nil
+  var emailBulk: Bool? = nil
+  var emailChain: Bool? = nil
+  var emailTransactional: Bool? = nil
+  var smsBulk: Bool? = nil
+  var smsChain: Bool? = nil
+  var smsTransactional: Bool? = nil
+  var webPushBulk: Bool? = nil
+  var webPushChain: Bool? = nil
+  var webPushTransactional: Bool? = nil
+  var mobilePushBulk: Bool? = nil
+  var mobilePushChain: Bool? = nil
+  var mobilePushTransactional: Bool? = nil
+  var telegramBulk: Bool? = nil
+  var telegramChain: Bool? = nil
+  var telegramTransactional: Bool? = nil
+  var whatsappBulk: Bool? = nil
+  var whatsappChain: Bool? = nil
+  var whatsappTransactional: Bool? = nil
+  var maxBulk: Bool? = nil
+  var maxChain: Bool? = nil
+  var maxTransactional: Bool? = nil
+  var walletBulk: Bool? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ManageSubscriptionParamsWire? {
+    let email: String? = nilOrValue(pigeonVar_list[0])
+    let phone: String? = nilOrValue(pigeonVar_list[1])
+    let externalId: String? = nilOrValue(pigeonVar_list[2])
+    let loyaltyId: String? = nilOrValue(pigeonVar_list[3])
+    let telegramId: String? = nilOrValue(pigeonVar_list[4])
+    let emailBulk: Bool? = nilOrValue(pigeonVar_list[5])
+    let emailChain: Bool? = nilOrValue(pigeonVar_list[6])
+    let emailTransactional: Bool? = nilOrValue(pigeonVar_list[7])
+    let smsBulk: Bool? = nilOrValue(pigeonVar_list[8])
+    let smsChain: Bool? = nilOrValue(pigeonVar_list[9])
+    let smsTransactional: Bool? = nilOrValue(pigeonVar_list[10])
+    let webPushBulk: Bool? = nilOrValue(pigeonVar_list[11])
+    let webPushChain: Bool? = nilOrValue(pigeonVar_list[12])
+    let webPushTransactional: Bool? = nilOrValue(pigeonVar_list[13])
+    let mobilePushBulk: Bool? = nilOrValue(pigeonVar_list[14])
+    let mobilePushChain: Bool? = nilOrValue(pigeonVar_list[15])
+    let mobilePushTransactional: Bool? = nilOrValue(pigeonVar_list[16])
+    let telegramBulk: Bool? = nilOrValue(pigeonVar_list[17])
+    let telegramChain: Bool? = nilOrValue(pigeonVar_list[18])
+    let telegramTransactional: Bool? = nilOrValue(pigeonVar_list[19])
+    let whatsappBulk: Bool? = nilOrValue(pigeonVar_list[20])
+    let whatsappChain: Bool? = nilOrValue(pigeonVar_list[21])
+    let whatsappTransactional: Bool? = nilOrValue(pigeonVar_list[22])
+    let maxBulk: Bool? = nilOrValue(pigeonVar_list[23])
+    let maxChain: Bool? = nilOrValue(pigeonVar_list[24])
+    let maxTransactional: Bool? = nilOrValue(pigeonVar_list[25])
+    let walletBulk: Bool? = nilOrValue(pigeonVar_list[26])
+
+    return ManageSubscriptionParamsWire(
+      email: email,
+      phone: phone,
+      externalId: externalId,
+      loyaltyId: loyaltyId,
+      telegramId: telegramId,
+      emailBulk: emailBulk,
+      emailChain: emailChain,
+      emailTransactional: emailTransactional,
+      smsBulk: smsBulk,
+      smsChain: smsChain,
+      smsTransactional: smsTransactional,
+      webPushBulk: webPushBulk,
+      webPushChain: webPushChain,
+      webPushTransactional: webPushTransactional,
+      mobilePushBulk: mobilePushBulk,
+      mobilePushChain: mobilePushChain,
+      mobilePushTransactional: mobilePushTransactional,
+      telegramBulk: telegramBulk,
+      telegramChain: telegramChain,
+      telegramTransactional: telegramTransactional,
+      whatsappBulk: whatsappBulk,
+      whatsappChain: whatsappChain,
+      whatsappTransactional: whatsappTransactional,
+      maxBulk: maxBulk,
+      maxChain: maxChain,
+      maxTransactional: maxTransactional,
+      walletBulk: walletBulk
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      email,
+      phone,
+      externalId,
+      loyaltyId,
+      telegramId,
+      emailBulk,
+      emailChain,
+      emailTransactional,
+      smsBulk,
+      smsChain,
+      smsTransactional,
+      webPushBulk,
+      webPushChain,
+      webPushTransactional,
+      mobilePushBulk,
+      mobilePushChain,
+      mobilePushTransactional,
+      telegramBulk,
+      telegramChain,
+      telegramTransactional,
+      whatsappBulk,
+      whatsappChain,
+      whatsappTransactional,
+      maxBulk,
+      maxChain,
+      maxTransactional,
+      walletBulk,
+    ]
+  }
+  static func == (lhs: ManageSubscriptionParamsWire, rhs: ManageSubscriptionParamsWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
 /// Wire format for one product line in a tracking event (maps to native `TrackingItem`).
 ///
 /// [quantity] is the domain name for the line quantity; native sends it as `amount`.
@@ -424,8 +556,10 @@ private class PersonalizationApiPigeonCodecReader: FlutterStandardReader {
     case 131:
       return ProfileParamsWire.fromList(self.readValue() as! [Any?])
     case 132:
-      return TrackingItemWire.fromList(self.readValue() as! [Any?])
+      return ManageSubscriptionParamsWire.fromList(self.readValue() as! [Any?])
     case 133:
+      return TrackingItemWire.fromList(self.readValue() as! [Any?])
+    case 134:
       return TrackingSourceWire.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -444,11 +578,14 @@ private class PersonalizationApiPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? ProfileParamsWire {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? TrackingItemWire {
+    } else if let value = value as? ManageSubscriptionParamsWire {
       super.writeByte(132)
       super.writeValue(value.toList())
-    } else if let value = value as? TrackingSourceWire {
+    } else if let value = value as? TrackingItemWire {
       super.writeByte(133)
+      super.writeValue(value.toList())
+    } else if let value = value as? TrackingSourceWire {
+      super.writeByte(134)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -480,6 +617,7 @@ protocol PersonalizationHostApi {
   /// [customFieldsJson] is JSON object string or null (maps to native custom fields map).
   func trackEvent(event: String, time: Int64?, category: String?, label: String?, value: Int64?, customFieldsJson: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
   func setProfile(params: ProfileParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func manageSubscription(params: ManageSubscriptionParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
   /// Returns the recommendation block as a JSON string.
   /// [paramsJson] is a JSON object string with optional filter parameters.
   /// Dart layer parses the result into [RecommendationResponse].
@@ -676,6 +814,24 @@ class PersonalizationHostApiSetup {
       }
     } else {
       setProfileChannel.setMessageHandler(nil)
+    }
+    let manageSubscriptionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.manageSubscription\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      manageSubscriptionChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let paramsArg = args[0] as! ManageSubscriptionParamsWire
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.manageSubscription(params: paramsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      manageSubscriptionChannel.setMessageHandler(nil)
     }
     /// Returns the recommendation block as a JSON string.
     /// [paramsJson] is a JSON object string with optional filter parameters.

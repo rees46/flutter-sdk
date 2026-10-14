@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
 import com.rees46.rees46_flutter_sdk.pigeon.InitConfig
+import com.rees46.rees46_flutter_sdk.pigeon.ManageSubscriptionParamsWire
 import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationFlutterApi
 import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationHostApi
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileParamsWire
@@ -599,6 +600,52 @@ class Rees46FlutterSdkPlugin :
             })
         } catch (t: Throwable) {
             callback(Result.failure(FlutterError("set_profile_failed", t.message, null)))
+        }
+    }
+
+    override fun manageSubscription(params: ManageSubscriptionParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit) {
+        try {
+            val subscriptions = HashMap<String, Boolean>()
+            params.emailBulk?.let { subscriptions["email_bulk"] = it }
+            params.emailChain?.let { subscriptions["email_chain"] = it }
+            params.emailTransactional?.let { subscriptions["email_transactional"] = it }
+            params.smsBulk?.let { subscriptions["sms_bulk"] = it }
+            params.smsChain?.let { subscriptions["sms_chain"] = it }
+            params.smsTransactional?.let { subscriptions["sms_transactional"] = it }
+            params.webPushBulk?.let { subscriptions["web_push_bulk"] = it }
+            params.webPushChain?.let { subscriptions["web_push_chain"] = it }
+            params.webPushTransactional?.let { subscriptions["web_push_transactional"] = it }
+            params.mobilePushBulk?.let { subscriptions["mobile_push_bulk"] = it }
+            params.mobilePushChain?.let { subscriptions["mobile_push_chain"] = it }
+            params.mobilePushTransactional?.let { subscriptions["mobile_push_transactional"] = it }
+            params.telegramBulk?.let { subscriptions["telegram_bulk"] = it }
+            params.telegramChain?.let { subscriptions["telegram_chain"] = it }
+            params.telegramTransactional?.let { subscriptions["telegram_transactional"] = it }
+            params.whatsappBulk?.let { subscriptions["whatsapp_bulk"] = it }
+            params.whatsappChain?.let { subscriptions["whatsapp_chain"] = it }
+            params.whatsappTransactional?.let { subscriptions["whatsapp_transactional"] = it }
+            params.maxBulk?.let { subscriptions["max_bulk"] = it }
+            params.maxChain?.let { subscriptions["max_chain"] = it }
+            params.maxTransactional?.let { subscriptions["max_transactional"] = it }
+            params.walletBulk?.let { subscriptions["wallet_bulk"] = it }
+            sdk(shopId).manageSubscription(
+                params.email,
+                params.phone,
+                params.externalId,
+                params.loyaltyId,
+                params.telegramId,
+                subscriptions,
+                object : OnApiCallbackListener() {
+                    override fun onSuccess(response: JSONObject?) {
+                        callback(Result.success(Unit))
+                    }
+                    override fun onError(code: Int, msg: String?) {
+                        callback(Result.failure(FlutterError("manage_subscription_failed", msg ?: "error $code", null)))
+                    }
+                }
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("manage_subscription_failed", t.message, null)))
         }
     }
 

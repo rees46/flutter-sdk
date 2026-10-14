@@ -19,6 +19,7 @@ import 'search/search_params.dart';
 import 'search/search_response.dart';
 import 'sdk_init_config.dart';
 import 'stories/stories_response.dart';
+import 'subscriptions/manage_subscription_params.dart';
 import 'tracking/purchase_line_item.dart';
 import 'tracking/tracking_api.dart';
 
@@ -96,6 +97,12 @@ class PersonalizationSdk {
 
   Future<void> setProfile(ProfileParams params) {
     return _api.setProfile(params.toWire(), shopId);
+  }
+
+  /// Subscribes or unsubscribes the client per channel and mailing type, see
+  /// [ManageSubscriptionParams].
+  Future<void> manageSubscription(ManageSubscriptionParams params) {
+    return _api.manageSubscription(params.toWire(), shopId);
   }
 
   Future<String> getSid() {

@@ -109,6 +109,68 @@ class ProfileParamsWire {
   });
 }
 
+/// Wire format for `subscriptions/manage`: contacts that identify the client and one flag per
+/// channel and mailing type. `true` subscribes, `false` unsubscribes, `null` leaves it unchanged.
+class ManageSubscriptionParamsWire {
+  final String? email;
+  final String? phone;
+  final String? externalId;
+  final String? loyaltyId;
+  final String? telegramId;
+  final bool? emailBulk;
+  final bool? emailChain;
+  final bool? emailTransactional;
+  final bool? smsBulk;
+  final bool? smsChain;
+  final bool? smsTransactional;
+  final bool? webPushBulk;
+  final bool? webPushChain;
+  final bool? webPushTransactional;
+  final bool? mobilePushBulk;
+  final bool? mobilePushChain;
+  final bool? mobilePushTransactional;
+  final bool? telegramBulk;
+  final bool? telegramChain;
+  final bool? telegramTransactional;
+  final bool? whatsappBulk;
+  final bool? whatsappChain;
+  final bool? whatsappTransactional;
+  final bool? maxBulk;
+  final bool? maxChain;
+  final bool? maxTransactional;
+  final bool? walletBulk;
+
+  const ManageSubscriptionParamsWire({
+    this.email,
+    this.phone,
+    this.externalId,
+    this.loyaltyId,
+    this.telegramId,
+    this.emailBulk,
+    this.emailChain,
+    this.emailTransactional,
+    this.smsBulk,
+    this.smsChain,
+    this.smsTransactional,
+    this.webPushBulk,
+    this.webPushChain,
+    this.webPushTransactional,
+    this.mobilePushBulk,
+    this.mobilePushChain,
+    this.mobilePushTransactional,
+    this.telegramBulk,
+    this.telegramChain,
+    this.telegramTransactional,
+    this.whatsappBulk,
+    this.whatsappChain,
+    this.whatsappTransactional,
+    this.maxBulk,
+    this.maxChain,
+    this.maxTransactional,
+    this.walletBulk,
+  });
+}
+
 /// Wire format for one product line in a tracking event (maps to native `TrackingItem`).
 ///
 /// [quantity] is the domain name for the line quantity; native sends it as `amount`.
@@ -167,6 +229,9 @@ abstract class PersonalizationHostApi {
 
   @async
   void setProfile(ProfileParamsWire params, String? shopId);
+
+  @async
+  void manageSubscription(ManageSubscriptionParamsWire params, String? shopId);
 
   /// Returns the recommendation block as a JSON string.
   /// [paramsJson] is a JSON object string with optional filter parameters.

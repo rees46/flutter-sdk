@@ -321,6 +321,179 @@ class ProfileParamsWire {
 ;
 }
 
+/// Wire format for `subscriptions/manage`: contacts that identify the client and one flag per
+/// channel and mailing type. `true` subscribes, `false` unsubscribes, `null` leaves it unchanged.
+class ManageSubscriptionParamsWire {
+  ManageSubscriptionParamsWire({
+    this.email,
+    this.phone,
+    this.externalId,
+    this.loyaltyId,
+    this.telegramId,
+    this.emailBulk,
+    this.emailChain,
+    this.emailTransactional,
+    this.smsBulk,
+    this.smsChain,
+    this.smsTransactional,
+    this.webPushBulk,
+    this.webPushChain,
+    this.webPushTransactional,
+    this.mobilePushBulk,
+    this.mobilePushChain,
+    this.mobilePushTransactional,
+    this.telegramBulk,
+    this.telegramChain,
+    this.telegramTransactional,
+    this.whatsappBulk,
+    this.whatsappChain,
+    this.whatsappTransactional,
+    this.maxBulk,
+    this.maxChain,
+    this.maxTransactional,
+    this.walletBulk,
+  });
+
+  String? email;
+
+  String? phone;
+
+  String? externalId;
+
+  String? loyaltyId;
+
+  String? telegramId;
+
+  bool? emailBulk;
+
+  bool? emailChain;
+
+  bool? emailTransactional;
+
+  bool? smsBulk;
+
+  bool? smsChain;
+
+  bool? smsTransactional;
+
+  bool? webPushBulk;
+
+  bool? webPushChain;
+
+  bool? webPushTransactional;
+
+  bool? mobilePushBulk;
+
+  bool? mobilePushChain;
+
+  bool? mobilePushTransactional;
+
+  bool? telegramBulk;
+
+  bool? telegramChain;
+
+  bool? telegramTransactional;
+
+  bool? whatsappBulk;
+
+  bool? whatsappChain;
+
+  bool? whatsappTransactional;
+
+  bool? maxBulk;
+
+  bool? maxChain;
+
+  bool? maxTransactional;
+
+  bool? walletBulk;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      email,
+      phone,
+      externalId,
+      loyaltyId,
+      telegramId,
+      emailBulk,
+      emailChain,
+      emailTransactional,
+      smsBulk,
+      smsChain,
+      smsTransactional,
+      webPushBulk,
+      webPushChain,
+      webPushTransactional,
+      mobilePushBulk,
+      mobilePushChain,
+      mobilePushTransactional,
+      telegramBulk,
+      telegramChain,
+      telegramTransactional,
+      whatsappBulk,
+      whatsappChain,
+      whatsappTransactional,
+      maxBulk,
+      maxChain,
+      maxTransactional,
+      walletBulk,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ManageSubscriptionParamsWire decode(Object result) {
+    result as List<Object?>;
+    return ManageSubscriptionParamsWire(
+      email: result[0] as String?,
+      phone: result[1] as String?,
+      externalId: result[2] as String?,
+      loyaltyId: result[3] as String?,
+      telegramId: result[4] as String?,
+      emailBulk: result[5] as bool?,
+      emailChain: result[6] as bool?,
+      emailTransactional: result[7] as bool?,
+      smsBulk: result[8] as bool?,
+      smsChain: result[9] as bool?,
+      smsTransactional: result[10] as bool?,
+      webPushBulk: result[11] as bool?,
+      webPushChain: result[12] as bool?,
+      webPushTransactional: result[13] as bool?,
+      mobilePushBulk: result[14] as bool?,
+      mobilePushChain: result[15] as bool?,
+      mobilePushTransactional: result[16] as bool?,
+      telegramBulk: result[17] as bool?,
+      telegramChain: result[18] as bool?,
+      telegramTransactional: result[19] as bool?,
+      whatsappBulk: result[20] as bool?,
+      whatsappChain: result[21] as bool?,
+      whatsappTransactional: result[22] as bool?,
+      maxBulk: result[23] as bool?,
+      maxChain: result[24] as bool?,
+      maxTransactional: result[25] as bool?,
+      walletBulk: result[26] as bool?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ManageSubscriptionParamsWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
 /// Wire format for one product line in a tracking event (maps to native `TrackingItem`).
 ///
 /// [quantity] is the domain name for the line quantity; native sends it as `amount`.
@@ -448,11 +621,14 @@ class _PigeonCodec extends StandardMessageCodec {
     }    else if (value is ProfileParamsWire) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    }    else if (value is TrackingItemWire) {
+    }    else if (value is ManageSubscriptionParamsWire) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    }    else if (value is TrackingSourceWire) {
+    }    else if (value is TrackingItemWire) {
       buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    }    else if (value is TrackingSourceWire) {
+      buffer.putUint8(134);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -469,8 +645,10 @@ class _PigeonCodec extends StandardMessageCodec {
       case 131: 
         return ProfileParamsWire.decode(readValue(buffer)!);
       case 132: 
-        return TrackingItemWire.decode(readValue(buffer)!);
+        return ManageSubscriptionParamsWire.decode(readValue(buffer)!);
       case 133: 
+        return TrackingItemWire.decode(readValue(buffer)!);
+      case 134: 
         return TrackingSourceWire.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -592,6 +770,29 @@ class PersonalizationHostApi {
 
   Future<void> setProfile(ProfileParamsWire params, String? shopId) async {
     final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setProfile$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[params, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> manageSubscription(ManageSubscriptionParamsWire params, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.manageSubscription$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
