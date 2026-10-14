@@ -844,6 +844,50 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
+  func manageSubscription(params: ManageSubscriptionParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    sdk.manageSubscription(
+      email: params.email,
+      phone: params.phone,
+      userExternalId: params.externalId,
+      userLoyaltyId: params.loyaltyId,
+      telegramId: params.telegramId,
+      emailBulk: params.emailBulk,
+      emailChain: params.emailChain,
+      emailTransactional: params.emailTransactional,
+      smsBulk: params.smsBulk,
+      smsChain: params.smsChain,
+      smsTransactional: params.smsTransactional,
+      webPushBulk: params.webPushBulk,
+      webPushChain: params.webPushChain,
+      webPushTransactional: params.webPushTransactional,
+      mobilePushBulk: params.mobilePushBulk,
+      mobilePushChain: params.mobilePushChain,
+      mobilePushTransactional: params.mobilePushTransactional,
+      telegramBulk: params.telegramBulk,
+      telegramChain: params.telegramChain,
+      telegramTransactional: params.telegramTransactional,
+      whatsappBulk: params.whatsappBulk,
+      whatsappChain: params.whatsappChain,
+      whatsappTransactional: params.whatsappTransactional,
+      maxBulk: params.maxBulk,
+      maxChain: params.maxChain,
+      maxTransactional: params.maxTransactional,
+      walletBulk: params.walletBulk,
+      completion: { result in
+        switch result {
+        case .success:
+          completion(.success(()))
+        case .failure(let err):
+          completion(.failure(PigeonError(code: "manage_subscription_failed", message: String(describing: err), details: nil)))
+        }
+      }
+    )
+  }
+
   // MARK: - Tracking namespace
   //
   // Each method hands straight to the native `tracking` namespace of the resolved instance;
