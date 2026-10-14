@@ -13,6 +13,10 @@ dependencies:
   flutter:
     sdk: flutter
   plugin_platform_interface: ^2.0.2
+  # История поисковых запросов виджета мгновенного поиска.
+  shared_preferences: ^2.3.0
+  # Видео-слайды сторис.
+  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:
@@ -42,6 +46,11 @@ flutter:
         pluginClass: Rees46FlutterSdkPlugin
       ios:
         pluginClass: Rees46FlutterSdkPlugin
+
+  # Иконки дизайн-системы. Отдаются как ассеты пакета: Flutter не рисует SVG
+  # без сторонней библиотеки, поэтому отрисовка остаётся за потребителем.
+  assets:
+    - assets/icons/
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

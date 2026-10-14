@@ -29,6 +29,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # The SDK ships its icons as SVG assets and leaves rendering to the host.
+  flutter_svg: ^2.2.0
+
 dev_dependencies:
   integration_test:
     sdk: flutter
@@ -62,10 +65,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  # Photos and loyalty-card art (logo, stripe, level emblem) for the UI Kit
+  # showcase — bundled so the demo does not depend on the network. Brand art is
+  # demo-only: the SDK does not ship it.
+  assets:
+    - assets/uikit/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

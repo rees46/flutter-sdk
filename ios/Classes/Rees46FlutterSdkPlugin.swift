@@ -11,12 +11,16 @@ public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplication
   private var messenger: FlutterBinaryMessenger?
   private var api: PersonalizationHostApiImpl?
   private var flutterApi: PersonalizationFlutterApi?
+  private var storiesApi: PersonalizationStoriesFlutterApi?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let instance = Rees46FlutterSdkPlugin()
     instance.messenger = registrar.messenger()
     instance.api = PersonalizationHostApiImpl()
     instance.flutterApi = PersonalizationFlutterApi(binaryMessenger: registrar.messenger())
+    let storiesApi = PersonalizationStoriesFlutterApi(binaryMessenger: registrar.messenger())
+    instance.storiesApi = storiesApi
+    StoriesAudio.shared.onVolumeUp = { storiesApi.onStoriesVolumeUp { _ in } }
     PersonalizationHostApiSetup.setUp(
       binaryMessenger: registrar.messenger(),
       api: instance.api
@@ -377,6 +381,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return [
       "products": r.products.map { _searchProductToDict($0) },
       "suggests": r.suggests.map { ["name": $0.name, "url": $0.url] },
+      "last_queries": r.lastQueries.map { ["name": $0.name, "url": $0.url] },
+      "popular_categories": r.popularCategories.map { ["name": $0.name, "url": $0.url] },
     ]
   }
 
@@ -456,11 +462,25 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     let priceMax = p?["price_max"] as? Double
     let colors = p?["colors"] as? [String]
     let fashionSizes = p?["fashion_sizes"] as? [String]
+    let filters = p?["filters"] as? [String: Any]
+    // The native iOS search pages by product offset, while page is 1-based as on Android:
+    // page N starts at (N - 1) * limit, and the first page (or page <= 0) has no offset. The
+    // server's default page size isn't pinned down anywhere, so a later page without a limit is
+    // rejected rather than guessed: no offset would return page 1 again, and the page number as
+    // the offset would shift by N products.
+    var offset: Int?
+    if let page = page, page > 1 {
+      guard let limit = limit, limit > 0 else {
+        completion(.failure(PigeonError(code: "bad_args", message: "page > 1 requires limit on iOS", details: nil)))
+        return
+      }
+      offset = (page - 1) * limit
+    }
 
     sdk.search(
       query: query,
       limit: limit,
-      offset: page,
+      offset: offset,
       categoryLimit: categoryLimit,
       brandLimit: brandLimit,
       categories: categoriesInt,
@@ -471,7 +491,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       excludedMerchants: nil,
       excludedBrands: excludedBrands,
       brands: brands,
-      filters: nil,
+      filters: filters,
       priceMin: priceMin,
       priceMax: priceMax,
       colors: colors,
@@ -501,9 +521,22 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       "products": r.products.map { _searchProductToDict($0) },
       "categories": r.categories.map { _searchCategoryToDict($0) },
       "products_total": r.productsTotal,
+      "queries": r.queries.map { ["name": $0.name, "url": $0.url] },
     ]
     if let pr = r.priceRange {
       dict["price_range"] = ["min": pr.min, "max": pr.max]
+    }
+    if let brands = r.brands {
+      dict["brands"] = brands
+    }
+    if let filters = r.filters {
+      dict["filters"] = filters.mapValues { ["count": $0.count, "values": $0.values] as [String: Any] }
+    }
+    if let industrial = r.industrialFilters {
+      dict["industrial_filters"] = [
+        "colors": industrial.fashionColors.map { ["color": $0.color, "count": $0.count] },
+        "fashion_sizes": industrial.fashionSizes.map { ["size": $0.size, "count": $0.count] },
+      ]
     }
     if let locs = r.locations {
       dict["locations"] = locs.map { loc -> [String: Any] in
@@ -532,6 +565,9 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       "currency": p.currency,
       "sales_rate": p.salesRate,
       "relative_sales_rate": p.relativeSalesRate,
+      "oldprice": p.oldPrice,
+      "oldprice_formatted": p.oldPriceFormatted,
+      "discount": p.discount,
     ]
     _ = dict // suppress unused warning; all fields set above
     return dict
@@ -687,6 +723,72 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
         completion(.failure(PigeonError(code: "get_collection_failed", message: String(describing: err), details: nil)))
       }
     }
+  }
+
+  func getStories(code: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+    guard let sdk = sdk(shopId) else {
+      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    if code.isEmpty {
+      completion(.failure(PigeonError(code: "bad_args", message: "code is required", details: nil)))
+      return
+    }
+    // The same request `getStories(code:)` sends, through the SDK's public raw entry point,
+    // so the server JSON reaches Dart as is — the payload the Android bridge hands over.
+    // `StoryContent` keeps most of the fields internal and drops the rest, so it cannot be
+    // re-encoded. Queued on the session queue like `getStories`: it waits for the init that
+    // provides the device id.
+    sdk.sessionQueue.addOperation {
+      let params: [String: String] = ["shop_id": sdk.shopId, "did": sdk.deviceId]
+      sdk.getRequest(path: "stories/\(code)", params: params, false) { result in
+        switch result {
+        case .success(let dict):
+          Self._encodeCatalog(dict, errorCode: "get_stories_failed", completion: completion)
+        case .failure(let err):
+          completion(.failure(PigeonError(code: "get_stories_failed", message: String(describing: err), details: nil)))
+        }
+      }
+    }
+  }
+
+  func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+    guard let target = URL(string: url), target.scheme?.isEmpty == false else {
+      completion(.success(false))
+      return
+    }
+    DispatchQueue.main.async {
+      UIApplication.shared.open(target, options: [:]) { opened in
+        completion(.success(opened))
+      }
+    }
+  }
+
+  // MARK: - Stories viewer (UI kit)
+
+  func getStoriesSeen(shop: String) throws -> [String: [Any?]] {
+    return StoriesSeenStore.read(shop: shop).mapValues { $0 as [Any?] }
+  }
+
+  func setStorySlideSeen(shop: String, storyId: String, slideId: String) throws {
+    StoriesSeenStore.add(shop: shop, storyId: storyId, slideId: slideId)
+  }
+
+  func getCacheDirectory() throws -> String {
+    let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+    return (caches ?? FileManager.default.temporaryDirectory).path
+  }
+
+  func beginStoriesAudio() throws {
+    StoriesAudio.shared.begin()
+  }
+
+  func updateStoriesAudio(muted: Bool) throws {
+    StoriesAudio.shared.update(muted: muted)
+  }
+
+  func endStoriesAudio() throws {
+    StoriesAudio.shared.end()
   }
 
   private static func _profileResponseToDict(_ p: GetProfileResponse) -> [String: Any] {

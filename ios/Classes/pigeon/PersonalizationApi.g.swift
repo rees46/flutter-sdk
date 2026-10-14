@@ -668,6 +668,37 @@ protocol PersonalizationHostApi {
   /// Returns a merchandised collection's products as a JSON string.
   /// Dart layer parses the result into [CollectionResponse].
   func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
+  /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
+  /// over the same raw payload, so Dart parses one shape.
+  /// Dart layer parses the result into [StoriesBlock].
+  func getStories(code: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// Opens [url] with the system handler (browser or the app that claims the link).
+  /// Returns false when nothing could open it.
+  func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void)
+  /// The slide ids seen per story id for [shop] — the plugin's own store
+  /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
+  /// survives app restarts. The inner lists are untyped on purpose: the channel
+  /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
+  /// generates a lazy cast that throws on the first read.
+  func getStoriesSeen(shop: String) throws -> [String: [Any?]]
+  /// Records [slideId] of story [storyId] as seen for [shop].
+  func setStorySlideSeen(shop: String, storyId: String, slideId: String) throws
+  /// The app's cache directory: Android `Context.cacheDir`, iOS `Library/Caches`. The
+  /// stories viewer keeps its video cache under it.
+  func getCacheDirectory() throws -> String
+  /// Remembers the app's audio session before the stories viewer plays its first video,
+  /// so [endStoriesAudio] can put it back. iOS only; a no-op on Android, where a muted
+  /// video never takes the audio focus (`mixWithOthers`).
+  func beginStoriesAudio() throws
+  /// While the viewer plays video: muted — the `ambient` category, which never
+  /// interrupts other apps' audio; unmuted — `playback`. Also starts watching the
+  /// hardware volume (see [PersonalizationStoriesFlutterApi.onStoriesVolumeUp]). iOS
+  /// only; a no-op on Android.
+  func updateStoriesAudio(muted: Bool) throws
+  /// The viewer closed: restores the session saved by [beginStoriesAudio] and stops
+  /// watching the volume. iOS only; a no-op on Android.
+  func endStoriesAudio() throws
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
   /// via the native `REES46.handlePush`. [event] is the index of the Dart
   /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
@@ -1090,6 +1121,150 @@ class PersonalizationHostApiSetup {
     } else {
       getCollectionChannel.setMessageHandler(nil)
     }
+    /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
+    /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
+    /// over the same raw payload, so Dart parses one shape.
+    /// Dart layer parses the result into [StoriesBlock].
+    let getStoriesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStories\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getStoriesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.getStories(code: codeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getStoriesChannel.setMessageHandler(nil)
+    }
+    /// Opens [url] with the system handler (browser or the app that claims the link).
+    /// Returns false when nothing could open it.
+    let openUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      openUrlChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let urlArg = args[0] as! String
+        api.openUrl(url: urlArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      openUrlChannel.setMessageHandler(nil)
+    }
+    /// The slide ids seen per story id for [shop] — the plugin's own store
+    /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
+    /// survives app restarts. The inner lists are untyped on purpose: the channel
+    /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
+    /// generates a lazy cast that throws on the first read.
+    let getStoriesSeenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getStoriesSeenChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopArg = args[0] as! String
+        do {
+          let result = try api.getStoriesSeen(shop: shopArg)
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      getStoriesSeenChannel.setMessageHandler(nil)
+    }
+    /// Records [slideId] of story [storyId] as seen for [shop].
+    let setStorySlideSeenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setStorySlideSeen\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      setStorySlideSeenChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopArg = args[0] as! String
+        let storyIdArg = args[1] as! String
+        let slideIdArg = args[2] as! String
+        do {
+          try api.setStorySlideSeen(shop: shopArg, storyId: storyIdArg, slideId: slideIdArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      setStorySlideSeenChannel.setMessageHandler(nil)
+    }
+    /// The app's cache directory: Android `Context.cacheDir`, iOS `Library/Caches`. The
+    /// stories viewer keeps its video cache under it.
+    let getCacheDirectoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCacheDirectory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getCacheDirectoryChannel.setMessageHandler { _, reply in
+        do {
+          let result = try api.getCacheDirectory()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      getCacheDirectoryChannel.setMessageHandler(nil)
+    }
+    /// Remembers the app's audio session before the stories viewer plays its first video,
+    /// so [endStoriesAudio] can put it back. iOS only; a no-op on Android, where a muted
+    /// video never takes the audio focus (`mixWithOthers`).
+    let beginStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.beginStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      beginStoriesAudioChannel.setMessageHandler { _, reply in
+        do {
+          try api.beginStoriesAudio()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      beginStoriesAudioChannel.setMessageHandler(nil)
+    }
+    /// While the viewer plays video: muted — the `ambient` category, which never
+    /// interrupts other apps' audio; unmuted — `playback`. Also starts watching the
+    /// hardware volume (see [PersonalizationStoriesFlutterApi.onStoriesVolumeUp]). iOS
+    /// only; a no-op on Android.
+    let updateStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.updateStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      updateStoriesAudioChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let mutedArg = args[0] as! Bool
+        do {
+          try api.updateStoriesAudio(muted: mutedArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      updateStoriesAudioChannel.setMessageHandler(nil)
+    }
+    /// The viewer closed: restores the session saved by [beginStoriesAudio] and stops
+    /// watching the volume. iOS only; a no-op on Android.
+    let endStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.endStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      endStoriesAudioChannel.setMessageHandler { _, reply in
+        do {
+          try api.endStoriesAudio()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      endStoriesAudioChannel.setMessageHandler(nil)
+    }
     /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
     /// via the native `REES46.handlePush`. [event] is the index of the Dart
     /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
@@ -1429,6 +1604,46 @@ class PersonalizationFlutterApi: PersonalizationFlutterApiProtocol {
     let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
     channel.sendMessage([shopIdArg, payloadArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(()))
+      }
+    }
+  }
+}
+/// Native events of the stories viewer. Separate from [PersonalizationFlutterApi]: the
+/// push dispatcher owns that channel, the UI kit owns this one.
+///
+/// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
+protocol PersonalizationStoriesFlutterApiProtocol {
+  /// The hardware volume went up while the viewer plays video (iOS: the audio session's
+  /// `outputVolume` grew). Android delivers the volume key to Flutter itself.
+  func onStoriesVolumeUp(completion: @escaping (Result<Void, PigeonError>) -> Void)
+}
+class PersonalizationStoriesFlutterApi: PersonalizationStoriesFlutterApiProtocol {
+  private let binaryMessenger: FlutterBinaryMessenger
+  private let messageChannelSuffix: String
+  init(binaryMessenger: FlutterBinaryMessenger, messageChannelSuffix: String = "") {
+    self.binaryMessenger = binaryMessenger
+    self.messageChannelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+  }
+  var codec: PersonalizationApiPigeonCodec {
+    return PersonalizationApiPigeonCodec.shared
+  }
+  /// The hardware volume went up while the viewer plays video (iOS: the audio session's
+  /// `outputVolume` grew). Android delivers the volume key to Flutter itself.
+  func onStoriesVolumeUp(completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStoriesFlutterApi.onStoriesVolumeUp\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage(nil) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return

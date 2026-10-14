@@ -1,0 +1,55 @@
+/// Радиусы скругления дизайн-системы.
+///
+/// Figma Mobile SDK UI Kit (SSwS49L1fG1psWA7xbakV6), коллекция переменных Radius.
+///
+/// `rounded` — pill: значение заведомо больше любой стороны.
+abstract final class PersonalizationRadius {
+  /// XS
+  static const double xs = 2;
+
+  /// SM
+  static const double sm = 4;
+
+  /// MD
+  static const double md = 6;
+
+  /// LG
+  static const double lg = 8;
+
+  /// XL
+  static const double xl = 10;
+
+  /// 2XL
+  static const double xl2 = 12;
+
+  /// 3XL
+  static const double xl3 = 14;
+
+  /// 4XL
+  static const double xl4 = 16;
+
+  /// 5XL
+  static const double xl5 = 20;
+
+  /// 6XL
+  static const double xl6 = 24;
+
+  /// 7XL
+  static const double xl7 = 32;
+
+  /// Rounded
+  static const double rounded = 999;
+
+  /// Семантические радиусы из коллекции Radius. К Button LG/MD/SM привязаны Button,
+  /// Input, Badge, Tag, к Segmented Button — Button Group, к Modal — попап.
+  /// Дизайнер меняет их отдельно от шкалы, поэтому и здесь они отдельно.
+  static const double buttonLg = 12;
+  static const double buttonMd = 10;
+  static const double buttonSm = 8;
+  static const double segmentedLg = 10;
+  static const double segmentedMd = 8;
+  static const double segmentedSm = 6;
+  static const double card = 16;
+  static const double toast = 999;
+  static const double modal = 24;
+}

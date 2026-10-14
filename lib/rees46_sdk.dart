@@ -1,4 +1,5 @@
-export 'src/personalization_sdk.dart';
+// Stories stay with the UI kit until its release: the kit imports them from src.
+export 'src/personalization_sdk.dart' hide PersonalizationStoriesBridge;
 export 'src/multi_instance/rees46.dart';
 export 'src/multi_instance/rees46_config.dart';
 export 'src/multi_instance/push_event.dart';

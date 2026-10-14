@@ -1,7 +1,9 @@
 package com.rees46.rees46_flutter_sdk
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
@@ -29,6 +31,7 @@ import com.personalization.api.models.tracking.TrackingSource
 import com.personalization.api.models.tracking.TrackingSourceType
 import com.personalization.api.params.ProfileParams
 import com.personalization.api.params.SearchParams as NativeSearchParams
+import com.personalization.SearchParams as LegacySearchParams
 import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.push.Rees46PushNotifier
 import com.rees46.rees46_flutter_sdk.push.Rees46ShopStore
@@ -142,6 +145,7 @@ class Rees46FlutterSdkPlugin :
                 stream = config.stream,
                 autoSendPushToken = config.autoSendPushToken,
                 needReInitialization = config.needReInitialization,
+                enableAutoPopupPresentation = config.enableAutoPopupPresentation,
             )
             // F3: initialize (and register) the instance through the multi-instance
             // `Rees46` facade so it is reachable by shopId via Rees46.getInstance.
@@ -326,15 +330,31 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            val params = buildSearchParams(paramsJson)
-            sdk(shopId).searchManager.searchFull(
-                query = query,
-                searchParams = params,
-                onSearchFull = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("search_failed", message ?: "error $code", null)))
+            // The raw, deprecated SDK.search entry point rather than the typed
+            // searchManager.searchFull: up to android-sdk v2.38.0 the typed SearchFullResponse and
+            // Product had no `filters`, `industrial_filters`, `oldprice`, `oldprice_formatted`,
+            // `discount` or `discount_formatted`, so Gson dropped them before they reached Dart,
+            // and the results screen needs the facets and the old price. The raw entry point
+            // returns the server JSON as is.
+            // TODO: v2.39.0, which this plugin now pins, has those fields. Switch to
+            //  sdk(shopId).searchManager.searchFull(query, NativeSearchParams, …) with
+            //  Gson().toJson(response), as searchInstant does, and move the params builder to
+            //  NativeSearchParams — after checking against a live shop that the typed response
+            //  carries everything the results screen reads.
+            val params = buildLegacySearchParams(paramsJson)
+            @Suppress("DEPRECATION")
+            sdk(shopId).search(
+                query,
+                LegacySearchParams.TYPE.FULL,
+                params,
+                object : OnApiCallbackListener() {
+                    override fun onSuccess(response: JSONObject?) {
+                        callback(Result.success(response?.toString() ?: "{}"))
+                    }
+
+                    override fun onError(code: Int, msg: String?) {
+                        callback(Result.failure(FlutterError("search_failed", msg ?: "error $code", null)))
+                    }
                 },
             )
         } catch (t: Throwable) {
@@ -474,6 +494,71 @@ class Rees46FlutterSdkPlugin :
             callback(Result.failure(FlutterError("get_collection_failed", t.message, null)))
         }
     }
+
+    override fun getStories(code: String, shopId: String?, callback: (Result<String>) -> Unit) {
+        if (code.isBlank()) {
+            callback(Result.failure(FlutterError("bad_args", "code is required", null)))
+            return
+        }
+        try {
+            // The public raw entry point: the listener gets the server JSON as is, the same payload
+            // the iOS bridge hands over, so Dart parses one shape. The typed loader
+            // (storiesManager.loadStories) is internal to the SDK module.
+            sdk(shopId).stories(
+                code,
+                object : OnApiCallbackListener() {
+                    override fun onSuccess(response: JSONObject?) {
+                        callback(Result.success(response?.toString() ?: "{}"))
+                    }
+
+                    override fun onError(code: Int, msg: String?) {
+                        callback(Result.failure(FlutterError("get_stories_failed", msg ?: "error $code", null)))
+                    }
+                },
+            )
+        } catch (t: Throwable) {
+            callback(Result.failure(FlutterError("get_stories_failed", t.message, null)))
+        }
+    }
+
+    override fun openUrl(url: String, callback: (Result<Boolean>) -> Unit) {
+        val uri = Uri.parse(url)
+        if (url.isBlank() || uri.scheme.isNullOrEmpty()) {
+            callback(Result.success(false))
+            return
+        }
+        // The activity when there is one: from the application context a new task is required.
+        val activity = activityBinding?.activity
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        if (activity == null) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            (activity ?: applicationContext).startActivity(intent)
+            callback(Result.success(true))
+        } catch (e: ActivityNotFoundException) {
+            callback(Result.success(false))
+        }
+    }
+
+    // region stories viewer (UI kit)
+
+    override fun getStoriesSeen(shop: String): Map<String, List<String>> =
+        StoriesSeenStore.read(applicationContext, shop)
+
+    override fun setStorySlideSeen(shop: String, storyId: String, slideId: String) =
+        StoriesSeenStore.add(applicationContext, shop, storyId, slideId)
+
+    override fun getCacheDirectory(): String = applicationContext.cacheDir.absolutePath
+
+    // The audio session calls are iOS-only. On Android video_player plays with
+    // `mixWithOthers: true` and so never requests the audio focus: a muted video leaves the
+    // user's music alone, and there is no session to restore.
+    override fun beginStoriesAudio() = Unit
+
+    override fun updateStoriesAudio(muted: Boolean) = Unit
+
+    override fun endStoriesAudio() = Unit
+
+    // endregion
 
     override fun getSid(shopId: String?): String = sdk(shopId).getSid()
 
@@ -892,8 +977,14 @@ class Rees46FlutterSdkPlugin :
 
 }
 
-private fun buildSearchParams(paramsJson: String?): NativeSearchParams {
-    val params = NativeSearchParams()
+/**
+ * Search parameters from the bridge JSON, on the legacy params class the raw search entry point
+ * takes. Keys come from the current parameter enum — both classes implement the same interface —
+ * so the wire names stay identical.
+ */
+@Suppress("DEPRECATION")
+private fun buildLegacySearchParams(paramsJson: String?): LegacySearchParams {
+    val params = LegacySearchParams()
     if (paramsJson.isNullOrBlank()) return params
     val json = JSONObject(paramsJson)
     json.optInt("limit").takeIf { it > 0 }
@@ -924,6 +1015,17 @@ private fun buildSearchParams(paramsJson: String?): NativeSearchParams {
         ?.let { params.put(NativeSearchParams.Parameter.COLORS, it) }
     jsonArrayToStringArray(json.optJSONArray("fashion_sizes"))
         ?.let { params.put(NativeSearchParams.Parameter.FASHION_SIZES, it) }
+    json.optJSONObject("filters")?.let { facets ->
+        val searchFilters = NativeSearchParams.SearchFilters()
+        var any = false
+        facets.keys().forEach { name ->
+            jsonArrayToStringArray(facets.optJSONArray(name))?.let {
+                searchFilters.put(name, it)
+                any = true
+            }
+        }
+        if (any) params.put(NativeSearchParams.Parameter.FILTERS, searchFilters.toString())
+    }
     return params
 }
 

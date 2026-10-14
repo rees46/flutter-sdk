@@ -35,7 +35,8 @@ internal object Rees46ShopStore {
                     .put("apiDomain", c.apiDomain)
                     .put("stream", c.stream)
                     .put("autoSendPushToken", c.autoSendPushToken)
-                    .put("needReInitialization", c.needReInitialization),
+                    .put("needReInitialization", c.needReInitialization)
+                    .put("enableAutoPopupPresentation", c.enableAutoPopupPresentation),
             )
         }
         prefs(context).edit().putString(KEY_CONFIGS, array.toString()).apply()
@@ -56,6 +57,7 @@ internal object Rees46ShopStore {
                     stream = obj.optString("stream", "android"),
                     autoSendPushToken = obj.optBoolean("autoSendPushToken", true),
                     needReInitialization = obj.optBoolean("needReInitialization", false),
+                    enableAutoPopupPresentation = obj.optBoolean("enableAutoPopupPresentation", true),
                 )
             }
         } catch (t: Throwable) {

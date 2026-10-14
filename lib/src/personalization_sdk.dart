@@ -18,6 +18,7 @@ import 'products/products_list_response.dart';
 import 'search/search_params.dart';
 import 'search/search_response.dart';
 import 'sdk_init_config.dart';
+import 'stories/stories_response.dart';
 import 'subscriptions/manage_subscription_params.dart';
 import 'tracking/purchase_line_item.dart';
 import 'tracking/tracking_api.dart';
@@ -350,4 +351,35 @@ class PersonalizationSdk {
       shopId,
     );
   }
+}
+
+/// Stories for the UI kit — hidden from the package barrel (`export ... hide`) until the
+/// kit's release, and reached by the kit through a direct `src` import. It lives in this
+/// library because it calls the host API the handle owns.
+extension PersonalizationStoriesBridge on PersonalizationSdk {
+  /// The stories block [code] (`stories/{code}`).
+  Future<StoriesBlock> getStories(String code) async {
+    if (code.isEmpty) {
+      throw ArgumentError.value(code, 'code', 'must be non-empty');
+    }
+    final json = await _api.getStories(code, shopId);
+    return StoriesBlock.fromJson(jsonDecode(json) as Map<String, dynamic>);
+  }
+
+  /// Opens [url] with the system handler; `false` when nothing could open it.
+  Future<bool> openUrl(String url) => _api.openUrl(url);
+
+  /// The stories slides seen on this device for [shop] (slide ids by story id), from the
+  /// plugin's own persistent store.
+  Future<Map<String, List<String>>> getStoriesSeen(String shop) async {
+    final stored = await _api.getStoriesSeen(shop);
+    return <String, List<String>>{
+      for (final entry in stored.entries)
+        entry.key: entry.value.whereType<String>().toList(),
+    };
+  }
+
+  /// Records slide [slideId] of story [storyId] as seen for [shop].
+  Future<void> setStorySlideSeen(String shop, String storyId, String slideId) =>
+      _api.setStorySlideSeen(shop, storyId, slideId);
 }

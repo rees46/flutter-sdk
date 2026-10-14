@@ -3,7 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
+import 'app_theme_mode.dart';
 import 'multi_instance_pane.dart';
+// The kit is private until release: the theme comes from the src barrel.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/ui/personalization_ui.dart'
+    show PersonalizationTheme;
+import 'ui_kit_pane.dart';
 
 void main() => runApp(const App());
 
@@ -12,12 +18,32 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'REES46 Flutter SDK',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+    // themeMode is driven by the switch on the UI Kit screen, so the kit's dark
+    // set can be checked without changing the device setting.
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: appThemeMode,
+      builder: (context, mode, _) => MaterialApp(
+        title: 'REES46 Flutter SDK',
+        // The kit's theme extension rides on ThemeData: light and dark sets
+        // switch together with the app's brightness.
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          extensions: const <ThemeExtension<dynamic>>[
+            PersonalizationTheme.light,
+          ],
+        ),
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+          extensions: const <ThemeExtension<dynamic>>[
+            PersonalizationTheme.dark,
+          ],
+        ),
+        themeMode: mode,
+        home: const InitPage(),
       ),
-      home: const InitPage(),
     );
   }
 }
@@ -725,6 +751,16 @@ class _InitPageState extends State<InitPage> {
         title: const Text('REES46 SDK init demo'),
         actions: [
           IconButton(
+            key: const Key('open-ui-kit'),
+            tooltip: 'UI Kit',
+            icon: const Icon(Icons.widgets_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const UiKitPane(shopId: _shopId),
+              ),
+            ),
+          ),
+          IconButton(
             key: const Key('open-multi-instance'),
             tooltip: 'Multi-instance (two shops)',
             icon: const Icon(Icons.storefront),
@@ -760,6 +796,17 @@ class _InitPageState extends State<InitPage> {
               ),
               icon: const Icon(Icons.storefront),
               label: const Text('Open multi-instance demo (two shops)'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              key: const Key('open-ui-kit-button'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const UiKitPane(shopId: _shopId),
+                ),
+              ),
+              icon: const Icon(Icons.widgets_outlined),
+              label: const Text('Open UI Kit (components and blocks)'),
             ),
             const SizedBox(height: 12),
             _PushTokenCard(
