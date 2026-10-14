@@ -271,6 +271,117 @@ data class ProfileParamsWire (
 }
 
 /**
+ * Wire format for `subscriptions/manage`: contacts that identify the client and one flag per
+ * channel and mailing type. `true` subscribes, `false` unsubscribes, `null` leaves it unchanged.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ManageSubscriptionParamsWire (
+  val email: String? = null,
+  val phone: String? = null,
+  val externalId: String? = null,
+  val loyaltyId: String? = null,
+  val telegramId: String? = null,
+  val emailBulk: Boolean? = null,
+  val emailChain: Boolean? = null,
+  val emailTransactional: Boolean? = null,
+  val smsBulk: Boolean? = null,
+  val smsChain: Boolean? = null,
+  val smsTransactional: Boolean? = null,
+  val webPushBulk: Boolean? = null,
+  val webPushChain: Boolean? = null,
+  val webPushTransactional: Boolean? = null,
+  val mobilePushBulk: Boolean? = null,
+  val mobilePushChain: Boolean? = null,
+  val mobilePushTransactional: Boolean? = null,
+  val telegramBulk: Boolean? = null,
+  val telegramChain: Boolean? = null,
+  val telegramTransactional: Boolean? = null,
+  val whatsappBulk: Boolean? = null,
+  val whatsappChain: Boolean? = null,
+  val whatsappTransactional: Boolean? = null,
+  val maxBulk: Boolean? = null,
+  val maxChain: Boolean? = null,
+  val maxTransactional: Boolean? = null,
+  val walletBulk: Boolean? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ManageSubscriptionParamsWire {
+      val email = pigeonVar_list[0] as String?
+      val phone = pigeonVar_list[1] as String?
+      val externalId = pigeonVar_list[2] as String?
+      val loyaltyId = pigeonVar_list[3] as String?
+      val telegramId = pigeonVar_list[4] as String?
+      val emailBulk = pigeonVar_list[5] as Boolean?
+      val emailChain = pigeonVar_list[6] as Boolean?
+      val emailTransactional = pigeonVar_list[7] as Boolean?
+      val smsBulk = pigeonVar_list[8] as Boolean?
+      val smsChain = pigeonVar_list[9] as Boolean?
+      val smsTransactional = pigeonVar_list[10] as Boolean?
+      val webPushBulk = pigeonVar_list[11] as Boolean?
+      val webPushChain = pigeonVar_list[12] as Boolean?
+      val webPushTransactional = pigeonVar_list[13] as Boolean?
+      val mobilePushBulk = pigeonVar_list[14] as Boolean?
+      val mobilePushChain = pigeonVar_list[15] as Boolean?
+      val mobilePushTransactional = pigeonVar_list[16] as Boolean?
+      val telegramBulk = pigeonVar_list[17] as Boolean?
+      val telegramChain = pigeonVar_list[18] as Boolean?
+      val telegramTransactional = pigeonVar_list[19] as Boolean?
+      val whatsappBulk = pigeonVar_list[20] as Boolean?
+      val whatsappChain = pigeonVar_list[21] as Boolean?
+      val whatsappTransactional = pigeonVar_list[22] as Boolean?
+      val maxBulk = pigeonVar_list[23] as Boolean?
+      val maxChain = pigeonVar_list[24] as Boolean?
+      val maxTransactional = pigeonVar_list[25] as Boolean?
+      val walletBulk = pigeonVar_list[26] as Boolean?
+      return ManageSubscriptionParamsWire(email, phone, externalId, loyaltyId, telegramId, emailBulk, emailChain, emailTransactional, smsBulk, smsChain, smsTransactional, webPushBulk, webPushChain, webPushTransactional, mobilePushBulk, mobilePushChain, mobilePushTransactional, telegramBulk, telegramChain, telegramTransactional, whatsappBulk, whatsappChain, whatsappTransactional, maxBulk, maxChain, maxTransactional, walletBulk)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      email,
+      phone,
+      externalId,
+      loyaltyId,
+      telegramId,
+      emailBulk,
+      emailChain,
+      emailTransactional,
+      smsBulk,
+      smsChain,
+      smsTransactional,
+      webPushBulk,
+      webPushChain,
+      webPushTransactional,
+      mobilePushBulk,
+      mobilePushChain,
+      mobilePushTransactional,
+      telegramBulk,
+      telegramChain,
+      telegramTransactional,
+      whatsappBulk,
+      whatsappChain,
+      whatsappTransactional,
+      maxBulk,
+      maxChain,
+      maxTransactional,
+      walletBulk,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ManageSubscriptionParamsWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
  * Wire format for one product line in a tracking event (maps to native `TrackingItem`).
  *
  * [quantity] is the domain name for the line quantity; native sends it as `amount`.
@@ -371,10 +482,15 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
       }
       132.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          TrackingItemWire.fromList(it)
+          ManageSubscriptionParamsWire.fromList(it)
         }
       }
       133.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          TrackingItemWire.fromList(it)
+        }
+      }
+      134.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           TrackingSourceWire.fromList(it)
         }
@@ -396,12 +512,16 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
         stream.write(131)
         writeValue(stream, value.toList())
       }
-      is TrackingItemWire -> {
+      is ManageSubscriptionParamsWire -> {
         stream.write(132)
         writeValue(stream, value.toList())
       }
-      is TrackingSourceWire -> {
+      is TrackingItemWire -> {
         stream.write(133)
+        writeValue(stream, value.toList())
+      }
+      is TrackingSourceWire -> {
+        stream.write(134)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -419,6 +539,7 @@ interface PersonalizationHostApi {
   /** [customFieldsJson] is JSON object string or null (maps to native custom fields map). */
   fun trackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFieldsJson: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
   fun setProfile(params: ProfileParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun manageSubscription(params: ManageSubscriptionParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit)
   /**
    * Returns the recommendation block as a JSON string.
    * [paramsJson] is a JSON object string with optional filter parameters.
@@ -609,6 +730,26 @@ interface PersonalizationHostApi {
             val paramsArg = args[0] as ProfileParamsWire
             val shopIdArg = args[1] as String?
             api.setProfile(paramsArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.manageSubscription$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val paramsArg = args[0] as ManageSubscriptionParamsWire
+            val shopIdArg = args[1] as String?
+            api.manageSubscription(paramsArg, shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
