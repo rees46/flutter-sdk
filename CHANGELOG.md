@@ -1,3 +1,14 @@
+# [1.1.0](https://github.com/rees46/flutter-sdk/compare/v1.0.0...v1.1.0) (2026-10-14)
+
+
+### Features
+
+* **subscriptions:** manage subscriptions for every channel ([abaa645](https://github.com/rees46/flutter-sdk/commit/abaa6457e13c6de90ae7dfacbf2ce603d3679987))
+
+
+
+
+
 # [1.0.0](https://github.com/rees46/flutter-sdk/compare/v0.4.0...v1.0.0) (2026-09-07)
 
 
