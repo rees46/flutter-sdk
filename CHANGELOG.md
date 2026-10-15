@@ -1,3 +1,14 @@
+## [1.2.1](https://github.com/rees46/flutter-sdk/compare/v1.2.0...v1.2.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **android:** native SDK v2.42.0 ([80868b6](https://github.com/rees46/flutter-sdk/commit/80868b6eb1a3198a301cf7377f315b343626f5b5))
+
+
+
+
+
 # [1.2.0](https://github.com/rees46/flutter-sdk/compare/v1.1.0...v1.2.0) (2026-10-14)
 
 
