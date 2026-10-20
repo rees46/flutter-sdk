@@ -5,10 +5,6 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 
 import 'app_theme_mode.dart';
 import 'multi_instance_pane.dart';
-// The kit is private until release: the theme comes from the src barrel.
-// ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart'
-    show PersonalizationTheme;
 import 'ui_kit_pane.dart';
 
 void main() => runApp(const App());
@@ -24,22 +20,14 @@ class App extends StatelessWidget {
       valueListenable: appThemeMode,
       builder: (context, mode, _) => MaterialApp(
         title: 'REES46 Flutter SDK',
-        // The kit's theme extension rides on ThemeData: light and dark sets
-        // switch together with the app's brightness.
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          extensions: const <ThemeExtension<dynamic>>[
-            PersonalizationTheme.light,
-          ],
         ),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.blue,
             brightness: Brightness.dark,
           ),
-          extensions: const <ThemeExtension<dynamic>>[
-            PersonalizationTheme.dark,
-          ],
         ),
         themeMode: mode,
         home: const InitPage(),
@@ -185,6 +173,7 @@ class _InitPageState extends State<InitPage> {
   bool _autoSendPushToken = true;
   bool _sendAdvertisingId = false;
   bool _enableAutoPopupPresentation = true;
+  bool _holdPopups = false;
   bool _needReInitialization = false;
 
   InitState _initState = InitState.idle;
@@ -328,6 +317,8 @@ class _InitPageState extends State<InitPage> {
           needReInitialization: _needReInitialization,
         ),
       );
+      // Holding popups back: the app takes each one and shows it when the user asks.
+      _sdk.onPopup = _holdPopups ? _holdPopup : null;
       _sdk.setPushNotificationCallbacks(
         onReceived: (payload) {
           // In the demo we only surface init/token state; push payloads can be
@@ -352,6 +343,41 @@ class _InitPageState extends State<InitPage> {
         _initError = 'Error: $e';
       });
     }
+  }
+
+  /// A popup as the admin would send it, shown the way the SDK shows server popups. The
+  /// demo shops have no popups set up, so this is the way to see one.
+  void _showTestPopup(InAppPopupPosition position) {
+    final picture =
+        position == InAppPopupPosition.center ||
+        position == InAppPopupPosition.unknown;
+    _sdk.presentPopup(
+      InAppPopup(
+        id: 990 + position.index,
+        position: position,
+        title: 'Weekend sale',
+        text: 'Up to 30% off home appliances until Sunday.',
+        imageUrl: picture
+            ? 'https://pictures.rees46.ru/resize-images/520/$_shopId/143748.jpg'
+            : null,
+        linkText: 'Shop now',
+        linkUrl: 'https://rees46.com',
+        closeText: position == InAppPopupPosition.top ? null : 'Not now',
+      ),
+    );
+  }
+
+  void _holdPopup(InAppPopup popup) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Popup ${popup.id} held back: ${popup.title ?? ''}'),
+        action: SnackBarAction(
+          label: 'Show',
+          onPressed: () => _sdk.presentPopup(popup),
+        ),
+      ),
+    );
   }
 
   Future<void> _refreshToken() async {
@@ -838,7 +864,12 @@ class _InitPageState extends State<InitPage> {
               value: _enableAutoPopupPresentation,
               onChanged: (v) =>
                   setState(() => _enableAutoPopupPresentation = v),
-              title: const Text('enableAutoPopupPresentation (iOS)'),
+              title: const Text('enableAutoPopupPresentation'),
+            ),
+            SwitchListTile(
+              value: _holdPopups,
+              onChanged: (v) => setState(() => _holdPopups = v),
+              title: const Text('Hold popups back (onPopup)'),
             ),
             SwitchListTile(
               value: _needReInitialization,
@@ -856,6 +887,8 @@ class _InitPageState extends State<InitPage> {
                     : 'Re-initialize',
               ),
             ),
+            const SizedBox(height: 12),
+            _PopupsCard(onShow: _showTestPopup),
             const SizedBox(height: 12),
             _ProfileCard(
               sid: _sid,
@@ -1041,6 +1074,61 @@ class _InitStatusCard extends StatelessWidget {
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PopupsCard extends StatelessWidget {
+  const _PopupsCard({required this.onShow});
+
+  final void Function(InAppPopupPosition position) onShow;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Popups', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            const Text('A test popup in each position the admin offers.'),
+            const SizedBox(height: 12),
+            // PersonalizationTheme.mode: the SDK's UI follows the app, or stays light
+            // or dark whatever the app is in.
+            SegmentedButton<ThemeMode>(
+              key: const Key('seg_sdk_theme'),
+              segments: const [
+                ButtonSegment(value: ThemeMode.system, label: Text('Auto')),
+                ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+                ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+              ],
+              selected: {PersonalizationTheme.mode},
+              onSelectionChanged: (selection) =>
+                  PersonalizationTheme.mode = selection.single,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (label, position) in const [
+                  ('Centre', InAppPopupPosition.center),
+                  ('Top', InAppPopupPosition.top),
+                  ('Bottom', InAppPopupPosition.bottom),
+                  ('Fullscreen', InAppPopupPosition.unknown),
+                ])
+                  OutlinedButton(
+                    key: Key('btn_popup_${position.name}'),
+                    onPressed: () => onShow(position),
+                    child: Text(label),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

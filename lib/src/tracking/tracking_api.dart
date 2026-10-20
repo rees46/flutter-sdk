@@ -10,12 +10,19 @@ import 'tracking_models.dart';
 /// Every method routes to the native namespace of the same name, so an event fired from Dart
 /// is the same request the native SDKs send.
 class TrackingApi {
-  TrackingApi(this._api, this._shopId);
+  TrackingApi(
+    this._api,
+    this._shopId, {
+    void Function(int popupId)? onPopupShown,
+  }) : _onPopupShown = onPopupShown;
 
   final pigeon.PersonalizationHostApi _api;
 
   /// The shop this namespace tracks for; `null` is the legacy default instance.
   final String? _shopId;
+
+  /// Tells the popup presenter a popup the host drew is on screen.
+  final void Function(int popupId)? _onPopupShown;
 
   /// Product page opened (`view`).
   Future<void> productView(String itemId, {TrackingSource? source}) {
@@ -99,6 +106,16 @@ class TrackingApi {
     _requireNonEmpty(storyId, 'storyId');
     _requireNonEmpty(slideId, 'slideId');
     return _api.trackStoryClick(storyId, slideId, code, _shopId);
+  }
+
+  /// A server popup the app drew itself is on screen (`popup/showed`).
+  ///
+  /// Only for popups taken with `onPopup` and drawn by the app: the ones the SDK shows
+  /// are reported by the SDK. A reported popup is not handed over again for a minute,
+  /// even when the server sends it again.
+  Future<void> popupShown(int popupId) {
+    _onPopupShown?.call(popupId);
+    return _api.trackPopupShown(popupId, _shopId);
   }
 
   /// Stores the attribution source for subsequent events.

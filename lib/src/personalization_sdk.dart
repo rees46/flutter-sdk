@@ -7,6 +7,9 @@ import 'init/sdk_init_handler.dart';
 import 'loyalty/loyalty_response.dart';
 import 'multi_instance/push_dispatcher.dart';
 import 'multi_instance/push_event.dart';
+import 'popups/in_app_popup.dart';
+import 'popups/popup_dispatcher.dart';
+import 'popups/popup_presenter.dart';
 import 'products/product_counters_response.dart';
 import 'profile/profile_params.dart';
 import 'profile/profile_response.dart';
@@ -27,6 +30,11 @@ class PersonalizationSdk {
   final pigeon.PersonalizationHostApi _api;
   final SdkInitHandler _initHandler;
   final PushNotificationCallbacks _pushCallbacks = PushNotificationCallbacks();
+  late final PopupPresenter _popups = PopupPresenter(
+    trackShown: (popupId) => _api.trackPopupShown(popupId, shopId),
+    openUrl: _api.openUrl,
+    openNotificationSettings: _api.openNotificationSettings,
+  );
 
   /// The shop this handle is bound to, or `null` for the legacy default
   /// instance. Set by [REES46.initialize] / [REES46.getInstance]. Reserved for
@@ -41,7 +49,11 @@ class PersonalizationSdk {
   PersonalizationSdk({pigeon.PersonalizationHostApi? api, this.shopId})
     : _api = api ?? pigeon.PersonalizationHostApi(),
       _initHandler = SdkInitHandler(api: api) {
-    tracking = TrackingApi(_api, shopId);
+    tracking = TrackingApi(
+      _api,
+      shopId,
+      onPopupShown: (popupId) => _popups.markShown(popupId),
+    );
     // One process-global dispatcher owns the Pigeon push channel and routes each
     // inbound push (by shopId) to the right handle — register this handle's
     // callbacks with it instead of claiming the channel per instance.
@@ -92,8 +104,31 @@ class PersonalizationSdk {
   }
 
   Future<void> initialize(SdkInitConfig config) {
+    _popups.autoPresentation = config.enableAutoPopupPresentation ?? true;
+    // The native side reports popups under the shop id it was initialized with.
+    PopupDispatcher.instance.register(config.shopId, _popups);
     return _initHandler.initialize(config);
   }
+
+  /// Takes the server popups (in-app messages) instead of the SDK showing them.
+  ///
+  /// Popups arrive with the responses to init and tracking calls. Without a handler the
+  /// SDK shows each over the app's root navigator, unless
+  /// `enableAutoPopupPresentation` is off. With one, the SDK shows nothing: the handler
+  /// gets every popup once its delay has passed and decides — draw it (for instance with
+  /// `PersonalizationInAppPopup`) and report it with `tracking.popupShown(popup.id)`,
+  /// let the SDK show it with [presentPopup], or drop it. A popup shown within the last
+  /// minute is not handed over again. Called on the main isolate.
+  void Function(InAppPopup popup)? get onPopup => _popups.onPopup;
+
+  set onPopup(void Function(InAppPopup popup)? handler) =>
+      _popups.onPopup = handler;
+
+  /// Shows [popup] the way the SDK shows server popups — over the app's root navigator,
+  /// after any popup already on screen — and reports it as shown. For a popup taken with
+  /// [onPopup] and held back. Completes when the popup closes, or at once when it cannot
+  /// be shown.
+  Future<void> presentPopup(InAppPopup popup) => _popups.present(popup);
 
   Future<void> setProfile(ProfileParams params) {
     return _api.setProfile(params.toWire(), shopId);

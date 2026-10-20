@@ -719,6 +719,14 @@ protocol PersonalizationHostApi {
   func trackSetSource(source: TrackingSourceWire, shopId: String?) throws
   /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
   func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, isGiftPackage: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`
+  /// (Android) / `trackPopupShown` (iOS). The native SDKs never show a popup themselves
+  /// under the plugin, so they never report one either: Dart does, once it is on screen.
+  func trackPopupShown(popupId: Int64, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// Opens the system settings where the user turns notifications on for the app: the
+  /// app's notification settings on Android, the app's page in Settings on iOS. What the
+  /// native popups do for their push-subscription button.
+  func openNotificationSettings() throws
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -1545,6 +1553,85 @@ class PersonalizationHostApiSetup {
       }
     } else {
       trackPurchaseChannel.setMessageHandler(nil)
+    }
+    /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`
+    /// (Android) / `trackPopupShown` (iOS). The native SDKs never show a popup themselves
+    /// under the plugin, so they never report one either: Dart does, once it is on screen.
+    let trackPopupShownChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPopupShown\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackPopupShownChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let popupIdArg = args[0] as! Int64
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.trackPopupShown(popupId: popupIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackPopupShownChannel.setMessageHandler(nil)
+    }
+    /// Opens the system settings where the user turns notifications on for the app: the
+    /// app's notification settings on Android, the app's page in Settings on iOS. What the
+    /// native popups do for their push-subscription button.
+    let openNotificationSettingsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openNotificationSettings\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      openNotificationSettingsChannel.setMessageHandler { _, reply in
+        do {
+          try api.openNotificationSettings()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      openNotificationSettingsChannel.setMessageHandler(nil)
+    }
+  }
+}
+/// Server popups, handed over instead of being shown natively: the plugin sets the native
+/// presentation listener (Android) / delegate (iOS), which keeps every popup back and
+/// forwards it here. Separate from [PersonalizationFlutterApi], which the push dispatcher
+/// owns.
+///
+/// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
+protocol PersonalizationPopupFlutterApiProtocol {
+  /// A popup arrived for [shopId]. [popupJson] is the popup as the server sends it:
+  /// `id`, `position`, `delay`, `components` and `popup_actions` (an object).
+  func onPopup(shopId shopIdArg: String, popupJson popupJsonArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void)
+}
+class PersonalizationPopupFlutterApi: PersonalizationPopupFlutterApiProtocol {
+  private let binaryMessenger: FlutterBinaryMessenger
+  private let messageChannelSuffix: String
+  init(binaryMessenger: FlutterBinaryMessenger, messageChannelSuffix: String = "") {
+    self.binaryMessenger = binaryMessenger
+    self.messageChannelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+  }
+  var codec: PersonalizationApiPigeonCodec {
+    return PersonalizationApiPigeonCodec.shared
+  }
+  /// A popup arrived for [shopId]. [popupJson] is the popup as the server sends it:
+  /// `id`, `position`, `delay`, `components` and `popup_actions` (an object).
+  func onPopup(shopId shopIdArg: String, popupJson popupJsonArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([shopIdArg, popupJsonArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(()))
+      }
     }
   }
 }

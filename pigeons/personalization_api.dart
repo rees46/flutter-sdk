@@ -448,6 +448,28 @@ abstract class PersonalizationHostApi {
     String? segment,
     String? shopId,
   );
+
+  /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`
+  /// (Android) / `trackPopupShown` (iOS). The native SDKs never show a popup themselves
+  /// under the plugin, so they never report one either: Dart does, once it is on screen.
+  @async
+  void trackPopupShown(int popupId, String? shopId);
+
+  /// Opens the system settings where the user turns notifications on for the app: the
+  /// app's notification settings on Android, the app's page in Settings on iOS. What the
+  /// native popups do for their push-subscription button.
+  void openNotificationSettings();
+}
+
+/// Server popups, handed over instead of being shown natively: the plugin sets the native
+/// presentation listener (Android) / delegate (iOS), which keeps every popup back and
+/// forwards it here. Separate from [PersonalizationFlutterApi], which the push dispatcher
+/// owns.
+@FlutterApi()
+abstract class PersonalizationPopupFlutterApi {
+  /// A popup arrived for [shopId]. [popupJson] is the popup as the server sends it:
+  /// `id`, `position`, `delay`, `components` and `popup_actions` (an object).
+  void onPopup(String shopId, String popupJson);
 }
 
 // Multi-instance: each inbound push callback carries the `shopId` the push

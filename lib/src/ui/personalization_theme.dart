@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'personalization_colors.dart';
 import 'personalization_radius.dart';
@@ -119,62 +121,29 @@ class PersonalizationRadiusScale {
     PersonalizationRadiusToken.toast => toast,
     PersonalizationRadiusToken.modal => modal,
   };
-
-  PersonalizationRadiusScale lerp(PersonalizationRadiusScale other, double t) =>
-      PersonalizationRadiusScale(
-        xs: lerpDouble(xs, other.xs, t),
-        sm: lerpDouble(sm, other.sm, t),
-        md: lerpDouble(md, other.md, t),
-        lg: lerpDouble(lg, other.lg, t),
-        xl: lerpDouble(xl, other.xl, t),
-        xl2: lerpDouble(xl2, other.xl2, t),
-        xl3: lerpDouble(xl3, other.xl3, t),
-        xl4: lerpDouble(xl4, other.xl4, t),
-        xl5: lerpDouble(xl5, other.xl5, t),
-        xl6: lerpDouble(xl6, other.xl6, t),
-        xl7: lerpDouble(xl7, other.xl7, t),
-        rounded: lerpDouble(rounded, other.rounded, t),
-        buttonLg: lerpDouble(buttonLg, other.buttonLg, t),
-        buttonMd: lerpDouble(buttonMd, other.buttonMd, t),
-        buttonSm: lerpDouble(buttonSm, other.buttonSm, t),
-        segmentedLg: lerpDouble(segmentedLg, other.segmentedLg, t),
-        segmentedMd: lerpDouble(segmentedMd, other.segmentedMd, t),
-        segmentedSm: lerpDouble(segmentedSm, other.segmentedSm, t),
-        card: lerpDouble(card, other.card, t),
-        toast: lerpDouble(toast, other.toast, t),
-        modal: lerpDouble(modal, other.modal, t),
-      );
-
-  static double lerpDouble(double a, double b, double t) => a + (b - a) * t;
 }
 
 /// Тема дизайн-системы: то, что хост может подменить под свой бренд.
 ///
-/// Подключается расширением к теме приложения:
+/// Задаётся один раз на старте, обычно в `main`, и действует во всём приложении —
+/// в `MaterialApp`, `CupertinoApp` и без них:
 ///
 /// ```dart
-/// MaterialApp(
-///   theme: ThemeData(extensions: <ThemeExtension<dynamic>>[
-///     PersonalizationTheme.light.copyWith(
-///       colors: PersonalizationColors.light.copyWith(brandPrimary: Color(0xFF7C3AED)),
-///       fontFamily: PersonalizationFontFamily(
-///         regular: 'Inter', emphasized: 'Inter',
-///       ),
-///     ),
-///   ]),
-///   darkTheme: ThemeData.dark().copyWith(extensions: <ThemeExtension<dynamic>>[
-///     PersonalizationTheme.dark,
-///   ]),
-/// )
+/// PersonalizationTheme.configure(
+///   lightColors: PersonalizationColors.light.copyWith(brandPrimary: Color(0xFF7C3AED)),
+///   darkColors: PersonalizationColors.dark.copyWith(brandPrimary: Color(0xFFA78BFA)),
+///   fontFamily: PersonalizationFontFamily(regular: 'Inter', emphasized: 'Inter'),
+/// );
+/// PersonalizationTheme.mode = ThemeMode.system;
 /// ```
 ///
-/// Расширение можно переопределить и на поддереве через `Theme(data: ...)`:
-/// разным магазинам в одном приложении можно дать разный брендинг.
+/// Цвета задаются на каждую схему, шрифт и радиусы — одни на обе, как в остальных
+/// SDK. Темизуются цвета, радиусы и шрифт — поверхность брендирования. Отступы,
+/// тени и кегли остаются константами: это шкала макета, менять её не предполагается.
 ///
-/// Темизуются цвета, радиусы и шрифт — поверхность брендирования. Отступы, тени
-/// и кегли остаются константами: это шкала макета, менять её не предполагается.
+/// Светлую или тёмную выбирает [mode]: по умолчанию как у приложения, или жёстко одну.
 @immutable
-class PersonalizationTheme extends ThemeExtension<PersonalizationTheme> {
+class PersonalizationTheme {
   const PersonalizationTheme({
     required this.colors,
     this.radius = const PersonalizationRadiusScale(),
@@ -185,24 +154,104 @@ class PersonalizationTheme extends ThemeExtension<PersonalizationTheme> {
   final PersonalizationRadiusScale radius;
   final PersonalizationFontFamily fontFamily;
 
+  /// Светлая тема из макета.
   static const PersonalizationTheme light = PersonalizationTheme(
     colors: PersonalizationColors.light,
   );
 
+  /// Тёмная тема из макета.
   static const PersonalizationTheme dark = PersonalizationTheme(
     colors: PersonalizationColors.dark,
   );
 
-  /// Тема из контекста. Расширение не подключено — берётся набор по яркости темы
-  /// приложения, поэтому компоненты работают и у хоста, которому тема не нужна, и
-  /// в тёмной схеме не остаются светлыми.
-  static PersonalizationTheme of(BuildContext context) {
-    final theme = Theme.of(context);
-    return theme.extension<PersonalizationTheme>() ??
-        (theme.brightness == Brightness.dark ? dark : light);
+  static PersonalizationTheme _light = light;
+  static PersonalizationTheme _dark = dark;
+
+  /// Тема бренда для всего UI SDK. Незаданное остаётся из макета, а повторный вызов
+  /// задаёт тему целиком заново.
+  ///
+  /// Цвета обычно берутся частично: `PersonalizationColors.light.copyWith(...)`. Без
+  /// [darkColors] тёмная схема берёт из [lightColors] цвета бренда — основной и кнопки
+  /// Primary, — а остальное из макета: тёмные поверхности светлой темы не выводятся.
+  static void configure({
+    PersonalizationColors? lightColors,
+    PersonalizationColors? darkColors,
+    PersonalizationFontFamily fontFamily = PersonalizationFontFamily.system,
+    PersonalizationRadiusScale radius = const PersonalizationRadiusScale(),
+  }) {
+    _light = PersonalizationTheme(
+      colors: lightColors ?? PersonalizationColors.light,
+      radius: radius,
+      fontFamily: fontFamily,
+    );
+    _dark = PersonalizationTheme(
+      colors:
+          darkColors ??
+          (lightColors == null
+              ? PersonalizationColors.dark
+              : _withBrand(PersonalizationColors.dark, lightColors)),
+      radius: radius,
+      fontFamily: fontFamily,
+    );
+    _rebuildOnScreen();
   }
 
-  @override
+  /// Светлая или тёмная тема UI SDK.
+  ///
+  /// [ThemeMode.system] (по умолчанию) — как у приложения: по его теме Material, иначе
+  /// Cupertino, иначе по настройке устройства. [ThemeMode.light] и [ThemeMode.dark] —
+  /// всегда эта, что бы ни стояло в приложении. Задаётся один раз, обычно в `main`;
+  /// смена на лету перерисовывает то, что на экране.
+  static ThemeMode get mode => _mode;
+
+  static set mode(ThemeMode value) {
+    if (value == _mode) return;
+    _mode = value;
+    _rebuildOnScreen();
+  }
+
+  static ThemeMode _mode = ThemeMode.system;
+
+  /// Яркость, в которой рисуется UI SDK: заданная [mode], а в [ThemeMode.system] —
+  /// яркость приложения.
+  static Brightness brightnessOf(BuildContext context) =>
+      PersonalizationBrightness._of(context) ??
+      switch (_mode) {
+        ThemeMode.light => Brightness.light,
+        ThemeMode.dark => Brightness.dark,
+        // Тема Material ставит под собой CupertinoTheme со своей яркостью, у CupertinoApp
+        // она своя, а без обеих CupertinoTheme отдаёт настройку устройства.
+        ThemeMode.system =>
+          CupertinoTheme.maybeBrightnessOf(context) ?? Brightness.light,
+      };
+
+  /// Тема из контекста: заданная [configure], нужной яркости ([brightnessOf]). Без
+  /// настройки — значения из макета, поэтому компоненты работают и у хоста, которому
+  /// тема не нужна, и в тёмной схеме не остаются светлыми.
+  static PersonalizationTheme of(BuildContext context) =>
+      brightnessOf(context) == Brightness.dark ? _dark : _light;
+
+  // Компоненты читают режим при сборке, а подписаться им не на что: при смене
+  // перестраивается всё дерево приложения — один раз на изменение настройки.
+  static void _rebuildOnScreen() {
+    final binding = WidgetsFlutterBinding.ensureInitialized();
+    void rebuild([Duration? _]) {
+      void visit(Element element) {
+        element.markNeedsBuild();
+        element.visitChildren(visit);
+      }
+
+      binding.rootElement?.visitChildren(visit);
+    }
+
+    // Посреди сборки кадра помечать нельзя — тогда сразу после него.
+    if (binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      binding.addPostFrameCallback(rebuild);
+    } else {
+      rebuild();
+    }
+  }
+
   PersonalizationTheme copyWith({
     PersonalizationColors? colors,
     PersonalizationRadiusScale? radius,
@@ -214,18 +263,39 @@ class PersonalizationTheme extends ThemeExtension<PersonalizationTheme> {
       fontFamily: fontFamily ?? this.fontFamily,
     );
   }
+}
+
+/// [base] с цветами бренда из [brand]: основной цвет, кнопки Primary, линия и текст
+/// бренда.
+PersonalizationColors _withBrand(
+  PersonalizationColors base,
+  PersonalizationColors brand,
+) => base.copyWith(
+  brandPrimary: brand.brandPrimary,
+  buttonPrimary: brand.buttonPrimary,
+  buttonPrimaryDisabled: brand.buttonPrimaryDisabled,
+  lineBrand: brand.lineBrand,
+  textBrand: brand.textBrand,
+);
+
+/// Принудительная яркость UI кита на поддереве — для мест, где фон задаёт не тема, а
+/// содержимое: слайды сторис с фото и видео всегда тёмные. Цвета берутся из темы
+/// нужной яркости, заданной [PersonalizationTheme.configure]. Внутреннее: наружу из
+/// пакета не экспортируется.
+class PersonalizationBrightness extends InheritedWidget {
+  const PersonalizationBrightness({
+    super.key,
+    required this.brightness,
+    required super.child,
+  });
+
+  final Brightness brightness;
+
+  static Brightness? _of(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<PersonalizationBrightness>()
+      ?.brightness;
 
   @override
-  PersonalizationTheme lerp(
-    ThemeExtension<PersonalizationTheme>? other,
-    double t,
-  ) {
-    if (other is! PersonalizationTheme) return this;
-    return PersonalizationTheme(
-      colors: colors.lerp(other.colors, t),
-      radius: radius.lerp(other.radius, t),
-      // Шрифт не интерполируется: переключается разом на середине перехода.
-      fontFamily: t < 0.5 ? fontFamily : other.fontFamily,
-    );
-  }
+  bool updateShouldNotify(PersonalizationBrightness oldWidget) =>
+      brightness != oldWidget.brightness;
 }
