@@ -1014,9 +1014,8 @@ class _OnMediaSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = Theme.of(context);
-    return Theme(
-      data: base.copyWith(extensions: [PersonalizationTheme.dark]),
+    return PersonalizationBrightness(
+      brightness: Brightness.dark,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(PersonalizationRadius.xl2),
         child: DecoratedBox(

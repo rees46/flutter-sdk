@@ -12,7 +12,6 @@ import '../components/personalization_story_price.dart';
 import '../components/personalization_story_sound_button.dart';
 import '../components/personalization_story_used_products.dart';
 import '../components/personalization_toast.dart';
-import '../personalization_colors.dart';
 import '../personalization_theme.dart';
 import 'personalization_story_viewer.dart';
 import 'stories_gif_player.dart';
@@ -102,42 +101,11 @@ class StorySlideView extends StatelessWidget {
   Widget build(BuildContext context) {
     final slide = this.slide;
     final media = storyMediaOf(slide) != StoryMedia.none;
-    final base = Theme.of(context);
-    return Theme(
-      data: media ? _mediaTheme(base) : base,
-      child: Builder(builder: (context) => _body(context, slide, media)),
-    );
-  }
-
-  /// Тема слайдов с медиа: тёмные токены кита. Тема хоста уже тёмная — берётся она,
-  /// иначе тёмный набор кита с брендом, радиусами и шрифтом хоста.
-  static ThemeData _mediaTheme(ThemeData base) {
-    final host = base.extension<PersonalizationTheme>();
-    final PersonalizationTheme dark;
-    if (host != null && base.brightness == Brightness.dark) {
-      dark = host;
-    } else {
-      final source = host ?? PersonalizationTheme.light;
-      final brand = source.colors;
-      dark = PersonalizationTheme.dark.copyWith(
-        radius: source.radius,
-        fontFamily: source.fontFamily,
-        colors: PersonalizationColors.dark.copyWith(
-          brandPrimary: brand.brandPrimary,
-          buttonPrimary: brand.buttonPrimary,
-          buttonPrimaryDisabled: brand.buttonPrimaryDisabled,
-          lineBrand: brand.lineBrand,
-          textBrand: brand.textBrand,
-        ),
-      );
-    }
-    return base.copyWith(
-      extensions: [
-        for (final extension in base.extensions.values)
-          if (extension is! PersonalizationTheme) extension,
-        dark,
-      ],
-    );
+    final body = Builder(builder: (context) => _body(context, slide, media));
+    // Слайды с медиа — тёмные токены кита: текст и кнопки лежат на фото или видео.
+    return media
+        ? PersonalizationBrightness(brightness: Brightness.dark, child: body)
+        : body;
   }
 
   Widget _body(BuildContext context, StorySlide slide, bool media) {

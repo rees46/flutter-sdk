@@ -4,19 +4,23 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.os.SystemClock
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
 import com.rees46.rees46_flutter_sdk.pigeon.InitConfig
 import com.rees46.rees46_flutter_sdk.pigeon.ManageSubscriptionParamsWire
 import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationFlutterApi
 import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationHostApi
+import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationPopupFlutterApi
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileParamsWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
 import com.rees46.rees46_flutter_sdk.pigeon.TrackingItemWire
 import com.rees46.rees46_flutter_sdk.pigeon.TrackingSourceWire
 import com.google.gson.Gson
 import com.personalization.Params
+import com.personalization.PopupPresentationListener
 import com.personalization.PushEventType
 import com.personalization.PushProvider
 import com.personalization.Rees46
@@ -56,6 +60,7 @@ class Rees46FlutterSdkPlugin :
     private lateinit var applicationContext: Context
     private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
     private var flutterApi: PersonalizationFlutterApi? = null
+    private var popupApi: PersonalizationPopupFlutterApi? = null
     private var activityBinding: ActivityPluginBinding? = null
 
     private val onNewIntentListener =
@@ -70,11 +75,13 @@ class Rees46FlutterSdkPlugin :
         applicationContext = flutterPluginBinding.applicationContext
         PersonalizationHostApi.setUp(flutterPluginBinding.binaryMessenger, this)
         flutterApi = PersonalizationFlutterApi(flutterPluginBinding.binaryMessenger)
+        popupApi = PersonalizationPopupFlutterApi(flutterPluginBinding.binaryMessenger)
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         PersonalizationHostApi.setUp(binding.binaryMessenger, null)
         flutterApi = null
+        popupApi = null
         coroutineScope.cancel()
     }
 
@@ -149,7 +156,16 @@ class Rees46FlutterSdkPlugin :
             )
             // F3: initialize (and register) the instance through the multi-instance
             // `Rees46` facade so it is reachable by shopId via Rees46.getInstance.
-            Rees46.initialize(context = applicationContext, config = shopConfig)
+            val sdk = Rees46.initialize(context = applicationContext, config = shopConfig)
+
+            // Dart draws popups with the UI kit: every popup is kept back from the native SDK
+            // (null — not shown, not reported, not remembered) and handed over. Dart decides
+            // whether to show it, and reports it once it is on screen. The listener runs on the
+            // main thread, where the Pigeon channel has to be called.
+            sdk.popupPresentationListener = PopupPresentationListener { _, popup ->
+                runCatching { popupApi?.onPopup(shopId, popup.toJson().toString()) { _ -> } }
+                null
+            }
 
             // Persist so the cold-start push provider (Rees46PushInitProvider) can re-register this
             // shop on a process FCM spins up before Dart runs — otherwise the registry is empty and
@@ -536,6 +552,28 @@ class Rees46FlutterSdkPlugin :
             callback(Result.success(true))
         } catch (e: ActivityNotFoundException) {
             callback(Result.success(false))
+        }
+    }
+
+    override fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        trackingCall(callback, shopId) {
+            it.popupShown(popupId.toInt(), trackingListener(callback))
+        }
+
+    override fun openNotificationSettings() {
+        val packageName = applicationContext.packageName
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        } else {
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))
+        }
+        val activity = activityBinding?.activity
+        if (activity == null) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            (activity ?: applicationContext).startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            android.util.Log.w(Rees46PushNotifier.TAG, "No notification settings screen", e)
         }
     }
 

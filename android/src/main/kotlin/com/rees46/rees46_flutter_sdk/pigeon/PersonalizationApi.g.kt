@@ -681,6 +681,18 @@ interface PersonalizationHostApi {
   fun trackSetSource(source: TrackingSourceWire, shopId: String?)
   /** [customJson] and [recommendedSourceJson] are JSON object strings or null. */
   fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, isGiftPackage: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /**
+   * Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`
+   * (Android) / `trackPopupShown` (iOS). The native SDKs never show a popup themselves
+   * under the plugin, so they never report one either: Dart does, once it is on screen.
+   */
+  fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /**
+   * Opens the system settings where the user turns notifications on for the app: the
+   * app's notification settings on Android, the app's page in Settings on iOS. What the
+   * native popups do for their push-subscription button.
+   */
+  fun openNotificationSettings()
 
   companion object {
     /** The codec used by PersonalizationHostApi. */
@@ -1546,6 +1558,79 @@ interface PersonalizationHostApi {
           channel.setMessageHandler(null)
         }
       }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPopupShown$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val popupIdArg = args[0] as Long
+            val shopIdArg = args[1] as String?
+            api.trackPopupShown(popupIdArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openNotificationSettings$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.openNotificationSettings()
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+}
+/**
+ * Server popups, handed over instead of being shown natively: the plugin sets the native
+ * presentation listener (Android) / delegate (iOS), which keeps every popup back and
+ * forwards it here. Separate from [PersonalizationFlutterApi], which the push dispatcher
+ * owns.
+ *
+ * Generated class from Pigeon that represents Flutter messages that can be called from Kotlin.
+ */
+class PersonalizationPopupFlutterApi(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
+  companion object {
+    /** The codec used by PersonalizationPopupFlutterApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      PersonalizationApiPigeonCodec()
+    }
+  }
+  /**
+   * A popup arrived for [shopId]. [popupJson] is the popup as the server sends it:
+   * `id`, `position`, `delay`, `components` and `popup_actions` (an object).
+   */
+  fun onPopup(shopIdArg: String, popupJsonArg: String, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(shopIdArg, popupJsonArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(PersonalizationApiPigeonUtils.createConnectionError(channelName)))
+      } 
     }
   }
 }

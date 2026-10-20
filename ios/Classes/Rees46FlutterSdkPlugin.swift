@@ -16,7 +16,9 @@ public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplication
   public static func register(with registrar: FlutterPluginRegistrar) {
     let instance = Rees46FlutterSdkPlugin()
     instance.messenger = registrar.messenger()
-    instance.api = PersonalizationHostApiImpl()
+    instance.api = PersonalizationHostApiImpl(
+      popupApi: PersonalizationPopupFlutterApi(binaryMessenger: registrar.messenger())
+    )
     instance.flutterApi = PersonalizationFlutterApi(binaryMessenger: registrar.messenger())
     let storiesApi = PersonalizationStoriesFlutterApi(binaryMessenger: registrar.messenger())
     instance.storiesApi = storiesApi
@@ -117,6 +119,15 @@ extension Rees46FlutterSdkPlugin {
 }
 
 final class PersonalizationHostApiImpl: PersonalizationHostApi {
+  private let popupApi: PersonalizationPopupFlutterApi
+
+  /// One per shop: the SDK holds its popup delegate weakly.
+  private var popupForwarders: [String: PopupForwarder] = [:]
+
+  init(popupApi: PersonalizationPopupFlutterApi) {
+    self.popupApi = popupApi
+  }
+
   /// Resolves the SDK instance a call targets via the multi-instance `Rees46`
   /// facade. `shopId == nil` resolves the single default instance; an unknown or
   /// (with no id) ambiguous shop throws, which `try?` turns into `nil` — the
@@ -143,7 +154,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
 
     // F3: initialize (and register) the instance through the multi-instance
     // `Rees46` facade so it is reachable by `shopId` via `Rees46.instance(for:)`.
-    let sdk = Rees46.initialize(
+    var sdk = Rees46.initialize(
       Rees46Config(
         shopId: config.shopId,
         apiDomain: config.apiDomain,
@@ -161,6 +172,13 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
         completion(.success(()))
       }
     }
+
+    // Dart draws popups with the UI kit: every popup is kept back from the native SDK
+    // (nil — not shown, not reported, not remembered) and handed over. Dart decides
+    // whether to show it, and reports it once it is on screen.
+    let forwarder = PopupForwarder(shopId: config.shopId, api: popupApi)
+    popupForwarders[config.shopId] = forwarder
+    sdk.popupPresentationDelegate = forwarder
 
     // Kept for the AppDelegate push path (device token / remote notification),
     // which still uses the last-initialized instance until F4 routes by shop.
@@ -1117,6 +1135,34 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
+  func trackPopupShown(
+    popupId: Int64,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    guard let sdk = sdk(shopId) else {
+      completion(
+        .failure(
+          PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+      return
+    }
+    sdk.trackPopupShown(popupId: Int(popupId)) { self.report($0, completion) }
+  }
+
+  func openNotificationSettings() throws {
+    // The app's notification settings where iOS has a link to them, its Settings page before.
+    let target: String
+    if #available(iOS 16.0, *) {
+      target = UIApplication.openNotificationSettingsURLString
+    } else {
+      target = UIApplication.openSettingsURLString
+    }
+    guard let url = URL(string: target) else { return }
+    DispatchQueue.main.async {
+      UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    }
+  }
+
   func trackSetSource(source: TrackingSourceWire, shopId: String?) throws {
     guard let sdk = sdk(shopId) else {
       throw PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)
@@ -1330,3 +1376,40 @@ extension TrackingSourceWire {
     return TrackingSource(type: type, code: code)
   }
 }
+
+/// Keeps every popup of one shop back from the native SDK and hands it to Dart.
+final class PopupForwarder: PopupPresentationDelegate {
+  private let shopId: String
+  private let api: PersonalizationPopupFlutterApi
+
+  init(shopId: String, api: PersonalizationPopupFlutterApi) {
+    self.shopId = shopId
+    self.api = api
+  }
+
+  func sdk(_ sdk: PersonalizationSDK, shouldPresentPopup popup: Popup) -> UIViewController? {
+    if let json = Self.json(popup) {
+      // The SDK asks from its own queue; the Pigeon channel is called on the main thread.
+      DispatchQueue.main.async { [api, shopId] in
+        api.onPopup(shopId: shopId, popupJson: json) { _ in }
+      }
+    }
+    return nil
+  }
+
+  /// The popup as the server sends it. `Popup` carries `popup_actions` as a JSON string;
+  /// it goes out as an object, like on Android.
+  static func json(_ popup: Popup) -> String? {
+    guard let data = try? JSONEncoder().encode(popup),
+          var object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    else { return nil }
+    if let actions = object["popup_actions"] as? String,
+       let actionsData = actions.data(using: .utf8),
+       let parsed = try? JSONSerialization.jsonObject(with: actionsData) {
+      object["popup_actions"] = parsed
+    }
+    guard let out = try? JSONSerialization.data(withJSONObject: object) else { return nil }
+    return String(data: out, encoding: .utf8)
+  }
+}
+

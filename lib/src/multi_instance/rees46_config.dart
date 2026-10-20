@@ -29,6 +29,9 @@ class REES46Config {
   final bool? enableLogs;
   final bool? autoSendPushToken;
   final bool? sendAdvertisingId;
+
+  /// Whether the SDK shows server popups itself while no `onPopup` is set on the
+  /// instance. Off — and without `onPopup` — popups are not shown. Defaults to true.
   final bool? enableAutoPopupPresentation;
   final bool? needReInitialization;
 

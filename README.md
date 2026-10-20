@@ -91,6 +91,7 @@ native init threw).
 | `stream` | `android` / `ios` | Traffic stream label; defaults to the current platform |
 | `autoSendPushToken` | `true` | Fetches and sends the push token during init |
 | `needReInitialization` | `false` | Forces a fresh session / device id |
+| `enableAutoPopupPresentation` | `true` | Shows server popups without an `onPopup` handler, see [Popups](#popups) |
 
 Push delivery needs platform setup of its own — a Firebase config on Android, the
 Push Notifications capability on iOS. Without it initialization still succeeds;
@@ -137,6 +138,98 @@ without an id resolves only while exactly one shop is registered, and throws
 `AmbiguousShopException` otherwise (`UnknownShopIdException` for an id that was
 never registered).
 
+
+## Popups
+
+Popups made in the REES46 admin arrive with the responses to init and tracking
+calls. The SDK shows them over the app's root navigator — the one `MaterialApp`,
+`CupertinoApp` or `MaterialApp.router` builds — with nothing to set up.
+
+A popup sits in the centre, at the top or at the bottom as set in the admin, and
+fills the screen when no position is set. It waits out the delay set in the admin,
+one is shown at a time, and one shown within the last minute is not shown again.
+The link button opens its link, the push-subscription button opens the app's
+notification settings. A popup is reported as shown once it is on screen.
+
+To decide yourself — hold a popup back on a checkout screen, or draw it your way —
+take popups with `onPopup`. The SDK then shows nothing:
+
+```dart
+sdk.onPopup = (InAppPopup popup) {
+  if (onCheckout) {
+    held = popup;                     // later: sdk.presentPopup(held!)
+    return;
+  }
+  showDialog(
+    context: context,
+    builder: (context) => Center(
+      child: SizedBox(
+        width: 370,
+        // Unbounded in height, the popup takes the height of its content.
+        child: SingleChildScrollView(
+          child: PersonalizationInAppPopup(
+            view: popup.imageUrl == null
+                ? PersonalizationInAppPopupView.text
+                : PersonalizationInAppPopupView.image,
+            title: popup.title,
+            text: popup.text,
+            actionText: popup.actionText,
+            closeText: popup.closeText,
+            image: popup.imageUrl == null ? null : NetworkImage(popup.imageUrl!),
+            onAction: () {
+              Navigator.pop(context);
+              // Open popup.linkUrl, or the notification settings when
+              // popup.pushSubscribeText is set — with url_launcher, for instance.
+            },
+            onClose: () => Navigator.pop(context),
+          ),
+        ),
+      ),
+    ),
+  );
+  sdk.tracking.popupShown(popup.id);  // the SDK reports only what it shows itself
+};
+```
+
+`sdk.presentPopup(popup)` shows a popup the way the SDK does and reports it. With
+`enableAutoPopupPresentation: false` and no `onPopup`, popups are not shown.
+
+## UI theme
+
+The SDK's UI (popups, for now) is drawn in the REES46 design. Set your brand once, in
+`main` before `runApp`; it applies in `MaterialApp`, `CupertinoApp` and without
+either:
+
+```dart
+PersonalizationTheme.configure(
+  lightColors: PersonalizationColors.light.copyWith(
+    brandPrimary: const Color(0xFF7C3AED),
+    buttonPrimary: const Color(0xFF7C3AED),
+  ),
+  darkColors: PersonalizationColors.dark.copyWith(
+    brandPrimary: const Color(0xFFA78BFA),
+    buttonPrimary: const Color(0xFFA78BFA),
+  ),
+  fontFamily: const PersonalizationFontFamily(regular: 'Inter', emphasized: 'Inter'),
+);
+```
+
+- Colours are set per scheme, font and radii once for both. Anything left out stays
+  as designed, so start from `PersonalizationColors.light` / `.dark` and change only
+  what you need.
+- Without `darkColors` the dark scheme takes the brand colours (brand, primary
+  button, brand line and text) from `lightColors`, the rest from the design.
+- The font families must be declared in your `pubspec.yaml`; pass `package:` for
+  fonts that come from another package.
+
+Light or dark follows the app — its Material theme, else its Cupertino theme, else
+the device setting. To keep the SDK's UI one way whatever the app is in:
+
+```dart
+PersonalizationTheme.mode = ThemeMode.dark;   // or ThemeMode.light; ThemeMode.system by default
+```
+
+Both settings can change at runtime; what is on screen is redrawn.
 
 ## Track events
 
