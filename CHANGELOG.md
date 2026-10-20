@@ -1,3 +1,19 @@
+# [1.3.0](https://github.com/rees46/flutter-sdk/compare/v1.2.1...v1.3.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **android:** native SDK v2.45.0 ([4bf0666](https://github.com/rees46/flutter-sdk/commit/4bf0666f109fce095f4b5273d41010cf136262ba))
+
+
+### Features
+
+* **popups:** server popups over the root navigator, configurable UI theme ([ca28cd8](https://github.com/rees46/flutter-sdk/commit/ca28cd809f31b07929a62c9728a3f8f0430f89c5))
+
+
+
+
+
 ## [1.2.1](https://github.com/rees46/flutter-sdk/compare/v1.2.0...v1.2.1) (2026-10-15)
 
 
