@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/src/ui/components/personalization_product.dart';
 import 'package:rees46_sdk/src/ui/widgets/product_mapping.dart';
 
 Map<String, dynamic> _fixture(String name) =>
@@ -64,16 +65,67 @@ void main() {
       expect(card.discount, '-10%');
     });
 
-    test('a discount that already has its sign keeps one', () {
-      final card = productFromSearch(
+    test('a discount that already has its sign keeps exactly one', () {
+      PersonalizationProduct card(String formatted) => productFromSearch(
         _search(<String, Object?>{
           'price': 90,
           'oldprice': 100,
           'oldprice_formatted': '100 ₽',
-          'discount_formatted': '-10%',
+          'discount': 10,
+          'discount_formatted': formatted,
         }),
       );
-      expect(card.discount, '-10%');
+      expect(card('-10%').discount, '-10%');
+      expect(card('--10%').discount, '-10%');
+    });
+
+    // Old price shown, the discount itself decides the badge.
+    Map<String, Object?> discounted(Map<String, Object?> discount) =>
+        <String, Object?>{
+          'price': 90,
+          'oldprice': 100,
+          'oldprice_formatted': '100 ₽',
+          ...discount,
+        };
+
+    test('a zero discount shows no badge, even formatted', () {
+      final card = productFromSearch(
+        _search(
+          discounted(<String, Object?>{
+            'discount': 0,
+            'discount_formatted': '0%',
+          }),
+        ),
+      );
+      expect(card.oldPrice, '100 ₽');
+      expect(card.discount, isNull);
+    });
+
+    test('a discount of true or garbage is no discount', () {
+      for (final value in <Object>[true, false, 'abc']) {
+        final card = productFromSearch(
+          _search(discounted(<String, Object?>{'discount': value})),
+        );
+        expect(card.discount, isNull, reason: '$value');
+      }
+    });
+
+    test('discount_percent stands in for a missing discount', () {
+      final card = productFromSearch(
+        _search(discounted(<String, Object?>{'discount_percent': '5'})),
+      );
+      expect(card.discount, '-5%');
+    });
+
+    test('a number in a string counts', () {
+      final card = productFromCatalog(
+        Product.fromJson(<String, dynamic>{
+          'id': '1',
+          'name': 'Item',
+          ...discounted(<String, Object?>{'discount': '7'}),
+        }),
+      );
+      expect(card.discount, '-7%');
     });
 
     test('no old price at or below the price, and then no discount', () {

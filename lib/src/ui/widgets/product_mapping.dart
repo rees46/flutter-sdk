@@ -25,6 +25,7 @@ PersonalizationProduct productFromSearch(
   oldPriceFormatted: product.oldPriceFormatted,
   discount: product.discount,
   discountFormatted: product.discountFormatted,
+  discountPercent: product.discountPercent,
   picture: product.picture,
   imageUrl: product.imageUrl,
   url: product.url,
@@ -48,6 +49,7 @@ PersonalizationProduct productFromRecommendation(
   oldPriceFormatted: product.oldPriceFormatted,
   discount: product.discount,
   discountFormatted: product.discountFormatted,
+  discountPercent: product.discountPercent,
   picture: product.resizedImageUrl,
   imageUrl: product.imageUrl,
   url: product.url,
@@ -72,6 +74,7 @@ PersonalizationProduct productFromCatalog(
   oldPriceFormatted: product.oldPriceFormatted,
   discount: product.discount,
   discountFormatted: product.discountFormatted,
+  discountPercent: product.discountPercent,
   picture: product.picture,
   imageUrl: product.imageUrl,
   url: product.url,
@@ -83,7 +86,9 @@ PersonalizationProduct productFromCatalog(
 /// Общие правила. Строки берутся уже отформатированными сервером:
 /// - цена — `price_formatted`, иначе «цена валюта»;
 /// - старая цена — `oldprice_formatted`, и только когда `oldprice` больше цены;
-/// - скидка — только при старой цене: `discount_formatted`, иначе «discount%», со знаком «-»;
+/// - скидка — только при показанной старой цене и положительном числе скидки
+///   (`discount`, иначе `discount_percent`): текст `discount_formatted`, иначе «число%»,
+///   ровно с одним «-» впереди;
 /// - картинка — `picture` (уменьшенная копия), иначе `image_url`;
 /// - диплинк — для платформы запуска; рейтинга в API нет.
 PersonalizationProduct _card({
@@ -97,6 +102,7 @@ PersonalizationProduct _card({
   required String? oldPriceFormatted,
   required int? discount,
   required String? discountFormatted,
+  required int? discountPercent,
   required String? picture,
   required String imageUrl,
   required String url,
@@ -106,13 +112,15 @@ PersonalizationProduct _card({
 }) {
   final hasOldPrice =
       (oldPrice ?? 0) > price && (oldPriceFormatted ?? '').isNotEmpty;
+  // Число скидки решает, есть ли бейдж: «0%» или `true` из ответа — не скидка.
+  final number = (discount ?? 0) > 0
+      ? discount
+      : ((discountPercent ?? 0) > 0 ? discountPercent : null);
   String? discountText;
-  if (hasOldPrice) {
-    if ((discountFormatted ?? '').isNotEmpty) {
-      discountText = discountFormatted;
-    } else if ((discount ?? 0) > 0) {
-      discountText = '$discount%';
-    }
+  if (hasOldPrice && number != null) {
+    final formatted = (discountFormatted ?? '').trim();
+    final text = formatted.isNotEmpty ? formatted : '$number%';
+    discountText = '-${text.replaceFirst(RegExp(r'^-+'), '')}';
   }
   final priceText = priceFormatted ?? '';
   final image = (picture ?? '').isNotEmpty ? picture! : imageUrl;
@@ -123,9 +131,7 @@ PersonalizationProduct _card({
     image: image.isEmpty ? null : NetworkImage(image),
     brand: brand.isEmpty ? null : brand,
     oldPrice: hasOldPrice ? oldPriceFormatted : null,
-    discount: discountText == null
-        ? null
-        : (discountText.startsWith('-') ? discountText : '-$discountText'),
+    discount: discountText,
     actionText: actionText,
     url: url.isEmpty ? null : url,
     deeplink: _deeplink(android: deeplinkAndroid, ios: deeplinkIos),
