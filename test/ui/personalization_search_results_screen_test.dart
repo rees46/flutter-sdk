@@ -19,6 +19,9 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   /// Pages that fail while listed here.
   final Set<int> failing = <int>{};
 
+  /// `search` events tracked.
+  int searches = 0;
+
   @override
   Future<String> searchFull(
     String query,
@@ -46,7 +49,9 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
     String query,
     List<String>? results,
     String? shopId,
-  ) async {}
+  ) async {
+    searches++;
+  }
 }
 
 Widget _host(Widget screen) => MaterialApp(
@@ -241,6 +246,8 @@ void main() {
     expect(find.text('Retry'), findsNothing);
     expect(find.text('Item 0'), findsOneWidget);
     expect(errors, hasLength(1));
+    // A retry asks for the page again, it is not a new search.
+    expect(api.searches, 1);
   });
 
   testWidgets('a failed next page turns load more into retry', (tester) async {
@@ -282,6 +289,7 @@ void main() {
     expect(api.pages, <int>[1, 2, 2]);
     expect(catalog().loadMoreText, 'Load more');
     expect(catalog().count!.shown, 40);
+    expect(api.searches, 1);
   });
 
   testWidgets('infinite scroll stops at a failed page until it is retried', (
