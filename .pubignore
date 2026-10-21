@@ -35,3 +35,5 @@ migrate_working_dir/
 # Maintainer-only release docs, not part of the public API.
 /doc/
 /docs/
+# Live API samples of a demo shop's catalog: test data, not part of the package.
+/test/fixtures/
