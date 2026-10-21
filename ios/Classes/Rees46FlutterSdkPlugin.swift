@@ -355,7 +355,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     // As of REES46 3.24+, ProductsListResponse.products is [Product] (not [ProductInfo]);
     // Product carries no categories, which the Dart parser already treats as optional.
     var dict: [String: Any] = [
-      "products": r.products.map { _searchProductToDict($0) },
+      "products": r.products.map { _productsListProductToDict($0) },
       "products_total": r.productsTotal,
     ]
     if let pr = r.priceRange {
@@ -367,6 +367,18 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     if let filters = r.filters {
       dict["filters"] = filters.mapValues { ["count": $0.count, "values": $0.values] as [String: Any] }
     }
+    return dict
+  }
+
+  /// A products list item for the Dart `Product`, whose old price and discount are
+  /// nullable: they go out only for a discounted product, as on Android. Search keeps
+  /// sending the native zeros, which its model reads as "none".
+  private static func _productsListProductToDict(_ p: Product) -> [String: Any] {
+    var dict = _searchProductToDict(p)
+    dict.removeValue(forKey: "oldprice")
+    dict.removeValue(forKey: "oldprice_formatted")
+    dict.removeValue(forKey: "discount")
+    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
     return dict
   }
 
