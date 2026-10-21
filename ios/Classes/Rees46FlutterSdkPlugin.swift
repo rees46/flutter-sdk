@@ -263,7 +263,22 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     ]
     if let pf = p.priceFormatted { dict["price_formatted"] = pf }
     if let pff = p.priceFullFormatted { dict["price_full_formatted"] = pff }
+    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
+    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
     return dict
+  }
+
+  /// Old price and discount as the API sends them: only for a discounted product. The
+  /// native models fill an absent value with 0 or "", which would read as a real one.
+  private static func _putDiscount(
+    _ dict: inout [String: Any],
+    oldPrice: Double,
+    oldPriceFormatted: String?,
+    discount: Int
+  ) {
+    if oldPrice > 0 { dict["oldprice"] = oldPrice }
+    if let v = oldPriceFormatted, !v.isEmpty { dict["oldprice_formatted"] = v }
+    if discount > 0 { dict["discount"] = discount }
   }
 
   private static func _categoryToDict(_ c: REES46.Category) -> [String: Any] {
@@ -346,11 +361,17 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     if let pr = r.priceRange {
       dict["price_range"] = ["min": pr.min, "max": pr.max]
     }
+    if let brands = r.brands {
+      dict["brands"] = brands
+    }
+    if let filters = r.filters {
+      dict["filters"] = filters.mapValues { ["count": $0.count, "values": $0.values] as [String: Any] }
+    }
     return dict
   }
 
   private static func _productInfoToDict(_ p: ProductInfo) -> [String: Any] {
-    return [
+    var dict: [String: Any] = [
       "id": p.id,                          // normalised from "uniqid"
       "name": p.name,
       "brand": p.brand,
@@ -372,6 +393,11 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
         return d
       },
     ]
+    if !p.resizedImageUrl.isEmpty { dict["picture"] = p.resizedImageUrl }
+    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
+    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
+    if let isNew = p.isNew { dict["is_new"] = isNew }
+    return dict
   }
 
   func searchBlank(shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
@@ -587,7 +613,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       "oldprice_formatted": p.oldPriceFormatted,
       "discount": p.discount,
     ]
-    _ = dict // suppress unused warning; all fields set above
+    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
+    if let isNew = p.isNew { dict["is_new"] = isNew }
     return dict
   }
 
@@ -845,6 +872,12 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return [
       "products_total": r.productsTotal,
       "products": r.products.map { _categoryProductToDict($0) },
+      "brands": r.brands.compactMap { b -> [String: Any]? in
+        guard let name = b.name, !name.isEmpty else { return nil }
+        var d: [String: Any] = ["name": name]
+        if let count = b.count { d["count"] = count }
+        return d
+      },
     ]
   }
 
