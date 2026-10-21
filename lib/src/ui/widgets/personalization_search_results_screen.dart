@@ -114,9 +114,8 @@ class PersonalizationSearchResultsScreen extends StatefulWidget {
     this.countSeparator = 'of',
     this.loadMoreText = 'Load more',
     this.emptyText = 'No results for your request.',
-    this.errorText =
-        'Something went wrong. Check your connection and try again.',
-    this.retryText = 'Retry',
+    this.errorText = defaultErrorText,
+    this.retryText = defaultRetryText,
     this.filtersTitle = 'Filters',
     this.resetText = 'Reset',
     this.applyText = 'Apply',
@@ -181,12 +180,18 @@ class PersonalizationSearchResultsScreen extends StatefulWidget {
   final String? loadMoreText;
   final String? emptyText;
 
-  /// Текст вместо выдачи, когда первая страница не загрузилась.
+  /// Текст вместо выдачи, когда первая страница не загрузилась. `null` или пустая
+  /// строка — [defaultErrorText]: экран ошибки без текста не остаётся.
   final String? errorText;
 
   /// Кнопка повтора под [errorText] и на месте «загрузить ещё», когда не загрузилась
-  /// следующая страница.
+  /// следующая страница. `null` или пустая строка — [defaultRetryText]: без кнопки
+  /// после ошибки не восстановиться, бесконечная прокрутка ждёт её.
   final String? retryText;
+
+  static const String defaultErrorText =
+      'Something went wrong. Check your connection and try again.';
+  static const String defaultRetryText = 'Retry';
   final String filtersTitle;
   final String? resetText;
   final String? applyText;
@@ -533,6 +538,9 @@ class _PersonalizationSearchResultsScreenState
     return sections;
   }
 
+  static String _orDefault(String? text, String fallback) =>
+      (text ?? '').isEmpty ? fallback : text!;
+
   /// Граница цены без хвоста «.0»: сервер отдаёт число, форматированной строки у него нет.
   static String _bound(double value) => value == value.floorToDouble()
       ? value.toInt().toString()
@@ -645,6 +653,14 @@ class _PersonalizationSearchResultsScreenState
     final hasMore = _products.isNotEmpty && _products.length < _total;
     final firstPageFailed = _failedPage == 1;
     final nextPageFailed = (_failedPage ?? 0) > 1;
+    final errorText = _orDefault(
+      widget.errorText,
+      PersonalizationSearchResultsScreen.defaultErrorText,
+    );
+    final retryText = _orDefault(
+      widget.retryText,
+      PersonalizationSearchResultsScreen.defaultRetryText,
+    );
 
     final header = PersonalizationSearchResultsTitle(
       title: widget.titleText ?? widget.query,
@@ -681,9 +697,9 @@ class _PersonalizationSearchResultsScreenState
       imageAspect: widget.imageAspect,
       showRating: widget.showRating,
       emptyText: firstPageFailed
-          ? widget.errorText
+          ? errorText
           : (_answered ? widget.emptyText : null),
-      emptyActionText: firstPageFailed ? widget.retryText : null,
+      emptyActionText: firstPageFailed ? retryText : null,
       onEmptyAction: _retry,
       loading: _loading,
       count: _products.isEmpty
@@ -695,7 +711,7 @@ class _PersonalizationSearchResultsScreenState
               total: _total,
             ),
       loadMoreText: nextPageFailed
-          ? widget.retryText
+          ? retryText
           : (hasMore && !widget.infiniteScroll ? widget.loadMoreText : null),
       onLoadMore: nextPageFailed ? _retry : _loadMore,
       onProductTap: (card) {

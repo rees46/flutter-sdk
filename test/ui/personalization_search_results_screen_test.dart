@@ -319,4 +319,45 @@ void main() {
     await tester.pump();
     expect(api.pages, <int>[1, 2, 2]);
   });
+
+  testWidgets('empty error and retry texts fall back to the defaults', (
+    tester,
+  ) async {
+    api.failing.add(1);
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          errorText: null,
+          retryText: '',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.text(PersonalizationSearchResultsScreen.defaultErrorText),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(PersonalizationButton, 'Retry'), findsOneWidget);
+
+    api.failing
+      ..clear()
+      ..add(2);
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    final catalog = tester.widget<PersonalizationCatalog>(
+      find.byType(PersonalizationCatalog),
+    );
+    catalog.onLoadMore!();
+    await tester.pump();
+    expect(api.pages, <int>[1, 1, 2]);
+    expect(
+      tester
+          .widget<PersonalizationCatalog>(find.byType(PersonalizationCatalog))
+          .loadMoreText,
+      'Retry',
+    );
+  });
 }
