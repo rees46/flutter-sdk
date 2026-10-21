@@ -99,4 +99,22 @@ void main() {
     slow.complete(<String>['late']);
     await pending;
   });
+
+  test('after dispose load, retry and reset do nothing', () async {
+    final own = PersonalizationLoadController<List<String>>();
+    var calls = 0;
+    await own.load(() async {
+      calls++;
+      throw StateError('offline');
+    });
+    own.dispose();
+
+    await own.load(() async {
+      calls++;
+      return <String>['a'];
+    });
+    await own.retry();
+    own.reset();
+    expect(calls, 1);
+  });
 }

@@ -40,7 +40,7 @@ final class PersonalizationLoadError<T> extends PersonalizationLoadState<T> {
 ///
 /// Пустота ответа — [isEmpty]; без него пусты пустые коллекции и словари, остальное —
 /// данные. Ответ прошлого запроса, пришедший после нового (или после [reset] и
-/// [dispose]), отбрасывается.
+/// [dispose]), отбрасывается. После [dispose] [load], [retry] и [reset] ничего не делают.
 class PersonalizationLoadController<T>
     extends ValueNotifier<PersonalizationLoadState<T>> {
   PersonalizationLoadController({bool Function(T data)? isEmpty})
@@ -54,6 +54,7 @@ class PersonalizationLoadController<T>
 
   /// Грузит [load]: [PersonalizationLoadLoading], затем данные, пусто или ошибка.
   Future<void> load(Future<T> Function() load) {
+    if (_disposed) return Future<void>.value();
     _load = load;
     return _run(load);
   }
@@ -61,11 +62,12 @@ class PersonalizationLoadController<T>
   /// Повторяет последний запрос; если запроса не было — ничего не делает.
   Future<void> retry() {
     final load = _load;
-    return load == null ? Future<void>.value() : _run(load);
+    return load == null || _disposed ? Future<void>.value() : _run(load);
   }
 
   /// Назад к [PersonalizationLoadIdle] без запроса; ответ запроса в полёте отбросится.
   void reset() {
+    if (_disposed) return;
     _seq++;
     _load = null;
     value = PersonalizationLoadIdle<T>();
