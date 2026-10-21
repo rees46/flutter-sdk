@@ -46,7 +46,7 @@ export 'components/personalization_favorites_badge.dart';
 export 'components/personalization_product_card.dart';
 export 'components/personalization_product.dart';
 export 'components/personalization_products_list.dart';
-export 'components/personalization_recommender_block.dart';
+export 'components/personalization_products_block.dart';
 export 'components/personalization_suggestion_row.dart';
 export 'components/personalization_instant_search.dart';
 export 'components/personalization_filters.dart';

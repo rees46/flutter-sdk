@@ -9,7 +9,8 @@ import 'personalization_product_image.dart';
 import 'personalization_products_list.dart';
 import 'personalization_title.dart';
 
-/// Блок рекомендаций: заголовок, товары, у карусели — точки.
+/// Блок товаров: заголовок, товары, у карусели — точки. Товары даёт хост; блок
+/// рекомендаций, который сам грузит товары по коду, — `PersonalizationRecommenderBlock`.
 ///
 /// Источник: Figma Mobile SDK UI Kit, секция Card — Recommender/Carousel (90:655),
 /// Recommender/Grid (126:1944), Recommender/List (126:2551).
@@ -18,8 +19,8 @@ import 'personalization_title.dart';
 ///
 /// Собран из [PersonalizationTitle], [PersonalizationButton],
 /// [PersonalizationProductsList], [PersonalizationDots].
-class PersonalizationRecommenderBlock extends StatefulWidget {
-  const PersonalizationRecommenderBlock({
+class PersonalizationProductsBlock extends StatefulWidget {
+  const PersonalizationProductsBlock({
     super.key,
     this.layout = PersonalizationProductsLayout.carousel,
     required this.title,
@@ -60,12 +61,12 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
   iconBuilder;
 
   @override
-  State<PersonalizationRecommenderBlock> createState() =>
-      _PersonalizationRecommenderBlockState();
+  State<PersonalizationProductsBlock> createState() =>
+      _PersonalizationProductsBlockState();
 }
 
-class _PersonalizationRecommenderBlockState
-    extends State<PersonalizationRecommenderBlock> {
+class _PersonalizationProductsBlockState
+    extends State<PersonalizationProductsBlock> {
   int _page = 0;
 
   @override

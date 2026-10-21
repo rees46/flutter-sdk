@@ -15,7 +15,7 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 ///
 /// "Components" walks through the primitives in every size, view and state the
 /// design file defines; "Blocks" shows the compositions built from them
-/// (product cards, recommender layouts, instant search, the catalogue, the filters screen,
+/// (product cards, products blocks, instant search, the catalogue, the filters screen,
 /// in-app popups, the toast, the loyalty card);
 /// "Search" runs the two data-bound search widgets against the demo shop: the
 /// instant search field, and the results screen it opens on submit;
@@ -537,22 +537,22 @@ final List<_Exhibit> _blockExhibits = [
       ],
     );
   }),
-  _Exhibit('Recommender Block — carousel', (context) {
-    return _recommender(
+  _Exhibit('Products Block — carousel, products from the host', (context) {
+    return _productsBlock(
       PersonalizationProductsLayout.carousel,
       'Recommended for you',
       _products,
     );
   }),
-  _Exhibit('Recommender Block — grid', (context) {
-    return _recommender(
+  _Exhibit('Products Block — grid, products from the host', (context) {
+    return _productsBlock(
       PersonalizationProductsLayout.grid,
       'Similar products',
       _products.take(4).toList(),
     );
   }),
-  _Exhibit('Recommender Block — list', (context) {
-    return _recommender(
+  _Exhibit('Products Block — list, products from the host', (context) {
+    return _productsBlock(
       PersonalizationProductsLayout.list,
       'Recently viewed',
       _products.take(3).toList(),
@@ -1886,12 +1886,12 @@ Widget _card(
   );
 }
 
-Widget _recommender(
+Widget _productsBlock(
   PersonalizationProductsLayout layout,
   String title,
   List<PersonalizationProduct> products,
 ) {
-  return PersonalizationRecommenderBlock(
+  return PersonalizationProductsBlock(
     layout: layout,
     title: title,
     showAllText: 'Show all',
