@@ -4,14 +4,18 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
-/// Live API answers (shop c1140c…, api.rees46.ru) as the Android bridge passes them on
-/// for the raw-JSON methods.
+/// Live API answers (shop c1140c…, api.rees46.ru). The Android bridge passes them on as
+/// they are for product info, products list and full search; recommendations and
+/// categories reach Dart re-serialized by the bridges, see
+/// `product_bridge_shapes_test.dart`.
 Map<String, dynamic> _fixture(String name) =>
     jsonDecode(File('test/fixtures/$name.json').readAsStringSync())
         as Map<String, dynamic>;
 
 void main() {
-  group('recommendation (recommends, extended=1)', () {
+  // Parser only: no bridge sends this shape yet (both drop the app links, see the
+  // bridge-shaped samples).
+  group('recommendation, parser only (raw API shape)', () {
     final response = RecommendationResponse.fromJson(
       _fixture('recommend_extended'),
     );
@@ -47,7 +51,7 @@ void main() {
     });
   });
 
-  group('products list', () {
+  group('products list (raw on Android)', () {
     final response = ProductsListResponse.fromJson(_fixture('products'));
 
     test('facets: brands, filters, price range', () {
@@ -105,7 +109,9 @@ void main() {
     });
   });
 
-  group('category', () {
+  // Parser only: the bridges re-serialize the native category, see the bridge-shaped
+  // samples.
+  group('category, parser only (raw API shape)', () {
     final response = CategoryResponse.fromJson(_fixture('category'));
 
     test('facets: brands, filters, price range', () {
@@ -138,7 +144,7 @@ void main() {
     });
   });
 
-  group('product info', () {
+  group('product info (raw on Android)', () {
     final product = Product.fromJson(_fixture('product_info'));
 
     test('discount `false` reads as no discount', () {
@@ -159,7 +165,7 @@ void main() {
     });
   });
 
-  group('search full', () {
+  group('search full (raw on Android)', () {
     final response = SearchFullResponse.fromJson(_fixture('search_full'));
 
     test('products carry app links, no discount', () {
