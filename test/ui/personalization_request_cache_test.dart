@@ -290,4 +290,17 @@ void main() {
     await pumpEventQueue();
     expect(calls, 1);
   });
+
+  test('peek gives a fresh answer at once, nothing for a stale one', () async {
+    expect(cache.peek('k'), isNull);
+    final gate = Completer<String>();
+    final answer = get(cache, 'k', () => gate.future);
+    // In flight is not an answer yet.
+    expect(cache.peek('k'), isNull);
+    gate.complete('v');
+    await answer;
+    expect(cache.peek('k'), 'v');
+    now = const Duration(minutes: 10);
+    expect(cache.peek('k'), isNull);
+  });
 }

@@ -130,6 +130,15 @@ class PersonalizationRequestCache {
     return subscription;
   }
 
+  /// Свежий ответ по [key] прямо сейчас, без запроса и без подписки; нет его или он
+  /// устарел — `null`. Виджет, пересозданный лентой, рисует его в первом же кадре, а не
+  /// пустым до асинхронного ответа [fetch].
+  Object? peek(String key) {
+    final entry = _entries[key];
+    if (entry == null || _now() - entry.storedAt >= ttl) return null;
+    return entry.value;
+  }
+
   /// Сколько ответов лежит в кэше (вместе с устаревшими, ещё не вытесненными).
   int get length => _entries.length;
 
