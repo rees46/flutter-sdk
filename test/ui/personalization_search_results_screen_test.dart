@@ -179,4 +179,28 @@ void main() {
     expect(_position(tester).pixels, 0);
     expect(api.pages, <int>[1, 1]);
   });
+
+  testWidgets('cards go without a rating unless asked for', (tester) async {
+    bool showRating() => tester
+        .widget<PersonalizationCatalog>(find.byType(PersonalizationCatalog))
+        .showRating;
+
+    await tester.pumpWidget(
+      _host(PersonalizationSearchResultsScreen(sdk: sdk, query: 'jacket')),
+    );
+    await tester.pump();
+    expect(showRating(), isFalse);
+
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          showRating: true,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(showRating(), isTrue);
+  });
 }

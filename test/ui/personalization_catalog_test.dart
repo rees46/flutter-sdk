@@ -227,4 +227,26 @@ void main() {
       PersonalizationSpacing.lg,
     );
   });
+
+  testWidgets('the rating shows only with showRating', (tester) async {
+    Widget catalog({required bool showRating}) => _host(
+      PersonalizationCatalog(
+        showRating: showRating,
+        products: const <PersonalizationProduct>[
+          PersonalizationProduct(
+            id: '1',
+            name: 'Rated',
+            price: '1',
+            rating: PersonalizationProductRating(value: '4,7', reviews: 12),
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(catalog(showRating: true));
+    expect(find.byType(PersonalizationRating), findsOneWidget);
+
+    await tester.pumpWidget(catalog(showRating: false));
+    expect(find.byType(PersonalizationRating), findsNothing);
+  });
 }

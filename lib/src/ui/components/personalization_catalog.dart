@@ -64,6 +64,7 @@ class PersonalizationCatalog extends StatelessWidget {
     this.scrollable = true,
     this.controller,
     this.padding,
+    this.showRating = true,
   });
 
   final Widget? header;
@@ -105,6 +106,10 @@ class PersonalizationCatalog extends StatelessWidget {
 
   /// Поля ленты. Содержимое прокручивается под ними, а не обрезается по их краю.
   final EdgeInsetsGeometry? padding;
+
+  /// Рисовать ли рейтинг товаров. `false` — карточки без рейтинга, даже если он у
+  /// товара есть.
+  final bool showRating;
 
   /// Шаг между блоками каталога.
   static const double _gapBlock = PersonalizationSpacing.lg;
@@ -239,7 +244,7 @@ class PersonalizationCatalog extends StatelessWidget {
       imageAspect: imageAspect,
       brand: product.brand,
       name: product.name,
-      rating: product.rating,
+      rating: showRating ? product.rating : null,
       price: product.price,
       oldPrice: product.oldPrice,
       discount: product.discount,

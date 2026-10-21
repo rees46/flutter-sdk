@@ -96,6 +96,7 @@ class PersonalizationSearchResultsScreen extends StatefulWidget {
     this.showSort = true,
     this.facets,
     this.productActionText,
+    this.showRating = false,
     this.layout = PersonalizationProductsLayout.grid,
     this.imageAspect = PersonalizationProductImageAspect.square,
     this.onBack,
@@ -153,6 +154,10 @@ class PersonalizationSearchResultsScreen extends StatefulWidget {
 
   /// Подпись кнопки на карточке; `null` — без кнопки.
   final String? productActionText;
+
+  /// Рисовать ли рейтинг на карточках. В ответе поиска рейтинга нет, поэтому по
+  /// умолчанию выключено.
+  final bool showRating;
   final PersonalizationProductsLayout layout;
   final PersonalizationProductImageAspect imageAspect;
 
@@ -639,6 +644,7 @@ class _PersonalizationSearchResultsScreenState
           productFromSearch(product, actionText: widget.productActionText),
       ],
       imageAspect: widget.imageAspect,
+      showRating: widget.showRating,
       emptyText: _answered ? widget.emptyText : null,
       loading: _loading,
       count: _products.isEmpty
