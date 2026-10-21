@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/src/ui/widgets/personalization_request_cache.dart';
 
 void main() {
-  late DateTime now;
+  late Duration now;
   late PersonalizationRequestCache cache;
 
   setUp(() {
-    now = DateTime(2026);
+    now = Duration.zero;
     cache = PersonalizationRequestCache(clock: () => now);
   });
 
@@ -27,33 +27,39 @@ void main() {
   }
 
   test('the key holds the shop, the kind and the sorted parameters', () {
-    final key = PersonalizationRequestCache.keyOf('shop', 'recommend', {
-      'b': 2,
-      'a': 'x',
-      'none': null,
-    });
-    expect(key, 'shop|recommend|a=x&b=2');
+    String key(String? shop, String kind, Map<String, Object?> params) =>
+        PersonalizationRequestCache.keyOf(shop, kind, params);
+
+    final base = key('shop', 'recommend', {'b': 2, 'a': 'x'});
+    expect(key('shop', 'recommend', {'a': 'x', 'b': 2}), base);
+    expect(key('shop', 'recommend', {'a': 'x', 'b': 2, 'none': null}), base);
+    expect(key('other', 'recommend', {'a': 'x', 'b': 2}), isNot(base));
+    expect(key('shop', 'search', {'a': 'x', 'b': 2}), isNot(base));
+    expect(key('shop', 'recommend', {'a': 'x', 'b': '2'}), isNot(base));
+  });
+
+  test('values are encoded, not glued together', () {
     expect(
-      PersonalizationRequestCache.keyOf('shop', 'recommend', {
-        'a': 'x',
-        'b': 2,
+      PersonalizationRequestCache.keyOf('shop', 'search', {
+        'query': 'tv&sort=price',
       }),
-      key,
+      isNot(
+        PersonalizationRequestCache.keyOf('shop', 'search', {
+          'query': 'tv',
+          'sort': 'price',
+        }),
+      ),
     );
     expect(
-      PersonalizationRequestCache.keyOf('other', 'recommend', {
-        'a': 'x',
-        'b': 2,
-      }),
-      isNot(key),
+      PersonalizationRequestCache.keyOf('a|b', 'c'),
+      isNot(PersonalizationRequestCache.keyOf('a', 'b|c')),
     );
-    expect(PersonalizationRequestCache.keyOf(null, 'search'), '|search|');
   });
 
   test('a fresh answer comes from the cache', () async {
     final source = loader('v1');
     expect(await cache.fetch('k', source.load), 'v1');
-    now = now.add(const Duration(minutes: 9, seconds: 59));
+    now += const Duration(minutes: 9, seconds: 59);
     expect(await cache.fetch('k', source.load), 'v1');
     expect(source.calls(), 1);
   });
@@ -61,7 +67,7 @@ void main() {
   test('after ten minutes the request goes out again', () async {
     final source = loader('v1');
     await cache.fetch('k', source.load);
-    now = now.add(const Duration(minutes: 10));
+    now += const Duration(minutes: 10);
     await cache.fetch('k', source.load);
     expect(source.calls(), 2);
   });
@@ -84,7 +90,7 @@ void main() {
     final small = PersonalizationRequestCache(capacity: 2, clock: () => now);
     await small.fetch('a', loader('a1').load);
     await small.fetch('b', loader('b1').load);
-    now = now.add(const Duration(minutes: 11));
+    now += const Duration(minutes: 11);
     await small.fetch('a', loader('a2').load);
     await small.fetch('c', loader('c1').load);
 

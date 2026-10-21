@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 /// Кэш ответов SDK для виджетов с данными — в памяти процесса.
 ///
@@ -13,9 +14,9 @@ class PersonalizationRequestCache {
   PersonalizationRequestCache({
     this.ttl = const Duration(minutes: 10),
     this.capacity = 32,
-    DateTime Function()? clock,
+    Duration Function()? clock,
   }) : assert(capacity > 0),
-       _now = clock ?? DateTime.now;
+       _now = clock ?? _monotonic();
 
   /// Кэш, общий для всех виджетов процесса.
   static final PersonalizationRequestCache shared =
@@ -23,7 +24,14 @@ class PersonalizationRequestCache {
 
   final Duration ttl;
   final int capacity;
-  final DateTime Function() _now;
+
+  /// Монотонные часы: перевод системного времени не старит и не молодит ответы.
+  final Duration Function() _now;
+
+  static Duration Function() _monotonic() {
+    final watch = Stopwatch()..start();
+    return () => watch.elapsed;
+  }
 
   /// Порядок вставки — возраст записи: первая — самая старая.
   final LinkedHashMap<String, _Entry> _entries =
@@ -32,7 +40,8 @@ class PersonalizationRequestCache {
 
   /// Ключ запроса: магазин, вид запроса (`recommend`, `search` …) и параметры.
   /// Параметры сортируются по имени, пустые (`null`) пропускаются — порядок, в котором
-  /// их собрал виджет, на ключ не влияет.
+  /// их собрал виджет, на ключ не влияет. Всё кодируется JSON, а не склеивается как есть:
+  /// значение с `&` или `=` не совпадёт с другим набором параметров.
   static String keyOf(
     String? shopId,
     String kind, [
@@ -40,8 +49,13 @@ class PersonalizationRequestCache {
   ]) {
     final names = params.keys.where((name) => params[name] != null).toList()
       ..sort();
-    final query = names.map((name) => '$name=${params[name]}').join('&');
-    return '${shopId ?? ''}|$kind|$query';
+    return jsonEncode(<Object?>[
+      shopId,
+      kind,
+      <Object?>[
+        for (final name in names) <Object?>[name, params[name]],
+      ],
+    ], toEncodable: (value) => value.toString());
   }
 
   /// Ответ по [key]: свежий из кэша, ответ запроса того же ключа, который уже в полёте,
@@ -49,7 +63,7 @@ class PersonalizationRequestCache {
   Future<T> fetch<T>(String key, Future<T> Function() load) {
     final entry = _entries[key];
     if (entry != null) {
-      if (_now().difference(entry.storedAt) < ttl) {
+      if (_now() - entry.storedAt < ttl) {
         return Future<T>.value(entry.value as T);
       }
       _entries.remove(key);
@@ -97,5 +111,5 @@ class _Entry {
   const _Entry(this.value, this.storedAt);
 
   final Object? value;
-  final DateTime storedAt;
+  final Duration storedAt;
 }
