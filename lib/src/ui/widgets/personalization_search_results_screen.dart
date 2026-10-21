@@ -12,7 +12,7 @@ import '../components/personalization_product_image.dart';
 import '../components/personalization_products_list.dart';
 import '../components/personalization_search_results_title.dart';
 import '../personalization_theme.dart';
-import 'search_support.dart';
+import 'product_mapping.dart';
 
 /// Значения фильтров, ушедшие в запрос.
 @immutable
@@ -636,7 +636,7 @@ class _PersonalizationSearchResultsScreenState
       layout: _layout,
       products: <PersonalizationProduct>[
         for (final product in _products)
-          toCardProduct(product, widget.productActionText),
+          productFromSearch(product, actionText: widget.productActionText),
       ],
       imageAspect: widget.imageAspect,
       emptyText: _answered ? widget.emptyText : null,
