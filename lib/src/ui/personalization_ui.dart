@@ -69,10 +69,11 @@ export 'components/personalization_story_timer.dart';
 export 'components/personalization_story_text_block.dart';
 export 'components/personalization_story_used_products.dart';
 
-// Виджеты с данными SDK: сами резолвят инстанс по shopId, ходят в поиск и держат состояние.
+// Виджеты с данными SDK: сами резолвят инстанс по shopId, ходят в API и держат состояние.
 export 'widgets/search_support.dart' show PersonalizationSearchCategory;
 export 'widgets/personalization_instant_search_field.dart';
 export 'widgets/personalization_search_results_screen.dart';
+export 'widgets/personalization_recommender_block.dart';
 // Модели блока сторис живут рядом с остальными ответами SDK, но до релиза кита
 // видны только отсюда: пакетный барель их не экспортирует.
 export '../stories/stories_response.dart' hide parseStoryOpacity;
