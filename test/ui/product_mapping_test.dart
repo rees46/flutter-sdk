@@ -117,6 +117,20 @@ void main() {
       expect(card.discount, '-5%');
     });
 
+    test('a discount_percent badge ignores discount_formatted of a zero '
+        'discount', () {
+      final card = productFromSearch(
+        _search(
+          discounted(<String, Object?>{
+            'discount': 0,
+            'discount_formatted': '0%',
+            'discount_percent': 5,
+          }),
+        ),
+      );
+      expect(card.discount, '-5%');
+    });
+
     test('a number in a string counts', () {
       final card = productFromCatalog(
         Product.fromJson(<String, dynamic>{

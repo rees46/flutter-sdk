@@ -87,8 +87,9 @@ PersonalizationProduct productFromCatalog(
 /// - цена — `price_formatted`, иначе «цена валюта»;
 /// - старая цена — `oldprice_formatted`, и только когда `oldprice` больше цены;
 /// - скидка — только при показанной старой цене и положительном числе скидки
-///   (`discount`, иначе `discount_percent`): текст `discount_formatted`, иначе «число%»,
-///   ровно с одним «-» впереди;
+///   (`discount`, иначе `discount_percent`), ровно с одним «-» впереди. Текст —
+///   `discount_formatted`, только когда число из `discount` (строка сделана из него),
+///   иначе «число%»;
 /// - картинка — `picture` (уменьшенная копия), иначе `image_url`;
 /// - диплинк — для платформы запуска; рейтинга в API нет.
 PersonalizationProduct _card({
@@ -113,12 +114,14 @@ PersonalizationProduct _card({
   final hasOldPrice =
       (oldPrice ?? 0) > price && (oldPriceFormatted ?? '').isNotEmpty;
   // Число скидки решает, есть ли бейдж: «0%» или `true` из ответа — не скидка.
-  final number = (discount ?? 0) > 0
+  final fromDiscount = (discount ?? 0) > 0;
+  final number = fromDiscount
       ? discount
       : ((discountPercent ?? 0) > 0 ? discountPercent : null);
   String? discountText;
   if (hasOldPrice && number != null) {
-    final formatted = (discountFormatted ?? '').trim();
+    // `discount_formatted` сделан из `discount`: к числу из `discount_percent` не подходит.
+    final formatted = fromDiscount ? (discountFormatted ?? '').trim() : '';
     final text = formatted.isNotEmpty ? formatted : '$number%';
     discountText = '-${text.replaceFirst(RegExp(r'^-+'), '')}';
   }
