@@ -214,10 +214,14 @@ void main() {
   test('a waiter that leaves is not called back, the rest are', () async {
     final gate = Completer<String>();
     var left = false;
-    cache
-        .fetch<String>('k', () => gate.future, onValue: (_) => left = true)
-        .cancel();
+    final leaving = cache.fetch<String>(
+      'k',
+      () => gate.future,
+      onValue: (_) => left = true,
+    );
     final stayed = get(cache, 'k', () async => 'never');
+    // One of two waiters leaves: the request stays in flight for the other.
+    leaving.cancel();
     gate.complete('v');
     expect(await stayed, 'v');
     expect(left, isFalse);
