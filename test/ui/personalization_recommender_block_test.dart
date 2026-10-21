@@ -413,10 +413,37 @@ void main() {
     expect(product.url, startsWith('https://www.technodom.kz/p/holodilnik'));
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
-  testWidgets('a collection: no title of its own, no source on a tap', (
-    tester,
-  ) async {
+  testWidgets('the card button sets the dynamic source with the code, then '
+      'calls the host', (tester) async {
+    final added = <PersonalizationProduct>[];
+    await tester.pumpWidget(
+      _host(
+        PersonalizationRecommenderBlock(
+          code: _code,
+          layout: _list,
+          sdk: sdk,
+          actionText: 'Buy',
+          onProductAction: (product) {
+            // The source is asked for before the host hears of the button.
+            expect(api.sources, hasLength(1));
+            added.add(product);
+          },
+        ),
+      ),
+    );
+    await _settle(tester);
+    await tester.tap(find.text('Buy').first);
+    await tester.pump();
+
+    expect(api.sources.single.type, 'dynamic');
+    expect(api.sources.single.code, _code);
+    expect(added.single.id, '52173');
+  });
+
+  testWidgets('a collection: no title of its own, no source on a tap or '
+      'the card button', (tester) async {
     final tapped = <PersonalizationProduct>[];
+    final added = <PersonalizationProduct>[];
     await tester.pumpWidget(
       _host(
         PersonalizationRecommenderBlock.collection(
@@ -425,6 +452,7 @@ void main() {
           sdk: sdk,
           actionText: 'Buy',
           onProductTap: tapped.add,
+          onProductAction: added.add,
         ),
       ),
     );
@@ -438,6 +466,9 @@ void main() {
     await tester.tap(_cards.first);
     await tester.pump();
     expect(tapped.single.id, '300252');
+    await tester.tap(find.text('Buy').first);
+    await tester.pump();
+    expect(added.single.id, '300252');
     expect(api.sources, isEmpty);
   });
 }

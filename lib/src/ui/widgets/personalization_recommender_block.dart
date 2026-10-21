@@ -49,9 +49,10 @@ class PersonalizationRecommenderBlockController {
 /// [PersonalizationRecommenderBlockController.reload] грузит мимо кэша. Смена источника,
 /// его параметров, [sdk] или [shopId] — новая загрузка.
 ///
-/// Нажатие на товар блока [code] запоминает источник `dynamic` с кодом блока
-/// (`tracking.setSource`), потом отдаёт товар в [onProductTap]; у коллекции источник не
-/// ставится. Кнопка карточки (есть, если задан [actionText]) — [onProductAction].
+/// Нажатие на товар блока [code] и на кнопку карточки (есть, если задан [actionText])
+/// запоминают источник `dynamic` с кодом блока (`tracking.setSource`), потом отдают
+/// товар в [onProductTap] и [onProductAction]: «в корзину» прямо из блока — главный
+/// случай атрибуции. У коллекции источник не ставится.
 class PersonalizationRecommenderBlock extends StatefulWidget {
   /// Блок рекомендаций [code].
   const PersonalizationRecommenderBlock({
@@ -389,11 +390,16 @@ class _PersonalizationRecommenderBlockState
         : cards;
   }
 
-  void _tapped(PersonalizationProduct product) {
+  /// Нажатие на карточку или её кнопку: сначала источник `dynamic` у блока [code],
+  /// потом колбэк хоста.
+  void _attributed(
+    PersonalizationProduct product,
+    ValueChanged<PersonalizationProduct>? callback,
+  ) {
     final code = widget.code;
     final sdk = _sdk;
     if (code != null && sdk != null) unawaited(_trackSource(sdk, code));
-    widget.onProductTap?.call(product);
+    callback?.call(product);
   }
 
   /// Источник `dynamic` для следующих событий; сбой трекинга нажатию не мешает.
@@ -428,8 +434,12 @@ class _PersonalizationRecommenderBlockState
             showDots: widget.showDots,
             products: cards,
             imageAspect: widget.imageAspect,
-            onProductAction: widget.onProductAction,
-            onProductTap: _tapped,
+            // Без колбэка хоста кнопка не нажимается — как у блока товаров.
+            onProductAction: widget.onProductAction == null
+                ? null
+                : (product) => _attributed(product, widget.onProductAction),
+            onProductTap: (product) =>
+                _attributed(product, widget.onProductTap),
             showRating: widget.showRating,
             iconBuilder: widget.iconBuilder,
           ),
