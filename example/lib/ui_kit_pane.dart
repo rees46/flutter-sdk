@@ -15,8 +15,9 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 ///
 /// "Components" walks through the primitives in every size, view and state the
 /// design file defines; "Blocks" shows the compositions built from them
-/// (product cards, products blocks, instant search, the catalogue, the filters screen,
-/// in-app popups, the toast, the loyalty card);
+/// (the live recommender block of the demo shop, product cards, products blocks,
+/// instant search, the catalogue, the filters screen, in-app popups, the toast,
+/// the loyalty card);
 /// "Search" runs the two data-bound search widgets against the demo shop: the
 /// instant search field, and the results screen it opens on submit;
 /// "Stories" shows the Stories V2 components one by one, a sample viewer that runs
@@ -31,7 +32,8 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 class UiKitPane extends StatelessWidget {
   const UiKitPane({super.key, required this.shopId});
 
-  /// Shop the Search and Stories tabs' widgets resolve their SDK instance by.
+  /// Shop the data-bound widgets of the Blocks, Search and Stories tabs resolve
+  /// their SDK instance by.
   final String shopId;
 
   @override
@@ -54,7 +56,7 @@ class UiKitPane extends StatelessWidget {
         body: TabBarView(
           children: [
             _Showcase(exhibits: _componentExhibits),
-            _Showcase(exhibits: _blockExhibits),
+            _Showcase(exhibits: _blockExhibits(shopId)),
             _SearchFlow(shopId: shopId),
             _Showcase(exhibits: _storyExhibits(shopId)),
           ],
@@ -490,7 +492,24 @@ final List<_Exhibit> _componentExhibits = [
   }),
 ];
 
-final List<_Exhibit> _blockExhibits = [
+List<_Exhibit> _blockExhibits(String shopId) => [
+  _Exhibit(
+    'Recommender Block — live block $_recommenderCode (demo shop), carousel; '
+    'Reload goes past the cache',
+    (context) => _LiveRecommender(
+      shopId: shopId,
+      layout: PersonalizationProductsLayout.carousel,
+    ),
+  ),
+  _Exhibit(
+    'Recommender Block — the same code as a grid of four: one request serves '
+    'both blocks',
+    (context) => _LiveRecommender(
+      shopId: shopId,
+      layout: PersonalizationProductsLayout.grid,
+      limit: 4,
+    ),
+  ),
   _Exhibit('Product Card — carousel, grid, list', (context) {
     return _Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -687,6 +706,87 @@ final List<_Exhibit> _blockExhibits = [
     (context) => _loyaltyCard(context, stamps: 4, brand: true),
   ),
 ];
+
+/// The recommender block the demo shop serves (api.rees46.ru).
+const String _recommenderCode = 'e6249bb15043644bf25b135006149962';
+
+/// A live [PersonalizationRecommenderBlock] of the demo shop with a caption of what it
+/// reported: how many products it shows, or the error. The block takes no space
+/// until its products arrive; "Reload" asks for them again past the cache.
+class _LiveRecommender extends StatefulWidget {
+  const _LiveRecommender({
+    required this.shopId,
+    required this.layout,
+    this.limit,
+  });
+
+  final String shopId;
+  final PersonalizationProductsLayout layout;
+  final int? limit;
+
+  @override
+  State<_LiveRecommender> createState() => _LiveRecommenderState();
+}
+
+class _LiveRecommenderState extends State<_LiveRecommender> {
+  final PersonalizationRecommenderBlockController _controller =
+      PersonalizationRecommenderBlockController();
+  String _status = 'Loading…';
+
+  void _report(String status) {
+    if (mounted) setState(() => _status = status);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final caption = Theme.of(context).textTheme.bodySmall;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(_status, style: caption)),
+            PersonalizationButton(
+              label: 'Reload',
+              size: PersonalizationButtonSize.sm,
+              view: PersonalizationButtonView.secondary,
+              onPressed: () {
+                _report('Reloading…');
+                _controller.reload();
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        PersonalizationRecommenderBlock(
+          code: _recommenderCode,
+          shopId: widget.shopId,
+          controller: _controller,
+          layout: widget.layout,
+          limit: widget.limit,
+          actionText: 'Add to cart',
+          showAllText: 'Show all',
+          onShowAll: () => PersonalizationToast.show(context, 'Show all'),
+          onProductTap: (product) => PersonalizationToast.show(
+            context,
+            'Product: ${product.name} — ${product.deeplink ?? product.url}',
+          ),
+          onProductAction: (product) => PersonalizationToast.show(
+            context,
+            'Add to cart: ${product.name}',
+          ),
+          onLoaded: (count) => _report(
+            count == 0
+                ? 'onLoaded(0): the block is hidden'
+                : 'onLoaded($count)',
+          ),
+          onError: (error) => _report('onError: $error'),
+          iconBuilder: _icon,
+        ),
+      ],
+    );
+  }
+}
 
 /// The Stories V2 block the demo shop serves (api.rees46.ru).
 const String _storiesCode = '115bd0b67cf5989a1b60c841790b2af6';
