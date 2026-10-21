@@ -249,4 +249,35 @@ void main() {
     await tester.pumpWidget(catalog(showRating: false));
     expect(find.byType(PersonalizationRating), findsNothing);
   });
+
+  testWidgets('an empty state action sits under it and hides while loading', (
+    tester,
+  ) async {
+    var taps = 0;
+    Widget catalog({required bool loading}) => _host(
+      PersonalizationCatalog(
+        products: const <PersonalizationProduct>[],
+        emptyText: 'Failed',
+        emptyActionText: 'Retry',
+        onEmptyAction: () => taps++,
+        loading: loading,
+      ),
+    );
+
+    await tester.pumpWidget(catalog(loading: false));
+    final retry = find.widgetWithText(PersonalizationButton, 'Retry');
+    expect(retry, findsOneWidget);
+    expect(
+      tester.getRect(retry).top,
+      greaterThan(
+        tester.getRect(find.byType(PersonalizationEmptyState)).bottom,
+      ),
+    );
+    await tester.tap(retry);
+    expect(taps, 1);
+
+    await tester.pumpWidget(catalog(loading: true));
+    expect(retry, findsNothing);
+    expect(find.byType(PersonalizationLoader), findsOneWidget);
+  });
 }

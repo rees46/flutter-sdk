@@ -80,6 +80,10 @@ class PersonalizationSearchApplied {
 /// выбранное хост кладёт в [sortBy] / [sortDir]. Каждый новый запрос трекается событием
 /// `search`; нажатие на карточку запоминает источник `full_search` и отдаёт товар через
 /// [onProductTap], кнопка карточки — через [onProductAction].
+///
+/// Ошибка запроса уходит в [onError] и видна на экране: не загрузилась первая страница —
+/// вместо выдачи [errorText] и кнопка [retryText]; не загрузилась следующая — кнопка
+/// «загрузить ещё» становится [retryText]. Повтор запрашивает ту же страницу.
 class PersonalizationSearchResultsScreen extends StatefulWidget {
   const PersonalizationSearchResultsScreen({
     super.key,
@@ -110,6 +114,9 @@ class PersonalizationSearchResultsScreen extends StatefulWidget {
     this.countSeparator = 'of',
     this.loadMoreText = 'Load more',
     this.emptyText = 'No results for your request.',
+    this.errorText =
+        'Something went wrong. Check your connection and try again.',
+    this.retryText = 'Retry',
     this.filtersTitle = 'Filters',
     this.resetText = 'Reset',
     this.applyText = 'Apply',
@@ -173,6 +180,13 @@ class PersonalizationSearchResultsScreen extends StatefulWidget {
   final String countSeparator;
   final String? loadMoreText;
   final String? emptyText;
+
+  /// Текст вместо выдачи, когда первая страница не загрузилась.
+  final String? errorText;
+
+  /// Кнопка повтора под [errorText] и на месте «загрузить ещё», когда не загрузилась
+  /// следующая страница.
+  final String? retryText;
   final String filtersTitle;
   final String? resetText;
   final String? applyText;
@@ -219,6 +233,10 @@ class _PersonalizationSearchResultsScreenState
   /// Первая страница текущей фразы пришла: только тогда пустая выдача — «ничего не найдено»,
   /// а не загрузка, пустая фраза или ошибка.
   bool _answered = false;
+
+  /// Страница, запрос которой упал, `null` — ошибки нет. Первая — экран ошибки, следующая —
+  /// повтор на месте «загрузить ещё»; пока она не повторена, лента дальше не грузится.
+  int? _failedPage;
   SearchFullResponse? _facetSource;
   PersonalizationSearchApplied _applied = const PersonalizationSearchApplied();
 
@@ -283,6 +301,7 @@ class _PersonalizationSearchResultsScreenState
       _page = 0;
       _loading = false;
       _answered = false;
+      _failedPage = null;
     });
     _toTop();
     final sdk = _sdk;
@@ -308,10 +327,20 @@ class _PersonalizationSearchResultsScreenState
     if (sdk == null ||
         _text.isEmpty ||
         _loading ||
+        _failedPage != null ||
         _products.length >= _total) {
       return;
     }
     _request(sdk, _page + 1);
+  }
+
+  /// Повтор упавшей страницы.
+  void _retry() {
+    final sdk = _sdk;
+    final page = _failedPage;
+    if (sdk == null || page == null || _text.isEmpty || _loading) return;
+    setState(() => _failedPage = null);
+    _request(sdk, page);
   }
 
   /// Бесконечная прокрутка: следующая страница — за полэкрана до конца ленты. Запрос в
@@ -350,6 +379,7 @@ class _PersonalizationSearchResultsScreenState
       if (!mounted || seq != _seq) return;
       setState(() {
         _loading = false;
+        _failedPage = null;
         _page = nextPage;
         _total = response.productsTotal;
         _products = nextPage == 1
@@ -364,7 +394,10 @@ class _PersonalizationSearchResultsScreenState
       });
     } catch (error) {
       if (!mounted || seq != _seq) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _failedPage = nextPage;
+      });
       widget.onError?.call(error);
     }
   }
@@ -610,6 +643,8 @@ class _PersonalizationSearchResultsScreenState
   Widget build(BuildContext context) {
     final colors = PersonalizationTheme.of(context).colors;
     final hasMore = _products.isNotEmpty && _products.length < _total;
+    final firstPageFailed = _failedPage == 1;
+    final nextPageFailed = (_failedPage ?? 0) > 1;
 
     final header = PersonalizationSearchResultsTitle(
       title: widget.titleText ?? widget.query,
@@ -645,7 +680,11 @@ class _PersonalizationSearchResultsScreenState
       ],
       imageAspect: widget.imageAspect,
       showRating: widget.showRating,
-      emptyText: _answered ? widget.emptyText : null,
+      emptyText: firstPageFailed
+          ? widget.errorText
+          : (_answered ? widget.emptyText : null),
+      emptyActionText: firstPageFailed ? widget.retryText : null,
+      onEmptyAction: _retry,
       loading: _loading,
       count: _products.isEmpty
           ? null
@@ -655,10 +694,10 @@ class _PersonalizationSearchResultsScreenState
               separator: widget.countSeparator,
               total: _total,
             ),
-      loadMoreText: hasMore && !widget.infiniteScroll
-          ? widget.loadMoreText
-          : null,
-      onLoadMore: _loadMore,
+      loadMoreText: nextPageFailed
+          ? widget.retryText
+          : (hasMore && !widget.infiniteScroll ? widget.loadMoreText : null),
+      onLoadMore: nextPageFailed ? _retry : _loadMore,
       onProductTap: (card) {
         final product = _find(card.id);
         if (product != null) _productTapped(product);

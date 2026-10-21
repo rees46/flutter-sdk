@@ -16,6 +16,9 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   final List<int> pages = <int>[];
   Completer<void>? hold;
 
+  /// Pages that fail while listed here.
+  final Set<int> failing = <int>{};
+
   @override
   Future<String> searchFull(
     String query,
@@ -27,6 +30,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
     final limit = params['limit'] as int;
     pages.add(page);
     await hold?.future;
+    if (failing.contains(page)) throw StateError('offline');
     final from = (page - 1) * limit;
     return jsonEncode(<String, Object>{
       'products': <Map<String, Object>>[
@@ -202,5 +206,117 @@ void main() {
     );
     await tester.pump();
     expect(showRating(), isTrue);
+  });
+
+  testWidgets('a failed first page shows the error and retries it', (
+    tester,
+  ) async {
+    final errors = <Object>[];
+    api.failing.add(1);
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          onError: errors.add,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    const errorText =
+        'Something went wrong. Check your connection and try again.';
+    expect(find.text(errorText), findsOneWidget);
+    expect(find.text('No results for your request.'), findsNothing);
+    expect(find.widgetWithText(PersonalizationButton, 'Retry'), findsOneWidget);
+    expect(errors, hasLength(1));
+    expect(_cards(), 0);
+
+    api.failing.clear();
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+
+    expect(api.pages, <int>[1, 1]);
+    expect(find.text(errorText), findsNothing);
+    expect(find.text('Retry'), findsNothing);
+    expect(find.text('Item 0'), findsOneWidget);
+    expect(errors, hasLength(1));
+  });
+
+  testWidgets('a failed next page turns load more into retry', (tester) async {
+    final errors = <Object>[];
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          errorText: 'Oops',
+          retryText: 'Again',
+          onError: errors.add,
+        ),
+      ),
+    );
+    await tester.pump();
+    PersonalizationCatalog catalog() => tester.widget<PersonalizationCatalog>(
+      find.byType(PersonalizationCatalog),
+    );
+    expect(catalog().loadMoreText, 'Load more');
+
+    api.failing.add(2);
+    catalog().onLoadMore!();
+    await tester.pump();
+
+    expect(api.pages, <int>[1, 2]);
+    expect(errors, hasLength(1));
+    expect(catalog().loadMoreText, 'Again');
+    expect(catalog().loading, isFalse);
+    // The loaded page stays, and the error text is for a failed first page only.
+    expect(find.text('Item 0'), findsOneWidget);
+    expect(catalog().emptyText, isNot('Oops'));
+    expect(find.text('Oops'), findsNothing);
+
+    api.failing.clear();
+    catalog().onLoadMore!();
+    await tester.pump();
+
+    expect(api.pages, <int>[1, 2, 2]);
+    expect(catalog().loadMoreText, 'Load more');
+    expect(catalog().count!.shown, 40);
+  });
+
+  testWidgets('infinite scroll stops at a failed page until it is retried', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          infiniteScroll: true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    api.failing.add(2);
+    final position = _position(tester);
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pump();
+    expect(api.pages, <int>[1, 2]);
+
+    position.jumpTo(position.maxScrollExtent - 1);
+    await tester.pump();
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pump();
+    expect(api.pages, <int>[1, 2]);
+
+    final catalog = tester.widget<PersonalizationCatalog>(
+      find.byType(PersonalizationCatalog),
+    );
+    expect(catalog.loadMoreText, 'Retry');
+    api.failing.clear();
+    catalog.onLoadMore!();
+    await tester.pump();
+    expect(api.pages, <int>[1, 2, 2]);
   });
 }
