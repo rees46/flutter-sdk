@@ -27,6 +27,7 @@ class PersonalizationProductsList extends StatefulWidget {
     this.onProductTap,
     this.onFirstVisibleChanged,
     this.carouselPadding,
+    this.showRating = true,
     this.iconBuilder,
   });
 
@@ -44,6 +45,10 @@ class PersonalizationProductsList extends StatefulWidget {
   /// Поля карусели внутри её прокрутки: крайние карточки уезжают под край, а не
   /// обрезаются полем. У плитки и списка поля задаёт разметка хоста.
   final EdgeInsetsGeometry? carouselPadding;
+
+  /// Рисовать ли рейтинг товаров. `false` — карточки без рейтинга, даже если он у
+  /// товара есть.
+  final bool showRating;
 
   final Widget Function(
     BuildContext context,
@@ -103,7 +108,7 @@ class _PersonalizationProductsListState
       imageAspect: widget.imageAspect,
       brand: product.brand,
       name: product.name,
-      rating: product.rating,
+      rating: widget.showRating ? product.rating : null,
       price: product.price,
       oldPrice: product.oldPrice,
       discount: product.discount,
