@@ -2,7 +2,8 @@ import '../json_number.dart';
 
 /// Typed response for [PersonalizationSdk.getRecommendation].
 ///
-/// Contains only fields present in **both** Android and iOS native SDK models.
+/// Contains the fields present in **both** Android and iOS native SDK models, plus
+/// the nullable discount, app link and novelty fields of [RecommendedProduct].
 ///
 /// Fields available in the native Android SDK but excluded from this contract:
 /// - `html` — rendered block HTML (`GetExtendedRecommendationResponse.html`).
@@ -12,10 +13,9 @@ import '../json_number.dart';
 /// - `Product.locationIds` — flat list of location IDs (use `locations` on iOS).
 ///
 /// Fields available in the native iOS SDK but excluded from this contract:
-/// - `Product.barcode`, `Product.model`, `Product.deeplinkIos`.
-/// - `Product.oldPrice`, `Product.oldPriceFull`, `Product.oldPriceFormatted`,
-///   `Product.oldPriceFullFormatted` — original price before discount.
-/// - `Product.discount`, `Product.rating`.
+/// - `Product.barcode`, `Product.model`.
+/// - `Product.oldPriceFull`, `Product.oldPriceFullFormatted`.
+/// - `Product.rating`.
 /// - `Product.fashionSizes`, `Product.fashionColors`, `Product.fashionOriginalSizes`.
 /// - `Product.locations` — full location objects (Android only exposes IDs).
 /// - `Product.paramsRaw` — raw extra params from the API response.
@@ -43,6 +43,10 @@ class RecommendationResponse {
 /// A single recommended product.
 ///
 /// See [RecommendationResponse] for the full list of excluded platform-specific fields.
+///
+/// The fields after [relativeSalesRate] are nullable: the API sends them with every
+/// recommended product, but the bridges re-serialize the native models, so a field
+/// arrives only where the native model carries it — see each field.
 class RecommendedProduct {
   final String id;
   final String name;
@@ -70,6 +74,29 @@ class RecommendedProduct {
   final int salesRate;
   final double relativeSalesRate;
 
+  /// Price before the discount (`oldprice`).
+  final double? oldPrice;
+  final String? oldPriceFormatted;
+
+  /// Discount (`discount`) and its display form (`discount_formatted`, e.g. `6%`).
+  /// The display form comes from Android only for now.
+  final int? discount;
+  final String? discountFormatted;
+
+  /// Discount in percent as the shop computes it (`discount_percent`). Neither
+  /// native model carries it yet.
+  final int? discountPercent;
+
+  /// Android app link to the product (`deeplink_android`). The Android model does
+  /// not carry it yet.
+  final String? deeplinkAndroid;
+
+  /// iOS app link to the product (`deeplink_ios`). From iOS only for now.
+  final String? deeplinkIos;
+
+  /// The shop marks the product as new (`is_new`). From Android only for now.
+  final bool? isNew;
+
   const RecommendedProduct({
     required this.id,
     required this.name,
@@ -87,6 +114,14 @@ class RecommendedProduct {
     required this.currency,
     required this.salesRate,
     required this.relativeSalesRate,
+    this.oldPrice,
+    this.oldPriceFormatted,
+    this.discount,
+    this.discountFormatted,
+    this.discountPercent,
+    this.deeplinkAndroid,
+    this.deeplinkIos,
+    this.isNew,
   });
 
   factory RecommendedProduct.fromJson(Map<String, dynamic> json) {
@@ -113,6 +148,14 @@ class RecommendedProduct {
       currency: json['currency'] as String? ?? '',
       salesRate: toIntOrNull(json['sales_rate']) ?? 0,
       relativeSalesRate: toDoubleOrNull(json['relative_sales_rate']) ?? 0.0,
+      oldPrice: toDoubleOrNull(json['oldprice']),
+      oldPriceFormatted: toNonEmptyStringOrNull(json['oldprice_formatted']),
+      discount: toIntOrNull(json['discount']),
+      discountFormatted: toNonEmptyStringOrNull(json['discount_formatted']),
+      discountPercent: toIntOrNull(json['discount_percent']),
+      deeplinkAndroid: toNonEmptyStringOrNull(json['deeplink_android']),
+      deeplinkIos: toNonEmptyStringOrNull(json['deeplink_ios']),
+      isNew: toBoolOrNull(json['is_new']),
     );
   }
 }

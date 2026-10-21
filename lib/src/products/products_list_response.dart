@@ -1,22 +1,31 @@
 import '../recommendation/recommendation_response.dart' show ProductCategory;
 import '../json_number.dart';
+import '../search/search_facets.dart';
+import '../search/search_response.dart' show SearchFilter;
 
 export '../recommendation/recommendation_response.dart' show ProductCategory;
 
 /// Response from [PersonalizationSdk.getProductsList].
 ///
-/// Excluded Android-only fields: brands (`List<Brand>`), categories
-/// (`List<Category>`), filters (`List<Filter>`), priceRanges, priceMedian.
-/// Excluded iOS-only fields: brands (`[String]`), filters (`[String: Filter]`).
+/// Excluded Android-only fields: categories (`List<Category>`), priceRanges,
+/// priceMedian.
 class ProductsListResponse {
   final List<Product> products;
   final int productsTotal;
   final PriceRange? priceRange;
 
+  /// Brand names found in the listing (Android carries counts too, iOS only names).
+  final List<String> brands;
+
+  /// Shop facets keyed by name: value → product count.
+  final Map<String, SearchFilter> filters;
+
   const ProductsListResponse({
     required this.products,
     required this.productsTotal,
     this.priceRange,
+    this.brands = const [],
+    this.filters = const {},
   });
 
   factory ProductsListResponse.fromJson(Map<String, dynamic> json) {
@@ -28,6 +37,8 @@ class ProductsListResponse {
       priceRange: json['price_range'] == null
           ? null
           : PriceRange.fromJson(json['price_range'] as Map<String, dynamic>),
+      brands: parseBrandNames(json['brands']),
+      filters: parseFacetFilters(json['filters']),
     );
   }
 }
@@ -40,10 +51,15 @@ class ProductsListResponse {
 /// Note: iOS maps product ID from JSON key "uniqid"; the bridge normalises
 /// this to "id" so Dart always reads from "id".
 ///
-/// Excluded Android-only fields: _id, imageUrlHandle, urlHandle, picture,
-/// categoryIds, locationIds.
-/// Excluded iOS-only fields: model, barcode, deeplinkIos, resizedImageUrl,
-/// oldPrice / oldPriceFull (and formatted variants), discount, isNew, params.
+/// Excluded Android-only fields: _id, imageUrlHandle, urlHandle, categoryIds,
+/// locationIds.
+/// Excluded iOS-only fields: model, barcode, oldPriceFull (and its formatted
+/// variant), params.
+///
+/// The fields after [categories] are nullable: the API sends them for every product
+/// listing, but a bridge fills only those its native model carries. Android hands
+/// [PersonalizationSdk.getProductInfo] and [PersonalizationSdk.getProductsList] over
+/// as raw JSON, so they carry all of them; the rest is noted per field.
 class Product {
   final String id;
   final String name;
@@ -61,6 +77,34 @@ class Product {
   final Map<String, String> resizedImages;
   final List<ProductCategory> categories;
 
+  /// Resized copy of the main image (`picture`), the one to show in lists.
+  final String? picture;
+
+  /// Price before the discount (`oldprice`). Not in iOS categories and collections.
+  final double? oldPrice;
+  final String? oldPriceFormatted;
+
+  /// Discount (`discount`) and its display form (`discount_formatted`, e.g. `6%`).
+  /// The display form is not on iOS; neither is in iOS categories and collections.
+  final int? discount;
+  final String? discountFormatted;
+
+  /// Discount in percent as the shop computes it (`discount_percent`). Android
+  /// product info and products list only for now.
+  final int? discountPercent;
+
+  /// Android app link to the product (`deeplink_android`). Android product info and
+  /// products list only for now.
+  final String? deeplinkAndroid;
+
+  /// iOS app link to the product (`deeplink_ios`). Not in categories and collections
+  /// for now.
+  final String? deeplinkIos;
+
+  /// The shop marks the product as new (`is_new`). Not in iOS categories and
+  /// collections.
+  final bool? isNew;
+
   const Product({
     required this.id,
     required this.name,
@@ -77,6 +121,15 @@ class Product {
     required this.relativeSalesRate,
     required this.resizedImages,
     required this.categories,
+    this.picture,
+    this.oldPrice,
+    this.oldPriceFormatted,
+    this.discount,
+    this.discountFormatted,
+    this.discountPercent,
+    this.deeplinkAndroid,
+    this.deeplinkIos,
+    this.isNew,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -98,6 +151,16 @@ class Product {
       categories: (json['categories'] as List<dynamic>? ?? [])
           .map((e) => ProductCategory.fromJson(e as Map<String, dynamic>))
           .toList(),
+      picture: toNonEmptyStringOrNull(json['picture']),
+      oldPrice: toDoubleOrNull(json['oldprice']),
+      oldPriceFormatted: toNonEmptyStringOrNull(json['oldprice_formatted']),
+      // `false` in product info for a product without a discount.
+      discount: toIntOrNull(json['discount']),
+      discountFormatted: toNonEmptyStringOrNull(json['discount_formatted']),
+      discountPercent: toIntOrNull(json['discount_percent']),
+      deeplinkAndroid: toNonEmptyStringOrNull(json['deeplink_android']),
+      deeplinkIos: toNonEmptyStringOrNull(json['deeplink_ios']),
+      isNew: toBoolOrNull(json['is_new']),
     );
   }
 }
