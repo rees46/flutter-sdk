@@ -236,10 +236,13 @@ void main() {
     expect(find.widgetWithText(PersonalizationButton, 'Retry'), findsOneWidget);
     expect(errors, hasLength(1));
     expect(_cards(), 0);
+    // No "Found 0 products" above the error.
+    expect(find.text('Found'), findsNothing);
 
     api.failing.clear();
     await tester.tap(find.text('Retry'));
     await tester.pump();
+    expect(find.text('Found'), findsOneWidget);
 
     expect(api.pages, <int>[1, 1]);
     expect(find.text(errorText), findsNothing);

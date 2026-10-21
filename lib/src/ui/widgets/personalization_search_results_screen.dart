@@ -675,11 +675,14 @@ class _PersonalizationSearchResultsScreenState
       onSort: widget.onSortTap,
       showFiltersButton: widget.showFilters,
       showSortButton: widget.showSort,
-      results: PersonalizationSearchResults(
-        prefix: widget.foundPrefix,
-        count: _total,
-        suffix: widget.foundSuffix,
-      ),
+      // «Найдено 0» над ошибкой читалось бы как пустая выдача.
+      results: firstPageFailed
+          ? null
+          : PersonalizationSearchResults(
+              prefix: widget.foundPrefix,
+              count: _total,
+              suffix: widget.foundSuffix,
+            ),
       filters: _appliedTags(),
       iconBuilder: widget.iconBuilder,
     );
