@@ -5,6 +5,7 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 
 import 'app_theme_mode.dart';
 import 'multi_instance_pane.dart';
+import 'shop/shop_home.dart';
 import 'ui_kit_pane.dart';
 
 void main() => runApp(const App());
@@ -777,6 +778,16 @@ class _InitPageState extends State<InitPage> {
         title: const Text('REES46 SDK init demo'),
         actions: [
           IconButton(
+            key: const Key('open-shop'),
+            tooltip: 'Shop',
+            icon: const Icon(Icons.shopping_bag_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ShopPane(shopId: _shopId),
+              ),
+            ),
+          ),
+          IconButton(
             key: const Key('open-ui-kit'),
             tooltip: 'UI Kit',
             icon: const Icon(Icons.widgets_outlined),
@@ -811,6 +822,17 @@ class _InitPageState extends State<InitPage> {
               state: _initState,
               error: _initError,
               lastInitAt: _lastInitAt,
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              key: const Key('open-shop-button'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ShopPane(shopId: _shopId),
+                ),
+              ),
+              icon: const Icon(Icons.shopping_bag_outlined),
+              label: const Text('Open demo shop (kit + SDK methods)'),
             ),
             const SizedBox(height: 12),
             FilledButton.tonalIcon(
