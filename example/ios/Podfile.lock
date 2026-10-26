@@ -1,59 +1,29 @@
 PODS:
   - CocoaAsyncSocket (7.6.5)
   - Flutter (1.0.0)
-  - integration_test (0.0.1):
-    - Flutter
   - patrol (0.0.1):
     - CocoaAsyncSocket (~> 7.6)
-    - Flutter
-    - FlutterMacOS
-  - REES46 (3.35.0)
-  - rees46_sdk (0.0.1):
-    - Flutter
-    - REES46 (= 3.35.0)
-  - shared_preferences_foundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
-  - video_player_avfoundation (0.0.1):
     - Flutter
     - FlutterMacOS
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
-  - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - patrol (from `.symlinks/plugins/patrol/darwin`)
-  - rees46_sdk (from `.symlinks/plugins/rees46_sdk/ios`)
-  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
 
 SPEC REPOS:
   trunk:
     - CocoaAsyncSocket
-    - REES46
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
-  integration_test:
-    :path: ".symlinks/plugins/integration_test/ios"
   patrol:
     :path: ".symlinks/plugins/patrol/darwin"
-  rees46_sdk:
-    :path: ".symlinks/plugins/rees46_sdk/ios"
-  shared_preferences_foundation:
-    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
-  video_player_avfoundation:
-    :path: ".symlinks/plugins/video_player_avfoundation/darwin"
 
 SPEC CHECKSUMS:
   CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   patrol: cea8074f183a2a4232d0ebd10569ae05149ada42
-  REES46: a96357df1dbbef9a73d92961069290702334136d
-  rees46_sdk: 16e4583a20206f42c013b38d63a4935fa34ba197
-  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
-  video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
 
 PODFILE CHECKSUM: b6e248ac4c1eff5807c8b044b39b8bc326af3f5f
 
