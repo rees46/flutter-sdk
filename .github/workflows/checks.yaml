@@ -60,3 +60,43 @@ jobs:
       - name: Build (verify)
         working-directory: example
         run: flutter build apk --debug
+
+  # The iOS plugin is built two ways: through its Swift package (Flutter's default
+  # since 3.44), and through the podspec, which apps with Swift Package Manager
+  # support turned off still use. Both point at the same sources and the same
+  # native SDK version, and either can drift on its own.
+  ios:
+    if: github.event.pull_request.draft == false
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-package-manager: ['true', 'false']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+
+      # CocoaPods trunk is read-only, so an app building plugins through CocoaPods
+      # adds the native pod from its repository, as README.md tells it to. The
+      # example's Podfile cannot keep that line: with Swift Package Manager on it
+      # would link the SDK a second time.
+      - name: Take the native pod from its repository
+        if: matrix.swift-package-manager == 'false'
+        working-directory: example/ios
+        run: |
+          version=$(sed -n "s/^ *s.dependency 'REES46', '\(.*\)'$/\1/p" ../../ios/rees46_sdk.podspec)
+          line="  pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v$version'"
+          awk -v line="$line" '{ print } /^target .Runner. do/ { print line }' Podfile > Podfile.new
+          mv Podfile.new Podfile
+          grep -n "pod 'REES46'" Podfile
+
+      - name: Build the example for the simulator
+        working-directory: example
+        env:
+          FLUTTER_SWIFT_PACKAGE_MANAGER: ${{ matrix.swift-package-manager }}
+        run: flutter build ios --simulator --debug

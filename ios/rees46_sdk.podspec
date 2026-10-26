@@ -12,9 +12,15 @@ Flutter plugin wrapper around REES46 native SDK.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'REES46' => 'support@rees46.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  # The sources live where Swift Package Manager expects them (rees46_sdk/Package.swift);
+  # CocoaPods builds the same files.
+  s.source_files = 'rees46_sdk/Sources/rees46_sdk/**/*.swift'
+  s.resource_bundles = {'rees46_sdk_privacy' => ['rees46_sdk/Sources/rees46_sdk/PrivacyInfo.xcprivacy']}
   s.dependency 'Flutter'
-  s.dependency 'REES46', '3.35.0'
+  # Keep in step with the dependency in rees46_sdk/Package.swift. CocoaPods trunk is
+  # read-only, so a version newer than the last one there resolves only through the
+  # app's Podfile (see "iOS" in README.md).
+  s.dependency 'REES46', '3.36.1'
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.
