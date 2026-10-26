@@ -21,7 +21,8 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 ```
 
 The native dependencies come with it — `com.github.rees46:android-sdk` from
-JitPack and the `REES46` pod from CocoaPods trunk.
+JitPack and the [iOS SDK](https://github.com/rees46/ios-sdk) through Swift Package
+Manager or CocoaPods.
 
 ### Android
 
@@ -50,9 +51,25 @@ maven(url = "https://jitpack.io")
 
 ### iOS
 
-Nothing to add: the plugin's podspec pulls the `REES46` pod and declares the
-iOS 13.0 minimum itself, `pod install` runs as part of `flutter run`, and the
-plugin registers its own application delegate — your `AppDelegate` stays untouched.
+The plugin declares the iOS 13.0 minimum itself and registers its own application
+delegate — your `AppDelegate` stays untouched.
+
+**With Swift Package Manager** — the default since Flutter 3.44, and on earlier
+versions after `flutter config --enable-swift-package-manager` — there is nothing to
+add: the plugin's package pulls the native SDK.
+
+**With CocoaPods** (Swift Package Manager support turned off, or Flutter older than
+3.44 without the setting above) add the native pod to `ios/Podfile`, inside
+`target 'Runner'`. CocoaPods trunk is
+read-only since 2 December 2026, so the pod is taken straight from its repository.
+The tag is the version the plugin requires — the `REES46` dependency in
+[`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
+
+```ruby
+pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.35.0'
+```
+
+`pod install` then runs as part of `flutter run`.
 
 ## Initialize
 
