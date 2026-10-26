@@ -1,3 +1,19 @@
+# [1.4.0](https://github.com/rees46/flutter-sdk/compare/v1.3.0...v1.4.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **ios:** native SDK 3.36.1 ([0590a08](https://github.com/rees46/flutter-sdk/commit/0590a08a978c82082b9f0b09851b29e83464dfcd))
+
+
+### Features
+
+* **ios:** plugin builds through Swift Package Manager ([cd86a05](https://github.com/rees46/flutter-sdk/commit/cd86a05f4ed2d48ddf2e031a55c8637428a8533b))
+
+
+
+
+
 # [1.3.0](https://github.com/rees46/flutter-sdk/compare/v1.2.1...v1.3.0) (2026-10-20)
 
 
