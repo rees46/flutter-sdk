@@ -66,10 +66,12 @@ The tag is the version the plugin requires — the `REES46` dependency in
 [`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
 
 ```ruby
-pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.35.0'
+pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.36.1'
 ```
 
-`pod install` then runs as part of `flutter run`.
+`pod install` then runs as part of `flutter run`. Update the tag together with the
+plugin, and drop the line once Swift Package Manager support is on — the plugin's
+package brings the SDK then, and keeping the pod would link it twice.
 
 ## Initialize
 
