@@ -12,7 +12,8 @@ import 'package:pigeon/pigeon.dart';
     kotlinOptions: KotlinOptions(
       package: 'com.rees46.rees46_flutter_sdk.pigeon',
     ),
-    swiftOut: 'ios/rees46_sdk/Sources/rees46_sdk/pigeon/PersonalizationApi.g.swift',
+    swiftOut:
+        'ios/rees46_sdk/Sources/rees46_sdk/pigeon/PersonalizationApi.g.swift',
   ),
 )
 class InitConfig {
