@@ -81,6 +81,20 @@ jobs:
           flutter-version: '3.44.0'
           channel: 'stable'
 
+      # CocoaPods trunk is read-only, so an app building plugins through CocoaPods
+      # adds the native pod from its repository, as README.md tells it to. The
+      # example's Podfile cannot keep that line: with Swift Package Manager on it
+      # would link the SDK a second time.
+      - name: Take the native pod from its repository
+        if: matrix.swift-package-manager == 'false'
+        working-directory: example/ios
+        run: |
+          version=$(sed -n "s/^ *s.dependency 'REES46', '\(.*\)'$/\1/p" ../../ios/rees46_sdk.podspec)
+          line="  pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v$version'"
+          awk -v line="$line" '{ print } /^target .Runner. do/ { print line }' Podfile > Podfile.new
+          mv Podfile.new Podfile
+          grep -n "pod 'REES46'" Podfile
+
       - name: Build the example for the simulator
         working-directory: example
         env:
