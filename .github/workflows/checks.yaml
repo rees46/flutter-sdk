@@ -60,3 +60,29 @@ jobs:
       - name: Build (verify)
         working-directory: example
         run: flutter build apk --debug
+
+  # The iOS plugin is built two ways: through its Swift package (Flutter's default
+  # since 3.44), and through the podspec, which apps with Swift Package Manager
+  # support turned off still use. Both point at the same sources and the same
+  # native SDK version, and either can drift on its own.
+  ios:
+    if: github.event.pull_request.draft == false
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-package-manager: ['true', 'false']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+
+      - name: Build the example for the simulator
+        working-directory: example
+        env:
+          FLUTTER_SWIFT_PACKAGE_MANAGER: ${{ matrix.swift-package-manager }}
+        run: flutter build ios --simulator --debug
