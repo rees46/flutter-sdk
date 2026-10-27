@@ -60,9 +60,9 @@ add: the plugin's package pulls the native SDK.
 
 **With CocoaPods** (Swift Package Manager support turned off, or Flutter older than
 3.44 without the setting above) add the native pod to `ios/Podfile`, inside
-`target 'Runner'`. CocoaPods trunk is
-read-only since 2 December 2026, so the pod is taken straight from its repository.
-The tag is the version the plugin requires — the `REES46` dependency in
+`target 'Runner'`. CocoaPods trunk goes read-only on 2 December 2026 and new SDK
+versions are no longer published there, so the pod is taken straight from its
+repository. The tag is the version the plugin requires — the `REES46` dependency in
 [`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
 
 ```ruby
@@ -157,18 +157,25 @@ without an id resolves only while exactly one shop is registered, and throws
 `AmbiguousShopException` otherwise (`UnknownShopIdException` for an id that was
 never registered).
 
-
 ## Popups
 
 Popups made in the REES46 admin arrive with the responses to init and tracking
 calls. The SDK shows them over the app's root navigator — the one `MaterialApp`,
-`CupertinoApp` or `MaterialApp.router` builds — with nothing to set up.
+`CupertinoApp` or `MaterialApp.router` builds — with nothing to set up. A popup that
+finds no navigator within 10 seconds is dropped.
 
 A popup sits in the centre, at the top or at the bottom as set in the admin, and
 fills the screen when no position is set. It waits out the delay set in the admin,
-one is shown at a time, and one shown within the last minute is not shown again.
-The link button opens its link, the push-subscription button opens the app's
-notification settings. A popup is reported as shown once it is on screen.
+and one shown within the last minute is not shown again. One popup is on screen at a
+time, whichever shop it came from. A popup is reported as shown once it is on screen.
+
+The link button opens the link set for the platform, or the web one when there is
+none, with the system handler: a link into the app itself reaches it through the
+app's own deep-link handling. The push-subscription button opens the app's
+notification settings.
+
+To see popups in your theme without making one in the admin, run the
+[example app](#example-app): it shows a test popup in each position.
 
 To decide yourself — hold a popup back on a checkout screen, or draw it your way —
 take popups with `onPopup`. The SDK then shows nothing:
@@ -212,6 +219,25 @@ sdk.onPopup = (InAppPopup popup) {
 
 `sdk.presentPopup(popup)` shows a popup the way the SDK does and reports it. With
 `enableAutoPopupPresentation: false` and no `onPopup`, popups are not shown.
+
+### Several shops
+
+`sdk.onPopup` takes the popups of its own shop. To take the popups of every shop in
+one place, set `REES46.onPopup`; `popup.shopId` tells which shop a popup came from:
+
+```dart
+REES46.onPopup = (InAppPopup popup) {
+  if (onCheckout) {
+    held = popup;   // later: REES46.getInstance(held!.shopId).presentPopup(held!)
+    return;
+  }
+  REES46.getInstance(popup.shopId).presentPopup(popup);
+};
+```
+
+A shop's own `onPopup` wins over `REES46.onPopup`. Show or report a popup through
+the handle of its shop, as above: `presentPopup` and `tracking.popupShown` count it
+for the shop they are called on.
 
 ## UI theme
 
@@ -449,6 +475,22 @@ A per-call `source` wins over the stored one, and an order is attributed by the
 | `fullSearch` | `full_search` | Full search results page |
 | `stories` | `stories` | Stories block |
 | `webPushDigest` | `web_push_digest` | Web push digest |
+
+## Example app
+
+A full demo — tracking, recommendations, search, catalog, loyalty, popups, push
+and two shops side by side — lives in [`example/`](example):
+
+```bash
+cd example
+flutter run
+```
+
+## Links
+
+- [Android SDK documentation](https://rees46.ru/help/integration/cdp/sdk/kotlin.html)
+- [iOS SDK documentation](https://rees46.ru/help/integration/cdp/sdk/swift.html)
+- [Issue tracker](https://github.com/rees46/flutter-sdk/issues)
 
 ## License
 

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/popups/popup_dispatcher.dart';
+import 'package:rees46_sdk/src/popups/popup_presenter.dart';
 
 class _FakeApi extends pigeon.PersonalizationHostApi {
   final List<(int, String?)> tracked = <(int, String?)>[];
@@ -27,14 +28,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   tearDown(PopupDispatcher.instance.reset);
+  tearDown(PopupPresenter.reset);
 
   Future<(PersonalizationSdk, _FakeApi, List<InAppPopup>)> initialized(
-    String shopId,
-  ) async {
+    String shopId, {
+    bool ownHandler = true,
+  }) async {
     final api = _FakeApi();
     final sdk = PersonalizationSdk(api: api, shopId: shopId);
     final taken = <InAppPopup>[];
-    sdk.onPopup = taken.add;
+    if (ownHandler) sdk.onPopup = taken.add;
     await sdk.initialize(SdkInitConfig(shopId: shopId));
     return (sdk, api, taken);
   }
@@ -53,7 +56,28 @@ void main() {
 
     expect(takenA, isEmpty);
     expect(takenB.map((popup) => popup.title), <String>['Popup 2']);
+    expect(takenB.single.shopId, 'shop-b');
   });
+
+  testWidgets(
+    'REES46.onPopup takes popups of shops without a handler of their own',
+    (tester) async {
+      await initialized('shop-a', ownHandler: false);
+      final (_, _, takenB) = await initialized('shop-b');
+      final shared = <InAppPopup>[];
+      REES46.onPopup = shared.add;
+
+      PopupDispatcher.instance
+        ..onPopup('shop-a', _json(1))
+        ..onPopup('shop-b', _json(2));
+      await tester.pump(Duration.zero);
+
+      expect(shared.map((popup) => (popup.id, popup.shopId)), <(int, String?)>[
+        (1, 'shop-a'),
+      ]);
+      expect(takenB.map((popup) => popup.id), <int>[2]);
+    },
+  );
 
   testWidgets('tracking.popupShown reports for the shop and stops a repeat', (
     tester,
