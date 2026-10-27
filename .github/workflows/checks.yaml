@@ -66,6 +66,7 @@ jobs:
   # support turned off still use. Both point at the same sources and the same
   # native SDK version, and either can drift on its own.
   ios:
+    name: ios (${{ matrix.swift-package-manager == 'true' && 'Swift Package Manager' || 'CocoaPods' }})
     if: github.event.pull_request.draft == false
     runs-on: macos-latest
     strategy:
