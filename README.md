@@ -60,9 +60,9 @@ add: the plugin's package pulls the native SDK.
 
 **With CocoaPods** (Swift Package Manager support turned off, or Flutter older than
 3.44 without the setting above) add the native pod to `ios/Podfile`, inside
-`target 'Runner'`. CocoaPods trunk is
-read-only since 2 December 2026, so the pod is taken straight from its repository.
-The tag is the version the plugin requires — the `REES46` dependency in
+`target 'Runner'`. CocoaPods trunk goes read-only on 2 December 2026 and new SDK
+versions are no longer published there, so the pod is taken straight from its
+repository. The tag is the version the plugin requires — the `REES46` dependency in
 [`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
 
 ```ruby
@@ -156,7 +156,6 @@ Address instances explicitly once more than one is registered: `getInstance()`
 without an id resolves only while exactly one shop is registered, and throws
 `AmbiguousShopException` otherwise (`UnknownShopIdException` for an id that was
 never registered).
-
 
 ## Popups
 
@@ -449,6 +448,22 @@ A per-call `source` wins over the stored one, and an order is attributed by the
 | `fullSearch` | `full_search` | Full search results page |
 | `stories` | `stories` | Stories block |
 | `webPushDigest` | `web_push_digest` | Web push digest |
+
+## Example app
+
+A full demo — tracking, recommendations, search, catalog, loyalty, popups, push
+and two shops side by side — lives in [`example/`](example):
+
+```bash
+cd example
+flutter run
+```
+
+## Links
+
+- [Android SDK documentation](https://rees46.ru/help/integration/cdp/sdk/kotlin.html)
+- [iOS SDK documentation](https://rees46.ru/help/integration/cdp/sdk/swift.html)
+- [Issue tracker](https://github.com/rees46/flutter-sdk/issues)
 
 ## License
 
