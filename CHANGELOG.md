@@ -1,3 +1,14 @@
+# [1.5.0](https://github.com/rees46/flutter-sdk/compare/v1.4.0...v1.5.0) (2026-10-27)
+
+
+### Features
+
+* **popups:** one handler for the popups of every shop, one popup on screen across shops ([8945d3a](https://github.com/rees46/flutter-sdk/commit/8945d3afd89afdc0f372039fb0c593d790696ca8))
+
+
+
+
+
 # [1.4.0](https://github.com/rees46/flutter-sdk/compare/v1.3.0...v1.4.0) (2026-10-26)
 
 
