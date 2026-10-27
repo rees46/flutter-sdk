@@ -13,11 +13,13 @@ enum InAppPopupPosition {
 }
 
 /// A server popup (in-app message). Popups arrive with the responses to init and tracking
-/// calls; see `PersonalizationSdk.onPopup` for how they reach the screen.
+/// calls; see `PersonalizationSdk.onPopup` and `REES46.onPopup` for how they reach the
+/// screen.
 @immutable
 class InAppPopup {
   const InAppPopup({
     required this.id,
+    this.shopId,
     this.position = InAppPopupPosition.unknown,
     this.delay = Duration.zero,
     this.title,
@@ -30,10 +32,11 @@ class InAppPopup {
     this.json = const <String, Object?>{},
   });
 
-  /// Parses the popup as the server sends it. [platform] picks the link for this platform
-  /// (`link_android` / `link_ios`), falling back to the web one.
+  /// Parses the popup as the server sends it for [shopId]. [platform] picks the link for
+  /// this platform (`link_android` / `link_ios`), falling back to the web one.
   factory InAppPopup.fromJson(
     Map<String, Object?> json, {
+    String? shopId,
     TargetPlatform? platform,
   }) {
     final components = _map(json['components']);
@@ -45,6 +48,7 @@ class InAppPopup {
 
     return InAppPopup(
       id: _int(json['id']) ?? 0,
+      shopId: shopId,
       position: switch (json['position']) {
         'centered' => InAppPopupPosition.center,
         'top' => InAppPopupPosition.top,
@@ -66,6 +70,10 @@ class InAppPopup {
   }
 
   final int id;
+
+  /// The shop the popup came for; `null` for one the app built itself.
+  final String? shopId;
+
   final InAppPopupPosition position;
 
   /// How long after it arrives the shop wants the popup shown.

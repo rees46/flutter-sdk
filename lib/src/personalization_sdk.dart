@@ -110,23 +110,25 @@ class PersonalizationSdk {
     return _initHandler.initialize(config);
   }
 
-  /// Takes the server popups (in-app messages) instead of the SDK showing them.
+  /// Takes the server popups (in-app messages) of this shop instead of the SDK showing
+  /// them.
   ///
-  /// Popups arrive with the responses to init and tracking calls. Without a handler the
-  /// SDK shows each over the app's root navigator, unless
-  /// `enableAutoPopupPresentation` is off. With one, the SDK shows nothing: the handler
-  /// gets every popup once its delay has passed and decides — draw it (for instance with
-  /// `PersonalizationInAppPopup`) and report it with `tracking.popupShown(popup.id)`,
-  /// let the SDK show it with [presentPopup], or drop it. A popup shown within the last
-  /// minute is not handed over again. Called on the main isolate.
+  /// Popups arrive with the responses to init and tracking calls. Without a handler —
+  /// this one or the app-wide `REES46.onPopup`, which this one wins over — the SDK
+  /// shows each over the app's root navigator, unless `enableAutoPopupPresentation` is
+  /// off. With one, the SDK shows nothing: the handler gets every popup once its delay
+  /// has passed and decides — draw it (for instance with `PersonalizationInAppPopup`)
+  /// and report it with `tracking.popupShown(popup.id)`, let the SDK show it with
+  /// [presentPopup], or drop it. A popup shown within the last minute is not handed
+  /// over again. Called on the main isolate.
   void Function(InAppPopup popup)? get onPopup => _popups.onPopup;
 
   set onPopup(void Function(InAppPopup popup)? handler) =>
       _popups.onPopup = handler;
 
   /// Shows [popup] the way the SDK shows server popups — over the app's root navigator,
-  /// after any popup already on screen — and reports it as shown. For a popup taken with
-  /// [onPopup] and held back. Completes when the popup closes, or at once when it cannot
+  /// after any popup already on screen, from whichever shop — and reports it as shown
+  /// for this shop. For a popup taken with [onPopup] and held back. Completes when the popup closes, or at once when it cannot
   /// be shown.
   Future<void> presentPopup(InAppPopup popup) => _popups.present(popup);
 
