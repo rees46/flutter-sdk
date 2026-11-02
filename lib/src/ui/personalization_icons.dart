@@ -35,6 +35,10 @@ abstract final class PersonalizationIcons {
   static const String magnifier =
       'packages/rees46_sdk/assets/icons/magnifier.svg';
   static const String rosette = 'packages/rees46_sdk/assets/icons/rosette.svg';
+
+  /// «Поделиться» в шапке просмотра сторис — значок из веба (viewBox 24), вписан в 32
+  /// так же, как глиф крестика: 18 по ширине.
+  static const String share = 'packages/rees46_sdk/assets/icons/share.svg';
   static const String spacingMd =
       'packages/rees46_sdk/assets/icons/spacing-md.svg';
 
@@ -63,6 +67,7 @@ abstract final class PersonalizationIcons {
     list,
     magnifier,
     rosette,
+    share,
     spacingMd,
     speaker,
     speakerOff,

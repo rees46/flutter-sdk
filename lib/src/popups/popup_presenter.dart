@@ -17,6 +17,10 @@ import 'in_app_popup.dart';
 /// server sends it again, one popup is on screen at a time, and a popup that never reached
 /// the screen is neither reported nor remembered. Unlike them it waits out the delay the
 /// shop set, as the React Native SDK does.
+///
+/// The handles of several shops share the screen: one popup is on it at a time whichever
+/// shop it came for, and [sharedOnPopup] takes the popups of every handle without an
+/// [onPopup] of its own.
 class PopupPresenter {
   PopupPresenter({
     required Future<void> Function(int popupId) trackShown,
@@ -42,6 +46,10 @@ class PopupPresenter {
   /// Takes every popup instead of the SDK showing it.
   void Function(InAppPopup popup)? onPopup;
 
+  /// Takes the popups of every handle with no [onPopup] of its own. The app's one
+  /// handler for all its shops, set through `REES46.onPopup`.
+  static void Function(InAppPopup popup)? sharedOnPopup;
+
   /// A popup shown within this window is not shown again.
   static const Duration repeatWindow = Duration(minutes: 1);
 
@@ -53,8 +61,11 @@ class PopupPresenter {
 
   final Map<int, DateTime> _shownAt = <int, DateTime>{};
   final Set<int> _delayed = <int>{};
-  final Queue<_Request> _queue = Queue<_Request>();
-  _Request? _current;
+
+  // One queue for the app, not one per handle: popups of two shops would otherwise open
+  // over each other.
+  static final Queue<_Request> _queue = Queue<_Request>();
+  static _Request? _current;
 
   /// A popup from the server: waits out its delay, then goes to [onPopup] or on screen.
   void receive(InAppPopup popup) {
@@ -67,7 +78,7 @@ class PopupPresenter {
     Timer(popup.delay, () {
       _delayed.remove(popup.id);
       if (_isRepeat(popup.id)) return;
-      final handler = onPopup;
+      final handler = onPopup ?? sharedOnPopup;
       if (handler != null) {
         try {
           handler(popup);
@@ -84,16 +95,15 @@ class PopupPresenter {
     });
   }
 
-  /// Shows [popup] after the one on screen, if any. Completes when the popup closes, or
-  /// at once when it cannot be shown.
+  /// Shows [popup] after the one on screen, if any, whichever shop that one came for.
+  /// Completes when the popup closes, or at once when it cannot be shown.
   Future<void> present(InAppPopup popup) {
-    final same = <_Request>[
-      ?_current,
-      ..._queue,
-    ].where((request) => request.popup.id == popup.id);
+    final same = <_Request>[?_current, ..._queue].where(
+      (request) => request.presenter == this && request.popup.id == popup.id,
+    );
     if (same.isNotEmpty) return same.first.done.future;
 
-    final request = _Request(popup);
+    final request = _Request(this, popup);
     _queue.add(request);
     _next();
     return request.done.future;
@@ -110,16 +120,26 @@ class PopupPresenter {
     return false;
   }
 
-  void _next() {
+  /// Test-only: forgets the shared handler and the queue.
+  @visibleForTesting
+  static void reset() {
+    sharedOnPopup = null;
+    _queue.clear();
+    _current = null;
+  }
+
+  static void _next() {
     if (_current != null || _queue.isEmpty) return;
     final request = _current = _queue.removeFirst();
-    _show(request)
+    request.presenter
+        ._show(request)
         .catchError((Object error, StackTrace stack) {
           _log('popup ${request.popup.id} not shown: $error\n$stack');
         })
         .whenComplete(() {
           if (!request.done.isCompleted) request.done.complete();
-          _current = null;
+          // Past a reset the queue has moved on without this request.
+          if (_current == request) _current = null;
           _next();
         });
   }
@@ -366,8 +386,10 @@ class _PopupRoute extends RawDialogRoute<void> {
 typedef _Picture = ({ImageProvider image, double aspect});
 
 class _Request {
-  _Request(this.popup);
+  _Request(this.presenter, this.popup);
 
+  /// The handle that shows the popup and reports it for its shop.
+  final PopupPresenter presenter;
   final InAppPopup popup;
   final Completer<void> done = Completer<void>();
 }

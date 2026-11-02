@@ -21,7 +21,9 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 /// "Search" runs the two data-bound search widgets against the demo shop: the
 /// instant search field, and the results screen it opens on submit;
 /// "Stories" shows the Stories V2 components one by one, a sample viewer that runs
-/// offline and the live stories block of the demo shop.
+/// offline and the live stories block of the demo shop twice: on the old API, and on the
+/// stories API v3 (its own `apiV3Domain`) with the "Share" button; a field opens a
+/// "Share" link.
 /// Mirror of the Android `UiKitPane` / iOS `UIKitShowcaseViewController` /
 /// React Native `UiKitPane`.
 ///
@@ -788,8 +790,46 @@ class _LiveRecommenderState extends State<_LiveRecommender> {
   }
 }
 
-/// The Stories V2 block the demo shop serves (api.rees46.ru).
+/// The Stories V2 block the demo shop serves.
 const String _storiesCode = '115bd0b67cf5989a1b60c841790b2af6';
+
+/// Host of the stories API v3 of the "with Sharing" block and of the link field; the
+/// global `PersonalizationStories.apiV3Domain` stays unset.
+const String _storiesApiV3Domain = 'app.rees46.ru';
+
+/// Scheme of the demo's own links. The "with Sharing" block and the campaigns opened by a
+/// link share `rees46flutter://<site>/?r46_stories=…` instead of `https://`, and the app
+/// opens such links (any host and path, see `main.dart`) with [openStoriesLink].
+const String demoLinkScheme = 'rees46flutter';
+
+/// The slide link with the demo scheme instead of `http(s)://`.
+String _demoShareUrl(String url) => url.replaceFirst(
+  RegExp(r'^https?://', caseSensitive: false),
+  '$demoLinkScheme://',
+);
+
+/// Opens a stories "Share" link over API v3 ([_storiesApiV3Domain]) — from the link field
+/// and from the demo's deep links. `false` — not a stories link (no `r46_stories`).
+bool openStoriesLink(
+  BuildContext context,
+  String url, {
+  required String shopId,
+}) => PersonalizationStories.handleLink(
+  context,
+  url,
+  shopId: shopId,
+  promoCopiedText: 'Code copied to clipboard',
+  onProductClick: (product) =>
+      PersonalizationToast.show(context, 'Product: ${product.name}'),
+  onError: (error) => _snack(context, 'Stories link error: $error'),
+  iconBuilder: _icon,
+  shareUrlTransform: _demoShareUrl,
+  apiV3Domain: _storiesApiV3Domain,
+);
+
+/// A "Share" link of the live block: campaign 40 from its second slide (37).
+const String _storiesSampleLink =
+    'https://demo.rees46.ru/?r46_stories=$_storiesCode&r46_story=40&r46_slide=37';
 
 /// End of the timer exhibits: fixed on first use, so a rebuild does not restart them.
 final DateTime _timerEnd = DateTime.now().add(
@@ -802,8 +842,9 @@ final PersonalizationStoriesController _storiesController =
 
 List<_Exhibit> _storyExhibits(String shopId) => [
   _Exhibit(
-    'Stories — live block $_storiesCode (demo shop); '
-    'links open in the system browser. Seen slides survive a restart.',
+    'Stories V2 — live block $_storiesCode (demo shop) on the old API: no '
+    '"Share" button; links open in the system browser. Seen slides survive a '
+    'restart.',
     (context) => PersonalizationStories(
       code: _storiesCode,
       shopId: shopId,
@@ -817,7 +858,31 @@ List<_Exhibit> _storyExhibits(String shopId) => [
     ),
   ),
   _Exhibit(
-    'Stories — programmatic control: open the second story, pause and '
+    'Stories V2 with Sharing — the same block over API v3 '
+    '($_storiesApiV3Domain): slides with a link have "Share" left of the cross; '
+    'the link is shared with the demo scheme ($demoLinkScheme://), which opens '
+    'the slide in this app',
+    (context) => PersonalizationStories(
+      code: _storiesCode,
+      shopId: shopId,
+      apiV3Domain: _storiesApiV3Domain,
+      shareUrlTransform: _demoShareUrl,
+      padding: EdgeInsets.zero,
+      promoCopiedText: 'Code copied to clipboard',
+      onProductClick: (product) =>
+          PersonalizationToast.show(context, 'Product: ${product.name}'),
+      onError: (error) => _snack(context, 'Stories error: $error'),
+      iconBuilder: _icon,
+    ),
+  ),
+  _Exhibit(
+    'Stories link — paste a "Share" link (https:// or $demoLinkScheme://) and open '
+    'it with PersonalizationStories.handleLink. Links in the $demoLinkScheme:// '
+    'scheme open the app too; App Links / Universal Links are not set up',
+    (context) => _StoriesLinkExhibit(shopId: shopId),
+  ),
+  _Exhibit(
+    'Stories V2 — programmatic control of the first block: open the second story, pause and '
     'resume it after 3 s, reload the block, show the block without the bar',
     (context) => Wrap(
       spacing: 8,
@@ -2105,6 +2170,62 @@ extension on PersonalizationProduct {
       oldPrice: oldPrice,
       discount: discount,
       actionText: actionText,
+    );
+  }
+}
+
+/// A "Share" link field: [PersonalizationStories.handleLink] opens the campaign of the
+/// link over API v3 ([_storiesApiV3Domain]); `false` — not a stories link.
+class _StoriesLinkExhibit extends StatefulWidget {
+  const _StoriesLinkExhibit({required this.shopId});
+
+  final String shopId;
+
+  @override
+  State<_StoriesLinkExhibit> createState() => _StoriesLinkExhibitState();
+}
+
+class _StoriesLinkExhibitState extends State<_StoriesLinkExhibit> {
+  late final TextEditingController _link = TextEditingController(
+    text: _storiesSampleLink,
+  );
+
+  @override
+  void dispose() {
+    _link.dispose();
+    super.dispose();
+  }
+
+  void _open() {
+    final handled = openStoriesLink(context, _link.text, shopId: widget.shopId);
+    if (!handled) _snack(context, 'Not a stories link');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PersonalizationInputField(
+          key: const Key('stories-link-field'),
+          controller: _link,
+          type: PersonalizationInputFieldType.input,
+          size: PersonalizationInputFieldSize.md,
+          placeholder: 'Stories link',
+          onSubmitted: (_) => _open(),
+          iconBuilder: _icon,
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: PersonalizationButton(
+            key: const Key('stories-link-open'),
+            label: 'Open',
+            size: PersonalizationButtonSize.sm,
+            onPressed: _open,
+          ),
+        ),
+      ],
     );
   }
 }

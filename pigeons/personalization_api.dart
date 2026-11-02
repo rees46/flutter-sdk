@@ -12,7 +12,8 @@ import 'package:pigeon/pigeon.dart';
     kotlinOptions: KotlinOptions(
       package: 'com.rees46.rees46_flutter_sdk.pigeon',
     ),
-    swiftOut: 'ios/Classes/pigeon/PersonalizationApi.g.swift',
+    swiftOut:
+        'ios/rees46_sdk/Sources/rees46_sdk/pigeon/PersonalizationApi.g.swift',
   ),
 )
 class InitConfig {
@@ -336,6 +337,20 @@ abstract class PersonalizationHostApi {
   /// Returns false when nothing could open it.
   @async
   bool openUrl(String url);
+
+  /// Shows the system share sheet with one link [url] — the "Share" button of the stories
+  /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+  /// `UIActivityViewController`; Android — the window got its focus back after the
+  /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+  /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+  @async
+  void shareUrl(
+    String url,
+    double anchorX,
+    double anchorY,
+    double anchorWidth,
+    double anchorHeight,
+  );
 
   /// The slide ids seen per story id for [shop] — the plugin's own store
   /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It

@@ -8,8 +8,10 @@ import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
 import '../components/personalization_stories_bar.dart';
 import 'personalization_story_viewer.dart';
+import 'stories_api_v3.dart';
 import 'stories_playback.dart';
 import 'stories_seen_store.dart';
+import 'stories_share.dart';
 import 'stories_support.dart';
 
 /// Программное управление блоком сторис: открыть сторис, пауза, продолжение, перезагрузка.
@@ -150,6 +152,12 @@ class _StoriesSession {
 /// сторис просмотрена, когда так говорит сервер или просмотрены все её слайды; дуги
 /// кольца горят по просмотренным слайдам; сторис открывается с первого
 /// непросмотренного. Тексты и колбэки уходят в просмотр как есть.
+///
+/// API v3 — свой хост блока (параметр `apiV3Domain`, [ownApiV3Domain]), без него
+/// глобальный [apiV3Domain]: лента, кампания по ссылке и события — на v3, у слайдов кнопка
+/// «Поделиться», ссылки открывает [handleLink]. Два блока на одном экране независимы:
+/// один может идти в старый API, другой — в v3. Открыт один просмотр V2 из виджета,
+/// [show] или [handleLink]: ссылка закрывает прежний перед показом своего.
 class PersonalizationStories extends StatefulWidget {
   const PersonalizationStories({
     super.key,
@@ -168,15 +176,23 @@ class PersonalizationStories extends StatefulWidget {
     this.hideProductsText = 'Hide products',
     this.retryText = 'Retry',
     this.closeLabel = 'Close',
+    this.shareLabel = 'Share',
     this.soundOnLabel = 'Sound on',
     this.soundOffLabel = 'Sound off',
     this.padding = const EdgeInsets.all(16),
     this.imageProvider,
     this.iconBuilder,
-  });
+    this.shareUrlTransform,
+    String? apiV3Domain,
+  }) : ownApiV3Domain = apiV3Domain;
 
   /// Код блока сторис.
   final String code;
+
+  /// Свой хост API v3 блока без схемы (параметр `apiV3Domain`, например `app.rees46.ru`):
+  /// лента, события и кнопка «Поделиться» его просмотра. `null` — глобальный
+  /// [apiV3Domain]; пустая строка — старый API и при заданном глобальном.
+  final String? ownApiV3Domain;
 
   /// Явный инстанс; иначе резолв по [shopId].
   final PersonalizationSdk? sdk;
@@ -203,6 +219,7 @@ class PersonalizationStories extends StatefulWidget {
   final String hideProductsText;
   final String retryText;
   final String closeLabel;
+  final String shareLabel;
   final String soundOnLabel;
   final String soundOffLabel;
 
@@ -220,6 +237,19 @@ class PersonalizationStories extends StatefulWidget {
   )?
   iconBuilder;
 
+  /// Глобальный хост API v3 сторис V2 без схемы, как `REES46Config.apiDomain`, например
+  /// `app.rees46.ru`, — для блоков, [show] и [handleLink] без своего `apiV3Domain`.
+  /// `null` (по умолчанию) — у них всё по-старому: лента `stories/{code}` и трекинг
+  /// `track/stories` через нативный SDK. Задан — их запросы V2 идут на
+  /// `https://{apiV3Domain}`: лента и события из Dart, у слайдов со ссылкой — кнопка
+  /// «Поделиться», [handleLink] открывает ссылки.
+  static String? get apiV3Domain => StoriesApiV3.domain;
+  static set apiV3Domain(String? value) => StoriesApiV3.domain = value;
+
+  /// Что сделать со ссылкой слайда перед системным окном «Поделиться», например сменить
+  /// `https://` на схему приложения; `null` — ссылка как есть. Событие `share` не меняется.
+  final String Function(String url)? shareUrlTransform;
+
   /// Сколько ждать блок, прежде чем сдаться и позвать [onError].
   static const Duration loadTimeout = Duration(seconds: 15);
 
@@ -228,8 +258,8 @@ class PersonalizationStories extends StatefulWidget {
   static const Duration registrationTimeout = Duration(seconds: 15);
 
   /// Показать сторис блока [code] без ленты: загрузить блок и открыть просмотр — со
-  /// сторис [startStoryId] (нет такой — с первой). Тексты, колбэки и [controller] — как
-  /// у виджета. Ошибка (пустой код, магазин не зарегистрирован за 15 с или неоднозначен,
+  /// сторис [startStoryId] (нет такой — с первой). Тексты, колбэки, [controller],
+  /// `shareUrlTransform` и `apiV3Domain` — как у виджета. Ошибка (пустой код, магазин не зарегистрирован за 15 с или неоднозначен,
   /// загрузка не удалась или дольше 15 с, в блоке нет сторис) уходит в [onError],
   /// просмотр не открывается, Future завершается. Иначе Future завершается, когда
   /// просмотр закроют.
@@ -251,6 +281,7 @@ class PersonalizationStories extends StatefulWidget {
     String hideProductsText = 'Hide products',
     String retryText = 'Retry',
     String closeLabel = 'Close',
+    String shareLabel = 'Share',
     String soundOnLabel = 'Sound on',
     String soundOffLabel = 'Sound off',
     PersonalizationStoryImageProvider? imageProvider,
@@ -261,6 +292,8 @@ class PersonalizationStories extends StatefulWidget {
       Color color,
     )?
     iconBuilder,
+    String Function(String url)? shareUrlTransform,
+    String? apiV3Domain,
   }) async {
     // Носитель текстов и колбэков для просмотра; в дерево не вставляется.
     final config = PersonalizationStories(
@@ -275,16 +308,19 @@ class PersonalizationStories extends StatefulWidget {
       hideProductsText: hideProductsText,
       retryText: retryText,
       closeLabel: closeLabel,
+      shareLabel: shareLabel,
       soundOnLabel: soundOnLabel,
       soundOffLabel: soundOffLabel,
       imageProvider: imageProvider,
       iconBuilder: iconBuilder,
+      shareUrlTransform: shareUrlTransform,
+      apiV3Domain: apiV3Domain,
     );
     final PersonalizationSdk resolved;
     final List<Story> stories;
     try {
       resolved = await _resolve(sdk, shopId);
-      stories = await _fetch(resolved, code);
+      stories = await _fetch(resolved, code, apiV3Domain: apiV3Domain);
       if (stories.isEmpty) {
         throw StateError('stories block "$code" has no stories');
       }
@@ -305,8 +341,186 @@ class PersonalizationStories extends StatefulWidget {
     );
   }
 
+  /// Открыть сторис по ссылке «Поделиться» [url]:
+  /// `https://<сайт>/<путь>?r46_stories=<code>&r46_story=<id>[&r46_slide=<id>]`.
+  ///
+  /// `false` — не ссылка сторис или API v3 выключен (нет ни `apiV3Domain`, ни
+  /// глобального [apiV3Domain]): ничего не делает. `true` —
+  /// дальше асинхронно: дождаться SDK (как [show]), загрузить кампанию ссылки
+  /// (`/story/{id}` API v3), закрыть открытый просмотр V2 и открыть свой — с первой
+  /// сторис ответа, со слайда `start_position` (в обход правила «первый
+  /// непросмотренный»). После показа один раз — событие `shared_open`. Ошибка, 404,
+  /// пустой ответ или дольше 15 с — [onError], ничего не показывается, событий нет. Та
+  /// же ссылка, пока прежняя грузится или её просмотр открыт, — ничего, но `true`.
+  /// Остальное — как у [show].
+  static bool handleLink(
+    BuildContext context,
+    String url, {
+    PersonalizationSdk? sdk,
+    String? shopId,
+    PersonalizationStoriesController? controller,
+    ValueChanged<String>? onLinkClick,
+    ValueChanged<StoryProduct>? onProductClick,
+    ValueChanged<String>? onPromoCopied,
+    ValueChanged<Object>? onError,
+    String promoCopiedText = 'Copied',
+    String promoCaption = 'Promo code',
+    String productButtonText = 'More info',
+    String showProductsText = 'Used products',
+    String hideProductsText = 'Hide products',
+    String retryText = 'Retry',
+    String closeLabel = 'Close',
+    String shareLabel = 'Share',
+    String soundOnLabel = 'Sound on',
+    String soundOffLabel = 'Sound off',
+    PersonalizationStoryImageProvider? imageProvider,
+    Widget Function(
+      BuildContext context,
+      String asset,
+      double size,
+      Color color,
+    )?
+    iconBuilder,
+    String Function(String url)? shareUrlTransform,
+    String? apiV3Domain,
+  }) {
+    final link = parseStoriesShareLink(url);
+    if (link == null) return false;
+    // Хост — сейчас: дальше ссылка идёт на него, даже если глобальный поменяют.
+    final host = StoriesApiV3.host(apiV3Domain);
+    if (host == null) {
+      debugPrint('PersonalizationStories.handleLink: links need apiV3Domain');
+      return false;
+    }
+    if (_linkBusy(link.key)) return true;
+    _openLinks[link.key] = null;
+    // Носитель текстов и колбэков для просмотра, как у show; в дерево не вставляется.
+    final config = PersonalizationStories(
+      code: link.code,
+      onLinkClick: onLinkClick,
+      onProductClick: onProductClick,
+      onPromoCopied: onPromoCopied,
+      promoCopiedText: promoCopiedText,
+      promoCaption: promoCaption,
+      productButtonText: productButtonText,
+      showProductsText: showProductsText,
+      hideProductsText: hideProductsText,
+      retryText: retryText,
+      closeLabel: closeLabel,
+      shareLabel: shareLabel,
+      soundOnLabel: soundOnLabel,
+      soundOffLabel: soundOffLabel,
+      imageProvider: imageProvider,
+      iconBuilder: iconBuilder,
+      shareUrlTransform: shareUrlTransform,
+      apiV3Domain: host,
+    );
+    unawaited(
+      _openLink(
+        context,
+        link,
+        config: config,
+        sdk: sdk,
+        shopId: shopId,
+        controller: controller,
+        onError: onError,
+      ).whenComplete(() => _openLinks.remove(link.key)),
+    );
+    return true;
+  }
+
   @override
   State<PersonalizationStories> createState() => _PersonalizationStoriesState();
+}
+
+/// Ссылки [PersonalizationStories.handleLink], которые грузятся (`null`) или открыты
+/// (маршрут просмотра): повтор той же ссылки в это время ничего не делает.
+final Map<String, Route<void>?> _openLinks = <String, Route<void>?>{};
+
+/// Ссылка [key] грузится или её просмотр открыт. Маршрут, который ушёл без закрытия
+/// (навигатор убран вместе с ним), ссылку не держит.
+bool _linkBusy(String key) {
+  if (!_openLinks.containsKey(key)) return false;
+  final route = _openLinks[key];
+  return route == null || route.isActive;
+}
+
+/// Открытый просмотр V2 — виджета, `show` или `handleLink`; `null` — нет.
+Route<void>? _openViewer;
+
+/// Закрыть открытый просмотр V2, если он есть: сверху — обычным закрытием, под другим
+/// экраном — сразу.
+void _closeOpenViewer() {
+  final route = _openViewer;
+  _openViewer = null;
+  final navigator = route?.navigator;
+  if (route == null || navigator == null || !route.isActive) return;
+  if (route.isCurrent) {
+    navigator.pop();
+  } else {
+    navigator.removeRoute(route);
+  }
+}
+
+/// Загрузить кампанию ссылки [link] и открыть её вместо открытого просмотра V2.
+/// Завершается, когда просмотр закроют или загрузка не удалась.
+Future<void> _openLink(
+  BuildContext context,
+  StoriesShareLink link, {
+  required PersonalizationStories config,
+  PersonalizationSdk? sdk,
+  String? shopId,
+  PersonalizationStoriesController? controller,
+  ValueChanged<Object>? onError,
+}) async {
+  final PersonalizationSdk resolved;
+  final List<Story> stories;
+  try {
+    resolved = await _resolve(sdk, shopId);
+    stories = await _fetch(
+      resolved,
+      link.code,
+      link: link,
+      apiV3Domain: config.ownApiV3Domain,
+    );
+    if (stories.isEmpty) {
+      throw StateError('stories link ${link.key} has no stories');
+    }
+  } catch (error) {
+    debugPrint('PersonalizationStories.handleLink: ${link.key} — $error');
+    onError?.call(error);
+    return;
+  }
+  if (!context.mounted) return;
+  final story = stories.first;
+  final start = story.startPosition.clamp(0, story.slides.length - 1);
+  var opened = false;
+  _closeOpenViewer();
+  await _present(
+    context,
+    config: config,
+    sdk: resolved,
+    stories: stories,
+    index: 0,
+    initialSlide: start,
+    controller: controller,
+    onRoute: (route) => _openLinks[link.key] = route,
+    onSlideShown: (_, _) {
+      // `shared_open` — один раз, после показа: кампания и слайд ссылки.
+      if (opened) return;
+      opened = true;
+      unawaited(
+        StoriesApiV3.track(
+          resolved,
+          config.ownApiV3Domain!,
+          code: link.code,
+          event: StoriesV3Event.sharedOpen,
+          storyId: story.id,
+          slideId: story.slides[start].id,
+        ),
+      );
+    },
+  );
 }
 
 /// Открыть просмотр [stories] со сторис [index] поверх корневого навигатора; тексты и
@@ -318,13 +532,16 @@ Future<void> _present(
   required PersonalizationSdk? sdk,
   required List<Story> stories,
   required int index,
+  int? initialSlide,
   PersonalizationStoriesController? controller,
   void Function(Story story, int slideIndex)? onSlideShown,
+  ValueChanged<Route<void>>? onRoute,
 }) async {
   final session = controller?._begin(stories);
   final viewer = PersonalizationStoryViewer(
     stories: stories,
     initialStory: index,
+    initialSlide: initialSlide,
     seen: sdk == null
         ? const <String, Set<String>>{}
         : StoriesSeenStore.instance.seen(sdk),
@@ -343,23 +560,25 @@ Future<void> _present(
     hideProductsText: config.hideProductsText,
     retryText: config.retryText,
     closeLabel: config.closeLabel,
+    shareLabel: config.shareLabel,
     soundOnLabel: config.soundOnLabel,
     soundOffLabel: config.soundOffLabel,
     imageProvider: config.imageProvider,
     iconBuilder: config.iconBuilder,
+    shareUrlTransform: config.shareUrlTransform,
+    apiV3Domain: config.ownApiV3Domain,
   );
   final navigator = Navigator.of(context, rootNavigator: true);
+  // Тема едет с просмотром: хост мог задать её поддереву, а не приложению.
+  final route = PersonalizationStoryViewer.route(
+    InheritedTheme.capture(from: context, to: navigator.context).wrap(viewer),
+  );
+  _openViewer = route;
+  onRoute?.call(route);
   try {
-    // Тема едет с просмотром: хост мог задать её поддереву, а не приложению.
-    await navigator.push(
-      PersonalizationStoryViewer.route(
-        InheritedTheme.capture(
-          from: context,
-          to: navigator.context,
-        ).wrap(viewer),
-      ),
-    );
+    await navigator.push(route);
   } finally {
+    if (_openViewer == route) _openViewer = null;
     if (session != null) controller?._end(session);
   }
 }
@@ -389,14 +608,31 @@ Future<PersonalizationSdk> _resolve(
 }
 
 /// Блок [code] со сторис, у которых есть слайды, и просмотренное магазина — не дольше
-/// [PersonalizationStories.loadTimeout].
-Future<List<Story>> _fetch(PersonalizationSdk sdk, String code) async {
+/// [PersonalizationStories.loadTimeout]. С хостом API v3 ([apiV3Domain], без него —
+/// глобальный) — лента v3, а с [link] — кампания ссылки; без хоста — лента через мост.
+Future<List<Story>> _fetch(
+  PersonalizationSdk sdk,
+  String code, {
+  StoriesShareLink? link,
+  String? apiV3Domain,
+}) async {
   if (code.isEmpty) {
     throw ArgumentError.value(code, 'code', 'must be non-empty');
   }
+  final host = StoriesApiV3.host(apiV3Domain);
+  final Future<StoriesBlock> request;
+  if (host != null && link != null) {
+    request = StoriesApiV3.story(sdk, host, link);
+  } else if (link != null) {
+    throw StateError('stories links need API v3');
+  } else if (host != null) {
+    request = StoriesApiV3.feed(sdk, host, code);
+  } else {
+    request = sdk.getStories(code);
+  }
   // Просмотренное читается вместе с блоком; ошибка блока приходит как есть.
   final results = await Future.wait<Object>(<Future<Object>>[
-    sdk.getStories(code),
+    request,
     StoriesSeenStore.instance.load(sdk),
   ]).timeout(PersonalizationStories.loadTimeout);
   final block = results.first as StoriesBlock;
@@ -427,7 +663,8 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
     }
     if (oldWidget.sdk != widget.sdk ||
         oldWidget.shopId != widget.shopId ||
-        oldWidget.code != widget.code) {
+        oldWidget.code != widget.code ||
+        oldWidget.ownApiV3Domain != widget.ownApiV3Domain) {
       _load();
     } else if (controllerChanged) {
       // Новый контроллер мог ждать загрузки, а блок уже загружен. После кадра: открытие
@@ -457,7 +694,11 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
         widget.shopId,
         alive: () => mounted && seq == _seq,
       );
-      final stories = await _fetch(sdk, widget.code);
+      final stories = await _fetch(
+        sdk,
+        widget.code,
+        apiV3Domain: widget.ownApiV3Domain,
+      );
       if (!mounted || seq != _seq) return;
       setState(() {
         _sdk = sdk;

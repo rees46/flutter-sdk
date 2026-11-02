@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 import '../personalization_sdk.dart';
+import '../popups/in_app_popup.dart';
+import '../popups/popup_presenter.dart';
 import 'instance_resolver.dart';
 import 'push_event.dart';
 import 'rees46_config.dart';
@@ -115,6 +117,19 @@ class REES46 {
     PushEvent event,
   ) => _instance._handlePush(payload, event);
 
+  /// Takes the server popups of every shop instead of the SDK showing them — one
+  /// handler for an app with several shops. A shop's own
+  /// [PersonalizationSdk.onPopup] wins over it; otherwise it works the same.
+  ///
+  /// [InAppPopup.shopId] tells the shop a popup came for. Show or report it through
+  /// that shop's handle, so it counts for the right shop:
+  /// `REES46.getInstance(popup.shopId).presentPopup(popup)`.
+  static void Function(InAppPopup popup)? get onPopup =>
+      PopupPresenter.sharedOnPopup;
+
+  static set onPopup(void Function(InAppPopup popup)? handler) =>
+      PopupPresenter.sharedOnPopup = handler;
+
   /// Shops that are live (initialized), sorted.
   static List<String> get liveShopIds => _instance._live.keys.toList()..sort();
 
@@ -213,12 +228,13 @@ class REES46 {
   static set debugFactory(REES46SdkFactory factory) =>
       _instance._factory = factory;
 
-  /// Test-only: drops all live and pending registrations and restores the
-  /// default factory.
+  /// Test-only: drops all live and pending registrations and the popup handler,
+  /// and restores the default factory.
   @visibleForTesting
   static void reset() {
     _instance._live.clear();
     _instance._pending.clear();
     _instance._factory = _defaultFactory;
+    PopupPresenter.sharedOnPopup = null;
   }
 }

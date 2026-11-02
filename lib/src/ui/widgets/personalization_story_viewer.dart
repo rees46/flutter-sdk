@@ -8,12 +8,14 @@ import 'package:video_player/video_player.dart';
 
 import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
+import 'stories_api_v3.dart';
 import 'stories_gif.dart';
 import 'stories_gif_player.dart';
 import 'stories_image.dart';
 import 'stories_media_cache.dart';
 import 'stories_playback.dart';
 import 'stories_seen_store.dart';
+import 'stories_share.dart';
 import 'stories_slide_view.dart';
 import 'stories_sound.dart';
 import 'stories_support.dart';
@@ -53,9 +55,14 @@ import 'stories_support.dart';
 ///
 /// Трекинг через [sdk] с кодом [code]: `view` — на каждый слайд, ставший текущим на
 /// осевшей странице; `click` — кнопка, товар карусели, копирование промокода. Id, которые
-/// не целые положительные числа (`39_0`), не трекаются. Просмотренные слайды с [sdk]
-/// запоминаются на устройстве по магазину ([StoriesSeenStore]); хосту о показе слайда
-/// сообщает [onSlideShown].
+/// не целые положительные числа (`39_0`), не трекаются. С API v3 ([apiV3Domain]) события
+/// уходят из Dart на v3 — и у таких слайдов тоже ([StoriesApiV3]). Просмотренные слайды с [sdk] запоминаются на
+/// устройстве по магазину ([StoriesSeenStore]); хосту о показе слайда сообщает
+/// [onSlideShown].
+///
+/// «Поделиться» — только с API v3, [sdk] и [code]: у слайда со ссылкой
+/// ([storySlideShareUrl]) в шапке кнопка. Нажатие — пауза, событие `share` и системное
+/// окно с ссылкой; закрыли окно — пауза снята, слайд идёт дальше, если шёл.
 ///
 /// Кнопки и товары карусели сначала закрывают просмотр, потом зовут [onLinkClick] /
 /// [onProductClick]; не заданы — ссылку открывает система через SDK. Кнопка без ссылки
@@ -67,9 +74,11 @@ class PersonalizationStoryViewer extends StatefulWidget {
     super.key,
     required this.stories,
     this.initialStory = 0,
+    this.initialSlide,
     this.seen = const <String, Set<String>>{},
     this.code,
     this.sdk,
+    this.apiV3Domain,
     this.paused,
     this.storyRequests,
     this.onSlideShown,
@@ -84,10 +93,12 @@ class PersonalizationStoryViewer extends StatefulWidget {
     this.hideProductsText = 'Hide products',
     this.retryText = 'Retry',
     this.closeLabel = 'Close',
+    this.shareLabel = 'Share',
     this.soundOnLabel = 'Sound on',
     this.soundOffLabel = 'Sound off',
     this.imageProvider,
     this.iconBuilder,
+    this.shareUrlTransform,
   });
 
   /// Сторис блока; сторис без слайдов пропускаются.
@@ -95,6 +106,10 @@ class PersonalizationStoryViewer extends StatefulWidget {
 
   /// С какой сторис начать — индекс в [stories].
   final int initialStory;
+
+  /// Слайд начальной сторис в обход правила «первый непросмотренный»; `null` — по
+  /// правилам. Так ссылка «Поделиться» открывает свой слайд.
+  final int? initialSlide;
 
   /// Уже просмотренные слайды: id слайдов по id сторис. По ним выбирается стартовый слайд
   /// сторис (первый непросмотренный). С [sdk] к ним добавляется сохранённое на устройстве.
@@ -105,6 +120,10 @@ class PersonalizationStoryViewer extends StatefulWidget {
 
   /// Инстанс для трекинга, хранения просмотренного и системных ссылок; `null` — без них.
   final PersonalizationSdk? sdk;
+
+  /// Хост API v3 для событий, без схемы (`app.rees46.ru`); `null` — глобальный
+  /// `PersonalizationStories.apiV3Domain`, пустая строка — старый трекинг и при нём.
+  final String? apiV3Domain;
 
   /// Пауза от хоста: пока `true`, слайд стоит.
   final ValueListenable<bool>? paused;
@@ -145,9 +164,10 @@ class PersonalizationStoryViewer extends StatefulWidget {
   /// Подпись кнопки повтора загрузки медиа.
   final String retryText;
 
-  /// Подписи для скринридера: крестик и кнопка звука — её текущее состояние (звук
-  /// включён / выключен).
+  /// Подписи для скринридера: крестик, «Поделиться» и кнопка звука — её текущее
+  /// состояние (звук включён / выключен).
   final String closeLabel;
+  final String shareLabel;
   final String soundOnLabel;
   final String soundOffLabel;
 
@@ -161,6 +181,11 @@ class PersonalizationStoryViewer extends StatefulWidget {
     Color color,
   )?
   iconBuilder;
+
+  /// Что сделать со ссылкой слайда перед системным окном «Поделиться» (например, сменить
+  /// `https://` на схему приложения); `null` — ссылка как есть. Событие `share` не
+  /// меняется.
+  final String Function(String url)? shareUrlTransform;
 
   /// Маршрут просмотра: во весь экран, с появлением. Непрозрачен только сам просмотр —
   /// при свайпе вниз под ним виден экран хоста.
@@ -191,6 +216,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   late final StoriesPlayback _playback = StoriesPlayback(
     stories: widget.stories,
     initialStory: widget.initialStory,
+    initialSlide: widget.initialSlide,
     seen: _initialSeen(),
   );
   late final PageController _pages = PageController(
@@ -217,6 +243,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   StoriesTimer? _timeout;
   StoriesTimer? _autoRetry;
   bool _closing = false;
+
+  /// Открыто окно «Поделиться»: второе не открывается.
+  bool _sharing = false;
 
   static const Duration _turn = Duration(milliseconds: 300);
   static const Duration _readyTimeout = Duration(seconds: 10);
@@ -448,7 +477,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     final sdk = widget.sdk;
     if (sdk != null) {
       StoriesSeenStore.instance.mark(sdk, story.id, slide.id);
-      if (storyTrackableId(story.id) && storyTrackableId(slide.id)) {
+      if (_v3Code != null) {
+        _trackV3(StoriesV3Event.view, story, slide);
+      } else if (storyTrackableId(story.id) && storyTrackableId(slide.id)) {
         sdk.tracking
             .storyView(storyId: story.id, slideId: slide.id, code: widget.code)
             .catchError((Object error) {
@@ -469,6 +500,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     final sdk = widget.sdk;
     final story = _playback.story;
     final slide = _playback.slide;
+    if (sdk != null && _v3Code != null) {
+      return _trackV3(StoriesV3Event.click, story, slide);
+    }
     if (sdk == null ||
         !storyTrackableId(story.id) ||
         !storyTrackableId(slide.id)) {
@@ -479,6 +513,65 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         .catchError((Object error) {
           debugPrint('PersonalizationStoryViewer: storyClick — $error');
         });
+  }
+
+  /// Код блока для событий v3: у просмотра есть хост API v3, SDK и код; иначе `null` —
+  /// старый трекинг через мост.
+  String? get _v3Code {
+    final code = widget.code;
+    if (StoriesApiV3.host(widget.apiV3Domain) == null || widget.sdk == null) {
+      return null;
+    }
+    return code == null || code.isEmpty ? null : code;
+  }
+
+  void _trackV3(StoriesV3Event event, Story story, StorySlide slide) {
+    final sdk = widget.sdk;
+    final code = _v3Code;
+    final host = StoriesApiV3.host(widget.apiV3Domain);
+    if (sdk == null || code == null || host == null) return;
+    unawaited(
+      StoriesApiV3.track(
+        sdk,
+        host,
+        code: code,
+        event: event,
+        storyId: story.id,
+        slideId: slide.id,
+      ),
+    );
+  }
+
+  /// «Поделиться»: своя пауза, `share` сразу, до результата, системное окно; закрыли —
+  /// пауза снята (остальные причины паузы держат слайд, как держали).
+  void _share(String url, Rect anchor) {
+    final sdk = widget.sdk;
+    if (sdk == null || _sharing || _closing) return;
+    _sharing = true;
+    _setPaused(StoriesPauseReason.share, true);
+    _trackV3(StoriesV3Event.share, _playback.story, _playback.slide);
+    sdk
+        .shareUrl(_shareLink(url), anchor)
+        .catchError((Object error) {
+          debugPrint('PersonalizationStoryViewer: share $url — $error');
+        })
+        .whenComplete(() {
+          _sharing = false;
+          if (mounted) _setPaused(StoriesPauseReason.share, false);
+        });
+  }
+
+  /// Ссылка для окна «Поделиться» после [PersonalizationStoryViewer.shareUrlTransform];
+  /// он упал — ссылка как есть.
+  String _shareLink(String url) {
+    final transform = widget.shareUrlTransform;
+    if (transform == null) return url;
+    try {
+      return transform(url);
+    } catch (error) {
+      debugPrint('PersonalizationStoryViewer: shareUrlTransform — $error');
+      return url;
+    }
   }
 
   // --- Медиа --------------------------------------------------------------------------
@@ -834,6 +927,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onTap: _tap,
       onHold: (held) => _setPaused(StoriesPauseReason.hold, held),
       onClose: _close,
+      onShare: _v3Code == null ? null : _share,
       onToggleMute: StoriesSound.instance.toggle,
       onSheet: _sheet,
       onButton: _button,

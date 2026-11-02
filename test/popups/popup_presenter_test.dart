@@ -93,6 +93,8 @@ final Finder _cross = find.byWidgetPredicate(
 );
 
 void main() {
+  tearDown(PopupPresenter.reset);
+
   testWidgets('shows a popup over the navigator and reports it once', (
     tester,
   ) async {
@@ -176,6 +178,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Title 2'), findsOneWidget);
     expect(h.tracked, <int>[1, 2]);
+  });
+
+  testWidgets(
+    'popups of two shops: one at a time, each reported for its shop',
+    (tester) async {
+      final a = await _pumpApp(tester);
+      final b = _Harness();
+
+      a.presenter.receive(_popup(id: 1));
+      b.presenter
+        ..receive(_popup(id: 2))
+        // The same id from another shop is another popup.
+        ..receive(_popup(id: 1));
+      await tester.pumpAndSettle();
+      expect(find.text('Title 1'), findsOneWidget);
+      expect(find.text('Title 2'), findsNothing);
+
+      await tester.tap(_cross);
+      await tester.pumpAndSettle();
+      expect(find.text('Title 1'), findsNothing);
+      expect(find.text('Title 2'), findsOneWidget);
+
+      await tester.tap(_cross);
+      await tester.pumpAndSettle();
+      expect(find.text('Title 1'), findsOneWidget);
+      expect(a.tracked, <int>[1]);
+      expect(b.tracked, <int>[2, 1]);
+    },
+  );
+
+  testWidgets('the shared handler takes popups of a handle without its own', (
+    tester,
+  ) async {
+    final h = await _pumpApp(tester);
+    final shared = <InAppPopup>[];
+    final own = <InAppPopup>[];
+    PopupPresenter.sharedOnPopup = shared.add;
+
+    h.presenter.receive(_popup(id: 1));
+    await tester.pumpAndSettle();
+    expect(shared.map((popup) => popup.id), <int>[1]);
+    expect(find.text('Title 1'), findsNothing);
+    expect(h.tracked, isEmpty);
+
+    h.presenter.onPopup = own.add;
+    h.presenter.receive(_popup(id: 2));
+    await tester.pumpAndSettle();
+    expect(own.map((popup) => popup.id), <int>[2]);
+    expect(shared, hasLength(1));
   });
 
   testWidgets('onPopup takes the popup; the SDK neither shows nor reports it', (

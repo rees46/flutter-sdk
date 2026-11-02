@@ -38,7 +38,9 @@ class PopupDispatcher implements pigeon.PersonalizationPopupFlutterApi {
       return;
     }
     if (decoded is! Map) return;
-    presenter.receive(InAppPopup.fromJson(decoded.cast<String, Object?>()));
+    presenter.receive(
+      InAppPopup.fromJson(decoded.cast<String, Object?>(), shopId: shopId),
+    );
   }
 
   /// Test-only: drops all registrations.

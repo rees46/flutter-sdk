@@ -24,6 +24,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Stories "Share" links in the demo scheme, any host and path:
+                 rees46flutter://<site>/?r46_stories=<code>&r46_story=<id>[&r46_slide=<id>].
+                 MainActivity hands them to Dart (see main.dart). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="rees46flutter"/>
+            </intent-filter>
+            <!-- The links go over the demo's own channel: Flutter's deep linking would push
+                 them to the Navigator as routes. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false" />
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
