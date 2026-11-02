@@ -15,6 +15,7 @@ import '../components/personalization_toast.dart';
 import '../personalization_theme.dart';
 import 'personalization_story_viewer.dart';
 import 'stories_gif_player.dart';
+import 'stories_share.dart';
 import 'stories_support.dart';
 
 /// Один слайд просмотра сторис: фон, затемнение, содержимое, касания.
@@ -32,6 +33,8 @@ import 'stories_support.dart';
 /// - GIF фона живого слайда рисует [StoryGifPlayer]; у соседних страниц и до готовности
 ///   — первый кадр.
 /// - Медиа не загрузилось — по центру кнопка кита [PersonalizationStoryViewer.retryText].
+/// - У слайда есть ссылка «Поделиться» ([storySlideShareUrl]) и задан [onShare] — в шапке
+///   кнопка слева от крестика.
 ///
 /// Живой ([live]) — только текущий слайд осевшей страницы: у него часы, видео, касания и
 /// шторка. Соседние страницы показывают свой стартовый слайд неподвижно.
@@ -52,6 +55,7 @@ class StorySlideView extends StatelessWidget {
     this.onTap,
     this.onHold,
     this.onClose,
+    this.onShare,
     this.onToggleMute,
     this.onSheet,
     this.onButton,
@@ -85,6 +89,9 @@ class StorySlideView extends StatelessWidget {
   final void Function(double dx, double width)? onTap;
   final ValueChanged<bool>? onHold;
   final VoidCallback? onClose;
+
+  /// «Поделиться» ссылкой [url]; [anchor] — кнопка в глобальных координатах.
+  final void Function(String url, Rect anchor)? onShare;
   final VoidCallback? onToggleMute;
   final ValueChanged<bool>? onSheet;
   final ValueChanged<StoryButtonElement>? onButton;
@@ -231,12 +238,21 @@ class StorySlideView extends StatelessWidget {
   );
 
   Widget _navigation() {
+    final share = onShare;
+    final url = share == null ? null : storySlideShareUrl(story, slide);
     Widget header(double value) => PersonalizationStoryNavigation(
       count: story.slides.length,
       current: slideIndex,
       progress: value,
       onClose: onClose,
       closeLabel: config.closeLabel,
+      // Кнопка видна и у соседних страниц, нажимается только у живой.
+      onShare: share == null || url == null
+          ? null
+          : (anchor) {
+              if (live) share(url, anchor);
+            },
+      shareLabel: config.shareLabel,
       iconBuilder: config.iconBuilder,
     );
     final progress = this.progress;

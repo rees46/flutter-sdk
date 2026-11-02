@@ -782,6 +782,69 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
+  func shareUrl(
+    url: String,
+    anchorX: Double,
+    anchorY: Double,
+    anchorWidth: Double,
+    anchorHeight: Double,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    guard let target = URL(string: url) else {
+      completion(.failure(PigeonError(code: "bad_args", message: "invalid url", details: nil)))
+      return
+    }
+    DispatchQueue.main.async {
+      guard let presenter = Self._topViewController() else {
+        completion(.failure(PigeonError(code: "share_failed", message: "no view controller to present from", details: nil)))
+        return
+      }
+      let sheet = UIActivityViewController(activityItems: [target], applicationActivities: nil)
+      // The handler may come more than once (an activity done, then the sheet gone): one reply.
+      var replied = false
+      sheet.completionWithItemsHandler = { _, _, _, _ in
+        if replied { return }
+        replied = true
+        completion(.success(()))
+      }
+      // iPad shows the sheet as a popover, and a popover without a source crashes. The anchor
+      // is the button in the Flutter view's points; without one the popover sits in the middle.
+      if let popover = sheet.popoverPresentationController {
+        let source = Self._flutterView() ?? presenter.view!
+        let anchor = CGRect(x: anchorX, y: anchorY, width: anchorWidth, height: anchorHeight)
+        popover.sourceView = source
+        if anchor.isEmpty {
+          popover.sourceRect = CGRect(x: source.bounds.midX, y: source.bounds.midY, width: 0, height: 0)
+          popover.permittedArrowDirections = []
+        } else {
+          popover.sourceRect = anchor
+        }
+      }
+      presenter.present(sheet, animated: true)
+    }
+  }
+
+  /// The key window of the app.
+  private static func _keyWindow() -> UIWindow? {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    return scenes.flatMap { $0.windows }.first { $0.isKeyWindow }
+      ?? (UIApplication.shared.delegate?.window ?? nil)
+  }
+
+  /// The controller on top of the key window: the one a sheet is presented from.
+  private static func _topViewController() -> UIViewController? {
+    var top = _keyWindow()?.rootViewController
+    while let presented = top?.presentedViewController, !presented.isBeingDismissed {
+      top = presented
+    }
+    return top
+  }
+
+  /// The view Flutter draws into: the coordinates Dart measures the anchor in.
+  private static func _flutterView() -> UIView? {
+    return (_keyWindow()?.rootViewController as? FlutterViewController)?.view
+  }
+
   // MARK: - Stories viewer (UI kit)
 
   func getStoriesSeen(shop: String) throws -> [String: [Any?]] {

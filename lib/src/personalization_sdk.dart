@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' show Rect;
 
 import 'pigeon/personalization_api.g.dart' as pigeon;
 import 'category/category_response.dart';
@@ -405,6 +406,12 @@ extension PersonalizationStoriesBridge on PersonalizationSdk {
 
   /// Opens [url] with the system handler; `false` when nothing could open it.
   Future<bool> openUrl(String url) => _api.openUrl(url);
+
+  /// Shows the system share sheet with the link [url]; completes when the sheet is gone.
+  /// [anchor] is the "Share" button in global logical pixels: the sheet's popover points
+  /// at it on iPad.
+  Future<void> shareUrl(String url, Rect anchor) =>
+      _api.shareUrl(url, anchor.left, anchor.top, anchor.width, anchor.height);
 
   /// The stories slides seen on this device for [shop] (slide ids by story id), from the
   /// plugin's own persistent store.

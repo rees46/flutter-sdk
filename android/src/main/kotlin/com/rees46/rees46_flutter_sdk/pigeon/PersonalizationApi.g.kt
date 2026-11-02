@@ -627,6 +627,14 @@ interface PersonalizationHostApi {
    */
   fun openUrl(url: String, callback: (Result<Boolean>) -> Unit)
   /**
+   * Shows the system share sheet with one link [url] — the "Share" button of the stories
+   * viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+   * `UIActivityViewController`; Android — the window got its focus back after the
+   * chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+   * logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+   */
+  fun shareUrl(url: String, anchorX: Double, anchorY: Double, anchorWidth: Double, anchorHeight: Double, callback: (Result<Unit>) -> Unit)
+  /**
    * The slide ids seen per story id for [shop] — the plugin's own store
    * (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
    * survives app restarts. The inner lists are untyped on purpose: the channel
@@ -1145,6 +1153,29 @@ interface PersonalizationHostApi {
               } else {
                 val data = result.getOrNull()
                 reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val urlArg = args[0] as String
+            val anchorXArg = args[1] as Double
+            val anchorYArg = args[2] as Double
+            val anchorWidthArg = args[3] as Double
+            val anchorHeightArg = args[4] as Double
+            api.shareUrl(urlArg, anchorXArg, anchorYArg, anchorWidthArg, anchorHeightArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
               }
             }
           }

@@ -676,6 +676,12 @@ protocol PersonalizationHostApi {
   /// Opens [url] with the system handler (browser or the app that claims the link).
   /// Returns false when nothing could open it.
   func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void)
+  /// Shows the system share sheet with one link [url] — the "Share" button of the stories
+  /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+  /// `UIActivityViewController`; Android — the window got its focus back after the
+  /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+  /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+  func shareUrl(url: String, anchorX: Double, anchorY: Double, anchorWidth: Double, anchorHeight: Double, completion: @escaping (Result<Void, Error>) -> Void)
   /// The slide ids seen per story id for [shop] — the plugin's own store
   /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
   /// survives app restarts. The inner lists are untyped on purpose: the channel
@@ -1169,6 +1175,32 @@ class PersonalizationHostApiSetup {
       }
     } else {
       openUrlChannel.setMessageHandler(nil)
+    }
+    /// Shows the system share sheet with one link [url] — the "Share" button of the stories
+    /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+    /// `UIActivityViewController`; Android — the window got its focus back after the
+    /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+    /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+    let shareUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      shareUrlChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let urlArg = args[0] as! String
+        let anchorXArg = args[1] as! Double
+        let anchorYArg = args[2] as! Double
+        let anchorWidthArg = args[3] as! Double
+        let anchorHeightArg = args[4] as! Double
+        api.shareUrl(url: urlArg, anchorX: anchorXArg, anchorY: anchorYArg, anchorWidth: anchorWidthArg, anchorHeight: anchorHeightArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      shareUrlChannel.setMessageHandler(nil)
     }
     /// The slide ids seen per story id for [shop] — the plugin's own store
     /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
