@@ -7,9 +7,14 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 // ignore: implementation_imports
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
-/// The recommender block the demo shop serves (api.rees46.ru): the home block and,
-/// with the product as `itemId`, the similar products under a product.
+/// The recommender block the demo shop serves (api.rees46.ru) that has products:
+/// "Популярные" on home and under a product.
 const String shopRecommenderCode = 'e6249bb15043644bf25b135006149962';
+
+/// Product page blocks driven by the product (`itemId`): "Похожие" and
+/// "С этим товаром также покупают".
+const String shopSimilarCode = '007b87897f244b2a2a123567b3242a4b';
+const String shopAlsoBoughtCode = 'fa6e8cd83434273dd8d47293329e00dd';
 
 /// The Stories V2 block the demo shop serves.
 const String shopStoriesCode = '115bd0b67cf5989a1b60c841790b2af6';

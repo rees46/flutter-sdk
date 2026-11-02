@@ -8,10 +8,12 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 import 'shop.dart';
 import 'shop_products.dart';
+import 'shop_search_field.dart';
 
 /// Product screen of the demo shop: `getProductInfo`, the product view sent to
-/// tracking once per opening, "Add to cart", and the similar products — the same
-/// recommender block with this product as `itemId`.
+/// tracking once per opening, "Add to cart", and recommender blocks for this
+/// product (`itemId`) — similar, bought with it and popular, each titled by the
+/// server and hidden while it has no products. The shop's instant search is on top.
 class ShopProductScreen extends StatefulWidget {
   const ShopProductScreen({
     super.key,
@@ -35,9 +37,18 @@ class ShopProductScreen extends StatefulWidget {
   State<ShopProductScreen> createState() => _ShopProductScreenState();
 }
 
+const List<String> _productBlocks = <String>[
+  shopSimilarCode,
+  shopAlsoBoughtCode,
+  shopRecommenderCode,
+];
+
 class _ShopProductScreenState extends State<ShopProductScreen> {
   Product? _product;
   Object? _error;
+
+  /// Products each block shows: a hidden block takes no room, so its gap goes too.
+  final Map<String, int> _blockCounts = <String, int>{};
 
   @override
   void initState() {
@@ -83,16 +94,19 @@ class _ShopProductScreenState extends State<ShopProductScreen> {
         context,
       ).colors.backgroundGeneric,
       appBar: AppBar(title: const Text('Product')),
-      body: _error != null
-          ? Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: ShopRetry(onRetry: _retry),
-              ),
-            )
-          : product == null
-          ? const Center(child: PersonalizationLoader())
-          : _details(context, product),
+      body: ShopSearchField.above(
+        shopId: widget.shopId,
+        child: _error != null
+            ? Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: ShopRetry(onRetry: _retry),
+                ),
+              )
+            : product == null
+            ? const Center(child: PersonalizationLoader())
+            : _details(context, product),
+      ),
     );
   }
 
@@ -168,20 +182,28 @@ class _ShopProductScreenState extends State<ShopProductScreen> {
             price: product.price,
           ),
         ),
-        const SizedBox(height: 32),
-        // Hidden until its products arrive, and stays hidden when there are none.
-        PersonalizationRecommenderBlock(
-          code: shopRecommenderCode,
-          itemId: widget.productId,
-          shopId: widget.shopId,
-          title: 'Similar products',
-          actionText: shopAddToCartText,
-          onProductTap: (item) =>
-              ShopProductScreen.open(context, widget.shopId, item.id),
-          onProductAction: (item) =>
-              addToShopCart(context, widget.shopId, item.id),
-          iconBuilder: shopIcon,
-        ),
+        // Each block is hidden until its products arrive, and stays hidden when
+        // there are none.
+        for (final String code in _productBlocks) ...<Widget>[
+          if ((_blockCounts[code] ?? 0) > 0) const SizedBox(height: 32),
+          PersonalizationRecommenderBlock(
+            key: ValueKey<String>(code),
+            code: code,
+            itemId: widget.productId,
+            shopId: widget.shopId,
+            actionText: shopAddToCartText,
+            onLoaded: (count) {
+              if (mounted && _blockCounts[code] != count) {
+                setState(() => _blockCounts[code] = count);
+              }
+            },
+            onProductTap: (item) =>
+                ShopProductScreen.open(context, widget.shopId, item.id),
+            onProductAction: (item) =>
+                addToShopCart(context, widget.shopId, item.id),
+            iconBuilder: shopIcon,
+          ),
+        ],
       ],
     );
   }

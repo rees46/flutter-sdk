@@ -10,14 +10,15 @@ import 'shop.dart';
 import 'shop_category.dart';
 import 'shop_product.dart';
 import 'shop_products.dart';
-import 'shop_search.dart';
+import 'shop_search_field.dart';
 
 /// "Shop" — a demo shop built from the kit and the public SDK methods: the way a
-/// host would integrate them. Home has the instant search, the stories bar, the
-/// recommender block and the top-level categories; from there the category,
-/// product and search screens go on the app's navigator, so back walks them in
-/// reverse. "Add to cart" sends the cart event and shows a toast — there is no
-/// cart screen.
+/// host would integrate them. It is the home of the "Shop" tab (see `DemoTabs`).
+/// Home has the instant search, the stories bar, the recommender block and the
+/// top-level categories; from there the category, product and search screens go on
+/// the tab's own navigator, so they open under the tab bar and back walks them in
+/// reverse. The category and product screens carry the same instant search on top.
+/// "Add to cart" sends the cart event and shows a toast — there is no cart screen.
 ///
 /// The Android, iOS and React Native demos build the same shop.
 class ShopPane extends StatefulWidget {
@@ -33,13 +34,6 @@ class _ShopPaneState extends State<ShopPane> {
   /// Top-level categories; `null` while they load.
   List<ProductCategory>? _categories;
   Object? _categoriesError;
-
-  /// The search field has been focused: its panel (recent searches, suggestions,
-  /// categories, products) is open and the rest of home steps aside until Cancel.
-  bool _searching = false;
-
-  /// Bumped on Cancel: a new field starts with an empty query.
-  int _searchField = 0;
 
   @override
   void initState() {
@@ -65,68 +59,25 @@ class _ShopPaneState extends State<ShopPane> {
     _loadCategories();
   }
 
-  void _closeSearch() {
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _searching = false;
-      _searchField++;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final shopId = widget.shopId;
-    // Back with the search panel open closes the panel, not the shop.
-    return PopScope(
-      canPop: !_searching,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _closeSearch();
-      },
-      child: Scaffold(
-        backgroundColor: PersonalizationTheme.of(
-          context,
-        ).colors.backgroundGeneric,
-        appBar: AppBar(title: const Text('Shop')),
-        body: SingleChildScrollView(
+    return Scaffold(
+      backgroundColor: PersonalizationTheme.of(
+        context,
+      ).colors.backgroundGeneric,
+      appBar: AppBar(title: const Text('Shop')),
+      // Home scrolls with the field: the field is the top of the page, not pinned.
+      body: ShopSearchField(
+        shopId: widget.shopId,
+        builder: (context, field, searching) => SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Focus(
-                onFocusChange: (focused) {
-                  if (focused && !_searching) setState(() => _searching = true);
-                },
-                child: PersonalizationInstantSearchField(
-                  key: ValueKey(_searchField),
-                  shopId: shopId,
-                  placeholder: 'Search',
-                  cancelText: _searching ? 'Cancel' : null,
-                  showRecent: _searching,
-                  showSuggestions: _searching,
-                  showCategories: _searching,
-                  showProducts: _searching,
-                  recentLabel: 'Recent searches',
-                  clearText: 'Clear',
-                  moreText: 'more',
-                  categoriesLabel: 'Categories',
-                  productsLabel: 'Products',
-                  onCancel: _closeSearch,
-                  onSubmit: (query) =>
-                      ShopSearchScreen.open(context, shopId, query),
-                  onProductTap: (product) =>
-                      ShopProductScreen.open(context, shopId, product.id),
-                  onCategoryTap: (category) {
-                    // Popular categories of the empty state come without an id.
-                    final id = category.id;
-                    if (id == null || id.isEmpty) return;
-                    ShopCategoryScreen.open(context, shopId, id, category.name);
-                  },
-                  iconBuilder: shopIcon,
-                ),
-              ),
+              field,
               // Offstage, not removed: the stories and the block keep what they loaded.
-              Offstage(offstage: _searching, child: _home(context)),
+              Offstage(offstage: searching, child: _home(context)),
             ],
           ),
         ),
