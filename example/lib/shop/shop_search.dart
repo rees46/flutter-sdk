@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 import 'shop.dart';
+import 'shop_facets.dart';
 import 'shop_product.dart';
+import 'shop_sort.dart';
 
 /// Search screen of the demo shop: the kit's results screen for [query]. It loads,
 /// pages, filters and tracks the search itself; its back button returns home.
@@ -34,22 +36,13 @@ class ShopSearchScreen extends StatefulWidget {
 }
 
 class _ShopSearchScreenState extends State<ShopSearchScreen> {
-  String? _sortBy;
-  String? _sortDir;
+  ShopSort _sort = ShopSort.relevance;
 
-  /// There is no sort picker in the design file: a tap cycles relevance → price ↑ →
-  /// price ↓, as on the UI Kit screen.
-  void _nextSort() => setState(() {
-    if (_sortBy == null) {
-      _sortBy = 'price';
-      _sortDir = 'asc';
-    } else if (_sortDir == 'asc') {
-      _sortDir = 'desc';
-    } else {
-      _sortBy = null;
-      _sortDir = null;
-    }
-  });
+  /// There is no sort picker in the design file: the shop brings the platform's own.
+  Future<void> _pickSort() async {
+    final sort = await pickShopSort(context, _sort);
+    if (sort != null && mounted) setState(() => _sort = sort);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,11 +54,11 @@ class _ShopSearchScreenState extends State<ShopSearchScreen> {
         child: PersonalizationSearchResultsScreen(
           shopId: widget.shopId,
           query: widget.query,
-          sortBy: _sortBy,
-          sortDir: _sortDir,
+          sortBy: _sort.sortBy,
+          sortDir: _sort.sortDir,
           productActionText: shopAddToCartText,
           onBack: () => Navigator.of(context).maybePop(),
-          onSortTap: _nextSort,
+          onSortTap: _pickSort,
           onProductTap: (product) =>
               ShopProductScreen.open(context, widget.shopId, product.id),
           onProductAction: (product) => addToShopCart(
@@ -74,6 +67,8 @@ class _ShopSearchScreenState extends State<ShopSearchScreen> {
             product.id,
             price: product.price,
           ),
+          facetTitle: shopFacetTitle,
+          facetValueTitle: shopFacetValueTitle,
           iconBuilder: shopIcon,
         ),
       ),

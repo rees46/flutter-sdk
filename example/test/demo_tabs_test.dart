@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk_example/demo_tabs.dart';
+import 'package:rees46_sdk_example/shop/shop_sort.dart';
 
 /// A tab that shows whether it kept its state: every tap counts.
 class _Counter extends StatefulWidget {
@@ -73,6 +74,12 @@ class _ShopCategory extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Category')),
+    body: Center(
+      child: TextButton(
+        onPressed: () => pickShopSort(context, ShopSort.relevance),
+        child: const Text('Sort'),
+      ),
+    ),
   );
 }
 
@@ -203,5 +210,28 @@ void main() {
     expect(await _systemBack(tester), isTrue);
     expect(_shown('Search'), findsOneWidget);
     expect(await _systemBack(tester), isFalse);
+  });
+
+  testWidgets('the sort picker of a shop screen closes, not the screen', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app());
+    await _openTab(tester, 'Shop');
+    await tester.tap(find.text('Open category'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Sort'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sort by'), findsOneWidget);
+    await tester.tap(find.text('Discount'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sort by'), findsNothing);
+    expect(_shown('Category'), findsOneWidget);
+
+    await tester.tap(find.text('Sort'));
+    await tester.pumpAndSettle();
+    expect(await _systemBack(tester), isTrue);
+    expect(find.text('Sort by'), findsNothing);
+    expect(_shown('Category'), findsOneWidget);
   });
 }
