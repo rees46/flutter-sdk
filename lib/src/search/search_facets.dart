@@ -4,6 +4,7 @@
 /// responses parse them the same way. Not exported from the package barrel.
 library;
 
+import '../json_number.dart';
 import 'search_response.dart' show SearchFilter;
 
 /// Brands arrive as `[{name, count}]` (Android, raw API) or `[name]` (iOS); both
@@ -15,6 +16,23 @@ List<String> parseBrandNames(dynamic raw) {
       .whereType<String>()
       .where((name) => name.isNotEmpty)
       .toList();
+}
+
+/// Product counts of `[{<key>: value, count}]` entries by value: brands (`name`) and
+/// the colours (`color`) and sizes (`size`) of `industrial_filters`. Entries without a
+/// count are left out — iOS sends the brands of a full search as bare names.
+Map<String, int> parseFacetCounts(dynamic raw, String key) {
+  if (raw is! List) return const {};
+  final counts = <String, int>{};
+  for (final entry in raw) {
+    if (entry is! Map) continue;
+    final value = entry[key]?.toString();
+    final count = toIntOrNull(entry['count']);
+    if (value != null && value.isNotEmpty && count != null) {
+      counts[value] = count;
+    }
+  }
+  return counts;
 }
 
 /// Shop facets (`filters`) keyed by name: value → product count.

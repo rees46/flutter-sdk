@@ -7,8 +7,7 @@ export '../recommendation/recommendation_response.dart' show ProductCategory;
 
 /// Response from [PersonalizationSdk.getProductsList].
 ///
-/// Excluded Android-only fields: categories (`List<Category>`), priceRanges,
-/// priceMedian.
+/// Excluded Android-only fields: priceRanges, priceMedian.
 class ProductsListResponse {
   final List<Product> products;
   final int productsTotal;
@@ -20,12 +19,19 @@ class ProductsListResponse {
   /// Shop facets keyed by name: value → product count.
   final Map<String, SearchFilter> filters;
 
+  /// Categories of the listing (`categories`); the top-level ones have no
+  /// [ProductCategory.parentId]. Android only for now: the iOS bridge builds the
+  /// response from the native model, which gets them in the next iOS SDK release,
+  /// so on iOS the list stays empty until then.
+  final List<ProductCategory> categories;
+
   const ProductsListResponse({
     required this.products,
     required this.productsTotal,
     this.priceRange,
     this.brands = const [],
     this.filters = const {},
+    this.categories = const [],
   });
 
   factory ProductsListResponse.fromJson(Map<String, dynamic> json) {
@@ -39,6 +45,10 @@ class ProductsListResponse {
           : PriceRange.fromJson(json['price_range'] as Map<String, dynamic>),
       brands: parseBrandNames(json['brands']),
       filters: parseFacetFilters(json['filters']),
+      categories: (json['categories'] as List<dynamic>? ?? [])
+          .whereType<Map<dynamic, dynamic>>()
+          .map((e) => ProductCategory.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 }

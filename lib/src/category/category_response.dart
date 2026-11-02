@@ -21,6 +21,9 @@ class CategoryResponse {
   /// Brand names found in the category.
   final List<String> brands;
 
+  /// Product count per brand name.
+  final Map<String, int> brandCounts;
+
   /// Shop facets keyed by name: value → product count.
   final Map<String, SearchFilter> filters;
   final PriceRange? priceRange;
@@ -29,6 +32,7 @@ class CategoryResponse {
     required this.productsTotal,
     required this.products,
     this.brands = const [],
+    this.brandCounts = const {},
     this.filters = const {},
     this.priceRange,
   });
@@ -40,6 +44,7 @@ class CategoryResponse {
           .map((e) => Product.fromJson(e as Map<String, dynamic>))
           .toList(),
       brands: parseBrandNames(json['brands']),
+      brandCounts: parseFacetCounts(json['brands'], 'name'),
       filters: parseFacetFilters(json['filters']),
       priceRange: json['price_range'] is Map
           ? PriceRange.fromJson(

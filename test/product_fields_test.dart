@@ -97,6 +97,39 @@ void main() {
       });
       expect(ios.brands, <String>['Apple']);
       expect(ios.filters['color']!.values, <String, int>{'red': 2});
+      // The native model has no categories yet, so the bridge sends none.
+      expect(ios.categories, isEmpty);
+    });
+
+    test('categories of the listing, top-level ones without a parent', () {
+      expect(response.categories.map((c) => c.id), <String>[
+        'noutbuki-i-komp-jutery',
+        'bytovaja-tehnika',
+        'tehnika-dlja-kuhni',
+      ]);
+      final first = response.categories.first;
+      expect(first.name, 'Ноутбуки и компьютеры');
+      expect(first.parentId, isNull);
+      expect(first.url, contains('/catalog/noutbuki-i-komp-jutery'));
+    });
+
+    test('a nested category keeps its parent', () {
+      final nested = ProductsListResponse.fromJson(<String, dynamic>{
+        'products': <Object>[],
+        'products_total': 0,
+        'categories': <Object>[
+          <String, Object>{'id': 'phones', 'name': 'Phones'},
+          <String, Object>{
+            'id': 'headphones',
+            'name': 'Headphones',
+            'parent_id': 'phones',
+          },
+        ],
+      });
+      expect(nested.categories.map((c) => c.parentId), <String?>[
+        null,
+        'phones',
+      ]);
     });
 
     test('a response without facets keeps them empty', () {
@@ -106,6 +139,7 @@ void main() {
       });
       expect(bare.brands, isEmpty);
       expect(bare.filters, isEmpty);
+      expect(bare.categories, isEmpty);
     });
   });
 

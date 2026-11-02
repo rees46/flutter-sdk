@@ -19,6 +19,9 @@ class SearchFullResponse {
   /// Brand names found in the results (Android carries counts too, iOS only names).
   final List<String> brands;
 
+  /// Product count per brand name, where the native side carries it (not iOS).
+  final Map<String, int> brandCounts;
+
   /// Shop facets keyed by name: value → product count.
   final Map<String, SearchFilter> filters;
   final SearchIndustrialFilters? industrialFilters;
@@ -30,6 +33,7 @@ class SearchFullResponse {
     this.priceRange,
     this.locations,
     this.brands = const [],
+    this.brandCounts = const {},
     this.filters = const {},
     this.industrialFilters,
   });
@@ -52,6 +56,7 @@ class SearchFullResponse {
           ?.map((e) => SearchLocation.fromJson(e as Map<String, dynamic>))
           .toList(),
       brands: parseBrandNames(json['brands']),
+      brandCounts: parseFacetCounts(json['brands'], 'name'),
       filters: parseFacetFilters(json['filters']),
       industrialFilters: json['industrial_filters'] is Map
           ? SearchIndustrialFilters.fromJson(
@@ -88,9 +93,15 @@ class SearchIndustrialFilters {
   final List<String> colors;
   final List<String> fashionSizes;
 
+  /// Product count per colour and per size, where the answer carries one.
+  final Map<String, int> colorCounts;
+  final Map<String, int> fashionSizeCounts;
+
   const SearchIndustrialFilters({
     this.colors = const [],
     this.fashionSizes = const [],
+    this.colorCounts = const {},
+    this.fashionSizeCounts = const {},
   });
 
   factory SearchIndustrialFilters.fromJson(Map<String, dynamic> json) {
@@ -103,6 +114,8 @@ class SearchIndustrialFilters {
     return SearchIndustrialFilters(
       colors: names(json['colors'], 'color'),
       fashionSizes: names(json['fashion_sizes'], 'size'),
+      colorCounts: parseFacetCounts(json['colors'], 'color'),
+      fashionSizeCounts: parseFacetCounts(json['fashion_sizes'], 'size'),
     );
   }
 }
