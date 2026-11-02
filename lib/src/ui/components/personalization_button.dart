@@ -91,6 +91,8 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
         Text(
           widget.label!,
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: metrics.fontSize,
             height: metrics.lineHeight / metrics.fontSize,
@@ -122,17 +124,23 @@ class _PersonalizationButtonState extends State<PersonalizationButton> {
             ),
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            for (int i = 0; i < children.length; i++) ...<Widget>[
-              if (i > 0) const SizedBox(width: 8),
-              children[i],
-            ],
-          ],
-        ),
+        // Кнопка с одной подписью кладёт её прямо в контейнер: в тесноте (узкая колонка,
+        // крупный шрифт) подпись укорачивается многоточием, а не вылезает за кнопку.
+        // Flexible в Row для этого не годится — в Row без Expanded или в горизонтальном
+        // скролле кнопка получает бесконечную ширину, и flex-ребёнок падает.
+        child: children.length == 1 && _hasText
+            ? Align(widthFactor: 1, heightFactor: 1, child: children.single)
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  for (int i = 0; i < children.length; i++) ...<Widget>[
+                    if (i > 0) const SizedBox(width: 8),
+                    children[i],
+                  ],
+                ],
+              ),
       ),
     );
   }
