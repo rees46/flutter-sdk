@@ -49,11 +49,11 @@ class _ShopPaneState extends State<ShopPane> {
 
   Future<void> _loadCategories() async {
     try {
-      // The listing is only read for its categories, so one page is enough: 50
-      // products bring up the main top-level ones.
+      // The listing is only read for its categories, which come with it whatever
+      // the page size: a few products are enough.
       final response = await REES46
           .getInstance(widget.shopId)
-          .getProductsList(params: const ProductsListParams(limit: 50));
+          .getProductsList(params: const ProductsListParams(limit: 10));
       if (mounted) setState(() => _categories = shopTopCategories(response));
     } catch (error) {
       if (mounted) setState(() => _categoriesError = error);

@@ -52,18 +52,26 @@ PersonalizationProduct shopCard(Product product, {String? actionText}) {
 }
 
 /// Top-level categories (those without a parent) of a products listing, in the
-/// order they first come up. The Flutter model of the listing does not carry the
-/// response's own `categories`, so they are collected from its products: every
-/// product lists its whole category path, the top of it included.
+/// order they come. The listing's own `categories` first; where a bridge does not
+/// pass them yet (iOS until its next native release) they are collected from the
+/// products: every product lists its whole category path, the top of it included.
 List<ProductCategory> shopTopCategories(ProductsListResponse response) {
+  final listed = _topLevel(response.categories);
+  if (listed.isNotEmpty) return listed;
+  return _topLevel([
+    for (final product in response.products) ...product.categories,
+  ]);
+}
+
+/// Parentless categories with an id and a name, each once.
+List<ProductCategory> _topLevel(Iterable<ProductCategory> categories) {
   final seen = <String>{};
   return [
-    for (final product in response.products)
-      for (final category in product.categories)
-        if ((category.parentId ?? '').isEmpty &&
-            category.id.isNotEmpty &&
-            category.name.isNotEmpty &&
-            seen.add(category.id))
-          category,
+    for (final category in categories)
+      if ((category.parentId ?? '').isEmpty &&
+          category.id.isNotEmpty &&
+          category.name.isNotEmpty &&
+          seen.add(category.id))
+        category,
   ];
 }

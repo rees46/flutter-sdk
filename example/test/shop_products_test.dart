@@ -93,7 +93,30 @@ void main() {
     });
   });
 
-  test('shopTopCategories keeps parentless categories once, in order', () {
+  test('shopTopCategories takes the listing categories first', () {
+    final response = ProductsListResponse.fromJson({
+      'products_total': 1,
+      'categories': [
+        {'id': 'laptops', 'name': 'Laptops'},
+        {'id': 'gaming', 'name': 'Gaming laptops', 'parent_id': 'laptops'},
+        {'id': 'kitchen', 'name': 'Kitchen'},
+      ],
+      'products': [
+        {
+          'id': '1',
+          'categories': [
+            {'id': 'phones', 'name': 'Phones'},
+          ],
+        },
+      ],
+    });
+    expect(shopTopCategories(response).map((c) => c.id), [
+      'laptops',
+      'kitchen',
+    ]);
+  });
+
+  test('without listing categories they come from the products', () {
     final response = ProductsListResponse.fromJson({
       'products_total': 2,
       'products': [
