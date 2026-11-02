@@ -73,6 +73,7 @@ export 'components/personalization_story_used_products.dart';
 export 'widgets/search_support.dart' show PersonalizationSearchCategory;
 export 'widgets/personalization_instant_search_field.dart';
 export 'widgets/personalization_search_results_screen.dart';
+export 'widgets/personalization_category_screen.dart';
 export 'widgets/personalization_recommender_block.dart';
 // Модели блока сторис живут рядом с остальными ответами SDK, но до релиза кита
 // видны только отсюда: пакетный барель их не экспортирует.

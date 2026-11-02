@@ -88,6 +88,8 @@ int _cards() => find
     .evaluate()
     .length;
 
+const int _total = _FakeHostApi.total;
+
 void main() {
   late _FakeHostApi api;
   late PersonalizationSdk sdk;
@@ -251,6 +253,40 @@ void main() {
     expect(errors, hasLength(1));
     // A retry asks for the page again, it is not a new search.
     expect(api.searches, 1);
+  });
+
+  testWidgets('the found count waits for the first page of each request', (
+    tester,
+  ) async {
+    api.hold = Completer<void>();
+    Widget screen(String? sortBy) => _host(
+      PersonalizationSearchResultsScreen(
+        sdk: sdk,
+        query: 'jacket',
+        sortBy: sortBy,
+      ),
+    );
+    await tester.pumpWidget(screen(null));
+    await tester.pump();
+    // Loading: the filter button is there, "Found 0 products" is not.
+    expect(find.text('Found'), findsNothing);
+    expect(find.byType(PersonalizationButton), findsWidgets);
+
+    api.hold!.complete();
+    api.hold = null;
+    await tester.pump();
+    expect(find.text('Found'), findsOneWidget);
+    expect(find.text('$_total'), findsOneWidget);
+
+    api.hold = Completer<void>();
+    await tester.pumpWidget(screen('price'));
+    await tester.pump();
+    expect(find.text('Found'), findsNothing);
+
+    api.hold!.complete();
+    api.hold = null;
+    await tester.pump();
+    expect(find.text('Found'), findsOneWidget);
   });
 
   testWidgets('a failed next page turns load more into retry', (tester) async {

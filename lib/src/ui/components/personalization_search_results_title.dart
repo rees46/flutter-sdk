@@ -18,7 +18,9 @@ class PersonalizationSearchFilter {
   final VoidCallback onRemove;
 }
 
-/// Строка «найдено N товаров». Слова — параметры, локализация за интегратором.
+/// Строка «найдено N товаров». Слова — параметры, локализация за интегратором; пустой
+/// [prefix] не рисуется. [count] `null` — число ещё неизвестно (выдача грузится): кнопки
+/// на месте, а «Найдено 0» не рисуется.
 class PersonalizationSearchResults {
   const PersonalizationSearchResults({
     required this.prefix,
@@ -27,7 +29,7 @@ class PersonalizationSearchResults {
   });
 
   final String prefix;
-  final int count;
+  final int? count;
   final String suffix;
 }
 
@@ -148,11 +150,16 @@ class PersonalizationSearchResultsTitle extends StatelessWidget {
                 ),
               if (showFiltersButton || showSortButton)
                 const SizedBox(width: 12),
-              Text(results!.prefix, style: regular),
-              const SizedBox(width: 4),
-              Text('${results!.count}', style: strong),
-              const SizedBox(width: 4),
-              Text(results!.suffix, style: strong),
+              if (results!.count != null) ...<Widget>[
+                // Без префикса — просто «N товаров», как в заголовке категории.
+                if (results!.prefix.isNotEmpty) ...<Widget>[
+                  Text(results!.prefix, style: regular),
+                  const SizedBox(width: 4),
+                ],
+                Text('${results!.count}', style: strong),
+                const SizedBox(width: 4),
+                Text(results!.suffix, style: strong),
+              ],
             ],
           ),
         ],
