@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'pigeon/personalization_api.g.dart' as pigeon;
+import 'category/category_params.dart';
 import 'category/category_response.dart';
 import 'collection/collection_response.dart';
 import 'init/sdk_init_handler.dart';
@@ -256,16 +257,45 @@ class PersonalizationSdk {
 
   /// Returns a category product listing (native `CategoryManager.getCategory`).
   ///
-  /// [limit] and [page] paginate the result; both are optional.
+  /// [limit] and [page] paginate the result; both are optional. The filters are
+  /// optional too: [brands] and [locations] are comma-separated, [filters] are the
+  /// shop's own facets by name — `{"Материал корпуса": ["Металл"]}` — as the
+  /// response lists them in [CategoryResponse.filters].
+  ///
+  /// [priceMin], [priceMax], [sortBy] (`price`, `discount`, …) and [sortDir]
+  /// (`asc` / `desc`) are sent, but not applied yet: the native SDKs this plugin
+  /// is built against take no price range or sort for a category. They apply with
+  /// no change to the call once the plugin moves to native releases that do.
   Future<CategoryResponse> getCategory(
     String category, {
     int? limit,
     int? page,
+    String? brands,
+    String? locations,
+    Map<String, List<String>>? filters,
+    double? priceMin,
+    double? priceMax,
+    String? sortBy,
+    String? sortDir,
   }) async {
     if (category.isEmpty) {
       throw ArgumentError.value(category, 'category', 'must be non-empty');
     }
-    final json = await _api.getCategory(category, limit, page, shopId);
+    final json = await _api.getCategory(
+      category,
+      limit,
+      page,
+      categoryParamsJson(
+        brands: brands,
+        locations: locations,
+        filters: filters,
+        priceMin: priceMin,
+        priceMax: priceMax,
+        sortBy: sortBy,
+        sortDir: sortDir,
+      ),
+      shopId,
+    );
     return CategoryResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 

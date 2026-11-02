@@ -467,6 +467,7 @@ class Rees46FlutterSdkPlugin :
         category: String,
         limit: Long?,
         page: Long?,
+        paramsJson: String?,
         shopId: String?,
         callback: (Result<String>) -> Unit,
     ) {
@@ -475,10 +476,20 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
+            // The JSON carries price_min, price_max, sort_by and sort_dir too, but the native
+            // SDK this plugin pins (v2.45.0) takes no price range or sort for a category: they
+            // are not passed on until a native release does.
+            val p = if (!paramsJson.isNullOrBlank()) JSONObject(paramsJson) else null
+            val filters: Map<String, Any>? = p?.optJSONObject("filters")?.let { obj ->
+                obj.keys().asSequence().associateWith { key -> obj.get(key) }
+            }?.takeIf { it.isNotEmpty() }
             sdk(shopId).categoryManager.getCategory(
                 category = category,
                 limit = limit?.toInt(),
                 page = page?.toInt(),
+                brands = p?.optString("brands")?.takeIf { it.isNotEmpty() },
+                locations = p?.optString("locations")?.takeIf { it.isNotEmpty() },
+                filters = filters,
                 onSuccess = { response ->
                     callback(Result.success(Gson().toJson(response)))
                 },

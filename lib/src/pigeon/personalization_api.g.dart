@@ -1272,11 +1272,16 @@ class PersonalizationHostApi {
 
   /// Returns a category product listing as a JSON string.
   /// [limit] and [page] paginate the result; both are optional.
+  /// [paramsJson] is a JSON object string with the optional filters: "brands" and
+  /// "locations" (comma-separated strings), "filters" (facet name → [values]),
+  /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+  /// passes on only what its native SDK takes for a category.
   /// Dart layer parses the result into [CategoryResponse].
   Future<String> getCategory(
     String category,
     int? limit,
     int? page,
+    String? paramsJson,
     String? shopId,
   ) async {
     final String pigeonVar_channelName =
@@ -1288,7 +1293,7 @@ class PersonalizationHostApi {
           binaryMessenger: pigeonVar_binaryMessenger,
         );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[category, limit, page, shopId],
+      <Object?>[category, limit, page, paramsJson, shopId],
     );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;

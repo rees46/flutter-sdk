@@ -663,8 +663,12 @@ protocol PersonalizationHostApi {
   func getProductCounters(item: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns a category product listing as a JSON string.
   /// [limit] and [page] paginate the result; both are optional.
+  /// [paramsJson] is a JSON object string with the optional filters: "brands" and
+  /// "locations" (comma-separated strings), "filters" (facet name → [values]),
+  /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+  /// passes on only what its native SDK takes for a category.
   /// Dart layer parses the result into [CategoryResponse].
-  func getCategory(category: String, limit: Int64?, page: Int64?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func getCategory(category: String, limit: Int64?, page: Int64?, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns a merchandised collection's products as a JSON string.
   /// Dart layer parses the result into [CollectionResponse].
   func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
@@ -1088,6 +1092,10 @@ class PersonalizationHostApiSetup {
     }
     /// Returns a category product listing as a JSON string.
     /// [limit] and [page] paginate the result; both are optional.
+    /// [paramsJson] is a JSON object string with the optional filters: "brands" and
+    /// "locations" (comma-separated strings), "filters" (facet name → [values]),
+    /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+    /// passes on only what its native SDK takes for a category.
     /// Dart layer parses the result into [CategoryResponse].
     let getCategoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCategory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
@@ -1096,8 +1104,9 @@ class PersonalizationHostApiSetup {
         let categoryArg = args[0] as! String
         let limitArg: Int64? = nilOrValue(args[1])
         let pageArg: Int64? = nilOrValue(args[2])
-        let shopIdArg: String? = nilOrValue(args[3])
-        api.getCategory(category: categoryArg, limit: limitArg, page: pageArg, shopId: shopIdArg) { result in
+        let paramsJsonArg: String? = nilOrValue(args[3])
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.getCategory(category: categoryArg, limit: limitArg, page: pageArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))

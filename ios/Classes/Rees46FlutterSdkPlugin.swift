@@ -730,7 +730,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func getCategory(category: String, limit: Int64?, page: Int64?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+  func getCategory(category: String, limit: Int64?, page: Int64?, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
     guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
@@ -739,13 +739,20 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       completion(.failure(PigeonError(code: "bad_args", message: "category is required", details: nil)))
       return
     }
+    // The JSON carries price_min, price_max, sort_by and sort_dir too, but the native SDK this
+    // plugin pins (3.35.0) takes no price range or sort for a category: they are not passed on
+    // until a native release does.
+    let p = parseJsonObject(paramsJson)
+    let brands = (p?["brands"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+    let locations = (p?["locations"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+    let filters = (p?["filters"] as? [String: Any]).flatMap { $0.isEmpty ? nil : $0 }
     sdk.getCategory(
       category: category,
       limit: limit.map { Int($0) },
       page: page.map { Int($0) },
-      brands: nil,
-      locations: nil,
-      filters: nil
+      brands: brands,
+      locations: locations,
+      filters: filters
     ) { result in
       switch result {
       case .success(let response):

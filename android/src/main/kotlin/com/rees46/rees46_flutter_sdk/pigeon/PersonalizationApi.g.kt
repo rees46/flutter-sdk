@@ -606,9 +606,13 @@ interface PersonalizationHostApi {
   /**
    * Returns a category product listing as a JSON string.
    * [limit] and [page] paginate the result; both are optional.
+   * [paramsJson] is a JSON object string with the optional filters: "brands" and
+   * "locations" (comma-separated strings), "filters" (facet name → [values]),
+   * "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+   * passes on only what its native SDK takes for a category.
    * Dart layer parses the result into [CategoryResponse].
    */
-  fun getCategory(category: String, limit: Long?, page: Long?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun getCategory(category: String, limit: Long?, page: Long?, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns a merchandised collection's products as a JSON string.
    * Dart layer parses the result into [CollectionResponse].
@@ -1075,8 +1079,9 @@ interface PersonalizationHostApi {
             val categoryArg = args[0] as String
             val limitArg = args[1] as Long?
             val pageArg = args[2] as Long?
-            val shopIdArg = args[3] as String?
-            api.getCategory(categoryArg, limitArg, pageArg, shopIdArg) { result: Result<String> ->
+            val paramsJsonArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.getCategory(categoryArg, limitArg, pageArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
