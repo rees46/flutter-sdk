@@ -72,7 +72,7 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
     this.actionText,
     this.showAllText,
     this.onShowAll,
-    this.showDots = true,
+    this.showDots = false,
     this.showRating = false,
     this.onProductTap,
     this.onProductAction,
@@ -98,7 +98,7 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
     this.actionText,
     this.showAllText,
     this.onShowAll,
-    this.showDots = true,
+    this.showDots = false,
     this.showRating = false,
     this.onProductTap,
     this.onProductAction,
@@ -152,7 +152,7 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
   final String? showAllText;
   final VoidCallback? onShowAll;
 
-  /// У карусели точки под лентой.
+  /// У карусели точки под лентой; по умолчанию выключены.
   final bool showDots;
 
   /// Рисовать ли рейтинг. В ответах API рейтинга нет, поэтому по умолчанию выключено.

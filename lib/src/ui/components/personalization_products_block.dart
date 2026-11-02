@@ -26,7 +26,7 @@ class PersonalizationProductsBlock extends StatefulWidget {
     this.title,
     this.showAllText,
     this.onShowAll,
-    this.showDots = true,
+    this.showDots = false,
     required this.products,
     this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
@@ -45,7 +45,8 @@ class PersonalizationProductsBlock extends StatefulWidget {
   final String? showAllText;
   final VoidCallback? onShowAll;
 
-  /// У карусели точки под лентой; выключаются, как в макете (showDots).
+  /// Точки под каруселью (showDots в макете). По умолчанию выключены: лента прокручивается
+  /// свободно, а не постранично, и точка на каждый товар индикатором не служит.
   final bool showDots;
   final List<PersonalizationProduct> products;
 
