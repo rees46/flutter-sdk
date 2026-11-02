@@ -162,6 +162,11 @@ class _InitPageState extends State<InitPage> {
   // permission. See [_requestNotificationPermission].
   static const _platformChannel = MethodChannel('rees46_sdk_example/platform');
 
+  // Stories "Share" links in the demo scheme (`rees46flutter://<any host>/?r46_stories=…`):
+  // MainActivity / AppDelegate hand them over — the one the app was started with on
+  // request (`getInitialLink`), later ones as `onLink`. See [openStoriesLink].
+  static const _linksChannel = MethodChannel('rees46_sdk_example/links');
+
   // Hardcoded demo credentials — the demo does not need editable init inputs.
   static const _shopId = 'c1140c8254976de297c3caf971701a';
   static const _apiDomain = 'api.rees46.ru';
@@ -255,6 +260,7 @@ class _InitPageState extends State<InitPage> {
 
   @override
   void dispose() {
+    _linksChannel.setMethodCallHandler(null);
     _recBlockController.dispose();
     _productIdController.dispose();
     _searchQueryController.dispose();
@@ -280,6 +286,30 @@ class _InitPageState extends State<InitPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestNotificationPermission();
     });
+    _linksChannel.setMethodCallHandler(_onLinkCall);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialLink());
+  }
+
+  Future<void> _onLinkCall(MethodCall call) async {
+    if (call.method == 'onLink') _openLink(call.arguments as String);
+  }
+
+  /// The link the app was started with, once.
+  Future<void> _openInitialLink() async {
+    try {
+      final link = await _linksChannel.invokeMethod<String>('getInitialLink');
+      if (link != null) _openLink(link);
+    } catch (_) {
+      // No host channel (tests): no links.
+    }
+  }
+
+  /// Opens the stories campaign of [url] over API v3; the SDK waits for its init.
+  void _openLink(String url) {
+    if (!mounted) return;
+    if (!openStoriesLink(context, url, shopId: _shopId)) {
+      debugPrint('Demo: not a stories link — $url');
+    }
   }
 
   Future<void> _requestNotificationPermission() async {
