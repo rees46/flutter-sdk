@@ -11,7 +11,7 @@ import 'app_theme_mode.dart';
 // ignore: implementation_imports
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
-/// "UI Kit" screen — the design system, one exhibit per component.
+/// "UI Kit" tab (see `DemoTabs`) — the design system, one exhibit per component.
 ///
 /// "Components" walks through the primitives in every size, view and state the
 /// design file defines; "Blocks" shows the compositions built from them

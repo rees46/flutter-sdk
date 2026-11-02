@@ -4,18 +4,23 @@ import 'package:flutter/foundation.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
 import 'app_theme_mode.dart';
+import 'demo_tabs.dart';
 import 'multi_instance_pane.dart';
 import 'shop/shop_home.dart';
 import 'ui_kit_pane.dart';
 
 void main() => runApp(const App());
 
+// Hardcoded demo shop: the API tab initializes it, the UI Kit and Shop tabs reach
+// it by this id.
+const _shopId = 'c1140c8254976de297c3caf971701a';
+
 class App extends StatelessWidget {
   const App({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // themeMode is driven by the switch on the UI Kit screen, so the kit's dark
+    // themeMode is driven by the switch on the UI Kit tab, so the kit's dark
     // set can be checked without changing the device setting.
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: appThemeMode,
@@ -31,7 +36,12 @@ class App extends StatelessWidget {
           ),
         ),
         themeMode: mode,
-        home: const InitPage(),
+        // The sections are bottom tabs, as in the native demos.
+        home: const DemoTabs(
+          api: InitPage(),
+          uiKit: UiKitPane(shopId: _shopId),
+          shop: ShopPane(shopId: _shopId),
+        ),
       ),
     );
   }
@@ -163,8 +173,8 @@ class _InitPageState extends State<InitPage> {
   // permission. See [_requestNotificationPermission].
   static const _platformChannel = MethodChannel('rees46_sdk_example/platform');
 
-  // Hardcoded demo credentials — the demo does not need editable init inputs.
-  static const _shopId = 'c1140c8254976de297c3caf971701a';
+  // Hardcoded demo credentials (the shop id is [_shopId] above) — the demo does
+  // not need editable init inputs.
   static const _apiDomain = 'api.rees46.ru';
   final _stream = defaultTargetPlatform == TargetPlatform.android
       ? 'android'
@@ -778,26 +788,6 @@ class _InitPageState extends State<InitPage> {
         title: const Text('REES46 SDK init demo'),
         actions: [
           IconButton(
-            key: const Key('open-shop'),
-            tooltip: 'Shop',
-            icon: const Icon(Icons.shopping_bag_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const ShopPane(shopId: _shopId),
-              ),
-            ),
-          ),
-          IconButton(
-            key: const Key('open-ui-kit'),
-            tooltip: 'UI Kit',
-            icon: const Icon(Icons.widgets_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const UiKitPane(shopId: _shopId),
-              ),
-            ),
-          ),
-          IconButton(
             key: const Key('open-multi-instance'),
             tooltip: 'Multi-instance (two shops)',
             icon: const Icon(Icons.storefront),
@@ -825,17 +815,6 @@ class _InitPageState extends State<InitPage> {
             ),
             const SizedBox(height: 12),
             FilledButton.tonalIcon(
-              key: const Key('open-shop-button'),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ShopPane(shopId: _shopId),
-                ),
-              ),
-              icon: const Icon(Icons.shopping_bag_outlined),
-              label: const Text('Open demo shop (kit + SDK methods)'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.tonalIcon(
               key: const Key('open-multi-instance-button'),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -844,17 +823,6 @@ class _InitPageState extends State<InitPage> {
               ),
               icon: const Icon(Icons.storefront),
               label: const Text('Open multi-instance demo (two shops)'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.tonalIcon(
-              key: const Key('open-ui-kit-button'),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const UiKitPane(shopId: _shopId),
-                ),
-              ),
-              icon: const Icon(Icons.widgets_outlined),
-              label: const Text('Open UI Kit (components and blocks)'),
             ),
             const SizedBox(height: 12),
             _PushTokenCard(
