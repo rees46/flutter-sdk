@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 // ignore: implementation_imports
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
+import '../demo_app.dart';
 import 'shop.dart';
 import 'shop_facets.dart';
 import 'shop_product.dart';
@@ -26,6 +27,7 @@ class ShopSearchScreen extends StatefulWidget {
   static void open(BuildContext context, String shopId, String query) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
+        settings: const RouteSettings(name: DemoScreens.search),
         builder: (_) => ShopSearchScreen(shopId: shopId, query: query),
       ),
     );

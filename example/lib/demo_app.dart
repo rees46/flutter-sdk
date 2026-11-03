@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
+// The kit stays out of the package barrel until its release; the example reaches
+// it directly, which the analyzer flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 // What the full demo (`main.dart`) and the shop-only one (`main_shop.dart`) share:
 // the hardcoded shop and its init, the theme and the demo's stories links.
@@ -97,4 +101,41 @@ abstract final class DemoLinks {
   }
 
   static void cancel() => _channel.setMethodCallHandler(null);
+}
+
+/// Screen codes the demos report to popups v3 — what the marketer puts in
+/// `target_screens` of a popup in the editor.
+abstract final class DemoScreens {
+  /// The full demo's tabs.
+  static const String api = 'api';
+  static const String uiKit = 'ui_kit';
+
+  /// The shop's screens.
+  static const String home = 'home';
+  static const String category = 'category';
+  static const String product = 'product';
+  static const String search = 'search';
+}
+
+/// Screen code of a shop route: its name, the navigator's first route ('/') being
+/// the shop's home.
+String? demoScreenName(Route<dynamic> route) =>
+    route.settings.name == '/' ? DemoScreens.home : route.settings.name;
+
+/// Turns popups v3 on for [sdk], on the dashboard host of the demo shop
+/// ([demoStoriesApiV3Domain]). The `/init` flag does not reach Flutter yet (the
+/// plugin is built against the published native SDKs), so the demo forces the
+/// engine on; its decisions and the popup events go to the debug log. A product of a
+/// recommendations block in a popup goes to [onProductClick], which opens it in the
+/// shop and returns true; the screen that sets it takes it off when it goes.
+void enableDemoPopupsV3(
+  PersonalizationSdk sdk, {
+  bool Function(PersonalizationProduct product)? onProductClick,
+}) {
+  sdk.popups
+    ..appHost = demoStoriesApiV3Domain
+    ..debug = true
+    ..onProductClick = onProductClick
+    ..ignoreInitFlag = true
+    ..enabled = true;
 }

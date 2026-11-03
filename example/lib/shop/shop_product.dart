@@ -6,6 +6,7 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 // ignore: implementation_imports
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
+import '../demo_app.dart';
 import 'shop.dart';
 import 'shop_products.dart';
 import 'shop_search_field.dart';
@@ -26,12 +27,15 @@ class ShopProductScreen extends StatefulWidget {
 
   /// Opens the product on top of the current screen.
   static void open(BuildContext context, String shopId, String productId) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ShopProductScreen(shopId: shopId, productId: productId),
-      ),
-    );
+    Navigator.of(context).push(route(shopId, productId));
   }
+
+  /// The product's page, for a navigator not reached through a context.
+  static Route<void> route(String shopId, String productId) =>
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: DemoScreens.product),
+        builder: (_) => ShopProductScreen(shopId: shopId, productId: productId),
+      );
 
   @override
   State<ShopProductScreen> createState() => _ShopProductScreenState();

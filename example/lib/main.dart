@@ -1,16 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
+// The kit stays out of the package barrel until its release; the example reaches
+// it directly, which the analyzer flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 import 'app_theme_mode.dart';
 import 'demo_app.dart';
 import 'demo_tabs.dart';
 import 'multi_instance_pane.dart';
 import 'shop/shop_home.dart';
+import 'shop/shop_product.dart';
 import 'ui_kit_pane.dart';
 
 // The shop alone, without the tabs, is `main_shop.dart`.
 void main() => runApp(const App());
+
+/// Screens of the "Shop" tab for popups v3. The tabs report their own codes; the
+/// shop tab, when it is back, the screen open in it.
+final PersonalizationScreenObserver _shopScreens =
+    PersonalizationScreenObserver(
+      shopId: demoShopId,
+      screenName: demoScreenName,
+    );
+
+void _reportTab(int tab) => switch (tab) {
+  0 => _shopScreens.reportScreen(DemoScreens.api),
+  1 => _shopScreens.reportScreen(DemoScreens.uiKit),
+  _ => switch (_shopScreens.current) {
+    final screen? => _shopScreens.reportScreen(screen),
+    // Opened for the first time: its navigator reports the home itself.
+    null => null,
+  },
+};
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -27,10 +50,12 @@ class App extends StatelessWidget {
         darkTheme: demoTheme(Brightness.dark),
         themeMode: mode,
         // The sections are bottom tabs, as in the native demos.
-        home: const DemoTabs(
-          api: InitPage(),
-          uiKit: UiKitPane(shopId: demoShopId),
-          shop: ShopPane(shopId: demoShopId),
+        home: DemoTabs(
+          api: const InitPage(),
+          uiKit: const UiKitPane(shopId: demoShopId),
+          shop: const ShopPane(shopId: demoShopId),
+          shopObservers: <NavigatorObserver>[_shopScreens],
+          onTab: _reportTab,
         ),
       ),
     );
@@ -246,6 +271,10 @@ class _InitPageState extends State<InitPage> {
   @override
   void dispose() {
     DemoLinks.cancel();
+    // The popups' product handler holds this page; a new one sets its own.
+    if (REES46.isInitialized(demoShopId)) {
+      REES46.getInstance(demoShopId).popups.onProductClick = null;
+    }
     _recBlockController.dispose();
     _productIdController.dispose();
     _searchQueryController.dispose();
@@ -302,6 +331,21 @@ class _InitPageState extends State<InitPage> {
       );
       // Holding popups back: the app takes each one and shows it when the user asks.
       _sdk.onPopup = _holdPopups ? _holdPopup : null;
+      // Popups v3: the API tab is the full demo's first screen. A product of a
+      // popup opens in the shop tab, and the popup goes.
+      enableDemoPopupsV3(
+        _sdk,
+        onProductClick: (product) {
+          final tabs = mounted ? DemoTabs.of(context) : null;
+          if (tabs == null) return false;
+          tabs.openInShop(
+            (shop) =>
+                shop.push(ShopProductScreen.route(demoShopId, product.id)),
+          );
+          return true;
+        },
+      );
+      _sdk.popups.screenOpened(DemoScreens.api);
       _sdk.setPushNotificationCallbacks(
         onReceived: (payload) {
           // In the demo we only surface init/token state; push payloads can be

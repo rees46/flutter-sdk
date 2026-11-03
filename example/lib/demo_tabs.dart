@@ -19,6 +19,8 @@ class DemoTabs extends StatefulWidget {
     required this.api,
     required this.uiKit,
     required this.shop,
+    this.shopObservers = const <NavigatorObserver>[],
+    this.onTab,
   });
 
   final Widget api;
@@ -27,11 +29,21 @@ class DemoTabs extends StatefulWidget {
   /// Home of the "Shop" tab, the first screen of its navigator.
   final Widget shop;
 
+  /// Observers of the "Shop" tab's navigator (its screens for popups v3).
+  final List<NavigatorObserver> shopObservers;
+
+  /// A tab was opened: by the user, or by [DemoTabsState.openInShop].
+  final ValueChanged<int>? onTab;
+
+  /// The tabs [context] is in, if any.
+  static DemoTabsState? of(BuildContext context) =>
+      context.findAncestorStateOfType<DemoTabsState>();
+
   @override
-  State<DemoTabs> createState() => _DemoTabsState();
+  State<DemoTabs> createState() => DemoTabsState();
 }
 
-class _DemoTabsState extends State<DemoTabs> {
+class DemoTabsState extends State<DemoTabs> {
   static const int _shopTab = 2;
 
   int _tab = 0;
@@ -41,10 +53,28 @@ class _DemoTabsState extends State<DemoTabs> {
 
   final GlobalKey<NavigatorState> _shopNavigator = GlobalKey<NavigatorState>();
 
-  void _open(int tab) => setState(() {
-    _tab = tab;
-    _opened.add(tab);
-  });
+  void _open(int tab) {
+    setState(() {
+      _tab = tab;
+      _opened.add(tab);
+    });
+    widget.onTab?.call(tab);
+  }
+
+  /// Switches to "Shop" and hands [open] its navigator — after the next frame when
+  /// the tab is opened for the first time and its navigator is not built yet.
+  void openInShop(void Function(NavigatorState shop) open) {
+    if (_tab != _shopTab) _open(_shopTab);
+    final shop = _shopNavigator.currentState;
+    if (shop != null) {
+      open(shop);
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final shop = _shopNavigator.currentState;
+      if (shop != null) open(shop);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +88,7 @@ class _DemoTabsState extends State<DemoTabs> {
         onPopWithResult: (_) => _shopNavigator.currentState?.maybePop(),
         child: Navigator(
           key: _shopNavigator,
+          observers: widget.shopObservers,
           onGenerateRoute: (settings) => MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => widget.shop,

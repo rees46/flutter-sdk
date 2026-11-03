@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
+// The kit stays out of the package barrel until its release; the example reaches
+// it directly, which the analyzer flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 import 'demo_app.dart';
 import 'shop/shop_home.dart';
+import 'shop/shop_product.dart';
 
 /// The demo shop alone: home → category → product, search and stories, without the
 /// API and UI Kit tabs and their developer tools. Same app, same SDK init and the
@@ -18,6 +24,13 @@ class ShopApp extends StatelessWidget {
       title: 'REES46 Shop',
       theme: demoTheme(Brightness.light),
       darkTheme: demoTheme(Brightness.dark),
+      // The shop's screens for popups v3; the home reports itself once the SDK is up.
+      navigatorObservers: <NavigatorObserver>[
+        PersonalizationScreenObserver(
+          shopId: demoShopId,
+          screenName: demoScreenName,
+        ),
+      ],
       home: const _ShopHome(),
     );
   }
@@ -33,11 +46,23 @@ class _ShopHome extends StatefulWidget {
 }
 
 class _ShopHomeState extends State<_ShopHome> {
+  late final PersonalizationSdk _sdk;
+
   @override
   void initState() {
     super.initState();
     // Registers the shop and sends the native init before the shop's first request.
-    initializeDemoShop();
+    final sdk = _sdk = initializeDemoShop();
+    enableDemoPopupsV3(
+      sdk,
+      // A product of a popup opens in the shop, and the popup goes.
+      onProductClick: (product) {
+        if (!mounted) return false;
+        ShopProductScreen.open(context, demoShopId, product.id);
+        return true;
+      },
+    );
+    sdk.popups.screenOpened(DemoScreens.home);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       requestDemoNotificationPermission();
     });
@@ -48,6 +73,8 @@ class _ShopHomeState extends State<_ShopHome> {
   @override
   void dispose() {
     DemoLinks.cancel();
+    // The handler holds this screen; a new one sets its own.
+    _sdk.popups.onProductClick = null;
     super.dispose();
   }
 
