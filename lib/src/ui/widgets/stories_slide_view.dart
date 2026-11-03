@@ -33,8 +33,10 @@ import 'stories_support.dart';
 /// - Товарный слайд — карточка товара кита, все кнопки слайда (Primary LG друг под
 ///   другом), «Используемые товары» и звук у видео; текстовые блоки на нём не рисуются,
 ///   но промокод текстового блока, если у товара своего нет, показывает блок цены.
-/// - Медиа-слайд — непустые текстовые блоки на `y_offset`% высоты, кнопки внизу,
-///   «Используемые товары», звук у видео.
+/// - Медиа-слайд — непустые текстовые блоки, кнопки внизу, «Используемые товары», звук
+///   у видео. Текстовый блок стоит, как карточка опроса: верх на `y_offset`% высоты
+///   всего слайда, но целиком между шапкой и нижними кнопками; выше этого места — от
+///   его верха.
 /// - GIF фона живого слайда рисует [StoryGifPlayer]; у соседних страниц и до готовности
 ///   — первый кадр.
 /// - Медиа не загрузилось — по центру кнопка кита [PersonalizationStoryViewer.retryText].
@@ -389,34 +391,28 @@ class StorySlideView extends StatelessWidget {
   Widget _mediaContent(BuildContext context, StorySlide slide) {
     final texts = storyTextBlocks(slide);
     final buttons = storyButtons(slide);
-    final polls = _poll(
-      context,
-      slide,
-      bottom:
-          (_hasRow(slide) ? 64 : 16) + buttons.length * _buttonSpace(context),
-    );
-    return LayoutBuilder(
-      builder: (context, constraints) => Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          for (final text in texts)
-            Positioned(
-              left: 16,
-              right: 16,
-              top: constraints.maxHeight * text.yOffset.clamp(0, 100) / 100,
+    final bottom =
+        (_hasRow(slide) ? 64 : 16) + buttons.length * _buttonSpace(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        for (final text in texts)
+          Positioned.fill(
+            child: CustomSingleChildLayout(
+              delegate: _blockLayout(context, text.yOffset, bottom: bottom),
               child: _textBlock(context, text),
             ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: _hasRow(slide) ? 64 : 16,
-            child: _primaryButtons(buttons),
           ),
-          ...polls,
-          ..._bottomRow(slide),
-          _header(),
-        ],
-      ),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: _hasRow(slide) ? 64 : 16,
+          child: _primaryButtons(buttons),
+        ),
+        ..._poll(context, slide, bottom: bottom),
+        ..._bottomRow(slide),
+        _header(),
+      ],
     );
   }
 
@@ -553,14 +549,35 @@ class StorySlideView extends StatelessWidget {
     );
   }
 
-  // --- Опрос --------------------------------------------------------------------------
+  // --- Опрос и место блоков ------------------------------------------------------------
 
-  /// Верх места карточки опроса: под шапкой, с зазором 8.
-  static const double _pollTop = 16 + PersonalizationStoryNavigation.height + 8;
+  /// Верх места блоков слайда (опрос, текстовые блоки): под шапкой, с зазором 8.
+  static const double _blockTop =
+      16 + PersonalizationStoryNavigation.height + 8;
 
   /// Место под кнопкой Primary LG слайда: зазор 16 и кнопка — строка 32 и поля по 8.
   double _buttonSpace(BuildContext context) =>
       16 + MediaQuery.textScalerOf(context).scale(32) + 16;
+
+  /// Раскладка блока слайда — карточки опроса ([poll]) или текстового блока — на
+  /// [yOffset]% высоты всего слайда, между шапкой и местом нижних кнопок [bottom].
+  /// [outer] — контекст над SafeArea, с системными отступами.
+  _SlideBlockLayout _blockLayout(
+    BuildContext outer,
+    double yOffset, {
+    required double bottom,
+    double keyboard = 0,
+    bool poll = false,
+  }) => _SlideBlockLayout(
+    yOffset: yOffset,
+    // Отступы SafeArea слайда (снизу — системный и при клавиатуре).
+    above: MediaQuery.paddingOf(outer).top,
+    below: MediaQuery.viewPaddingOf(outer).bottom,
+    top: _blockTop,
+    bottom: bottom,
+    keyboard: keyboard,
+    poll: poll,
+  );
 
   /// Опрос, который рисуется: есть элемент и транспорт.
   StoryPollElement? _pollOf(StorySlide slide) =>
@@ -582,8 +599,6 @@ class StorySlideView extends StatelessWidget {
     final poll = _pollOf(slide);
     final transport = pollsTransport;
     if (poll == null || transport == null) return const <Widget>[];
-    // Отступы SafeArea слайда (снизу — системный и при клавиатуре).
-    final safeTop = MediaQuery.paddingOf(outer).top;
     final safeBottom = MediaQuery.viewPaddingOf(outer).bottom;
     return <Widget>[
       Positioned.fill(
@@ -604,13 +619,12 @@ class StorySlideView extends StatelessWidget {
                   )
                 : 0.0;
             return CustomSingleChildLayout(
-              delegate: _StoryPollLayout(
-                yOffset: poll.yOffset ?? 0,
-                above: safeTop,
-                below: safeBottom,
-                top: _pollTop,
+              delegate: _blockLayout(
+                outer,
+                poll.yOffset ?? 0,
                 bottom: bottom,
                 keyboard: keyboard,
+                poll: true,
               ),
               child: IgnorePointer(
                 ignoring: !live,
@@ -662,20 +676,25 @@ class StorySlideView extends StatelessWidget {
   }
 }
 
-/// Карточка опроса на слайде: по центру, шириной [PersonalizationStoryPoll.widthFor],
-/// верх — [yOffset]% высоты всего слайда, потом сдвиг, чтобы карточка целиком была между
-/// [top] и местом нижних кнопок [bottom]; не влезает — ниже высотой, прокрутка внутри.
-/// Клавиатура перекрывает слайд снизу на [keyboard] — карточка поднимается над ней на 16.
+/// Блок на слайде — карточка опроса или текстовый блок: верх — [yOffset]% высоты всего
+/// слайда (зажато 0…100, не число — 0), потом сдвиг, чтобы блок целиком был между [top]
+/// и местом нижних кнопок [bottom]; выше этого места — от его верха.
+///
+/// Карточка опроса ([poll]) — по центру, шириной [PersonalizationStoryPoll.widthFor];
+/// не влезает — ниже высотой, прокрутка внутри. Клавиатура перекрывает слайд снизу на
+/// [keyboard] — карточка поднимается над ней на 16. Текстовый блок — во всю ширину с
+/// полями 16, своей высоты.
 ///
 /// Раскладка — в области SafeArea: [above] и [below] — отступы её от краёв слайда.
-class _StoryPollLayout extends SingleChildLayoutDelegate {
-  const _StoryPollLayout({
+class _SlideBlockLayout extends SingleChildLayoutDelegate {
+  const _SlideBlockLayout({
     required this.yOffset,
     required this.above,
     required this.below,
     required this.top,
     required this.bottom,
-    required this.keyboard,
+    this.keyboard = 0,
+    this.poll = false,
   });
 
   final double yOffset;
@@ -684,10 +703,14 @@ class _StoryPollLayout extends SingleChildLayoutDelegate {
   final double top;
   final double bottom;
   final double keyboard;
+  final bool poll;
 
   static const double _aboveKeyboard = 16;
 
-  /// Ниже этого низ карточки не опускается.
+  /// Поля текстового блока слева и справа.
+  static const double _textEdge = 16;
+
+  /// Ниже этого низ блока не опускается.
   double _limit(Size size) {
     var limit = size.height - bottom;
     if (keyboard > 0) {
@@ -699,6 +722,11 @@ class _StoryPollLayout extends SingleChildLayoutDelegate {
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
     final size = constraints.biggest;
+    if (!poll) {
+      return BoxConstraints.tightFor(
+        width: math.max(0, size.width - 2 * _textEdge),
+      );
+    }
     final width = PersonalizationStoryPoll.widthFor(size.width);
     return BoxConstraints(
       minWidth: width,
@@ -710,19 +738,21 @@ class _StoryPollLayout extends SingleChildLayoutDelegate {
   @override
   Offset getPositionForChild(Size size, Size childSize) {
     final slide = above + size.height + below;
-    final wanted = slide * yOffset.clamp(0, 100) / 100 - above;
+    final percent = yOffset.isFinite ? yOffset.clamp(0, 100) : 0;
+    final wanted = slide * percent / 100 - above;
     final y = math.max(top, math.min(wanted, _limit(size) - childSize.height));
     return Offset((size.width - childSize.width) / 2, y);
   }
 
   @override
-  bool shouldRelayout(_StoryPollLayout oldDelegate) =>
+  bool shouldRelayout(_SlideBlockLayout oldDelegate) =>
       oldDelegate.yOffset != yOffset ||
       oldDelegate.above != above ||
       oldDelegate.below != below ||
       oldDelegate.top != top ||
       oldDelegate.bottom != bottom ||
-      oldDelegate.keyboard != keyboard;
+      oldDelegate.keyboard != keyboard ||
+      oldDelegate.poll != poll;
 }
 
 /// Касание слайда по третям; касания карточки опроса и подложки клавиатуры
