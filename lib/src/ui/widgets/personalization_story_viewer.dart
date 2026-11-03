@@ -14,6 +14,7 @@ import 'stories_gif_player.dart';
 import 'stories_image.dart';
 import 'stories_media_cache.dart';
 import 'stories_playback.dart';
+import 'stories_polls_api.dart';
 import 'stories_seen_store.dart';
 import 'stories_share.dart';
 import 'stories_slide_view.dart';
@@ -64,6 +65,13 @@ import 'stories_support.dart';
 /// ([storySlideShareUrl]) в шапке кнопка. Нажатие — пауза, событие `share` и системное
 /// окно с ссылкой; закрыли окно — пауза снята, слайд идёт дальше, если шёл.
 ///
+/// Опросы слайдов (мини-опросы, NPS, CSAT, CES): ответы уходят через [pollsTransport],
+/// без него — на хост API v3 просмотра ([StoriesPollsApi], нужен [sdk]); нет ни того ни
+/// другого — опросы не рисуются. `PersonalizationStories` даёт транспорт только с API v3:
+/// в старой ленте опросов нет. Пока карточку держат пальцем, в фокусе её
+/// поле или идёт отправка — пауза; касания карточки слайд не листают. Ответы помнятся до
+/// конца процесса ([StoryPollStore]).
+///
 /// Кнопки и товары карусели сначала закрывают просмотр, потом зовут [onLinkClick] /
 /// [onProductClick]; не заданы — ссылку открывает система через SDK. Кнопка без ссылки
 /// на медиа-слайде ничего не открывает и просмотр не закрывает — только `click`.
@@ -99,6 +107,10 @@ class PersonalizationStoryViewer extends StatefulWidget {
     this.imageProvider,
     this.iconBuilder,
     this.shareUrlTransform,
+    this.pollsTransport,
+    this.pollReanswerText = 'Answer again',
+    this.pollSubmitText = 'Send',
+    this.pollErrorText = 'Failed to send the answer. Please try again',
   });
 
   /// Сторис блока; сторис без слайдов пропускаются.
@@ -186,6 +198,16 @@ class PersonalizationStoryViewer extends StatefulWidget {
   /// `https://` на схему приложения); `null` — ссылка как есть. Событие `share` не
   /// меняется.
   final String Function(String url)? shareUrlTransform;
+
+  /// Куда отправлять ответы опросов (тесты, офлайн-демо); задан — опросы рисуются и без
+  /// API v3. `null` — HTTP API v3 хоста просмотра.
+  final StoryPollsTransport? pollsTransport;
+
+  /// Тексты карточки опроса: ссылка «Ответить заново», кнопка отправки без своей подписи
+  /// опроса и ошибка отправки. Непустые `labels` опроса от сервера важнее.
+  final String pollReanswerText;
+  final String pollSubmitText;
+  final String pollErrorText;
 
   /// Маршрут просмотра: во весь экран, с появлением. Непрозрачен только сам просмотр —
   /// при свайпе вниз под ним виден экран хоста.
@@ -540,6 +562,22 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         slideId: slide.id,
       ),
     );
+  }
+
+  StoriesPollsApi? _pollsApi;
+
+  /// Куда отправлять ответы опросов: транспорт хоста, иначе HTTP API v3 хоста просмотра;
+  /// без транспорта, API v3 или [PersonalizationStoryViewer.sdk] — `null`, опросы не
+  /// рисуются.
+  StoryPollsTransport? get _polls {
+    final own = widget.pollsTransport;
+    if (own != null) return own;
+    final host = StoriesApiV3.host(widget.apiV3Domain);
+    final sdk = widget.sdk;
+    if (host == null || sdk == null) return null;
+    final api = _pollsApi;
+    if (api != null && api.sdk == sdk && api.host == host) return api;
+    return _pollsApi = StoriesPollsApi(sdk, host);
   }
 
   /// «Поделиться»: своя пауза, `share` сразу, до результата, системное окно; закрыли —
@@ -934,6 +972,13 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onProduct: _product,
       onPromoCopied: _promo,
       onRetry: _retry,
+      pollsTransport: _polls,
+      pollShopId: widget.sdk == null
+          ? ''
+          : StoriesSeenStore.shopOf(widget.sdk!),
+      onPollHold: (held) {
+        if (mounted) _setPaused(StoriesPauseReason.poll, held);
+      },
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +10,7 @@ import '../../stories/stories_response.dart';
 import '../components/personalization_button.dart';
 import '../components/personalization_product.dart';
 import '../components/personalization_story_navigation.dart';
+import '../components/personalization_story_poll.dart';
 import '../components/personalization_story_price.dart';
 import '../components/personalization_story_sound_button.dart';
 import '../components/personalization_story_used_products.dart';
@@ -15,6 +18,8 @@ import '../components/personalization_toast.dart';
 import '../personalization_theme.dart';
 import 'personalization_story_viewer.dart';
 import 'stories_gif_player.dart';
+import 'stories_poll.dart';
+import 'stories_polls_api.dart';
 import 'stories_share.dart';
 import 'stories_support.dart';
 
@@ -35,6 +40,11 @@ import 'stories_support.dart';
 /// - Медиа не загрузилось — по центру кнопка кита [PersonalizationStoryViewer.retryText].
 /// - У слайда есть ссылка «Поделиться» ([storySlideShareUrl]) и задан [onShare] — в шапке
 ///   кнопка слева от крестика.
+/// - Опрос слайда ([storyPollOf]) при заданном [pollsTransport] — карточка
+///   [PersonalizationStoryPoll] на `y_offset`% высоты всего слайда, и на товарном слайде
+///   тоже, но целиком между шапкой и нижними кнопками; не влезает — прокрутка в ней.
+///   Открыта клавиатура — карточка над ней (+16), слайд не сжимается, тап мимо
+///   карточки только прячет клавиатуру.
 ///
 /// Живой ([live]) — только текущий слайд осевшей страницы: у него часы, видео, касания и
 /// шторка. Соседние страницы показывают свой стартовый слайд неподвижно.
@@ -62,6 +72,9 @@ class StorySlideView extends StatelessWidget {
     this.onProduct,
     this.onPromoCopied,
     this.onRetry,
+    this.pollsTransport,
+    this.pollShopId = '',
+    this.onPollHold,
   });
 
   final Story story;
@@ -99,6 +112,15 @@ class StorySlideView extends StatelessWidget {
   final ValueChanged<String>? onPromoCopied;
   final VoidCallback? onRetry;
 
+  /// Куда отправлять ответы опросов; `null` — опросы не рисуются.
+  final StoryPollsTransport? pollsTransport;
+
+  /// Магазин — ключ хранилища ответов опросов сессии.
+  final String pollShopId;
+
+  /// Опрос держит слайд (`true`) или отпускает.
+  final ValueChanged<bool>? onPollHold;
+
   /// Удержание дольше этого — пауза, а не касание.
   static const Duration holdDelay = Duration(milliseconds: 200);
 
@@ -119,7 +141,9 @@ class StorySlideView extends StatelessWidget {
     final colors = PersonalizationTheme.of(context).colors;
     final light = colors.textPrimary.computeLuminance() > 0.5;
     final product = storyProductElement(slide);
+    // Нижний отступ — системный и при открытой клавиатуре: слайд под ней не сжимается.
     final content = SafeArea(
+      maintainBottomViewPadding: true,
       child: product != null
           ? _productContent(context, slide, product)
           : _mediaContent(context, slide),
@@ -152,23 +176,21 @@ class StorySlideView extends StatelessWidget {
     return RawGestureDetector(
       behavior: HitTestBehavior.opaque,
       gestures: <Type, GestureRecognizerFactory>{
-        TapGestureRecognizer:
-            GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-              TapGestureRecognizer.new,
-              (recognizer) =>
-                  recognizer.onTapUp = (details) =>
-                      onTap?.call(details.localPosition.dx, width),
-            ),
-        LongPressGestureRecognizer:
-            GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
-              () => LongPressGestureRecognizer(duration: holdDelay),
-              (recognizer) {
-                recognizer
-                  ..onLongPressStart = ((_) => onHold?.call(true))
-                  ..onLongPressEnd = ((_) => onHold?.call(false))
-                  ..onLongPressCancel = (() => onHold?.call(false));
-              },
-            ),
+        _SlideTap: GestureRecognizerFactoryWithHandlers<_SlideTap>(
+          _SlideTap.new,
+          (recognizer) =>
+              recognizer.onTapUp = (details) =>
+                  onTap?.call(details.localPosition.dx, width),
+        ),
+        _SlideHold: GestureRecognizerFactoryWithHandlers<_SlideHold>(
+          () => _SlideHold(duration: holdDelay),
+          (recognizer) {
+            recognizer
+              ..onLongPressStart = ((_) => onHold?.call(true))
+              ..onLongPressEnd = ((_) => onHold?.call(false))
+              ..onLongPressCancel = (() => onHold?.call(false));
+          },
+        ),
       },
       child: child,
     );
@@ -265,8 +287,12 @@ class StorySlideView extends StatelessWidget {
 
   /// Шапка поверх всего слайда, и подложки шторки тоже: крестик закрывает просмотр и
   /// при раскрытой шторке; мимо крестика касание доходит до подложки.
-  Widget _header() =>
-      Positioned(left: 16, top: 16, right: 16, child: _navigation());
+  Widget _header() => Positioned(
+    left: 16,
+    top: 16,
+    right: 16,
+    child: _keyboardShield(_navigation()),
+  );
 
   /// Кнопка звука — только у видео.
   Widget? _sound(StorySlide slide) {
@@ -353,7 +379,7 @@ class StorySlideView extends StatelessWidget {
             onHorizontalDragStart: (_) {},
           ),
         ),
-      Positioned(left: 0, right: 0, bottom: 0, child: row),
+      Positioned(left: 0, right: 0, bottom: 0, child: _keyboardShield(row)),
     ];
   }
 
@@ -363,6 +389,12 @@ class StorySlideView extends StatelessWidget {
   Widget _mediaContent(BuildContext context, StorySlide slide) {
     final texts = storyTextBlocks(slide);
     final buttons = storyButtons(slide);
+    final polls = _poll(
+      context,
+      slide,
+      bottom:
+          (_hasRow(slide) ? 64 : 16) + buttons.length * _buttonSpace(context),
+    );
     return LayoutBuilder(
       builder: (context, constraints) => Stack(
         fit: StackFit.expand,
@@ -380,6 +412,7 @@ class StorySlideView extends StatelessWidget {
             bottom: _hasRow(slide) ? 64 : 16,
             child: _primaryButtons(buttons),
           ),
+          ...polls,
           ..._bottomRow(slide),
           _header(),
         ],
@@ -507,9 +540,208 @@ class StorySlideView extends StatelessWidget {
         ],
       ),
     );
+    final polls = _poll(
+      context,
+      slide,
+      bottom:
+          (_hasRow(slide) ? 64 : 16) +
+          math.max(1, buttons.length) * _buttonSpace(context),
+    );
     return Stack(
       fit: StackFit.expand,
-      children: <Widget>[column, ..._bottomRow(slide), _header()],
+      children: <Widget>[column, ...polls, ..._bottomRow(slide), _header()],
     );
   }
+
+  // --- Опрос --------------------------------------------------------------------------
+
+  /// Верх места карточки опроса: под шапкой, с зазором 8.
+  static const double _pollTop = 16 + PersonalizationStoryNavigation.height + 8;
+
+  /// Место под кнопкой Primary LG слайда: зазор 16 и кнопка — строка 32 и поля по 8.
+  double _buttonSpace(BuildContext context) =>
+      16 + MediaQuery.textScalerOf(context).scale(32) + 16;
+
+  /// Опрос, который рисуется: есть элемент и транспорт.
+  StoryPollElement? _pollOf(StorySlide slide) =>
+      pollsTransport == null ? null : storyPollOf(slide);
+
+  /// Открыта клавиатура (поле опроса живого слайда).
+  bool _keyboardOpen(BuildContext context) =>
+      live && MediaQuery.viewInsetsOf(context).bottom > 0;
+
+  /// Подложка под открытой клавиатурой и карточка опроса. [bottom] — место нижних
+  /// кнопок и строки «товары»; [outer] — контекст над SafeArea, с системными отступами:
+  /// `y_offset` считается от всего слайда, а клавиатура перекрывает слайд на свою высоту
+  /// без нижнего.
+  List<Widget> _poll(
+    BuildContext outer,
+    StorySlide slide, {
+    required double bottom,
+  }) {
+    final poll = _pollOf(slide);
+    final transport = pollsTransport;
+    if (poll == null || transport == null) return const <Widget>[];
+    // Отступы SafeArea слайда (снизу — системный и при клавиатуре).
+    final safeTop = MediaQuery.paddingOf(outer).top;
+    final safeBottom = MediaQuery.viewPaddingOf(outer).bottom;
+    return <Widget>[
+      Positioned.fill(
+        child: Builder(
+          builder: (context) => IgnorePointer(
+            ignoring: !_keyboardOpen(context),
+            child: _keyboardBarrier(),
+          ),
+        ),
+      ),
+      Positioned.fill(
+        child: Builder(
+          builder: (context) {
+            final keyboard = live
+                ? math.max(
+                    0.0,
+                    MediaQuery.viewInsetsOf(context).bottom - safeBottom,
+                  )
+                : 0.0;
+            return CustomSingleChildLayout(
+              delegate: _StoryPollLayout(
+                yOffset: poll.yOffset ?? 0,
+                above: safeTop,
+                below: safeBottom,
+                top: _pollTop,
+                bottom: bottom,
+                keyboard: keyboard,
+              ),
+              child: IgnorePointer(
+                ignoring: !live,
+                child: PersonalizationStoryPoll(
+                  key: ValueKey<String>('poll-${slide.id}'),
+                  poll: poll,
+                  storyId: story.id,
+                  slideId: slide.id,
+                  transport: transport,
+                  shopId: pollShopId,
+                  texts: StoryPollTexts(
+                    reanswer: config.pollReanswerText,
+                    error: config.pollErrorText,
+                    submit: config.pollSubmitText,
+                  ),
+                  live: live,
+                  onHold: onPollHold,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    ];
+  }
+
+  /// Тап мимо карточки при открытой клавиатуре только прячет её: ни касания по третям,
+  /// ни удержания, ни свайпов.
+  Widget _keyboardBarrier() => Listener(
+    onPointerDown: (event) => StoryPollPointers.claim(event.pointer),
+    onPointerUp: (event) => StoryPollPointers.release(event.pointer),
+    onPointerCancel: (event) => StoryPollPointers.release(event.pointer),
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      onVerticalDragStart: (_) {},
+      onHorizontalDragStart: (_) {},
+    ),
+  );
+
+  /// Шапка и нижняя строка слайда с опросом при открытой клавиатуре не нажимаются: тап
+  /// по ним достаётся подложке и только прячет клавиатуру.
+  Widget _keyboardShield(Widget child) {
+    if (_pollOf(slide) == null) return child;
+    return Builder(
+      builder: (context) =>
+          IgnorePointer(ignoring: _keyboardOpen(context), child: child),
+    );
+  }
+}
+
+/// Карточка опроса на слайде: по центру, шириной [PersonalizationStoryPoll.widthFor],
+/// верх — [yOffset]% высоты всего слайда, потом сдвиг, чтобы карточка целиком была между
+/// [top] и местом нижних кнопок [bottom]; не влезает — ниже высотой, прокрутка внутри.
+/// Клавиатура перекрывает слайд снизу на [keyboard] — карточка поднимается над ней на 16.
+///
+/// Раскладка — в области SafeArea: [above] и [below] — отступы её от краёв слайда.
+class _StoryPollLayout extends SingleChildLayoutDelegate {
+  const _StoryPollLayout({
+    required this.yOffset,
+    required this.above,
+    required this.below,
+    required this.top,
+    required this.bottom,
+    required this.keyboard,
+  });
+
+  final double yOffset;
+  final double above;
+  final double below;
+  final double top;
+  final double bottom;
+  final double keyboard;
+
+  static const double _aboveKeyboard = 16;
+
+  /// Ниже этого низ карточки не опускается.
+  double _limit(Size size) {
+    var limit = size.height - bottom;
+    if (keyboard > 0) {
+      limit = math.min(limit, size.height - keyboard - _aboveKeyboard);
+    }
+    return math.max(top, limit);
+  }
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final size = constraints.biggest;
+    final width = PersonalizationStoryPoll.widthFor(size.width);
+    return BoxConstraints(
+      minWidth: width,
+      maxWidth: width,
+      maxHeight: math.max(0, _limit(size) - top),
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final slide = above + size.height + below;
+    final wanted = slide * yOffset.clamp(0, 100) / 100 - above;
+    final y = math.max(top, math.min(wanted, _limit(size) - childSize.height));
+    return Offset((size.width - childSize.width) / 2, y);
+  }
+
+  @override
+  bool shouldRelayout(_StoryPollLayout oldDelegate) =>
+      oldDelegate.yOffset != yOffset ||
+      oldDelegate.above != above ||
+      oldDelegate.below != below ||
+      oldDelegate.top != top ||
+      oldDelegate.bottom != bottom ||
+      oldDelegate.keyboard != keyboard;
+}
+
+/// Касание слайда по третям; касания карточки опроса и подложки клавиатуры
+/// ([StoryPollPointers]) — не его.
+class _SlideTap extends TapGestureRecognizer {
+  _SlideTap();
+
+  @override
+  bool isPointerAllowed(PointerDownEvent event) =>
+      !StoryPollPointers.claimed(event.pointer) &&
+      super.isPointerAllowed(event);
+}
+
+/// Удержание слайда; касания карточки опроса — не его.
+class _SlideHold extends LongPressGestureRecognizer {
+  _SlideHold({super.duration});
+
+  @override
+  bool isPointerAllowed(PointerDownEvent event) =>
+      !StoryPollPointers.claimed(event.pointer) &&
+      super.isPointerAllowed(event);
 }

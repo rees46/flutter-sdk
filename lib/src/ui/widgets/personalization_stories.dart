@@ -10,6 +10,7 @@ import '../components/personalization_stories_bar.dart';
 import 'personalization_story_viewer.dart';
 import 'stories_api_v3.dart';
 import 'stories_playback.dart';
+import 'stories_polls_api.dart';
 import 'stories_seen_store.dart';
 import 'stories_share.dart';
 import 'stories_support.dart';
@@ -158,6 +159,10 @@ class _StoriesSession {
 /// «Поделиться», ссылки открывает [handleLink]. Два блока на одном экране независимы:
 /// один может идти в старый API, другой — в v3. Открыт один просмотр V2 из виджета,
 /// [show] или [handleLink]: ссылка закрывает прежний перед показом своего.
+///
+/// Опросы слайдов — тоже только с API v3: ответы уходят на хост блока, а
+/// [pollsTransport] их подменяет (тесты, офлайн-демо). Ответы сессии помнят все блоки,
+/// [show] и [handleLink] — до конца процесса.
 class PersonalizationStories extends StatefulWidget {
   const PersonalizationStories({
     super.key,
@@ -183,6 +188,10 @@ class PersonalizationStories extends StatefulWidget {
     this.imageProvider,
     this.iconBuilder,
     this.shareUrlTransform,
+    this.pollsTransport,
+    this.pollReanswerText = 'Answer again',
+    this.pollSubmitText = 'Send',
+    this.pollErrorText = 'Failed to send the answer. Please try again',
     String? apiV3Domain,
   }) : ownApiV3Domain = apiV3Domain;
 
@@ -222,6 +231,13 @@ class PersonalizationStories extends StatefulWidget {
   final String shareLabel;
   final String soundOnLabel;
   final String soundOffLabel;
+  final String pollReanswerText;
+  final String pollSubmitText;
+  final String pollErrorText;
+
+  /// Куда отправлять ответы опросов слайдов; `null` — HTTP API v3 хоста блока. Без API v3
+  /// опросов нет и с ним. См. [PersonalizationStoryViewer.pollsTransport].
+  final StoryPollsTransport? pollsTransport;
 
   /// Поля ленты.
   final EdgeInsetsGeometry padding;
@@ -259,10 +275,10 @@ class PersonalizationStories extends StatefulWidget {
 
   /// Показать сторис блока [code] без ленты: загрузить блок и открыть просмотр — со
   /// сторис [startStoryId] (нет такой — с первой). Тексты, колбэки, [controller],
-  /// `shareUrlTransform` и `apiV3Domain` — как у виджета. Ошибка (пустой код, магазин не зарегистрирован за 15 с или неоднозначен,
-  /// загрузка не удалась или дольше 15 с, в блоке нет сторис) уходит в [onError],
-  /// просмотр не открывается, Future завершается. Иначе Future завершается, когда
-  /// просмотр закроют.
+  /// `shareUrlTransform`, `pollsTransport` и `apiV3Domain` — как у виджета. Ошибка
+  /// (пустой код, магазин не зарегистрирован за 15 с или неоднозначен, загрузка не
+  /// удалась или дольше 15 с, в блоке нет сторис) уходит в [onError], просмотр не
+  /// открывается, Future завершается. Иначе Future завершается, когда просмотр закроют.
   static Future<void> show(
     BuildContext context, {
     required String code,
@@ -293,6 +309,10 @@ class PersonalizationStories extends StatefulWidget {
     )?
     iconBuilder,
     String Function(String url)? shareUrlTransform,
+    StoryPollsTransport? pollsTransport,
+    String pollReanswerText = 'Answer again',
+    String pollSubmitText = 'Send',
+    String pollErrorText = 'Failed to send the answer. Please try again',
     String? apiV3Domain,
   }) async {
     // Носитель текстов и колбэков для просмотра; в дерево не вставляется.
@@ -314,6 +334,10 @@ class PersonalizationStories extends StatefulWidget {
       imageProvider: imageProvider,
       iconBuilder: iconBuilder,
       shareUrlTransform: shareUrlTransform,
+      pollsTransport: pollsTransport,
+      pollReanswerText: pollReanswerText,
+      pollSubmitText: pollSubmitText,
+      pollErrorText: pollErrorText,
       apiV3Domain: apiV3Domain,
     );
     final PersonalizationSdk resolved;
@@ -382,6 +406,10 @@ class PersonalizationStories extends StatefulWidget {
     )?
     iconBuilder,
     String Function(String url)? shareUrlTransform,
+    StoryPollsTransport? pollsTransport,
+    String pollReanswerText = 'Answer again',
+    String pollSubmitText = 'Send',
+    String pollErrorText = 'Failed to send the answer. Please try again',
     String? apiV3Domain,
   }) {
     final link = parseStoriesShareLink(url);
@@ -413,6 +441,10 @@ class PersonalizationStories extends StatefulWidget {
       imageProvider: imageProvider,
       iconBuilder: iconBuilder,
       shareUrlTransform: shareUrlTransform,
+      pollsTransport: pollsTransport,
+      pollReanswerText: pollReanswerText,
+      pollSubmitText: pollSubmitText,
+      pollErrorText: pollErrorText,
       apiV3Domain: host,
     );
     unawaited(
@@ -566,6 +598,13 @@ Future<void> _present(
     imageProvider: config.imageProvider,
     iconBuilder: config.iconBuilder,
     shareUrlTransform: config.shareUrlTransform,
+    // Опросы только с API v3: в старой ленте их нет, свой транспорт их не включает.
+    pollsTransport: StoriesApiV3.host(config.ownApiV3Domain) == null
+        ? null
+        : config.pollsTransport,
+    pollReanswerText: config.pollReanswerText,
+    pollSubmitText: config.pollSubmitText,
+    pollErrorText: config.pollErrorText,
     apiV3Domain: config.ownApiV3Domain,
   );
   final navigator = Navigator.of(context, rootNavigator: true);

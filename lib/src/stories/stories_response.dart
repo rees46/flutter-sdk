@@ -1,4 +1,8 @@
+import 'package:flutter/foundation.dart' show debugPrint;
+
 import '../json_number.dart';
+
+part 'stories_poll.dart';
 
 /// A stories block (`GET stories/{code}`), parsed from the server JSON both bridges hand
 /// over untouched, or the `payload` of API v3 (`/api/v3/storefront/stories/{code}`), which
@@ -162,7 +166,7 @@ class StorySlide {
 }
 
 /// An element placed on a slide. Unknown types and `header` (not drawn by the kit) are
-/// dropped while parsing.
+/// dropped while parsing, and so is a `poll` of a kind the kit does not draw.
 sealed class StoryElement {
   const StoryElement();
 
@@ -173,6 +177,7 @@ sealed class StoryElement {
       'product' => StoryProductElement.fromJson(json),
       'products' => StoryProductsElement.fromJson(json),
       'text_block' => StoryTextBlockElement.fromJson(json),
+      'poll' => StoryPollElement.tryParse(json),
       _ => null,
     };
   }

@@ -25,6 +25,10 @@ enum StoriesPauseReason {
   /// Открыто системное окно «Поделиться».
   share,
 
+  /// Опрос слайда: карточку держат пальцем, в фокусе её поле или идёт отправка ответа.
+  /// Снимается и при заходе на другой слайд — не залипает.
+  poll,
+
   /// Медиа слайда ещё грузится.
   loading,
 
@@ -350,6 +354,7 @@ class StoriesPlayback {
     _reasons
       ..remove(StoriesPauseReason.sheet)
       ..remove(StoriesPauseReason.error)
+      ..remove(StoriesPauseReason.poll)
       ..add(StoriesPauseReason.loading);
     (_seen[story.id] ??= <String>{}).add(slide.id);
   }

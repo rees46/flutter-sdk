@@ -32,9 +32,12 @@ typedef StoriesV3Send =
 
 /// Ошибка API v3: HTTP не 2xx, не JSON или `status` не `success`.
 class StoriesV3Exception implements Exception {
-  StoriesV3Exception(this.message);
+  StoriesV3Exception(this.message, {this.status});
 
   final String message;
+
+  /// Код HTTP ответа; `null` — ошибка не в коде (не JSON, `status: fail`).
+  final int? status;
 
   @override
   String toString() => 'StoriesV3Exception: $message';
@@ -48,7 +51,8 @@ class StoriesV3Exception implements Exception {
 /// `track/stories`). Есть — все запросы V2 этого блока идут на `https://{host}`:
 /// - лента — `GET /api/v3/storefront/stories/{code}`;
 /// - кампания по ссылке — `GET /api/v3/storefront/stories/{code}/story/{id}[?slide_id=]`;
-/// - события — `POST /api/v3/storefront/stories/{code}/events`.
+/// - события — `POST /api/v3/storefront/stories/{code}/events`;
+/// - ответы опросов слайдов — [post] (`/api/v3/polls/...`, `StoriesPollsApi`).
 ///
 /// Запросу нужны `shop_id` и `did`, `sid` не нужен. Без `did` сервер отвечает 400, а SDK
 /// получает его при init: запрос ждёт его ([identity]).
@@ -65,6 +69,9 @@ abstract final class StoriesApiV3 {
 
   /// Сколько ждать `did` по умолчанию.
   static const Duration didTimeout = Duration(seconds: 15);
+
+  /// Сколько ждать ответа на [post].
+  static const Duration requestTimeout = Duration(seconds: 15);
 
   /// Хост API v3 блока: свой [own], без него (`null`) — глобальный [domain]. Схема и
   /// `/` на конце отбрасываются. `null` — API v3 выключен: хоста нет или он пустой (так
@@ -83,12 +90,66 @@ abstract final class StoriesApiV3 {
     String host,
     List<String> segments,
     Map<String, String> query,
-  ) {
+  ) => apiUri(host, <String>['storefront', 'stories', ...segments], query);
+
+  /// Адрес `https://{host}/api/v3/{segments...}?{query}`; сегменты кодируются.
+  static Uri apiUri(
+    String host,
+    List<String> segments, [
+    Map<String, String> query = const <String, String>{},
+  ]) {
     return Uri.parse('https://$host').replace(
-      pathSegments: <String>['api', 'v3', 'storefront', 'stories', ...segments],
+      pathSegments: <String>['api', 'v3', ...segments],
       // Пустой запрос — без «?» на конце.
       queryParameters: query.isEmpty ? null : query,
     );
+  }
+
+  /// `POST https://{host}/api/v3/{segments...}` с телом JSON [body] — ответ
+  /// `{status, payload}` целиком. Ошибка — нет сети, нет ответа за [requestTimeout],
+  /// HTTP не 2xx ([StoriesV3Exception.status] — код, в сообщении `message` сервера), не
+  /// JSON или `status` `fail` / `error`.
+  static Future<Map<String, dynamic>> post(
+    String host,
+    List<String> segments,
+    Map<String, Object?> body,
+  ) async {
+    final response = await send(
+      'POST',
+      apiUri(host, segments),
+      jsonEncode(body),
+    ).timeout(requestTimeout);
+    final json = _decode(response);
+    final status = json['status'];
+    if (status == 'fail' || status == 'error') {
+      throw StoriesV3Exception(
+        '$status: ${json['message'] ?? _short(response)}',
+      );
+    }
+    return json;
+  }
+
+  /// Тело ответа объектом JSON. HTTP не 2xx — ошибка с кодом и `message` сервера, если
+  /// он есть; не JSON или не объект — ошибка.
+  static Map<String, dynamic> _decode(StoriesV3Response response) {
+    Object? json;
+    try {
+      json = jsonDecode(response.body);
+    } on FormatException {
+      json = null;
+    }
+    final ok = response.status >= 200 && response.status < 300;
+    if (!ok) {
+      final message = json is Map ? json['message'] : null;
+      throw StoriesV3Exception(
+        'HTTP ${response.status}: ${message ?? _short(response)}',
+        status: response.status,
+      );
+    }
+    if (json is! Map) {
+      throw StoriesV3Exception('not JSON: ${_short(response)}');
+    }
+    return Map<String, dynamic>.from(json);
   }
 
   /// `shop_id` и `did` магазина [sdk]. `did` спрашивается раз в [didPoll], пока SDK его
@@ -223,18 +284,8 @@ abstract final class StoriesApiV3 {
   /// же разбором, что и старая лента. HTTP не 2xx, не JSON, `status` не `success` или
   /// нет `payload` — [StoriesV3Exception].
   static StoriesBlock parseResponse(StoriesV3Response response) {
-    if (response.status < 200 || response.status >= 300) {
-      throw StoriesV3Exception('HTTP ${response.status}: ${_short(response)}');
-    }
-    final Object? json;
-    try {
-      json = jsonDecode(response.body);
-    } on FormatException {
-      throw StoriesV3Exception('not JSON: ${_short(response)}');
-    }
-    if (json is! Map ||
-        json['status'] != 'success' ||
-        json['payload'] is! Map) {
+    final json = _decode(response);
+    if (json['status'] != 'success' || json['payload'] is! Map) {
       throw StoriesV3Exception('unexpected response: ${_short(response)}');
     }
     return StoriesBlock.fromJson(

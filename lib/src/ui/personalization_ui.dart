@@ -79,5 +79,9 @@ export 'widgets/personalization_recommender_block.dart';
 // видны только отсюда: пакетный барель их не экспортирует.
 export '../stories/stories_response.dart' hide parseStoryOpacity;
 export 'widgets/stories_support.dart' show PersonalizationStoryImageProvider;
+// Опросы слайдов: шов транспорта ответов (тесты, офлайн-демо). Карточка и её логика —
+// внутренности просмотра.
+export 'widgets/stories_polls_api.dart'
+    show StoryPollsTransport, StoryPollReply;
 export 'widgets/personalization_story_viewer.dart';
 export 'widgets/personalization_stories.dart';
