@@ -67,6 +67,19 @@ class PopupPresenter {
   static final Queue<_Request> _queue = Queue<_Request>();
   static _Request? _current;
 
+  /// Whether the screen is held by a popup of the new kind (popups v3): the queue
+  /// waits until [resume] is called.
+  static bool Function() heldElsewhere = () => false;
+
+  /// Called whenever a popup of this kind leaves the screen.
+  static void Function()? onIdle;
+
+  /// Whether a popup of this kind is on screen now.
+  static bool get isPresenting => _current != null;
+
+  /// Shows the next queued popup once the screen is free again.
+  static void resume() => _next();
+
   /// A popup from the server: waits out its delay, then goes to [onPopup] or on screen.
   void receive(InAppPopup popup) {
     // An init response without a popup still gives one on iOS: the SDK builds it from an
@@ -129,7 +142,7 @@ class PopupPresenter {
   }
 
   static void _next() {
-    if (_current != null || _queue.isEmpty) return;
+    if (_current != null || _queue.isEmpty || heldElsewhere()) return;
     final request = _current = _queue.removeFirst();
     request.presenter
         ._show(request)
@@ -141,6 +154,7 @@ class PopupPresenter {
           // Past a reset the queue has moved on without this request.
           if (_current == request) _current = null;
           _next();
+          if (_current == null) onIdle?.call();
         });
   }
 

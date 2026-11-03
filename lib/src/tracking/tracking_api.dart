@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../pigeon/personalization_api.g.dart' as pigeon;
+import '../popups_v3/popups_v3_hooks.dart';
 import 'purchase_line_item.dart';
 import 'tracking_models.dart';
 
@@ -151,6 +152,7 @@ class TrackingApi {
     if (items.isEmpty) {
       throw ArgumentError.value(items, 'items', 'must be non-empty');
     }
+    PopupsV3Hooks.purchase(this);
     return _api.trackPurchase(
       orderId,
       orderPrice,
@@ -197,6 +199,7 @@ class TrackingApi {
     Map<String, Object?>? customFields,
   }) {
     _requireNonEmpty(event, 'event');
+    PopupsV3Hooks.trackEvent(this, event);
     return _api.trackEvent(
       event,
       time,

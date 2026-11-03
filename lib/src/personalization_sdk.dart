@@ -12,6 +12,7 @@ import 'multi_instance/push_event.dart';
 import 'popups/in_app_popup.dart';
 import 'popups/popup_dispatcher.dart';
 import 'popups/popup_presenter.dart';
+import 'popups_v3/popups_v3_hooks.dart';
 import 'products/product_counters_response.dart';
 import 'profile/profile_params.dart';
 import 'profile/profile_response.dart';
@@ -109,6 +110,7 @@ class PersonalizationSdk {
     _popups.autoPresentation = config.enableAutoPopupPresentation ?? true;
     // The native side reports popups under the shop id it was initialized with.
     PopupDispatcher.instance.register(config.shopId, _popups);
+    PopupsV3Hooks.initialized(tracking, config);
     return _initHandler.initialize(config);
   }
 
@@ -135,13 +137,22 @@ class PersonalizationSdk {
   Future<void> presentPopup(InAppPopup popup) => _popups.present(popup);
 
   Future<void> setProfile(ProfileParams params) {
-    return _api.setProfile(params.toWire(), shopId);
+    final wire = params.toWire();
+    PopupsV3Hooks.contextChanged(tracking, 'profile', 'set', wire.encode());
+    return _api.setProfile(wire, shopId);
   }
 
   /// Subscribes or unsubscribes the client per channel and mailing type, see
   /// [ManageSubscriptionParams].
   Future<void> manageSubscription(ManageSubscriptionParams params) {
-    return _api.manageSubscription(params.toWire(), shopId);
+    final wire = params.toWire();
+    PopupsV3Hooks.contextChanged(
+      tracking,
+      'subscription',
+      'manage',
+      wire.encode(),
+    );
+    return _api.manageSubscription(wire, shopId);
   }
 
   Future<String> getSid() {
@@ -347,6 +358,7 @@ class PersonalizationSdk {
     final customFieldsJson = customFields == null
         ? null
         : jsonEncode(customFields);
+    PopupsV3Hooks.trackEvent(tracking, event);
     return _api.trackEvent(
       event,
       time,
@@ -386,6 +398,7 @@ class PersonalizationSdk {
     if (items.isEmpty) {
       throw ArgumentError.value(items, 'items', 'must be non-empty');
     }
+    PopupsV3Hooks.purchase(tracking);
     final wireItems = items
         .map(
           (e) => pigeon.PurchaseLineItemWire(

@@ -85,3 +85,7 @@ export 'widgets/stories_polls_api.dart'
     show StoryPollsTransport, StoryPollReply;
 export 'widgets/personalization_story_viewer.dart';
 export 'widgets/personalization_stories.dart';
+// Попапы нового конструктора (документ design): `sdk.popups` — включение, экраны,
+// ручной показ, — и наблюдатель экранов навигатора. Движок и рендер — внутренности.
+export '../popups_v3/popups_v3.dart';
+export 'popups_v3/personalization_screen_observer.dart';
