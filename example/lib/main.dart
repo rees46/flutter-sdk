@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
 import 'app_theme_mode.dart';
+import 'demo_app.dart';
 import 'demo_tabs.dart';
 import 'multi_instance_pane.dart';
 import 'shop/shop_home.dart';
 import 'ui_kit_pane.dart';
 
+// The shop alone, without the tabs, is `main_shop.dart`.
 void main() => runApp(const App());
-
-// Hardcoded demo shop: the API tab initializes it, the UI Kit and Shop tabs reach
-// it by this id.
-const _shopId = 'c1140c8254976de297c3caf971701a';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -26,21 +23,14 @@ class App extends StatelessWidget {
       valueListenable: appThemeMode,
       builder: (context, mode, _) => MaterialApp(
         title: 'REES46 Flutter SDK',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        ),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.dark,
-          ),
-        ),
+        theme: demoTheme(Brightness.light),
+        darkTheme: demoTheme(Brightness.dark),
         themeMode: mode,
         // The sections are bottom tabs, as in the native demos.
         home: const DemoTabs(
           api: InitPage(),
-          uiKit: UiKitPane(shopId: _shopId),
-          shop: ShopPane(shopId: _shopId),
+          uiKit: UiKitPane(shopId: demoShopId),
+          shop: ShopPane(shopId: demoShopId),
         ),
       ),
     );
@@ -169,22 +159,6 @@ class _InitPageState extends State<InitPage> {
   // [_initialize] (rebuilt on re-initialize).
   late PersonalizationSdk _sdk;
 
-  // Platform channel used to ask the host for the Android 13+ notification
-  // permission. See [_requestNotificationPermission].
-  static const _platformChannel = MethodChannel('rees46_sdk_example/platform');
-
-  // Stories "Share" links in the demo scheme (`rees46flutter://<any host>/?r46_stories=…`):
-  // MainActivity / AppDelegate hand them over — the one the app was started with on
-  // request (`getInitialLink`), later ones as `onLink`. See [openStoriesLink].
-  static const _linksChannel = MethodChannel('rees46_sdk_example/links');
-
-  // Hardcoded demo credentials (the shop id is [_shopId] above) — the demo does
-  // not need editable init inputs.
-  static const _apiDomain = 'api.rees46.ru';
-  final _stream = defaultTargetPlatform == TargetPlatform.android
-      ? 'android'
-      : 'ios';
-
   bool _enableLogs = false;
   bool _autoSendPushToken = true;
   bool _sendAdvertisingId = false;
@@ -271,7 +245,7 @@ class _InitPageState extends State<InitPage> {
 
   @override
   void dispose() {
-    _linksChannel.setMethodCallHandler(null);
+    DemoLinks.cancel();
     _recBlockController.dispose();
     _productIdController.dispose();
     _searchQueryController.dispose();
@@ -291,46 +265,19 @@ class _InitPageState extends State<InitPage> {
     // first await) and wires the push callbacks. The button below only
     // re-initializes (e.g. after toggling flags).
     _initialize();
-    // Ask for the notification permission after the first frame. Triggering it from
-    // Dart (rather than MainActivity.onCreate) guarantees it runs after Patrol's
-    // app-service handshake, so the system dialog never hangs an integration test.
+    // After the first frame: see [requestDemoNotificationPermission].
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestNotificationPermission();
+      requestDemoNotificationPermission();
     });
-    _linksChannel.setMethodCallHandler(_onLinkCall);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialLink());
-  }
-
-  Future<void> _onLinkCall(MethodCall call) async {
-    if (call.method == 'onLink') _openLink(call.arguments as String);
-  }
-
-  /// The link the app was started with, once.
-  Future<void> _openInitialLink() async {
-    try {
-      final link = await _linksChannel.invokeMethod<String>('getInitialLink');
-      if (link != null) _openLink(link);
-    } catch (_) {
-      // No host channel (tests): no links.
-    }
+    // Stories links of the demo scheme, the one of a cold start included.
+    DemoLinks.listen(_openLink);
   }
 
   /// Opens the stories campaign of [url] over API v3; the SDK waits for its init.
   void _openLink(String url) {
     if (!mounted) return;
-    if (!openStoriesLink(context, url, shopId: _shopId)) {
+    if (!openStoriesLink(context, url, shopId: demoShopId)) {
       debugPrint('Demo: not a stories link — $url');
-    }
-  }
-
-  Future<void> _requestNotificationPermission() async {
-    try {
-      await _platformChannel.invokeMethod<void>(
-        'requestNotificationPermission',
-      );
-    } catch (_) {
-      // Best-effort: the app still runs without it (pushes just won't be shown
-      // until the permission is granted), and non-Android hosts ignore it.
     }
   }
 
@@ -346,17 +293,12 @@ class _InitPageState extends State<InitPage> {
       // so the Multi-instance screen resolves the very same instance via
       // REES46.getInstance(shopId). Re-initializing rebuilds the handle with the
       // current toggles.
-      _sdk = REES46.initialize(
-        REES46Config(
-          shopId: _shopId,
-          apiDomain: _apiDomain,
-          stream: _stream,
-          enableLogs: _enableLogs,
-          autoSendPushToken: _autoSendPushToken,
-          sendAdvertisingId: _sendAdvertisingId,
-          enableAutoPopupPresentation: _enableAutoPopupPresentation,
-          needReInitialization: _needReInitialization,
-        ),
+      _sdk = initializeDemoShop(
+        enableLogs: _enableLogs,
+        autoSendPushToken: _autoSendPushToken,
+        sendAdvertisingId: _sendAdvertisingId,
+        enableAutoPopupPresentation: _enableAutoPopupPresentation,
+        needReInitialization: _needReInitialization,
       );
       // Holding popups back: the app takes each one and shows it when the user asks.
       _sdk.onPopup = _holdPopups ? _holdPopup : null;
@@ -399,7 +341,7 @@ class _InitPageState extends State<InitPage> {
         title: 'Weekend sale',
         text: 'Up to 30% off home appliances until Sunday.',
         imageUrl: picture
-            ? 'https://pictures.rees46.ru/resize-images/520/$_shopId/143748.jpg'
+            ? 'https://pictures.rees46.ru/resize-images/520/$demoShopId/143748.jpg'
             : null,
         linkText: 'Shop now',
         linkUrl: 'https://rees46.com',

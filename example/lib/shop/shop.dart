@@ -16,8 +16,9 @@ const String shopRecommenderCode = 'e6249bb15043644bf25b135006149962';
 const String shopSimilarCode = '007b87897f244b2a2a123567b3242a4b';
 const String shopAlsoBoughtCode = 'fa6e8cd83434273dd8d47293329e00dd';
 
-/// The Stories V2 block the demo shop serves.
-const String shopStoriesCode = '115bd0b67cf5989a1b60c841790b2af6';
+/// The Stories V2 block the demo shop serves (API v3): one campaign with a poll of every
+/// kind on its slides.
+const String shopStoriesCode = '272dd914ea13824a0abb6ef4e776ddaa';
 
 /// Label of every "add to cart" button of the shop.
 const String shopAddToCartText = 'Add to cart';

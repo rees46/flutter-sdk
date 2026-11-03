@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'app_theme_mode.dart';
+import 'demo_app.dart';
 // The kit stays out of the package barrel until its release; the example reaches
 // it directly, which the analyzer flags as an implementation import on purpose.
 // ignore: implementation_imports
@@ -793,23 +794,8 @@ class _LiveRecommenderState extends State<_LiveRecommender> {
 /// The Stories V2 block the demo shop serves.
 const String _storiesCode = '115bd0b67cf5989a1b60c841790b2af6';
 
-/// Host of the stories API v3 of the "with Sharing" block and of the link field; the
-/// global `PersonalizationStories.apiV3Domain` stays unset.
-const String _storiesApiV3Domain = 'app.rees46.ru';
-
-/// Scheme of the demo's own links. The "with Sharing" block and the campaigns opened by a
-/// link share `rees46flutter://<site>/?r46_stories=…` instead of `https://`, and the app
-/// opens such links (any host and path, see `main.dart`) with [openStoriesLink].
-const String demoLinkScheme = 'rees46flutter';
-
-/// The slide link with the demo scheme instead of `http(s)://`.
-String _demoShareUrl(String url) => url.replaceFirst(
-  RegExp(r'^https?://', caseSensitive: false),
-  '$demoLinkScheme://',
-);
-
-/// Opens a stories "Share" link over API v3 ([_storiesApiV3Domain]) — from the link field
-/// and from the demo's deep links. `false` — not a stories link (no `r46_stories`).
+/// Opens a stories "Share" link over API v3 ([demoStoriesApiV3Domain]) — from the link
+/// field and from the demo's deep links. `false` — not a stories link (no `r46_stories`).
 bool openStoriesLink(
   BuildContext context,
   String url, {
@@ -823,11 +809,13 @@ bool openStoriesLink(
       PersonalizationToast.show(context, 'Product: ${product.name}'),
   onError: (error) => _snack(context, 'Stories link error: $error'),
   iconBuilder: _icon,
-  shareUrlTransform: _demoShareUrl,
-  apiV3Domain: _storiesApiV3Domain,
+  shareUrlTransform: demoShareUrl,
+  apiV3Domain: demoStoriesApiV3Domain,
 );
 
-/// A "Share" link of the live block: campaign 40 from its second slide (37).
+/// A "Share" link of the live block: campaign 40 from its second slide (37). The link
+/// field starts empty, so a pasted link is never mixed up with it; "Sample link" puts
+/// it in.
 const String _storiesSampleLink =
     'https://demo.rees46.ru/?r46_stories=$_storiesCode&r46_story=40&r46_slide=37';
 
@@ -859,14 +847,14 @@ List<_Exhibit> _storyExhibits(String shopId) => [
   ),
   _Exhibit(
     'Stories V2 with Sharing — the same block over API v3 '
-    '($_storiesApiV3Domain): slides with a link have "Share" left of the cross; '
+    '($demoStoriesApiV3Domain): slides with a link have "Share" left of the cross; '
     'the link is shared with the demo scheme ($demoLinkScheme://), which opens '
     'the slide in this app',
     (context) => PersonalizationStories(
       code: _storiesCode,
       shopId: shopId,
-      apiV3Domain: _storiesApiV3Domain,
-      shareUrlTransform: _demoShareUrl,
+      apiV3Domain: demoStoriesApiV3Domain,
+      shareUrlTransform: demoShareUrl,
       padding: EdgeInsets.zero,
       promoCopiedText: 'Code copied to clipboard',
       onProductClick: (product) =>
@@ -877,8 +865,9 @@ List<_Exhibit> _storyExhibits(String shopId) => [
   ),
   _Exhibit(
     'Stories link — paste a "Share" link (https:// or $demoLinkScheme://) and open '
-    'it with PersonalizationStories.handleLink. Links in the $demoLinkScheme:// '
-    'scheme open the app too; App Links / Universal Links are not set up',
+    'it with PersonalizationStories.handleLink; "Sample link" fills in campaign 40 '
+    'from its second slide. Links in the $demoLinkScheme:// scheme open the app '
+    'too; App Links / Universal Links are not set up',
     (context) => _StoriesLinkExhibit(shopId: shopId),
   ),
   _Exhibit(
@@ -2175,7 +2164,7 @@ extension on PersonalizationProduct {
 }
 
 /// A "Share" link field: [PersonalizationStories.handleLink] opens the campaign of the
-/// link over API v3 ([_storiesApiV3Domain]); `false` — not a stories link.
+/// link over API v3 ([demoStoriesApiV3Domain]); `false` — not a stories link.
 class _StoriesLinkExhibit extends StatefulWidget {
   const _StoriesLinkExhibit({required this.shopId});
 
@@ -2186,9 +2175,7 @@ class _StoriesLinkExhibit extends StatefulWidget {
 }
 
 class _StoriesLinkExhibitState extends State<_StoriesLinkExhibit> {
-  late final TextEditingController _link = TextEditingController(
-    text: _storiesSampleLink,
-  );
+  final TextEditingController _link = TextEditingController();
 
   @override
   void dispose() {
@@ -2216,14 +2203,23 @@ class _StoriesLinkExhibitState extends State<_StoriesLinkExhibit> {
           iconBuilder: _icon,
         ),
         const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: PersonalizationButton(
-            key: const Key('stories-link-open'),
-            label: 'Open',
-            size: PersonalizationButtonSize.sm,
-            onPressed: _open,
-          ),
+        Row(
+          children: [
+            PersonalizationButton(
+              key: const Key('stories-link-open'),
+              label: 'Open',
+              size: PersonalizationButtonSize.sm,
+              onPressed: _open,
+            ),
+            const SizedBox(width: 8),
+            PersonalizationButton(
+              key: const Key('stories-link-sample'),
+              label: 'Sample link',
+              size: PersonalizationButtonSize.sm,
+              view: PersonalizationButtonView.secondary,
+              onPressed: () => _link.text = _storiesSampleLink,
+            ),
+          ],
         ),
       ],
     );

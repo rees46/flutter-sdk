@@ -6,6 +6,7 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 // ignore: implementation_imports
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
+import '../demo_app.dart';
 import 'shop.dart';
 import 'shop_category.dart';
 import 'shop_product.dart';
@@ -13,7 +14,8 @@ import 'shop_products.dart';
 import 'shop_search_field.dart';
 
 /// "Shop" — a demo shop built from the kit and the public SDK methods: the way a
-/// host would integrate them. It is the home of the "Shop" tab (see `DemoTabs`).
+/// host would integrate them. It is the home of the "Shop" tab (see `DemoTabs`) and
+/// the whole app of `main_shop.dart`.
 /// Home has the instant search, the stories bar, the recommender block and the
 /// top-level categories; from there the category, product and search screens go on
 /// the tab's own navigator, so they open under the tab bar and back walks them in
@@ -93,7 +95,8 @@ class _ShopPaneState extends State<ShopPane> {
       children: [
         const SizedBox(height: 16),
         // Collapses when the block is empty or fails. A product of a story closes the
-        // viewer and opens here.
+        // viewer and opens here. Over API v3: slides with a link have "Share", and the
+        // link goes out in the demo scheme, which opens the campaign in the app.
         PersonalizationStories(
           code: shopStoriesCode,
           shopId: shopId,
@@ -102,6 +105,8 @@ class _ShopPaneState extends State<ShopPane> {
           onProductClick: (product) =>
               ShopProductScreen.open(context, shopId, product.id),
           iconBuilder: shopIcon,
+          apiV3Domain: demoStoriesApiV3Domain,
+          shareUrlTransform: demoShareUrl,
         ),
         const SizedBox(height: 24),
         // Title from the response; hidden until its products arrive. The card button
@@ -144,3 +149,20 @@ class _ShopPaneState extends State<ShopPane> {
     );
   }
 }
+
+/// Opens a stories "Share" link over the shop, as its home stories would: over API v3,
+/// a story's product opens on the product page. `false` — not a stories link.
+bool openShopStoriesLink(BuildContext context, String url, String shopId) =>
+    PersonalizationStories.handleLink(
+      context,
+      url,
+      shopId: shopId,
+      promoCopiedText: 'Code copied to clipboard',
+      onProductClick: (product) =>
+          ShopProductScreen.open(context, shopId, product.id),
+      onError: (error) =>
+          PersonalizationToast.show(context, 'Stories link error: $error'),
+      iconBuilder: shopIcon,
+      apiV3Domain: demoStoriesApiV3Domain,
+      shareUrlTransform: demoShareUrl,
+    );
