@@ -132,16 +132,65 @@ void main() {
       ],
     });
 
-    test('prefers the slide link, falls back to the campaign link', () {
+    test('prefers the slide link, falls back to the campaign link with the '
+        'slide in it', () {
       expect(
         storySlideShareUrl(story, story.slides[0]),
         'https://shop.test/?r46_slide=1',
       );
       expect(
         storySlideShareUrl(story, story.slides[1]),
-        'https://shop.test/?r46_story=5',
+        'https://shop.test/?r46_story=5&r46_slide=5_0',
+        reason: 'a product slide has no link of its own',
       );
     });
+
+    test(
+      'the campaign link takes r46_slide once, the rest stays as it was',
+      () {
+        const campaign = 'https://shop.test/?r46_story=5';
+        expect(
+          storyCampaignSlideUrl(campaign, '37'),
+          'https://shop.test/?r46_story=5&r46_slide=37',
+        );
+        expect(
+          storyCampaignSlideUrl(
+            'https://shop.test/p?q=a%20b&r46_story=5#top',
+            '5_2',
+          ),
+          'https://shop.test/p?q=a%20b&r46_story=5&r46_slide=5_2#top',
+          reason: 'before the fragment, nothing re-encoded',
+        );
+        expect(
+          storyCampaignSlideUrl('https://shop.test/promo', '5_2'),
+          'https://shop.test/promo?r46_slide=5_2',
+        );
+        expect(
+          storyCampaignSlideUrl('https://shop.test/?', '7'),
+          'https://shop.test/?r46_slide=7',
+        );
+        expect(
+          storyCampaignSlideUrl('$campaign&r46_slide=7', '5_2'),
+          '$campaign&r46_slide=7',
+          reason: 'r46_slide is there already',
+        );
+        for (final id in <String>[
+          'x',
+          '',
+          '1_',
+          '12345678901',
+          '1_12345',
+          '1;2',
+        ]) {
+          expect(
+            storyCampaignSlideUrl(campaign, id),
+            campaign,
+            reason: 'a link does not carry "$id"',
+          );
+        }
+        expect(storyCampaignSlideUrl('', '37'), '');
+      },
+    );
 
     test('nothing when sharing is off or the link is not http(s)', () {
       Story make(Map<String, dynamic> json) => Story.fromJson(<String, dynamic>{
@@ -164,7 +213,7 @@ void main() {
       final upper = make(<String, dynamic>{'share_url': 'HTTPS://shop.test/'});
       expect(
         storySlideShareUrl(upper, upper.slides.single),
-        'HTTPS://shop.test/',
+        'HTTPS://shop.test/?r46_slide=1',
       );
     });
   });

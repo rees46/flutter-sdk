@@ -372,8 +372,9 @@ class PersonalizationStories extends StatefulWidget {
   /// глобального [apiV3Domain]): ничего не делает. `true` —
   /// дальше асинхронно: дождаться SDK (как [show]), загрузить кампанию ссылки
   /// (`/story/{id}` API v3), закрыть открытый просмотр V2 и открыть свой — с первой
-  /// сторис ответа, со слайда `start_position` (в обход правила «первый
-  /// непросмотренный»). После показа один раз — событие `shared_open`. Ошибка, 404,
+  /// сторис ответа, со слайда ссылки (`r46_slide`), если он есть в ответе, иначе со
+  /// слайда `start_position`; в обход правила «первый непросмотренный». После показа
+  /// один раз — событие `shared_open` со слайдом, с которого начали. Ошибка, 404,
   /// пустой ответ или дольше 15 с — [onError], ничего не показывается, событий нет. Та
   /// же ссылка, пока прежняя грузится или её просмотр открыт, — ничего, но `true`.
   /// Остальное — как у [show].
@@ -525,7 +526,14 @@ Future<void> _openLink(
   }
   if (!context.mounted) return;
   final story = stories.first;
-  final start = story.startPosition.clamp(0, story.slides.length - 1);
+  // Слайд ссылки, если он есть в ответе: `start_position` сервер ставит только по своим
+  // слайдам, виртуальные слайды товарных кампаний (`39_2`) он не знает.
+  final linked = link.slideId == null
+      ? -1
+      : story.slides.indexWhere((slide) => slide.id == link.slideId);
+  final start = linked >= 0
+      ? linked
+      : story.startPosition.clamp(0, story.slides.length - 1);
   var opened = false;
   _closeOpenViewer();
   await _present(
@@ -538,7 +546,7 @@ Future<void> _openLink(
     controller: controller,
     onRoute: (route) => _openLinks[link.key] = route,
     onSlideShown: (_, _) {
-      // `shared_open` — один раз, после показа: кампания и слайд ссылки.
+      // `shared_open` — один раз, после показа: кампания и слайд, с которого начали.
       if (opened) return;
       opened = true;
       unawaited(

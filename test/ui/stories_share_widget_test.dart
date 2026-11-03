@@ -253,7 +253,7 @@ void main() {
 
     await tester.tap(_share);
     await tester.pump();
-    expect(api.shared, <String>[_link39]);
+    expect(api.shared, <String>['$_link39&r46_slide=39_0']);
     expect(api.anchors.single, share);
     expect(server.events, <String>['view 39/39_0', 'share 39/39_0']);
     await tester.tap(_share);
@@ -285,7 +285,9 @@ void main() {
     await open(tester, 'Products');
     await tester.tap(_share);
     await tester.pump();
-    expect(api.shared, <String>['demoapp://shop.example/?r46_story=39']);
+    expect(api.shared, <String>[
+      'demoapp://shop.example/?r46_story=39&r46_slide=39_0',
+    ]);
     expect(server.events, <String>['view 39/39_0', 'share 39/39_0']);
   });
 
@@ -297,7 +299,9 @@ void main() {
     expect(find.text('Product 39_1'), findsOneWidget, reason: 'no hold pause');
     await gesture.up();
     await tester.pump();
-    expect(api.shared, <String>[_link39], reason: 'a long press is a press');
+    expect(api.shared, <String>[
+      '$_link39&r46_slide=39_1',
+    ], reason: 'a long press is a press, on the slide it is on');
   });
 
   testWidgets('own slide links; no button when sharing is off', (tester) async {
@@ -509,6 +513,51 @@ void main() {
       );
       await _settle(tester);
       expect(server.gets, hasLength(2), reason: 'closed: the link opens again');
+    });
+
+    testWidgets('a product campaign opens at the link slide, though the server '
+        'starts at the first', (tester) async {
+      // The server does not know virtual slides: `slide_id=39_1` still answers
+      // `start_position: 0`.
+      server.answer = (_) => (status: 200, body: _feed(only: <String>['39']));
+      await tester.pumpWidget(_host(const Placeholder()));
+      expect(
+        PersonalizationStories.handleLink(
+          placeholder(tester),
+          'demoapp://demo.example/?r46_stories=$_code&r46_story=39'
+          '&r46_slide=39_1',
+          sdk: sdk,
+          iconBuilder: _icon,
+        ),
+        isTrue,
+      );
+      await _settle(tester);
+      expect(find.text('Product 39_1'), findsOneWidget);
+      expect(server.events, <String>['view 39/39_1', 'shared_open 39/39_1']);
+      // Its "Share" carries the slide again.
+      await tester.tap(_share);
+      await tester.pump();
+      expect(api.shared, <String>['$_link39&r46_slide=39_1']);
+    });
+
+    testWidgets('a link slide missing from the answer — start_position', (
+      tester,
+    ) async {
+      server.answer = (_) =>
+          (status: 200, body: _feed(start40: 1, only: <String>['40']));
+      await tester.pumpWidget(_host(const Placeholder()));
+      expect(
+        PersonalizationStories.handleLink(
+          placeholder(tester),
+          'https://demo.example/?r46_stories=$_code&r46_story=40&r46_slide=99',
+          sdk: sdk,
+          iconBuilder: _icon,
+        ),
+        isTrue,
+      );
+      await _settle(tester);
+      expect(find.text('Product 38'), findsOneWidget);
+      expect(server.events, <String>['view 40/38', 'shared_open 40/38']);
     });
 
     testWidgets('a failed load reaches onError and shows nothing', (

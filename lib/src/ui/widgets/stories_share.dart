@@ -84,10 +84,45 @@ StoriesShareLink? parseStoriesShareLink(String url) {
 }
 
 /// Ссылка «Поделиться» слайда [slide] кампании [story]: кампания запрещает делиться
-/// (`shareable: false`) — нет; иначе своя ссылка слайда, без неё — ссылка кампании.
-/// Только `http://` и `https://`; иначе нет. Нет ссылки — нет и кнопки на слайде.
+/// (`shareable: false`) — нет; иначе своя ссылка слайда, без неё — ссылка кампании с id
+/// слайда в `r46_slide` ([storyCampaignSlideUrl]). У слайдов товарных кампаний (`39_2`)
+/// своих ссылок нет, и без id слайда ссылка открыла бы кампанию не с того слайда,
+/// которым поделились. Только `http://` и `https://`; иначе нет. Нет ссылки — нет и
+/// кнопки на слайде.
 String? storySlideShareUrl(Story story, StorySlide slide) {
   if (!story.shareable) return null;
-  final url = slide.shareUrl.isNotEmpty ? slide.shareUrl : story.shareUrl;
+  final url = slide.shareUrl.isNotEmpty
+      ? slide.shareUrl
+      : storyCampaignSlideUrl(story.shareUrl, slide.id);
   return _httpLink.hasMatch(url) ? url : null;
+}
+
+/// Ссылка кампании [campaign] с `r46_slide=<slideId>` в конце запроса, перед `#`. Пустая
+/// ссылка, id слайда, который ссылка не несёт (не число и не `число_индекс`), или
+/// `r46_slide` уже есть — как есть. Остальной адрес не перекодируется.
+String storyCampaignSlideUrl(String campaign, String slideId) {
+  if (campaign.isEmpty || !_slideIdFormat.hasMatch(slideId)) return campaign;
+  final hash = campaign.indexOf('#');
+  final base = hash < 0 ? campaign : campaign.substring(0, hash);
+  final fragment = hash < 0 ? '' : campaign.substring(hash);
+  final mark = base.indexOf('?');
+  final query = mark < 0 ? '' : base.substring(mark + 1);
+  String name(String pair) {
+    final raw = pair.split('=').first;
+    try {
+      return Uri.decodeQueryComponent(raw);
+    } on FormatException {
+      return raw;
+    }
+  }
+
+  if (query.split('&').map(name).contains(storiesShareParamSlide)) {
+    return campaign;
+  }
+  final separator = mark < 0
+      ? '?'
+      : query.isEmpty || query.endsWith('&')
+      ? ''
+      : '&';
+  return '$base$separator$storiesShareParamSlide=$slideId$fragment';
 }

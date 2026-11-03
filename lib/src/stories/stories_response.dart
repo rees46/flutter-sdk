@@ -53,7 +53,8 @@ class Story {
   final bool shareable;
 
   /// "Share" link of the campaign (`share_url`, API v3); empty when not sent. Product
-  /// campaigns have only this one, their slides have none.
+  /// campaigns have only this one, their slides have none: a slide shares it with its
+  /// id in `r46_slide`.
   final String shareUrl;
 
   const Story({
