@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'app_theme_mode.dart';
 import 'demo_app.dart';
+import 'stories_polls_demo.dart';
 // The kit stays out of the package barrel until its release; the example reaches
 // it directly, which the analyzer flags as an implementation import on purpose.
 // ignore: implementation_imports
@@ -939,6 +940,19 @@ List<_Exhibit> _storyExhibits(String shopId) => [
         iconBuilder: _icon,
       );
     },
+  ),
+  _Exhibit(
+    'Stories V2 polls (offline) — every poll kind on its slide over API v3 with a fake '
+    'transport: answers take 0.6 s, the text poll fails once, choices get results',
+    (context) => Align(
+      alignment: Alignment.centerLeft,
+      child: PersonalizationButton(
+        key: const Key('stories-polls-open'),
+        label: 'Open',
+        size: PersonalizationButtonSize.sm,
+        onPressed: () => openStoriesPollsDemo(context, iconBuilder: _icon),
+      ),
+    ),
   ),
   _Exhibit('Story Cover — default, pinned, viewed, skeleton', (context) {
     return _ScrollRow(
