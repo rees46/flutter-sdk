@@ -40,7 +40,7 @@ class ShopSearchScreen extends StatefulWidget {
 class _ShopSearchScreenState extends State<ShopSearchScreen> {
   ShopSort _sort = ShopSort.relevance;
 
-  /// There is no sort picker in the design file: the shop brings the platform's own.
+  /// There is no sort picker in the design file: the shop brings its own sheet.
   Future<void> _pickSort() async {
     final sort = await pickShopSort(context, _sort);
     if (sort != null && mounted) setState(() => _sort = sort);
@@ -48,11 +48,8 @@ class _ShopSearchScreenState extends State<ShopSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: PersonalizationTheme.of(
-        context,
-      ).colors.backgroundGeneric,
-      body: SafeArea(
+    return ShopScaffold(
+      body: ShopResultsPage(
         child: PersonalizationSearchResultsScreen(
           shopId: widget.shopId,
           query: widget.query,

@@ -16,7 +16,7 @@ void main() {
   });
 
   for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
-    testWidgets('the picker hands back the chosen sort on ${platform.name}', (
+    testWidgets('the sheet hands back the chosen sort on ${platform.name}', (
       tester,
     ) async {
       final picked = <ShopSort?>[];
@@ -35,7 +35,10 @@ void main() {
 
       await tester.tap(find.text('Sort'));
       await tester.pumpAndSettle();
+      expect(find.text('Sort by'), findsOneWidget);
       expect(find.text('Relevance'), findsOneWidget);
+      // The current sort is checked, the others are not.
+      expect(find.byIcon(Icons.check), findsOneWidget);
       await tester.tap(find.text('Discount'));
       await tester.pumpAndSettle();
 

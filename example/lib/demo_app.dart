@@ -52,13 +52,54 @@ Future<void> requestDemoNotificationPermission() async {
   }
 }
 
-/// Seed theme of both demos.
-ThemeData demoTheme(Brightness brightness) => ThemeData(
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: Colors.blue,
-    brightness: brightness,
-  ),
-);
+/// Theme of both demos, on the kit's palette of that [brightness]: its brand is the
+/// primary colour, its card the surface, its text colours the text; the tab bar is the
+/// kit's card with the open tab in the brand colour and the others in the secondary
+/// text colour.
+ThemeData demoTheme(Brightness brightness) {
+  final colors =
+      (brightness == Brightness.dark
+              ? PersonalizationTheme.dark
+              : PersonalizationTheme.light)
+          .colors;
+  WidgetStateProperty<T> byTab<T>(T open, T other) =>
+      WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected) ? open : other,
+      );
+  return ThemeData(
+    // The roles the kit has no colour for come from its brand colour.
+    colorScheme:
+        ColorScheme.fromSeed(
+          seedColor: colors.brandPrimary,
+          brightness: brightness,
+        ).copyWith(
+          primary: colors.brandPrimary,
+          onPrimary: colors.textLightPrimary,
+          error: colors.semanticDanger,
+          surface: colors.backgroundCard,
+          onSurface: colors.textPrimary,
+          onSurfaceVariant: colors.textSecondary,
+          outline: colors.lineGeneric,
+          outlineVariant: colors.lineGenericSubtle,
+        ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: colors.backgroundCard,
+      indicatorColor: colors.buttonSecondary,
+      iconTheme: byTab(
+        IconThemeData(color: colors.brandPrimary),
+        IconThemeData(color: colors.textSecondary),
+      ),
+      labelTextStyle: byTab(
+        PersonalizationTypography.xsEmphasized.copyWith(
+          color: colors.brandPrimary,
+        ),
+        PersonalizationTypography.xsDefault.copyWith(
+          color: colors.textSecondary,
+        ),
+      ),
+    ),
+  );
+}
 
 /// Scheme of the demo's own links. The stories with sharing share
 /// `rees46flutter://<site>/?r46_stories=…` instead of `https://`, and the app opens
@@ -121,6 +162,13 @@ abstract final class DemoScreens {
 /// the shop's home.
 String? demoScreenName(Route<dynamic> route) =>
     route.settings.name == '/' ? DemoScreens.home : route.settings.name;
+
+/// Popups v3 of the demo shop that the "Show popup" menu of the shop's header shows by
+/// hand: id and menu item. A new popup is one more line.
+const List<({int id, String label})> demoManualPopups = [
+  (id: 181, label: '#181 Banner · top'),
+  (id: 182, label: '#182 Modal · center'),
+];
 
 /// Turns popups v3 on for [sdk], on the dashboard host of the demo shop
 /// ([demoStoriesApiV3Domain]). The `/init` flag does not reach Flutter yet (the

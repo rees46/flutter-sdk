@@ -10,11 +10,13 @@ import 'shop_category.dart';
 import 'shop_product.dart';
 import 'shop_search.dart';
 
-/// The shop's instant search, the same on home, category and product: once the field
-/// is focused its panel (recent searches, suggestions, categories, products) opens
-/// and the rest of the screen steps aside until Cancel; back with the panel open
-/// closes the panel, not the screen. Submit opens the search results, a product of
-/// the panel its product screen, a category of the panel its category screen.
+/// The shop's instant search on its home, behind the search button of its header: the
+/// button opens the search mode — the kit's field in place of the header, focused, with
+/// Cancel, and the field's panel (recent searches, suggestions, categories, products)
+/// under it while the rest of the page steps aside. Cancel or back closes it, back with
+/// it open does not leave the screen. Submit opens the search results and closes the
+/// mode, so back from them finds home as it was; a product of the panel opens its
+/// product screen, a category of the panel its category screen.
 class ShopSearchField extends StatefulWidget {
   const ShopSearchField({
     super.key,
@@ -22,25 +24,18 @@ class ShopSearchField extends StatefulWidget {
     required this.builder,
   });
 
-  /// The field pinned on top of [child], which fills the rest of the screen and
-  /// scrolls on its own. With the panel open the panel takes the whole screen.
-  ShopSearchField.above({
-    Key? key,
-    required String shopId,
-    required Widget child,
-  }) : this(
-         key: key,
-         shopId: shopId,
-         builder: (context, field, searching) =>
-             _Above(field: field, searching: searching, child: child),
-       );
-
   final String shopId;
 
-  /// Lays the screen out around [field] — the search field with its panel. While
-  /// [searching] the rest of the screen goes offstage, not away: it keeps what it
+  /// Lays the screen out: [field] — the search field with its panel — while
+  /// [searching], else the screen with [search] behind its search button. While
+  /// searching the rest of the screen goes offstage, not away: it keeps what it
   /// loaded.
-  final Widget Function(BuildContext context, Widget field, bool searching)
+  final Widget Function(
+    BuildContext context,
+    Widget field,
+    bool searching,
+    VoidCallback search,
+  )
   builder;
 
   @override
@@ -48,11 +43,35 @@ class ShopSearchField extends StatefulWidget {
 }
 
 class _ShopSearchFieldState extends State<ShopSearchField> {
-  /// The field has been focused: its panel is open until Cancel.
+  /// The search mode is on until Cancel.
   bool _searching = false;
 
-  /// Bumped on Cancel: a new field starts with an empty query.
+  /// Bumped on close: the next field starts with an empty query.
   int _searchField = 0;
+
+  /// Holds the field, to focus it: the kit's field keeps its focus node to itself.
+  final FocusScopeNode _scope = FocusScopeNode(debugLabel: 'Shop search');
+
+  @override
+  void dispose() {
+    _scope.dispose();
+    super.dispose();
+  }
+
+  void _open() {
+    setState(() => _searching = true);
+    // The field is built in the next frame; its text input is the one to focus.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_searching) return;
+      for (final node in _scope.descendants) {
+        if (node.context?.findAncestorWidgetOfExactType<EditableText>() !=
+            null) {
+          node.requestFocus();
+          return;
+        }
+      }
+    });
+  }
 
   void _close() {
     FocusScope.of(context).unfocus();
@@ -65,26 +84,23 @@ class _ShopSearchFieldState extends State<ShopSearchField> {
   @override
   Widget build(BuildContext context) {
     final shopId = widget.shopId;
-    final field = Focus(
-      onFocusChange: (focused) {
-        if (focused && !_searching) setState(() => _searching = true);
-      },
+    final field = FocusScope(
+      node: _scope,
       child: PersonalizationInstantSearchField(
         key: ValueKey(_searchField),
         shopId: shopId,
         placeholder: 'Search',
-        cancelText: _searching ? 'Cancel' : null,
-        showRecent: _searching,
-        showSuggestions: _searching,
-        showCategories: _searching,
-        showProducts: _searching,
+        cancelText: 'Cancel',
         recentLabel: 'Recent searches',
         clearText: 'Clear',
         moreText: 'more',
         categoriesLabel: 'Categories',
         productsLabel: 'Products',
         onCancel: _close,
-        onSubmit: (query) => ShopSearchScreen.open(context, shopId, query),
+        onSubmit: (query) {
+          _close();
+          ShopSearchScreen.open(context, shopId, query);
+        },
         onProductTap: (product) =>
             ShopProductScreen.open(context, shopId, product.id),
         onCategoryTap: (category) {
@@ -101,46 +117,7 @@ class _ShopSearchFieldState extends State<ShopSearchField> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _close();
       },
-      child: widget.builder(context, field, _searching),
-    );
-  }
-}
-
-/// [ShopSearchField.above]: the field over the screen, the open panel over all of it.
-class _Above extends StatelessWidget {
-  const _Above({
-    required this.field,
-    required this.searching,
-    required this.child,
-  });
-
-  final Widget field;
-  final bool searching;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Closed, the field takes its own height; open, the panel scrolls within
-          // the screen.
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: searching ? constraints.maxHeight : double.infinity,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: field,
-            ),
-          ),
-          Expanded(
-            child: Offstage(offstage: searching, child: child),
-          ),
-        ],
-      ),
+      child: widget.builder(context, field, _searching, _open),
     );
   }
 }

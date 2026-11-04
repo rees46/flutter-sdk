@@ -1,5 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
+// The kit stays out of the package barrel until its release; the example reaches
+// it directly, which the analyzer flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+
+import 'shop.dart';
 
 /// A sort of the shop's results screens (search and category): what goes into the
 /// screen's `sortBy` / `sortDir`. The kit draws no sort picker, the host brings one.
@@ -18,45 +24,92 @@ enum ShopSort {
   final String? sortDir;
 }
 
-/// The platform's plain picker of [ShopSort]: an action sheet on iOS, a bottom sheet
-/// with the current one checked elsewhere. `null` — dismissed without a choice.
+/// Height of a row of the sort sheet.
+const double _sortRowHeight = 52;
+
+/// The shop's sort picker, the same on both platforms: a bottom sheet on the kit's
+/// modal surface, "Sort by" over the sorts, the current one checked; a tap picks and
+/// closes. It covers the tab bar too. `null` — dismissed without a choice.
 Future<ShopSort?> pickShopSort(BuildContext context, ShopSort current) {
-  if (Theme.of(context).platform == TargetPlatform.iOS) {
-    return showCupertinoModalPopup<ShopSort>(
-      context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Sort by'),
-        actions: [
-          for (final sort in ShopSort.values)
-            CupertinoActionSheetAction(
-              isDefaultAction: sort == current,
-              onPressed: () => Navigator.of(context).pop(sort),
-              child: Text(sort.label),
+  final theme = PersonalizationTheme.of(context);
+  return showModalBottomSheet<ShopSort>(
+    context: context,
+    useRootNavigator: true,
+    backgroundColor: theme.colors.backgroundModal,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(theme.radius.modal),
+      ),
+    ),
+    clipBehavior: Clip.antiAlias,
+    builder: (context) => _ShopSortSheet(current: current),
+  );
+}
+
+class _ShopSortSheet extends StatelessWidget {
+  const _ShopSortSheet({required this.current});
+
+  final ShopSort current;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = PersonalizationTheme.of(context).colors;
+    const side = PersonalizationSpacing.paddingModal;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: side),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: side),
+              child: Text(
+                'Sort by',
+                style: shopTextStyle(
+                  context,
+                  PersonalizationTypography.lgEmphasized,
+                  colors.textPrimary,
+                ),
+              ),
             ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+            const SizedBox(height: PersonalizationSpacing.md),
+            for (final sort in ShopSort.values)
+              Semantics(
+                button: true,
+                selected: sort == current,
+                child: InkWell(
+                  onTap: () => Navigator.of(context).pop(sort),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: _sortRowHeight,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: side),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              sort.label,
+                              style: shopTextStyle(
+                                context,
+                                PersonalizationTypography.baseDefault,
+                                colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (sort == current)
+                            Icon(Icons.check, color: colors.brandPrimary),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
-  return showModalBottomSheet<ShopSort>(
-    context: context,
-    builder: (context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const ListTile(title: Text('Sort by')),
-          for (final sort in ShopSort.values)
-            ListTile(
-              title: Text(sort.label),
-              trailing: sort == current ? const Icon(Icons.check) : null,
-              selected: sort == current,
-              onTap: () => Navigator.of(context).pop(sort),
-            ),
-        ],
-      ),
-    ),
-  );
 }

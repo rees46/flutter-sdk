@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+// The kit stays out of the package barrel until its release; the example reaches
+// it directly, which the analyzer flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+
 /// The demo's sections as bottom tabs, in the order and under the names of the
 /// native demos: "API" — the SDK methods, "UI Kit" — the kit's showcase, "Shop" —
 /// the demo shop. "API" is open at start.
@@ -104,29 +109,41 @@ class DemoTabsState extends State<DemoTabs> {
             _opened.contains(index) ? tab : const SizedBox.shrink(),
         ],
       ),
-      // The bar keeps clear of the bottom safe area itself.
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: _open,
-        destinations: const [
-          NavigationDestination(
-            key: Key('tab-api'),
-            icon: Icon(Icons.list),
-            label: 'API',
+      // The bar keeps clear of the bottom safe area itself. Its colours are the
+      // kit's (see `demoTheme`); a hairline parts it from a panel pinned over it.
+      bottomNavigationBar: DecoratedBox(
+        // Over the bar, which paints its own background.
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: PersonalizationTheme.of(context).colors.lineGenericSubtle,
+            ),
           ),
-          NavigationDestination(
-            key: Key('tab-ui-kit'),
-            icon: Icon(Icons.grid_view_outlined),
-            selectedIcon: Icon(Icons.grid_view),
-            label: 'UI Kit',
-          ),
-          NavigationDestination(
-            key: Key('tab-shop'),
-            icon: Icon(Icons.shopping_bag_outlined),
-            selectedIcon: Icon(Icons.shopping_bag),
-            label: 'Shop',
-          ),
-        ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _tab,
+          onDestinationSelected: _open,
+          destinations: const [
+            NavigationDestination(
+              key: Key('tab-api'),
+              icon: Icon(Icons.list),
+              label: 'API',
+            ),
+            NavigationDestination(
+              key: Key('tab-ui-kit'),
+              icon: Icon(Icons.grid_view_outlined),
+              selectedIcon: Icon(Icons.grid_view),
+              label: 'UI Kit',
+            ),
+            NavigationDestination(
+              key: Key('tab-shop'),
+              icon: Icon(Icons.shopping_bag_outlined),
+              selectedIcon: Icon(Icons.shopping_bag),
+              label: 'Shop',
+            ),
+          ],
+        ),
       ),
     );
   }
