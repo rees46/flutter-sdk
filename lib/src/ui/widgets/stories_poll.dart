@@ -42,6 +42,71 @@ class StoryPollTexts {
   }
 }
 
+/// Тексты итогов опроса с выбором: шапка «Результаты», «Спасибо! Голос учтён» и число
+/// голосов. Язык — устройства, как у текстов попапов v3: русский для `ru`, остальные —
+/// английский.
+@immutable
+class StoryPollResultTexts {
+  const StoryPollResultTexts._({
+    required this.results,
+    required this.thanks,
+    required this.counted,
+    required bool russian,
+  }) : _russian = russian;
+
+  static const StoryPollResultTexts ru = StoryPollResultTexts._(
+    results: 'Результаты',
+    thanks: 'Спасибо!',
+    counted: 'Голос учтён',
+    russian: true,
+  );
+
+  static const StoryPollResultTexts en = StoryPollResultTexts._(
+    results: 'Results',
+    thanks: 'Thank you!',
+    counted: 'Vote counted',
+    russian: false,
+  );
+
+  /// По коду языка [language]: `ru` — русский, остальные — английский.
+  static StoryPollResultTexts of(String language) => language == 'ru' ? ru : en;
+
+  /// Шапка итогов; на карточке — прописными.
+  final String results;
+
+  /// Благодарность, когда у опроса нет своего `thanks_text`.
+  final String thanks;
+
+  /// Продолжение благодарности.
+  final String counted;
+  final bool _russian;
+
+  /// Число голосов [count] с разрядами (у русского — неразрывный пробел) и склонением:
+  /// «1 голос», «1 248 голосов», «1 vote», «1,248 votes».
+  String votes(int count) {
+    final number = _grouped(count, _russian ? '\u00A0' : ',');
+    if (!_russian) return '$number ${count == 1 ? 'vote' : 'votes'}';
+    final tens = count.abs() % 100;
+    final ones = count.abs() % 10;
+    final noun = ones == 1 && tens != 11
+        ? 'голос'
+        : ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)
+        ? 'голоса'
+        : 'голосов';
+    return '$number $noun';
+  }
+
+  static String _grouped(int value, String separator) {
+    final digits = value.abs().toString();
+    final out = StringBuffer(value < 0 ? '-' : '');
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) out.write(separator);
+      out.write(digits[i]);
+    }
+    return out.toString();
+  }
+}
+
 /// Оценки шкалы: `rate_min..rate_max`, по умолчанию NPS 0..10, CSAT 1..5, CES 1..7; не
 /// больше 21 значения.
 List<int> storyPollScaleRange(StoryPollElement poll) {

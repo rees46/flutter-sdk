@@ -696,6 +696,68 @@ void main() {
         );
       }
     });
+
+    test('results texts by the language: ru for ru, English for the rest', () {
+      expect(StoryPollResultTexts.of('ru'), StoryPollResultTexts.ru);
+      for (final language in <String>['en', 'de', 'uk', '']) {
+        expect(StoryPollResultTexts.of(language), StoryPollResultTexts.en);
+      }
+      const ru = StoryPollResultTexts.ru;
+      const en = StoryPollResultTexts.en;
+      expect(
+        (ru.results, ru.thanks, ru.counted),
+        ('Результаты', 'Спасибо!', 'Голос учтён'),
+      );
+      expect(
+        (en.results, en.thanks, en.counted),
+        ('Results', 'Thank you!', 'Vote counted'),
+      );
+    });
+
+    test('votes: Russian plural forms, English vote/votes, digit groups', () {
+      const ru = <int, String>{
+        1: '1 голос',
+        2: '2 голоса',
+        4: '4 голоса',
+        5: '5 голосов',
+        11: '11 голосов',
+        12: '12 голосов',
+        14: '14 голосов',
+        21: '21 голос',
+        22: '22 голоса',
+        25: '25 голосов',
+        101: '101 голос',
+        111: '111 голосов',
+        112: '112 голосов',
+        122: '122 голоса',
+        1000: '1 000 голосов',
+        1248: '1 248 голосов',
+        1000001: '1 000 001 голос',
+      };
+      ru.forEach(
+        (count, text) => expect(
+          StoryPollResultTexts.ru.votes(count),
+          text,
+          reason: '$count',
+        ),
+      );
+      const en = <int, String>{
+        1: '1 vote',
+        2: '2 votes',
+        11: '11 votes',
+        21: '21 votes',
+        999: '999 votes',
+        1248: '1,248 votes',
+        1234567: '1,234,567 votes',
+      };
+      en.forEach(
+        (count, text) => expect(
+          StoryPollResultTexts.en.votes(count),
+          text,
+          reason: '$count',
+        ),
+      );
+    });
   });
 
   group('session store', () {

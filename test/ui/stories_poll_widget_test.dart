@@ -209,10 +209,10 @@ void main() {
     await open(tester, stories);
     expect(card, findsOneWidget);
     expect(find.text('Q mini_poll single_choice'), findsOneWidget);
-    // y_offset 50 of the slide, 16 from the edges, centred.
+    // y_offset 50 of the slide, 12 from the edges, centred.
     final rect = tester.getRect(card);
     expect(rect.top, _screen.height / 2);
-    expect((rect.left, rect.right), (16, _screen.width - 16));
+    expect((rect.left, rect.right), (12, _screen.width - 12));
   });
 
   testWidgets('taps, holds and swipes on the card stay on it', (tester) async {
@@ -364,7 +364,6 @@ void main() {
           const StoryPollReply(answer: StoryPollAnswer(text: 'Мастер и')),
         );
         await _replied(tester);
-        expect(find.text('✓'), findsOneWidget);
         expect(find.text('Спасибо!'), findsOneWidget);
         expect(find.text('Мастер и'), findsOneWidget);
         expect(find.byType(TextField), findsNothing);
@@ -721,6 +720,256 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('%'), findsNothing);
     expect(find.text('Спасибо!'), findsOneWidget);
+  });
+
+  group('the view', () {
+    Map<String, dynamic> answered({
+      String thanks = '',
+      int total = 1248,
+      String kind = 'single_choice',
+    }) => _poll(
+      'mini_poll',
+      kind: kind,
+      answer: <String, dynamic>{
+        'option_ids': <int>[2],
+      },
+      results: <String, dynamic>{
+        'total': total,
+        'options': <Map<String, dynamic>>[
+          <String, dynamic>{'id': 1, 'percent': 52},
+          <String, dynamic>{'id': 2, 'percent': 31},
+          <String, dynamic>{'id': 3, 'percent': 17},
+        ],
+      },
+      fields: <String, dynamic>{'thanks_text': thanks},
+    );
+
+    testWidgets('an answered choice: the results header, my answer checked, '
+        '«Thank you! Vote counted» and the votes', (tester) async {
+      await tester.pumpWidget(alone(answered()));
+      await tester.pumpAndSettle();
+      expect(find.text('RESULTS'), findsOneWidget);
+      expect(find.text('A'), findsOneWidget);
+      expect(find.text('B'), findsNothing, reason: 'a check instead');
+      expect(find.text('C'), findsOneWidget);
+      expect(find.text('Thank you! Vote counted'), findsOneWidget);
+      expect(find.text('1,248 votes'), findsOneWidget);
+      // The header is above the question, the votes on the right of the thanks.
+      final question = tester.getRect(find.text('Q mini_poll single_choice'));
+      expect(
+        tester.getRect(find.text('RESULTS')).bottom,
+        lessThan(question.top),
+      );
+      expect(
+        tester.getRect(find.text('1,248 votes')).right,
+        tester.getRect(card).right - 20,
+      );
+
+      // Its own thanks replaces the pair; no total — no votes.
+      await tester.pumpWidget(
+        alone(answered(thanks: 'Спасибо за ответ!', total: 0)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Спасибо за ответ!'), findsOneWidget);
+      expect(find.text('Thank you! Vote counted'), findsNothing);
+      expect(find.textContaining('vote'), findsNothing);
+
+      await tester.pumpWidget(alone(answered(kind: 'multiple_choice')));
+      await tester.pumpAndSettle();
+      expect(find.text('RESULTS'), findsOneWidget);
+    });
+
+    testWidgets('the results texts follow the device language', (tester) async {
+      tester.platformDispatcher.localeTestValue = const Locale('ru', 'RU');
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+      await tester.pumpWidget(alone(answered(total: 21)));
+      await tester.pumpAndSettle();
+      expect(find.text('РЕЗУЛЬТАТЫ'), findsOneWidget);
+      expect(find.text('Спасибо! Голос учтён'), findsOneWidget);
+      expect(find.text('21 голос'), findsOneWidget);
+    });
+
+    testWidgets('no results header in a form, on a scale or a text', (
+      tester,
+    ) async {
+      for (final json in <Map<String, dynamic>>[
+        _poll('mini_poll', kind: 'single_choice'),
+        _poll('mini_poll', kind: 'multiple_choice'),
+        _poll('nps', answer: <String, dynamic>{'rate': 9}),
+        _poll(
+          'mini_poll',
+          kind: 'text',
+          answer: <String, dynamic>{'text': 'x'},
+        ),
+      ]) {
+        await tester.pumpWidget(alone(json));
+        await tester.pumpAndSettle();
+        expect(find.text('RESULTS'), findsNothing, reason: '$json');
+        expect(find.textContaining('Vote counted'), findsNothing);
+      }
+      await tester.pumpWidget(alone(_poll('mini_poll', kind: 'single_choice')));
+      expect(
+        <String>['A', 'B', 'C'].map((letter) => find.text(letter)),
+        everyElement(findsOneWidget),
+      );
+    });
+
+    testWidgets('sizes: left-aligned text, rows 56 and 8 apart, the track, '
+        'the field and the button 52', (tester) async {
+      await tester.pumpWidget(alone(_poll('mini_poll', kind: 'single_choice')));
+      final box = tester.getRect(card);
+      expect(
+        tester.getRect(find.text('Q mini_poll single_choice')).left,
+        box.left + 20,
+      );
+      Rect row(String label) => tester.getRect(
+        find
+            .ancestor(of: find.text(label), matching: find.byType(Container))
+            .first,
+      );
+      expect(row('Себе').height, 56);
+      expect(row('Маме').top - row('Себе').bottom, 8);
+      expect(
+        tester.getRect(find.text('Себе')).left,
+        box.left + 20 + 12 + 32 + 12,
+        reason: 'the letter square and its gaps',
+      );
+
+      await tester.pumpWidget(alone(_poll('nps')));
+      final track = find
+          .ancestor(of: find.text('0'), matching: find.byType(Container))
+          .first;
+      expect(tester.getSize(track).height, 52);
+      expect(tester.getRect(track).width, box.width - 40);
+
+      await tester.pumpWidget(alone(_poll('mini_poll', kind: 'text')));
+      expect(
+        tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.byType(TextField),
+                    matching: find.byType(Container),
+                  )
+                  .first,
+            )
+            .height,
+        greaterThanOrEqualTo(52),
+      );
+      expect(
+        tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.text('Send'),
+                    matching: find.byType(Container),
+                  )
+                  .first,
+            )
+            .height,
+        52,
+      );
+    });
+
+    testWidgets('a chosen row is filled only before sending; my answer in the '
+        'results keeps the usual background, the accent border and bar; text '
+        'on the accent by contrast', (tester) async {
+      const accent = Color(0xFF22C55E);
+      Container row(String label) => tester.widget<Container>(
+        find
+            .ancestor(of: find.text(label), matching: find.byType(Container))
+            .first,
+      );
+      Color? fill(String label) =>
+          (row(label).decoration! as BoxDecoration).color;
+      Color? border(String label) =>
+          ((row(label).foregroundDecoration as BoxDecoration?)?.border
+                  as Border?)
+              ?.top
+              .color;
+
+      await tester.pumpWidget(
+        alone(_poll('mini_poll', kind: 'multiple_choice')),
+      );
+      await tester.tap(find.text('Маме'));
+      await tester.pump();
+      expect((fill('Маме'), border('Маме')), (const Color(0x3322C55E), accent));
+      expect((fill('Себе'), border('Себе')), (const Color(0x0F000000), null));
+      expect(
+        tester.widget<Text>(find.text('Send')).style!.color,
+        const Color(0xFF000000),
+        reason: 'dark is the contrast on the accent',
+      );
+
+      await tester.pumpWidget(alone(answered()));
+      await tester.pumpAndSettle();
+      expect((fill('Маме'), border('Маме')), (const Color(0x0F000000), accent));
+      expect((fill('Себе'), border('Себе')), (const Color(0x0F000000), null));
+      Color bar(String label) => tester
+          .widget<ColoredBox>(
+            find.descendant(
+              of: find
+                  .ancestor(of: find.text(label), matching: find.byType(Stack))
+                  .first,
+              matching: find.byType(ColoredBox),
+            ),
+          )
+          .color;
+      expect(bar('Маме'), const Color(0x4022C55E));
+      expect(bar('Себе'), const Color(0x14000000));
+    });
+
+    testWidgets('the scale: the chosen digit in a capsule of its band colour, '
+        'the accent without bands; the rest dimmed once answered', (
+      tester,
+    ) async {
+      Color? capsule(String digit) {
+        final decoration =
+            tester
+                    .widget<DecoratedBox>(
+                      find
+                          .ancestor(
+                            of: find.text(digit),
+                            matching: find.byType(DecoratedBox),
+                          )
+                          .first,
+                    )
+                    .decoration
+                as BoxDecoration;
+        return decoration.color;
+      }
+
+      double opacity(String digit) => tester
+          .widget<Opacity>(
+            find
+                .ancestor(of: find.text(digit), matching: find.byType(Opacity))
+                .first,
+          )
+          .opacity;
+
+      await tester.pumpWidget(
+        alone(_poll('nps', answer: <String, dynamic>{'rate': 9})),
+      );
+      expect(capsule('9'), storyPollScaleColor(StoryPollType.nps, 9, 0, 10));
+      expect(capsule('5'), isNull);
+      expect((opacity('9'), opacity('5')), (1.0, 0.55));
+      expect(
+        tester.widget<Text>(find.text('9')).style!.color,
+        const Color(0xFF000000),
+        reason: 'dark is the contrast on a light green',
+      );
+
+      await tester.pumpWidget(
+        alone(
+          _poll(
+            'csat',
+            answer: <String, dynamic>{'rate': 3},
+            fields: <String, dynamic>{'bands': <Object>[]},
+          ),
+        ),
+      );
+      expect(capsule('3'), const Color(0xFF22C55E));
+    });
   });
 
   testWidgets('text re-answer: an empty field in focus, the slide held', (
