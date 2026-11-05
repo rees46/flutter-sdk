@@ -24,6 +24,8 @@ class ShopApp extends StatelessWidget {
       title: 'REES46 Shop',
       theme: demoTheme(Brightness.light),
       darkTheme: demoTheme(Brightness.dark),
+      // The game opens on it, over the shop.
+      navigatorKey: demoNavigatorKey,
       // The shop's screens for popups v3; the home reports itself once the SDK is up.
       navigatorObservers: <NavigatorObserver>[
         PersonalizationScreenObserver(
@@ -36,8 +38,8 @@ class ShopApp extends StatelessWidget {
   }
 }
 
-/// Initializes the demo shop, then is its home; a stories link opens the campaign
-/// over the shop.
+/// Initializes the demo shop, then is its home; the game's link opens the game over
+/// the shop, a stories link the campaign.
 class _ShopHome extends StatefulWidget {
   const _ShopHome();
 
@@ -66,7 +68,7 @@ class _ShopHomeState extends State<_ShopHome> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       requestDemoNotificationPermission();
     });
-    // Stories links of the demo scheme, the one of a cold start included.
+    // Links of the demo scheme, the one of a cold start included.
     DemoLinks.listen(_openLink);
   }
 
@@ -79,9 +81,9 @@ class _ShopHomeState extends State<_ShopHome> {
   }
 
   void _openLink(String url) {
-    if (!mounted) return;
+    if (!mounted || openDemoGameLink(url)) return;
     if (!openShopStoriesLink(context, url, demoShopId)) {
-      debugPrint('Demo: not a stories link — $url');
+      debugPrint('Demo: neither the game nor a stories link — $url');
     }
   }
 

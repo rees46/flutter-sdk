@@ -3,12 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 // The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
+// it directly, which the analyzer flags as an implementation import on purpose; the
+// same goes for the bridge through which the kit has the system open a link.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/personalization_sdk.dart'
+    show PersonalizationStoriesBridge;
 // ignore: implementation_imports
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
+import 'game/game_screen.dart';
+
 // What the full demo (`main.dart`) and the shop-only one (`main_shop.dart`) share:
-// the hardcoded shop and its init, the theme and the demo's stories links.
+// the hardcoded shop and its init, the theme, the demo's stories links and the game's.
 
 /// Hardcoded demo shop: both demos initialize it, the UI Kit and the shop reach it
 /// by this id.
@@ -116,10 +122,10 @@ String demoShareUrl(String url) => url.replaceFirst(
   '$demoLinkScheme://',
 );
 
-/// Stories "Share" links in the demo scheme
-/// (`rees46flutter://<any host>/?r46_stories=…`). MainActivity / AppDelegate hand them
-/// over: the one the app was started with on request (`getInitialLink`), later ones as
-/// `onLink`.
+/// Links of the demo scheme, any host and path: stories "Share" links
+/// (`rees46flutter://<any host>/?r46_stories=…`) and the game's
+/// (`rees46flutter://game`). MainActivity / AppDelegate hand them over: the one the app
+/// was started with on request (`getInitialLink`), later ones as `onLink`.
 abstract final class DemoLinks {
   static const MethodChannel _channel = MethodChannel(
     'rees46_sdk_example/links',
@@ -144,6 +150,97 @@ abstract final class DemoLinks {
   static void cancel() => _channel.setMethodCallHandler(null);
 }
 
+/// Navigator of both demos' apps: the game opens on it, over whatever is open — the
+/// tabs and the shop's own navigator included.
+final GlobalKey<NavigatorState> demoNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Schemes of the demos' own links: the Android and iOS demos', this one's
+/// ([demoLinkScheme]) and the React Native one's.
+const Set<String> _demoSchemes = <String>{'rees46', demoLinkScheme, 'rees46rn'};
+
+/// The mini-game's link [url] read; `null` — not its link.
+///
+/// The game's link is host `game` in the scheme of any demo — so one link of a story
+/// or a popup in the dashboard opens the game in each of them — without
+/// `r46_stories`, which makes it a stories link; the path does not matter. Its `url`
+/// parameter, an `https` address, is a game of the app's own from its server
+/// ([page]); anything else there, or nothing, is the built-in game.
+({Uri? page})? readDemoGameLink(String url) {
+  final uri = Uri.tryParse(url.trim());
+  if (uri == null || !_demoSchemes.contains(uri.scheme) || uri.host != 'game') {
+    return null;
+  }
+  // Pair by pair: broken %-encoding of one value spoils only that value.
+  final params = <String, String?>{};
+  for (final pair in uri.query.split('&')) {
+    if (pair.isEmpty) continue;
+    final eq = pair.indexOf('=');
+    final key = _decoded(eq < 0 ? pair : pair.substring(0, eq));
+    if (key == null) continue;
+    params.putIfAbsent(
+      key,
+      () => eq < 0 ? '' : _decoded(pair.substring(eq + 1)),
+    );
+  }
+  if (params.containsKey('r46_stories')) return null;
+  final page = Uri.tryParse(params['url'] ?? '');
+  final own = page != null && page.scheme == 'https' && page.host.isNotEmpty;
+  return (page: own ? page : null);
+}
+
+String? _decoded(String component) {
+  try {
+    return Uri.decodeQueryComponent(component);
+  } on FormatException {
+    return null;
+  }
+}
+
+/// Whether [url] is the mini-game's link ([readDemoGameLink]).
+bool isDemoGameLink(String url) => readDemoGameLink(url) != null;
+
+/// The open game; another link to it while it is open opens nothing new.
+Route<void>? _openGame;
+
+/// Opens the game over the open screen if [url] is its link ([readDemoGameLink]).
+/// `false` — not the game's link, or the app has no navigator yet.
+///
+/// While the game is open the popups of triggers do not show: the SDK puts a popup
+/// over the app's pages, the game's too — an app that the game's link starts would
+/// get its `app_start` popups right over the game.
+bool openDemoGameLink(String url) {
+  final link = readDemoGameLink(url);
+  if (link == null) return false;
+  final navigator = demoNavigatorKey.currentState;
+  if (navigator == null) return false;
+  if (_openGame?.isActive ?? false) return true;
+  final game = _openGame = MaterialPageRoute<void>(
+    settings: const RouteSettings(name: DemoScreens.game),
+    fullscreenDialog: true,
+    builder: (_) => DemoGameScreen(url: link.page),
+  );
+  final sdk = REES46.isInitialized(demoShopId)
+      ? REES46.getInstance(demoShopId)
+      : null;
+  final popups = sdk?.enableAutoPopupPresentation;
+  sdk?.enableAutoPopupPresentation = false;
+  navigator.push(game).whenComplete(() {
+    if (popups != null) sdk!.enableAutoPopupPresentation = popups;
+  });
+  return true;
+}
+
+/// Link of a slide's button in the demo's stories of [shopId] (the viewer has closed
+/// by then): the game's opens the game here; the rest go to the system, as they would
+/// without the handler.
+ValueChanged<String> demoStoriesLinkClick(String shopId) => (url) {
+  if (openDemoGameLink(url) || !REES46.isInitialized(shopId)) return;
+  REES46.getInstance(shopId).openUrl(url).catchError((Object error) {
+    debugPrint('Demo: cannot open $url — $error');
+    return false;
+  });
+};
+
 /// Screen codes the demos report to popups v3 — what the marketer puts in
 /// `target_screens` of a popup in the editor.
 abstract final class DemoScreens {
@@ -156,6 +253,9 @@ abstract final class DemoScreens {
   static const String category = 'category';
   static const String product = 'product';
   static const String search = 'search';
+
+  /// The mini-game, over any screen.
+  static const String game = 'game';
 }
 
 /// Screen code of a shop route: its name, the navigator's first route ('/') being
@@ -168,6 +268,7 @@ String? demoScreenName(Route<dynamic> route) =>
 const List<({int id, String label})> demoManualPopups = [
   (id: 181, label: '#181 Banner · top'),
   (id: 182, label: '#182 Modal · center'),
+  (id: 185, label: '#185 Fullscreen'),
 ];
 
 /// Turns popups v3 on for [sdk], on the dashboard host of the demo shop
@@ -175,7 +276,8 @@ const List<({int id, String label})> demoManualPopups = [
 /// plugin is built against the published native SDKs), so the demo forces the
 /// engine on; its decisions and the popup events go to the debug log. A product of a
 /// recommendations block in a popup goes to [onProductClick], which opens it in the
-/// shop and returns true; the screen that sets it takes it off when it goes.
+/// shop and returns true; the screen that sets it takes it off when it goes. The game's
+/// link opens the game here, and the popup goes; the other links go to the system.
 void enableDemoPopupsV3(
   PersonalizationSdk sdk, {
   bool Function(PersonalizationProduct product)? onProductClick,
@@ -184,6 +286,8 @@ void enableDemoPopupsV3(
     ..appHost = demoStoriesApiV3Domain
     ..debug = true
     ..onProductClick = onProductClick
+    // The game's link opened here: the popup goes, without `close`.
+    ..onLink = openDemoGameLink
     ..ignoreInitFlag = true
     ..enabled = true;
 }

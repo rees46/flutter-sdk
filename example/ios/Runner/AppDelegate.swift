@@ -12,20 +12,21 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DemoStoriesLinks") {
-      DemoStoriesLinks.register(with: registrar)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DemoLinks") {
+      DemoLinks.register(with: registrar)
     }
   }
 }
 
-/// Stories "Share" links in the demo scheme, any host and path:
-/// `rees46flutter://<site>/?r46_stories=<code>&r46_story=<id>[&r46_slide=<id>]`.
+/// Links in the demo scheme, any host and path: stories "Share" links,
+/// `rees46flutter://<site>/?r46_stories=<code>&r46_story=<id>[&r46_slide=<id>]`, and the
+/// game's, `rees46flutter://game`. Dart tells them apart.
 ///
 /// Gets them from the scene (Flutter's deep linking is off in Info.plist: it would push them
 /// to the Navigator as routes) and hands them to Dart over `rees46_sdk_example/links`: the
 /// link the app was started with on request (`getInitialLink`), later ones as `onLink`.
-final class DemoStoriesLinks: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
-  private static let shared = DemoStoriesLinks()
+final class DemoLinks: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
+  private static let shared = DemoLinks()
 
   private var channel: FlutterMethodChannel?
 
@@ -54,21 +55,20 @@ final class DemoStoriesLinks: NSObject, FlutterPlugin, FlutterSceneLifeCycleDele
     willConnectTo session: UISceneSession,
     options connectionOptions: UIScene.ConnectionOptions?
   ) -> Bool {
-    if let url = connectionOptions?.urlContexts.map(\.url).first(where: Self.isStoriesLink) {
+    if let url = connectionOptions?.urlContexts.map(\.url).first(where: Self.isDemoLink) {
       initialLink = url.absoluteString
     }
     return false
   }
 
   func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) -> Bool {
-    guard let url = URLContexts.map(\.url).first(where: Self.isStoriesLink) else { return false }
+    guard let url = URLContexts.map(\.url).first(where: Self.isDemoLink) else { return false }
     channel?.invokeMethod("onLink", arguments: url.absoluteString)
     return true
   }
 
-  /// A link with `r46_stories`, whatever its host and path.
-  private static func isStoriesLink(_ url: URL) -> Bool {
-    let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-    return items.contains { $0.name == "r46_stories" }
+  /// A link of the demo scheme, whatever its host and path.
+  private static func isDemoLink(_ url: URL) -> Bool {
+    url.scheme?.lowercased() == "rees46flutter"
   }
 }

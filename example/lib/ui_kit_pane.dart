@@ -796,7 +796,8 @@ class _LiveRecommenderState extends State<_LiveRecommender> {
 const String _storiesCode = '115bd0b67cf5989a1b60c841790b2af6';
 
 /// Opens a stories "Share" link over API v3 ([demoStoriesApiV3Domain]) — from the link
-/// field and from the demo's deep links. `false` — not a stories link (no `r46_stories`).
+/// field and from the demo's deep links; a button's link to the game opens the game.
+/// `false` — not a stories link (no `r46_stories`).
 bool openStoriesLink(
   BuildContext context,
   String url, {
@@ -806,6 +807,7 @@ bool openStoriesLink(
   url,
   shopId: shopId,
   promoCopiedText: 'Code copied to clipboard',
+  onLinkClick: demoStoriesLinkClick(shopId),
   onProductClick: (product) =>
       PersonalizationToast.show(context, 'Product: ${product.name}'),
   onError: (error) => _snack(context, 'Stories link error: $error'),

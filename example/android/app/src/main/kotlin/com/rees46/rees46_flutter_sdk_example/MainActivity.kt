@@ -11,20 +11,20 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
-    /** Stories link the activity was started with, until Dart takes it (`getInitialLink`). */
+    /** Demo link the activity was started with, until Dart takes it (`getInitialLink`). */
     private var initialLink: String? = null
     private var links: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // A recreated activity (rotation, process restore) does not open the link again.
-        if (savedInstanceState == null) initialLink = storiesLink(intent)
+        if (savedInstanceState == null) initialLink = demoLink(intent)
         super.onCreate(savedInstanceState)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         // singleTop: a link while the app is open comes here, not to onCreate.
-        storiesLink(intent)?.let { links?.invokeMethod("onLink", it) }
+        demoLink(intent)?.let { links?.invokeMethod("onLink", it) }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -74,20 +74,20 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    /** A stories "Share" link: a VIEW link with `r46_stories`, whatever its host and path. */
-    private fun storiesLink(intent: Intent?): String? {
+    /**
+     * A VIEW link of the demo scheme, whatever its host and path: a stories "Share" link
+     * (`r46_stories`) or the game's (`rees46flutter://game`). Dart tells them apart.
+     */
+    private fun demoLink(intent: Intent?): String? {
         if (intent?.action != Intent.ACTION_VIEW) return null
         val data = intent.data ?: return null
-        return if (data.isHierarchical && data.getQueryParameter("r46_stories") != null) {
-            data.toString()
-        } else {
-            null
-        }
+        return if (data.scheme.equals(DEMO_SCHEME, ignoreCase = true)) data.toString() else null
     }
 
     private companion object {
         const val CHANNEL = "rees46_sdk_example/platform"
         const val LINKS_CHANNEL = "rees46_sdk_example/links"
+        const val DEMO_SCHEME = "rees46flutter"
         const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
     }
 }

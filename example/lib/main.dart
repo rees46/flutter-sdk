@@ -46,6 +46,8 @@ class App extends StatelessWidget {
       valueListenable: appThemeMode,
       builder: (context, mode, _) => MaterialApp(
         title: 'REES46 Flutter SDK',
+        // The game opens on it, over the tabs.
+        navigatorKey: demoNavigatorKey,
         theme: demoTheme(Brightness.light),
         darkTheme: demoTheme(Brightness.dark),
         themeMode: mode,
@@ -298,15 +300,16 @@ class _InitPageState extends State<InitPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       requestDemoNotificationPermission();
     });
-    // Stories links of the demo scheme, the one of a cold start included.
+    // Links of the demo scheme, the one of a cold start included.
     DemoLinks.listen(_openLink);
   }
 
-  /// Opens the stories campaign of [url] over API v3; the SDK waits for its init.
+  /// Opens the game over the tabs, or the stories campaign of [url] over API v3; the
+  /// SDK waits for its init.
   void _openLink(String url) {
-    if (!mounted) return;
+    if (!mounted || openDemoGameLink(url)) return;
     if (!openStoriesLink(context, url, shopId: demoShopId)) {
-      debugPrint('Demo: not a stories link — $url');
+      debugPrint('Demo: neither the game nor a stories link — $url');
     }
   }
 

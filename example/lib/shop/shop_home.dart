@@ -134,12 +134,14 @@ class _ShopPaneState extends State<ShopPane> {
         // Collapses when the block is empty or fails. The bar runs edge to edge, its
         // covers start at the page's margin. A product of a story closes the viewer
         // and opens here. Over API v3: slides with a link have "Share", and the link
-        // goes out in the demo scheme, which opens the campaign in the app.
+        // goes out in the demo scheme, which opens the campaign in the app. A button's
+        // link to the game opens the game here.
         PersonalizationStories(
           code: shopStoriesCode,
           shopId: shopId,
           padding: side,
           promoCopiedText: shopPromoCopiedText,
+          onLinkClick: demoStoriesLinkClick(shopId),
           onProductClick: (product) =>
               ShopProductScreen.open(context, shopId, product.id),
           iconBuilder: shopIcon,
@@ -334,13 +336,15 @@ class _ShopCategoryGroup extends StatelessWidget {
 }
 
 /// Opens a stories "Share" link over the shop, as its home stories would: over API v3,
-/// a story's product opens on the product page. `false` — not a stories link.
+/// a story's product opens on the product page, a button's link to the game the game.
+/// `false` — not a stories link.
 bool openShopStoriesLink(BuildContext context, String url, String shopId) =>
     PersonalizationStories.handleLink(
       context,
       url,
       shopId: shopId,
       promoCopiedText: shopPromoCopiedText,
+      onLinkClick: demoStoriesLinkClick(shopId),
       onProductClick: (product) =>
           ShopProductScreen.open(context, shopId, product.id),
       onError: (error) =>

@@ -24,9 +24,10 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Stories "Share" links in the demo scheme, any host and path:
-                 rees46flutter://<site>/?r46_stories=<code>&r46_story=<id>[&r46_slide=<id>].
-                 MainActivity hands them to Dart (see main.dart). -->
+            <!-- Links in the demo scheme, any host and path: stories "Share" links,
+                 rees46flutter://<site>/?r46_stories=<code>&r46_story=<id>[&r46_slide=<id>],
+                 and the game's, rees46flutter://game. MainActivity hands them to Dart
+                 (see main.dart). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
