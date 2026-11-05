@@ -45,10 +45,9 @@ class PopupsV3 with WidgetsBindingObserver implements PopupsV3Listener {
       storage: PopupsV3PreferencesStorage(_shop.isEmpty ? 'default' : _shop),
       logTag: _shop,
     );
-    // Автопоказ выключен в init — триггеры молчат, ручной [show] показывает.
-    engine.autoPresentation = () =>
-        PopupsV3Hooks.configOf(_sdk.tracking)?.enableAutoPopupPresentation ??
-        true;
+    // Автопоказ выключен (в init или на ходу) — триггеры молчат, ручной [show]
+    // показывает.
+    engine.autoPresentation = () => _sdk.enableAutoPopupPresentation;
     PopupsV3Hooks.listen(sdk.tracking, this);
     // Окно одно на экране со старыми попапами: старый ждёт закрытия окна v3, окно v3
     // — закрытия старого.

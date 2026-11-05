@@ -481,6 +481,21 @@ void main() {
       );
       expect(sdk.popups.engine.autoPresentation(), isTrue);
     });
+
+    test('follows enableAutoPopupPresentation changed on the go', () async {
+      addTearDown(PopupsV3.reset);
+      final sdk = PersonalizationSdk(
+        api: FakeHostApi(),
+        shopId: 'c1140c8254976de297c3caf971701a',
+      );
+      await sdk.initialize(
+        const SdkInitConfig(shopId: 'c1140c8254976de297c3caf971701a'),
+      );
+      sdk.enableAutoPopupPresentation = false;
+      expect(sdk.popups.engine.autoPresentation(), isFalse);
+      sdk.enableAutoPopupPresentation = true;
+      expect(sdk.popups.engine.autoPresentation(), isTrue);
+    });
   });
 
   group('slots', () {

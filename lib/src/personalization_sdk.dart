@@ -114,6 +114,15 @@ class PersonalizationSdk {
     return _initHandler.initialize(config);
   }
 
+  /// Whether the SDK shows popups by itself: the server popups while no [onPopup] is
+  /// set, and the popups v3 of triggers (one shown by hand is shown all the same).
+  /// `enableAutoPopupPresentation` of the config sets it on [initialize]; it may be
+  /// changed at any time — off, say, while a screen of the app must not be covered.
+  bool get enableAutoPopupPresentation => _popups.autoPresentation;
+
+  set enableAutoPopupPresentation(bool value) =>
+      _popups.autoPresentation = value;
+
   /// Takes the server popups (in-app messages) of this shop instead of the SDK showing
   /// them.
   ///
