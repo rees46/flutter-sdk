@@ -20,6 +20,14 @@ bool popupV3ValidPhone(String value) => _phoneFormat.hasMatch(value.trim());
 
 const Color _errorColor = Color(0xffb91c1c);
 
+/// Фон кнопки формы: `buttonBgColor`.
+Color _buttonBackground(PopupV3Element element) =>
+    element.color('buttonBgColor', '#2563eb');
+
+/// Текст кнопки формы: `buttonTextColor`.
+Color _buttonForeground(PopupV3Element element) =>
+    element.color('buttonTextColor', '#ffffff');
+
 /// Поле ввода формы попапа по стилям дизайна: фон, цвет, рамка, радиус.
 class PopupV3Input extends StatelessWidget {
   const PopupV3Input({
@@ -118,7 +126,7 @@ class PopupV3SubmitButton extends StatelessWidget {
           opacity: busy ? 0.6 : 1,
           child: Container(
             decoration: BoxDecoration(
-              color: element.color('buttonBgColor', '#2563eb'),
+              color: _buttonBackground(element),
               borderRadius: BorderRadius.circular(
                 element.number('buttonRadius', 10),
               ),
@@ -132,7 +140,7 @@ class PopupV3SubmitButton extends StatelessWidget {
               textAlign: TextAlign.center,
               style: popupV3TextStyle(
                 element.box,
-                color: element.color('buttonTextColor', '#ffffff'),
+                color: _buttonForeground(element),
                 fontSize: element.number('buttonFontSize', 14),
                 fontWeight: 500,
                 height: 1.25,
@@ -146,6 +154,10 @@ class PopupV3SubmitButton extends StatelessWidget {
 }
 
 /// Согласие: чекбокс кита и подпись с разметкой.
+///
+/// Чекбокс — в цветах формы, а не темы кита: попап рисуется по дизайну и от темы
+/// системы не зависит. Отмеченный — как кнопка формы ([element]), пустой — как
+/// поле ввода ([inputBackground], [inputBorder]).
 class PopupV3Consent extends StatelessWidget {
   const PopupV3Consent({
     super.key,
@@ -153,12 +165,24 @@ class PopupV3Consent extends StatelessWidget {
     required this.value,
     required this.onChanged,
     required this.style,
+    required this.element,
+    required this.inputBackground,
+    required this.inputBorder,
   });
 
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
   final TextStyle style;
+
+  /// Элемент формы: цвета кнопки.
+  final PopupV3Element element;
+
+  /// Фон поля ввода формы.
+  final Color inputBackground;
+
+  /// Рамка поля ввода формы.
+  final Color inputBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -175,6 +199,10 @@ class PopupV3Consent extends StatelessWidget {
                 : PersonalizationCheckboxState.unchecked,
             onChanged: (state) =>
                 onChanged(state == PersonalizationCheckboxState.checked),
+            checkedColor: _buttonBackground(element),
+            checkmarkColor: _buttonForeground(element),
+            uncheckedColor: inputBackground,
+            borderColor: inputBorder,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -377,6 +405,8 @@ class _PopupV3EmailCollectorState extends State<PopupV3EmailCollector> {
       );
     }
     final paddingY = element.number('buttonPaddingY', 10);
+    final background = element.color('emailInputBg', '#f8fafc');
+    final borderColor = element.color('emailInputBorderColor', '#cbd5e1');
     final input = PopupV3Input(
       controller: _email,
       enabled: !_busy,
@@ -391,8 +421,8 @@ class _PopupV3EmailCollectorState extends State<PopupV3EmailCollector> {
         fontWeight: 400,
         height: 1.25,
       ),
-      background: element.color('emailInputBg', '#f8fafc'),
-      borderColor: element.color('emailInputBorderColor', '#cbd5e1'),
+      background: background,
+      borderColor: borderColor,
       radius: element.number('emailInputRadius', 10),
       paddingY: paddingY,
       onSubmitted: (_) => _submit(),
@@ -428,6 +458,9 @@ class _PopupV3EmailCollectorState extends State<PopupV3EmailCollector> {
             fontWeight: 400,
             height: 1.35,
           ),
+          element: element,
+          inputBackground: background,
+          inputBorder: borderColor,
         ),
         if (error != null) ...<Widget>[
           const SizedBox(height: 8),
@@ -691,6 +724,9 @@ class _PopupV3ProfileFormState extends State<PopupV3ProfileForm> {
               fontWeight: 400,
               height: 1.35,
             ),
+            element: element,
+            inputBackground: background,
+            inputBorder: borderColor,
           ),
           const SizedBox(height: 8),
         ],

@@ -138,7 +138,11 @@ class PopupsV3 with WidgetsBindingObserver implements PopupsV3Listener {
 
   set debug(bool value) => engine.debug = value;
 
-  /// Обработчик ссылок попапов: `true` — ссылку открыл он, иначе — система.
+  /// Обработчик ссылок попапов (кнопка-ссылка, ссылка текста и картинки, ссылка
+  /// применения промокода, ссылка товара) — после события `click`. `true` — ссылку
+  /// открыл обработчик: попап закрывается без события `close`, как после перехода.
+  /// `false`, исключение или нет обработчика — ссылку открывает система, попап
+  /// остаётся.
   bool Function(String url)? get onLink => engine.onLink;
 
   set onLink(bool Function(String url)? handler) => engine.onLink = handler;
@@ -146,7 +150,7 @@ class PopupsV3 with WidgetsBindingObserver implements PopupsV3Listener {
   /// Нажатие на товар блока рекомендаций в попапе (после события `click`). `true` —
   /// товар открыл обработчик: попап закрывается без события `close`, как после
   /// перехода. `false`, исключение или нет обработчика — открывается ссылка товара
-  /// (`deeplink`, иначе `url`) через [onLink] или систему, попап остаётся.
+  /// (`deeplink`, иначе `url`), как любая ссылка попапа ([onLink]).
   bool Function(PersonalizationProduct product)? get onProductClick =>
       engine.onProductClick;
 

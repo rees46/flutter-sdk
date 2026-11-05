@@ -10,8 +10,11 @@ import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/popups_v3/popup_v3.dart';
 import 'package:rees46_sdk/src/popups_v3/popups_v3_api.dart';
 import 'package:rees46_sdk/src/popups_v3/popups_v3_engine.dart';
+import 'package:rees46_sdk/src/ui/components/personalization_checkbox.dart';
 import 'package:rees46_sdk/src/ui/components/personalization_product.dart';
 import 'package:rees46_sdk/src/ui/components/personalization_product_card.dart';
+import 'package:rees46_sdk/src/ui/personalization_colors.dart';
+import 'package:rees46_sdk/src/ui/personalization_theme.dart';
 import 'package:rees46_sdk/src/ui/popups_v3/popup_v3_design.dart';
 import 'package:rees46_sdk/src/ui/popups_v3/popup_v3_elements.dart';
 import 'package:rees46_sdk/src/ui/popups_v3/popup_v3_grid.dart';
@@ -41,8 +44,14 @@ class RecordingActions implements PopupV3Actions {
   void event(PopupV3Event event, {String? channel}) =>
       events.add(channel == null ? event.wire : '${event.wire}:$channel');
 
+  /// Что ответит [openLink]: ссылку открыл хост.
+  bool hostOpensLinks = false;
+
   @override
-  Future<void> openLink(String url) async => links.add(url);
+  bool openLink(String url) {
+    links.add(url);
+    return hostOpensLinks;
+  }
 
   /// Что ответит [openProduct]: товар открыл хост.
   bool hostOpensProducts = false;
@@ -144,6 +153,32 @@ PopupV3Design _parse(
   runtime: runtime,
 );
 
+/// Цвета чекбокса согласия: пустой — фон и рамка поля, отмеченный — фон кнопки и
+/// галка цветом её текста.
+typedef _ConsentColors = ({
+  Color field,
+  Color border,
+  Color button,
+  Color text,
+});
+
+/// Попап из одного элемента [type] со стилем [style].
+Map<String, Object?> _single(String type, Map<String, Object?> style) {
+  final popup = popupsV3Fixture('element-email-collector.json');
+  final design = popup['design'] as Map<String, Object?>;
+  design['rows'] = <Object?>[(design['rows'] as List).first];
+  design['elements'] = <Object?>[
+    <String, Object?>{
+      'id': 'el',
+      'type': type,
+      'rowId': 'row-1',
+      'partIndex': 0,
+      'style': style,
+    },
+  ];
+  return popup;
+}
+
 /// Попап [popup] в рамке на экране 390×844.
 Future<({RecordingActions actions, List<String> closes})> _pump(
   WidgetTester tester,
@@ -151,6 +186,7 @@ Future<({RecordingActions actions, List<String> closes})> _pump(
   double maxHeight = 760,
   Map<String, String> runtime = const <String, String>{},
   RecordingActions? actions,
+  ThemeData? theme,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -160,6 +196,7 @@ Future<({RecordingActions actions, List<String> closes})> _pump(
   final design = _parse(popup, runtime: runtime);
   await tester.pumpWidget(
     MaterialApp(
+      theme: theme,
       home: Scaffold(
         body: PopupV3Scope(
           design: design,
@@ -436,6 +473,79 @@ void main() {
     expect(find.text('Данные сохранены'), findsOneWidget);
   });
 
+  group('consent checkbox in the form colors', () {
+    tearDown(() {
+      PersonalizationTheme.mode = ThemeMode.system;
+      PersonalizationTheme.configure();
+    });
+
+    Finder box() => find.descendant(
+      of: find.byType(PersonalizationCheckbox),
+      matching: find.byType(CustomPaint),
+    );
+
+    const _ConsentColors designed = (
+      field: Color(0xfffef3c7),
+      border: Color(0xffd97706),
+      button: Color(0xff16a34a),
+      text: Color(0xff111827),
+    );
+    const _ConsentColors defaults = (
+      field: Color(0xfff8fafc),
+      border: Color(0xffcbd5e1),
+      button: Color(0xff2563eb),
+      text: Color(0xffffffff),
+    );
+
+    for (final (type, prefix, extra)
+        in <(String, String, Map<String, Object?>)>[
+          ('emailCollector', 'email', const <String, Object?>{}),
+          (
+            'form',
+            'form',
+            const <String, Object?>{'formConsentLabel': 'Согласен'},
+          ),
+        ]) {
+      for (final (name, style, colors)
+          in <(String, Map<String, Object?>, _ConsentColors)>[
+            ('by default', extra, defaults),
+            (
+              'from the design',
+              <String, Object?>{
+                ...extra,
+                '${prefix}InputBg': '#fef3c7',
+                '${prefix}InputBorderColor': '#d97706',
+                'buttonBgColor': '#16a34a',
+                'buttonTextColor': '#111827',
+              },
+              designed,
+            ),
+          ]) {
+        for (final mode in <ThemeMode>[ThemeMode.light, ThemeMode.dark]) {
+          testWidgets('$type, $name, kit theme ${mode.name}: empty like the '
+              'field, checked like the button', (tester) async {
+            PersonalizationTheme.mode = mode;
+            await _pump(tester, _single(type, style));
+            expect(
+              box(),
+              paints
+                ..rrect(color: colors.field, style: PaintingStyle.fill)
+                ..rrect(color: colors.border, style: PaintingStyle.stroke),
+            );
+            await tester.tap(find.byType(PersonalizationCheckbox));
+            await tester.pump();
+            expect(
+              box(),
+              paints
+                ..rrect(color: colors.button, style: PaintingStyle.fill)
+                ..path(color: colors.text),
+            );
+          });
+        }
+      }
+    }
+  });
+
   testWidgets('survey: a score opens the comment, then thanks', (tester) async {
     final pumped = await _pump(tester, popupsV3Fixture('element-survey.json'));
     // Оценки шкалы — в ряд, а не по одной на всю ширину.
@@ -538,6 +648,163 @@ void main() {
     );
   }
 
+  for (final hostOpens in <bool>[true, false]) {
+    testWidgets(
+      'links of a button, a text and a promo code: click, then '
+      '${hostOpens ? 'the host opens them and the popup goes without close' : 'the system, the popup stays'}',
+      (tester) async {
+        _mockClipboard(tester);
+        final button = await _pump(
+          tester,
+          popupsV3Fixture('element-button.json'),
+          actions: RecordingActions()..hostOpensLinks = hostOpens,
+        );
+        await tester.tap(find.text('Старый документ'));
+        expect(button.actions.events, <String>['click']);
+        expect(button.actions.links, <String>['https://demo.rees46.ru']);
+        expect(button.closes, hostOpens ? <String>['dismiss'] : isEmpty);
+
+        final text = await _pump(
+          tester,
+          popupsV3Fixture('element-text.json'),
+          actions: RecordingActions()..hostOpensLinks = hostOpens,
+        );
+        await tester.tap(find.textContaining('Скидка 10%', findRichText: true));
+        expect(text.actions.events, <String>['click']);
+        expect(text.actions.links, <String>['https://demo.rees46.ru/sale']);
+        expect(text.closes, hostOpens ? <String>['dismiss'] : isEmpty);
+
+        final promo = await _pump(
+          tester,
+          popupsV3Fixture('element-promo-code.json'),
+          runtime: const <String, String>{'promo_code': 'ABC123'},
+          actions: RecordingActions()..hostOpensLinks = hostOpens,
+        );
+        await tester.tap(find.text('Копировать'));
+        await tester.pump();
+        expect(promo.actions.events, <String>['click']);
+        expect(promo.actions.links, <String>['rees46demo://cart?promo=ABC123']);
+        expect(promo.closes, hostOpens ? <String>['dismiss'] : isEmpty);
+      },
+    );
+  }
+
+  group('kit inside a popup: the theme by the popup background', () {
+    final dark = ThemeData(brightness: Brightness.dark);
+
+    Map<String, Object?> recommendation({String? frame}) {
+      final popup = popupsV3Fixture('element-recommendation.json');
+      if (frame != null) {
+        ((popup['design'] as Map<String, Object?>)['frameStyle']
+                as Map<String, Object?>)['bgColor'] =
+            frame;
+      }
+      return popup;
+    }
+
+    Future<BuildContext> card(
+      WidgetTester tester,
+      Map<String, Object?> popup, {
+      ThemeData? theme,
+    }) async {
+      PersonalizationRequestCache.shared.clear();
+      await _pump(
+        tester,
+        popup,
+        theme: theme,
+        actions: RecordingActions(host: _RecommendationsHostApi()),
+      );
+      await tester.pumpAndSettle();
+      return tester.element(find.byType(PersonalizationProductCard).first);
+    }
+
+    testWidgets('a white popup in a dark system theme — the light kit', (
+      tester,
+    ) async {
+      final context = await card(tester, recommendation(), theme: dark);
+      expect(PersonalizationTheme.brightnessOf(context), Brightness.light);
+      expect(
+        PersonalizationTheme.of(context).colors,
+        PersonalizationColors.light,
+      );
+    });
+
+    testWidgets('a dark popup in a light system theme — the dark kit', (
+      tester,
+    ) async {
+      final context = await card(tester, recommendation(frame: '#111827'));
+      expect(PersonalizationTheme.brightnessOf(context), Brightness.dark);
+      expect(
+        PersonalizationTheme.of(context).colors,
+        PersonalizationColors.dark,
+      );
+    });
+
+    testWidgets('outside a popup the kit follows the system', (tester) async {
+      late BuildContext outside;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: dark,
+          home: Builder(
+            builder: (context) {
+              outside = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      expect(PersonalizationTheme.brightnessOf(outside), Brightness.dark);
+    });
+
+    test(
+      'the background under an element: its own, else the frame, else white',
+      () {
+        Brightness under(Map<String, Object?> style, {String? frame}) {
+          final popup = _single('text', <String, Object?>{
+            'message': 'Текст',
+            ...style,
+          });
+          final frameStyle =
+              (popup['design'] as Map<String, Object?>)['frameStyle']
+                  as Map<String, Object?>;
+          if (frame == null) {
+            frameStyle.remove('bgColor');
+          } else {
+            frameStyle['bgColor'] = frame;
+          }
+          final design = _parse(popup);
+          return PersonalizationBrightness.on(
+            popupV3BackgroundUnder(design, design.elements.single),
+          );
+        }
+
+        expect(under(<String, Object?>{'bgColor': '#0f172a'}), Brightness.dark);
+        expect(
+          under(<String, Object?>{'bgColor': 'rgba(0, 0, 0, 0.8)'}),
+          Brightness.dark,
+        );
+        expect(
+          under(<String, Object?>{'bgColor': 'transparent'}, frame: '#1f2937'),
+          Brightness.dark,
+        );
+        expect(
+          under(<String, Object?>{'bgColor': 'transparent'}, frame: '#ffffff'),
+          Brightness.light,
+        );
+        expect(
+          under(<String, Object?>{
+            'bgColor': 'transparent',
+          }, frame: 'transparent'),
+          Brightness.light,
+        );
+        expect(
+          under(<String, Object?>{'bgColor': '#fef3c7'}),
+          Brightness.light,
+        );
+      },
+    );
+  });
+
   group('host', () {
     late List<Map<String, Object?>> live;
 
@@ -581,6 +848,88 @@ void main() {
       expect(closed, isTrue);
       expect(actions.events, <String>['close']);
     });
+
+    for (final hostOpens in <bool>[true, false]) {
+      testWidgets(
+        'a link button: '
+        '${hostOpens ? 'the host opened it — the modal goes without close' : 'the system opens it — the modal stays'}',
+        (tester) async {
+          await app(tester);
+          final actions = RecordingActions()..hostOpensLinks = hostOpens;
+          final host = PopupV3Host(texts: PopupV3Texts.ru);
+          final popup = PopupV3.tryParse(
+            popupsV3Fixture('element-button.json'),
+          )!;
+          final shown = await host.present(
+            popup,
+            const <String, String>{},
+            actions,
+          );
+          await tester.pumpAndSettle();
+          var closed = false;
+          shown!.closed.then((_) => closed = true);
+          await tester.tap(find.text('Старый документ'));
+          await tester.pumpAndSettle();
+          expect(actions.links, <String>['https://demo.rees46.ru']);
+          expect(actions.events, <String>['click']);
+          expect(
+            find.text('Старый документ'),
+            hostOpens ? findsNothing : findsOneWidget,
+          );
+          expect(closed, hostOpens);
+          if (!hostOpens) {
+            shown.dismiss();
+            await tester.pumpAndSettle();
+          }
+        },
+      );
+    }
+
+    for (final handler in <String>['opens', 'throws']) {
+      testWidgets(
+        'engine and host: the link handler ${handler == 'opens' ? 'opened the link — click without close, the modal goes' : 'threw — the system opens it, the modal stays'}',
+        (tester) async {
+          PopupsV3Slots.reset();
+          addTearDown(PopupsV3Slots.reset);
+          await app(tester);
+          final harness = EngineHarness(
+            server: FakeServer(
+              popups: <Map<String, Object?>>[
+                popupsV3Fixture('element-button.json'),
+              ],
+            ),
+          );
+          final handled = <String>[];
+          harness.engine.onLink = (url) {
+            handled.add(url);
+            if (handler == 'throws') throw StateError('no screen');
+            return true;
+          };
+          await harness.engine.show(9103);
+          await tester.pump();
+          final shown = await PopupV3Host(texts: PopupV3Texts.ru).present(
+            PopupV3.tryParse(popupsV3Fixture('element-button.json'))!,
+            const <String, String>{},
+            harness.presenter.actions[9103]!,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Старый документ'));
+          await tester.pumpAndSettle();
+          expect(handled, <String>['https://demo.rees46.ru']);
+          expect(harness.server.events, <String>['9103:show', '9103:click']);
+          if (handler == 'opens') {
+            expect(find.text('Старый документ'), findsNothing);
+            expect(harness.host.opened, isEmpty);
+          } else {
+            expect(find.text('Старый документ'), findsOneWidget);
+            expect(harness.host.opened, <String>['https://demo.rees46.ru']);
+            shown!.dismiss();
+            await tester.pumpAndSettle();
+          }
+          expect(harness.server.events, isNot(contains('9103:close')));
+        },
+      );
+    }
 
     testWidgets('a banner leaves the app tappable; × closes it', (
       tester,

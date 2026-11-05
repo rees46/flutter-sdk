@@ -67,7 +67,7 @@ class PopupV3Button extends StatelessWidget {
       default:
         scope.actions.event(PopupV3Event.click);
         final href = element.buttonHref(scope.variables);
-        if (href != null) scope.actions.openLink(href);
+        if (href != null) scope.followLink(href);
     }
   }
 
@@ -232,7 +232,7 @@ class _PopupV3PromoCodeState extends State<PopupV3PromoCode> {
     scope.actions.event(PopupV3Event.click);
     setState(() => _copied = true);
     final apply = widget.element.promoApplyHref(scope.variables);
-    if (apply != null) scope.actions.openLink(apply);
+    if (apply != null) scope.followLink(apply);
   }
 
   @override
@@ -323,18 +323,22 @@ Widget? _recommendation(BuildContext context, PopupV3Element element) {
   final code = element.recommenderCode;
   if (code == null) return null;
   final scope = PopupV3Scope.of(context);
-  return ConstrainedBox(
-    constraints: const BoxConstraints(minHeight: 40),
-    child: PersonalizationRecommenderBlock(
-      code: code,
-      sdk: scope.actions.sdk,
-      layout: PersonalizationProductsLayout.carousel,
-      // Товар — ссылка: событие `click`, как у сайта (там товары блока — ссылки).
-      // Открыл его хост — попап уходит, как после перехода; открылась ссылка — остаётся.
-      onProductTap: (product) {
-        scope.actions.event(PopupV3Event.click);
-        if (scope.actions.openProduct(product)) scope.onDismiss();
-      },
+  return PopupV3KitTheme(
+    element: element,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 40),
+      child: PersonalizationRecommenderBlock(
+        code: code,
+        sdk: scope.actions.sdk,
+        layout: PersonalizationProductsLayout.carousel,
+        // Товар — ссылка: событие `click`, как у сайта (там товары блока — ссылки).
+        // Открыл его или его ссылку хост — попап уходит, как после перехода;
+        // ссылка ушла системе — остаётся.
+        onProductTap: (product) {
+          scope.actions.event(PopupV3Event.click);
+          if (scope.actions.openProduct(product)) scope.onDismiss();
+        },
+      ),
     ),
   );
 }

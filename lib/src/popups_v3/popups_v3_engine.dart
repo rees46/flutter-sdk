@@ -108,11 +108,13 @@ abstract interface class PopupV3Actions {
   void event(PopupV3Event event, {String? channel});
 
   /// Открыть ссылку: сначала обработчик хоста, потом система. Пустая ссылка,
-  /// `javascript:` и `data:` не открываются.
-  Future<void> openLink(String url);
+  /// `javascript:` и `data:` не открываются. `true` — ссылку открыл хост, попап
+  /// закрывается без события `close`; ушла системе — остаётся.
+  bool openLink(String url);
 
   /// Нажатие на товар блока рекомендаций: сначала обработчику хоста, не открыл он —
-  /// ссылка товара. `true` — товар открыл хост, попап закрывается без события `close`.
+  /// ссылка товара ([openLink]). `true` — товар или его ссылку открыл хост, попап
+  /// закрывается без события `close`.
   bool openProduct(PersonalizationProduct product);
 
   /// Подписка на email с флагами [consentFields] и сегментом; ошибка — исключение.
@@ -228,7 +230,8 @@ class PopupsV3Engine {
   /// `debug=1` в списке и каждое решение движка в лог.
   bool debug = false;
 
-  /// Обработчик ссылок хоста: `true` — ссылку открыл он.
+  /// Обработчик ссылок хоста: `true` — ссылку открыл он, попап закрывается без
+  /// события `close`.
   bool Function(String url)? onLink;
 
   /// Нажатие на товар рекомендаций в попапе: `true` — товар открыл хост, иначе
@@ -744,11 +747,23 @@ class _EngineActions implements PopupV3Actions {
       engine.sendEvent(popup, event, channel: channel);
 
   @override
-  Future<void> openLink(String url) async {
+  bool openLink(String url) {
     final link = popupV3SafeLink(url);
-    if (link == null) return;
+    if (link == null) return false;
+    final handler = engine.onLink;
+    if (handler != null) {
+      try {
+        if (handler(link)) return true;
+      } catch (error) {
+        engine.log('link handler, $link — $error', always: true);
+      }
+    }
+    unawaited(_openUrl(link));
+    return false;
+  }
+
+  Future<void> _openUrl(String link) async {
     try {
-      if (engine.onLink?.call(link) ?? false) return;
       final opened = await engine.platform.openUrl(link);
       if (!opened) engine.log('nothing opens $link', always: true);
     } catch (error) {
@@ -768,8 +783,7 @@ class _EngineActions implements PopupV3Actions {
     }
     final deeplink = product.deeplink?.trim() ?? '';
     final link = deeplink.isNotEmpty ? deeplink : product.url;
-    if (link != null) unawaited(openLink(link));
-    return false;
+    return link != null && openLink(link);
   }
 
   @override

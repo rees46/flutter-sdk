@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../popups_v3/popup_v3.dart';
 import '../../popups_v3/popups_v3_api.dart';
 import '../../popups_v3/popups_v3_engine.dart';
+import '../personalization_theme.dart';
 import 'popup_markup.dart';
 import 'popup_v3_design.dart';
 import 'popup_v3_elements.dart';
@@ -31,7 +32,7 @@ class PopupV3Scope extends InheritedWidget {
   /// Закрыть попап пользователем (крестик, кнопка `close`): событие `close`.
   final VoidCallback onClose;
 
-  /// Убрать попап без события (товар забрал хост).
+  /// Убрать попап без события (ссылку или товар забрал хост).
   final VoidCallback onDismiss;
 
   PopupV3Variables get variables => design.variables;
@@ -42,10 +43,16 @@ class PopupV3Scope extends InheritedWidget {
     return scope!;
   }
 
-  /// Открыть ссылку элемента: событие `click`, затем ссылка.
+  /// Открыть ссылку элемента: событие `click`, затем ссылка ([followLink]).
   void openLink(String url) {
     actions.event(PopupV3Event.click);
-    actions.openLink(url);
+    followLink(url);
+  }
+
+  /// Ссылка без события: открыл её хост — попап уходит без `close`, как после
+  /// перехода; ушла системе — остаётся.
+  void followLink(String url) {
+    if (actions.openLink(url)) onDismiss();
   }
 
   @override
@@ -53,6 +60,36 @@ class PopupV3Scope extends InheritedWidget {
       design != oldWidget.design ||
       actions != oldWidget.actions ||
       texts != oldWidget.texts;
+}
+
+/// Фон попапа под элементом [element]: его фон, если он не прозрачный, иначе фон
+/// рамки, иначе белый, как рамка по умолчанию; полупрозрачные — друг поверх друга.
+Color popupV3BackgroundUnder(PopupV3Design design, PopupV3Element element) =>
+    Color.alphaBlend(
+      element.box.background,
+      Color.alphaBlend(design.frame.background, const Color(0xffffffff)),
+    );
+
+/// Компоненты кита в элементе [element] — в теме кита по фону попапа под ним
+/// ([popupV3BackgroundUnder]), а не по теме системы: попап рисуется по цветам дизайна.
+/// Окна поверх приложения (тост) — не часть рамки и остаются по теме приложения.
+class PopupV3KitTheme extends StatelessWidget {
+  const PopupV3KitTheme({
+    super.key,
+    required this.element,
+    required this.child,
+  });
+
+  final PopupV3Element element;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => PersonalizationBrightness(
+    brightness: PersonalizationBrightness.on(
+      popupV3BackgroundUnder(PopupV3Scope.of(context).design, element),
+    ),
+    child: child,
+  );
 }
 
 /// Насыщенность шрифта по числу CSS (100–900).

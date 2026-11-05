@@ -169,18 +169,34 @@ void main() {
 
   test('links: the host handler first, unsafe schemes never', () async {
     final shown = await _shown('element-button.json');
-    await shown.actions.openLink('https://demo.rees46.ru/');
-    await shown.actions.openLink('javascript:alert(1)');
-    await shown.actions.openLink('  ');
+    expect(shown.actions.openLink('https://demo.rees46.ru/'), isFalse);
+    expect(shown.actions.openLink('javascript:alert(1)'), isFalse);
+    expect(shown.actions.openLink('  '), isFalse);
+    await pumpEventQueue();
     expect(shown.harness.host.opened, <String>['https://demo.rees46.ru/']);
     final handled = <String>[];
     shown.harness.engine.onLink = (url) {
       handled.add(url);
       return true;
     };
-    await shown.actions.openLink('rees46demo://sale');
+    expect(shown.actions.openLink('rees46demo://sale'), isTrue);
+    await pumpEventQueue();
     expect(handled, <String>['rees46demo://sale']);
     expect(shown.harness.host.opened, hasLength(1));
+  });
+
+  test('links: declined or failed by the host handler — the system', () async {
+    final shown = await _shown('element-button.json');
+    shown.harness.engine.onLink = (url) => false;
+    expect(shown.actions.openLink('https://demo.rees46.ru/a'), isFalse);
+    shown.harness.engine.onLink = (url) => throw StateError('no screen');
+    expect(shown.actions.openLink('https://demo.rees46.ru/b'), isFalse);
+    await pumpEventQueue();
+    expect(shown.harness.host.opened, <String>[
+      'https://demo.rees46.ru/a',
+      'https://demo.rees46.ru/b',
+    ]);
+    expect(shown.harness.engine.openIds, <int>[9103]);
   });
 
   test('products: the host opens them, otherwise the product link', () async {
@@ -201,7 +217,7 @@ void main() {
   });
 
   test('products: declined or failed by the host — the deeplink, else the url, '
-      'through the link handler', () async {
+      'through the link handler, which may open them', () async {
     final shown = await _shown('element-recommendation.json');
     final links = <String>[];
     shown.harness.engine.onLink = (url) {
@@ -219,7 +235,7 @@ void main() {
           deeplink: 'rees46demo://product/868',
         ),
       ),
-      isFalse,
+      isTrue,
     );
     shown.harness.engine.onProductClick = (product) =>
         throw StateError('no shop');
@@ -233,7 +249,7 @@ void main() {
           deeplink: ' ',
         ),
       ),
-      isFalse,
+      isTrue,
     );
     await pumpEventQueue();
     expect(links, <String>[
