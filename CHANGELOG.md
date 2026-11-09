@@ -1,3 +1,69 @@
+# [1.6.0](https://github.com/rees46/flutter-sdk/compare/v1.5.0...v1.6.0) (2026-11-09)
+
+
+### Bug Fixes
+
+* **ios:** products list sends a discount only when there is one ([31b0906](https://github.com/rees46/flutter-sdk/commit/31b0906ead574365f9cc66e8baed86e40e8c6b76))
+* **ui:** a discount_percent badge does not take discount_formatted ([59c6db5](https://github.com/rees46/flutter-sdk/commit/59c6db54412feaff99221e6087d34c4734d90bd0))
+* **ui:** a request in flight can no longer block its cache key ([50e03fd](https://github.com/rees46/flutter-sdk/commit/50e03fd40956b41fbb17093a94706ee0e049958c))
+* **ui:** badge text stays on one line ([185f26c](https://github.com/rees46/flutter-sdk/commit/185f26c7274b40bef29d315a2522ee14b7387530))
+* **ui:** cache keys encode params, answers age on a monotonic clock ([8fb7b07](https://github.com/rees46/flutter-sdk/commit/8fb7b07c7d528973f251a4eef4073e59709e9519))
+* **ui:** card prices and the narrow list card's button wrap instead of shrinking ([04fb31c](https://github.com/rees46/flutter-sdk/commit/04fb31c76036a2829b7da76a6fa56abf656d1634))
+* **ui:** carousel dots are off by default ([f646caf](https://github.com/rees46/flutter-sdk/commit/f646caf06eb2f74f2daf400817702efb00029e9d))
+* **ui:** discount badge only for a positive discount ([3564f2f](https://github.com/rees46/flutter-sdk/commit/3564f2f71ea107329b81398d7d4ab014968c08a5))
+* **ui:** filters keep the title and buttons in place while sections scroll ([4890257](https://github.com/rees46/flutter-sdk/commit/489025791519b067aecc8318a3c996e4a2a67129))
+* **ui:** load controller ignores load, retry and reset after dispose ([5da6069](https://github.com/rees46/flutter-sdk/commit/5da60692fbaf1bfb20f64ec8f162dcfa4bbd475f))
+* **ui:** no results count above a failed first page ([a2c886d](https://github.com/rees46/flutter-sdk/commit/a2c886d3bc6b4a1f511c8d3fd2403ff71abbba70))
+* **ui:** popups v3 keep to their design in a dark system theme — the consent checkbox takes the form's colors, kit blocks the theme of the popup's background; a link the host opened itself closes the popup without close ([54bfbf9](https://github.com/rees46/flutter-sdk/commit/54bfbf9787aec672eb4aa99beafac5f8f597ad2c))
+* **ui:** search results always offer a retry after an error ([f292a7d](https://github.com/rees46/flutter-sdk/commit/f292a7dbdaac5bce9ec8788d428726eb60a186c2))
+* **ui:** text blocks stand on y_offset inside the slide area, like polls ([c6e55bf](https://github.com/rees46/flutter-sdk/commit/c6e55bf10c172d26aa8970604f5974578b53d436))
+
+
+### Features
+
+* **example:** a tic-tac-toe mini-game the link rees46flutter://game (or the native demos' rees46://game) opens from outside, a popup or a story; trigger popups keep off it; [#185](https://github.com/rees46/flutter-sdk/issues/185) in the header's popup menu ([bcca0f9](https://github.com/rees46/flutter-sdk/commit/bcca0f93875eaae3d33945b367bcdfdb694a8526))
+* **example:** API, UI Kit and Shop are bottom tabs ([48e6857](https://github.com/rees46/flutter-sdk/commit/48e68579821f324e030037c2e165aaf5d72dc0ff))
+* **example:** category runs on the kit's category screen, with sorting and facet titles ([b6c2c86](https://github.com/rees46/flutter-sdk/commit/b6c2c861f5c75d8f4cba24157704ff064fb131f9))
+* **example:** demo shop card mapper and add-to-cart helper ([343bf44](https://github.com/rees46/flutter-sdk/commit/343bf446de9aeddb7fd81630b416eb6c3798516a))
+* **example:** demo shop category screen with paging and retry ([284c421](https://github.com/rees46/flutter-sdk/commit/284c42162a2f19cdda6cbd39aedb3f69d596c152))
+* **example:** demo shop home and its entry on the main page ([540657c](https://github.com/rees46/flutter-sdk/commit/540657c85b548ae107047c8ae7b6412bad3d2ac5))
+* **example:** demo shop product screen with similar products ([6c4e459](https://github.com/rees46/flutter-sdk/commit/6c4e459d134c2db117c73275a91ed65c5e070780))
+* **example:** demo shop search screen on the kit results screen ([852170d](https://github.com/rees46/flutter-sdk/commit/852170d17ab9a6d861e918ce8ea84ff6d0724afd))
+* **example:** live recommender blocks of the demo shop in Blocks ([721cccc](https://github.com/rees46/flutter-sdk/commit/721cccc413c830e58e9e2b5a533b5a06a065a6c3))
+* **example:** one shop layout on all platforms, search behind a header button, a header menu shows demo popups by hand ([e96d461](https://github.com/rees46/flutter-sdk/commit/e96d461ab7d7f770bb7dead8e15115b1f0a57df0))
+* **example:** popups v3 on in both demos, screens report themselves, popup products open in the shop ([94c78c6](https://github.com/rees46/flutter-sdk/commit/94c78c6bd753b8ca00efde2b1461b8bfce7b6919))
+* **example:** product page has the shop's search on top and similar, bought-with and popular blocks ([12a1bb1](https://github.com/rees46/flutter-sdk/commit/12a1bb10fa22d04eedc29e0a9504d95b256bf384))
+* **example:** shop home takes its categories from the listing ([fac66dd](https://github.com/rees46/flutter-sdk/commit/fac66ddd81c38a8b303301d6e7a0fc7c7581ed77))
+* **example:** shop-only variant, its home stories on API v3 with sharing ([6fe14ae](https://github.com/rees46/flutter-sdk/commit/6fe14ae3acd1bf08ad2621347f298b5619c14d2c))
+* **example:** stories V2 polls offline showcase ([14bff3d](https://github.com/rees46/flutter-sdk/commit/14bff3d3b5e56d74f41c03a69664693f48e78e7c))
+* **example:** stories V2 with sharing and deep links to a story ([e355f45](https://github.com/rees46/flutter-sdk/commit/e355f4561138cc467e3d0b46622fb5295d97ab77))
+* **ios:** bridge passes old price, discount, deeplink and facets ([818f6a1](https://github.com/rees46/flutter-sdk/commit/818f6a1debd5d74b2cb03fbf3580cb3b214b13e4))
+* **sdk:** brands, colours and sizes carry product counts, product lists their categories ([024cc6e](https://github.com/rees46/flutter-sdk/commit/024cc6edf3dd2b385cd54cee1b825f5ae3fa987d))
+* **sdk:** enableAutoPopupPresentation can be changed at any time, as on iOS and Android, and popups v3 follow it ([244c2bb](https://github.com/rees46/flutter-sdk/commit/244c2bbb5f8806d5ec64cb8fd35a3918d559ecf8))
+* **sdk:** getCategory takes brands, locations and facet filters ([2df242f](https://github.com/rees46/flutter-sdk/commit/2df242f1a25b16261907331795e26034b596400c))
+* **sdk:** native SDKs Android 2.47.0 and iOS 3.37.0; a category takes a price range and sorting, and the kit's category screen shows both ([bb40bef](https://github.com/rees46/flutter-sdk/commit/bb40befbbab91aeca5d43450840fd2a34e227e2a))
+* **sdk:** products get old price, discount, deeplinks and facets ([039809e](https://github.com/rees46/flutter-sdk/commit/039809eddabdd281f0de2c7836cc7ad6f15c9799))
+* **ui:** category screen shares the search results core ([3b0f44c](https://github.com/rees46/flutter-sdk/commit/3b0f44ca679773a206f269409b7c2b6158f24a24))
+* **ui:** in-memory request cache for the kit's data widgets ([e8c4e2e](https://github.com/rees46/flutter-sdk/commit/e8c4e2e7a30b17d76f44191a309bdfa9a5c8e15b))
+* **ui:** load state with retry for the kit's data widgets ([45b36f2](https://github.com/rees46/flutter-sdk/commit/45b36f29b4cec7e9bc425c97b3b038edd350ce2d))
+* **ui:** one mapper from SDK products to the kit product ([6c7d374](https://github.com/rees46/flutter-sdk/commit/6c7d374e92ef37440d7429d6ec63a4779544b4ea))
+* **ui:** PersonalizationRecommenderBlock loads its own products ([76c1628](https://github.com/rees46/flutter-sdk/commit/76c1628cf4bf989376e7ede1a32db77d7f747b50))
+* **ui:** polls on stories V2 slides (API v3) ([0566ac5](https://github.com/rees46/flutter-sdk/commit/0566ac5ca5975114f586803a8f123fa636ed293e))
+* **ui:** popups v3 — native rendering of the new popup builder's designs ([f301a7c](https://github.com/rees46/flutter-sdk/commit/f301a7c0ddc3bb698e793ad3450306028c1fb99b))
+* **ui:** products block title is optional, rating behind showRating ([5620fb2](https://github.com/rees46/flutter-sdk/commit/5620fb22353b2cb165bc66ab99b7f357e4b88c5e))
+* **ui:** request cache can peek a fresh answer synchronously ([4a06e57](https://github.com/rees46/flutter-sdk/commit/4a06e574ccb3992bdf33cafd02509820e1be2e90))
+* **ui:** search results show a failed page and retry it ([e18e7f8](https://github.com/rees46/flutter-sdk/commit/e18e7f8461a9d55eea5ec53cf215343427a1eeba))
+* **ui:** share link opens the shared slide, product campaigns too ([c590e64](https://github.com/rees46/flutter-sdk/commit/c590e644ad22de1dafa00d9c7e4eb7ab09a38e34))
+* **ui:** showRating on the search results screen, off by default ([bf5ac6e](https://github.com/rees46/flutter-sdk/commit/bf5ac6e42374cacd444104ff80cf84ae209ef671))
+* **ui:** stories polls restyled to the reference — frosted card, lettered options, results header and vote count ([6ba1549](https://github.com/rees46/flutter-sdk/commit/6ba1549be7d06b59fd616dfabd021c585b8b50da))
+* **ui:** stories V2 share button and opening a campaign by link over API v3 ([b47e50c](https://github.com/rees46/flutter-sdk/commit/b47e50c736108b4057cba1881dc435019e0ad717))
+* **ui:** the card button of a recommender block sets the source too ([b3dd3bc](https://github.com/rees46/flutter-sdk/commit/b3dd3bc4f890f7f0849e5084f3384a991de4eec3))
+* **ui:** the UI kit opens to apps from package:rees46_sdk/rees46_sdk.dart; popups v3 and stories over API v3 move behind their own src barrel ([dcaf5f5](https://github.com/rees46/flutter-sdk/commit/dcaf5f50c27eadd73de759516d4510c16f49ff11))
+
+
+
+
+
 # [1.5.0](https://github.com/rees46/flutter-sdk/compare/v1.4.0...v1.5.0) (2026-10-27)
 
 
