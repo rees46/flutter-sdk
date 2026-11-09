@@ -256,24 +256,24 @@ void main() {
     expect(api.params.last!['brands'], 'Philips');
   });
 
-  testWidgets('filter sections come from the category answer; no price or '
-      'sort while the platform does not apply them', (tester) async {
+  testWidgets('filter sections come from the category answer, with the price '
+      'range and the sort button', (tester) async {
     await tester.pumpWidget(screen());
     await tester.pump();
 
-    // The sort button is hidden even though the host leaves showSort on.
-    expect(_title(tester).showSortButton, isFalse);
+    expect(_title(tester).showSortButton, isTrue);
     expect(_title(tester).showFiltersButton, isTrue);
 
     final sections = await _openFilters(tester);
-    // Brands and the facets with more than one value, the commonest first. No
-    // colour or size (a category has no industrial_filters) and no price range.
+    // The price range, then brands and the facets with more than one value, the
+    // commonest first. No colour or size: a category has no industrial_filters.
     expect(sections.map((section) => section.id), <String>[
+      'price',
       'brands',
       'facet:Материал',
       'facet:Мощность',
     ]);
-    final brands = sections.first as PersonalizationFilterOptions;
+    final brands = sections[1] as PersonalizationFilterOptions;
     // With the product count of each brand from the answer.
     expect(brands.options.map((option) => option.label), <String>[
       'Bosch (3)',

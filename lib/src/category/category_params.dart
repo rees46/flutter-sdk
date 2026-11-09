@@ -7,12 +7,10 @@ import 'dart:convert';
 /// Whether a category listing applies a price range and a sort (`price_min`,
 /// `price_max`, `sort_by`, `sort_dir`) on this platform.
 ///
-/// The API takes them, but the native SDKs this plugin is built against (Android
-/// 2.45.0, iOS 3.35.0) have no such category parameters yet: Dart sends them, the
-/// bridges drop them. The kit's category screen hides its price section and sort
-/// button while this is `false`. Flip it together with the bridges once the plugin
-/// pins native releases that take them.
-const bool categoryPriceAndSortApplied = false;
+/// The bridges pass them to the native SDKs (Android 2.47.0, iOS 3.37.0 and later
+/// take them). The kit's category screen hides its price section and sort button
+/// while this is `false`.
+const bool categoryPriceAndSortApplied = true;
 
 /// The JSON object the bridges read, `null` when no filter is set. Keys are the API's;
 /// empty values are left out.
