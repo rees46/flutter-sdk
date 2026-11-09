@@ -606,9 +606,13 @@ interface PersonalizationHostApi {
   /**
    * Returns a category product listing as a JSON string.
    * [limit] and [page] paginate the result; both are optional.
+   * [paramsJson] is a JSON object string with the optional filters: "brands" and
+   * "locations" (comma-separated strings), "filters" (facet name → [values]),
+   * "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+   * passes on only what its native SDK takes for a category.
    * Dart layer parses the result into [CategoryResponse].
    */
-  fun getCategory(category: String, limit: Long?, page: Long?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun getCategory(category: String, limit: Long?, page: Long?, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
   /**
    * Returns a merchandised collection's products as a JSON string.
    * Dart layer parses the result into [CollectionResponse].
@@ -626,6 +630,14 @@ interface PersonalizationHostApi {
    * Returns false when nothing could open it.
    */
   fun openUrl(url: String, callback: (Result<Boolean>) -> Unit)
+  /**
+   * Shows the system share sheet with one link [url] — the "Share" button of the stories
+   * viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+   * `UIActivityViewController`; Android — the window got its focus back after the
+   * chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+   * logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+   */
+  fun shareUrl(url: String, anchorX: Double, anchorY: Double, anchorWidth: Double, anchorHeight: Double, callback: (Result<Unit>) -> Unit)
   /**
    * The slide ids seen per story id for [shop] — the plugin's own store
    * (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
@@ -1075,8 +1087,9 @@ interface PersonalizationHostApi {
             val categoryArg = args[0] as String
             val limitArg = args[1] as Long?
             val pageArg = args[2] as Long?
-            val shopIdArg = args[3] as String?
-            api.getCategory(categoryArg, limitArg, pageArg, shopIdArg) { result: Result<String> ->
+            val paramsJsonArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.getCategory(categoryArg, limitArg, pageArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -1145,6 +1158,29 @@ interface PersonalizationHostApi {
               } else {
                 val data = result.getOrNull()
                 reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val urlArg = args[0] as String
+            val anchorXArg = args[1] as Double
+            val anchorYArg = args[2] as Double
+            val anchorWidthArg = args[3] as Double
+            val anchorHeightArg = args[4] as Double
+            api.shareUrl(urlArg, anchorXArg, anchorYArg, anchorWidthArg, anchorHeightArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
               }
             }
           }

@@ -56,6 +56,8 @@ class PersonalizationCatalog extends StatelessWidget {
     this.onProductAction,
     this.onProductTap,
     this.emptyText,
+    this.emptyActionText,
+    this.onEmptyAction,
     this.loading = false,
     this.count,
     this.loadMoreText,
@@ -64,6 +66,7 @@ class PersonalizationCatalog extends StatelessWidget {
     this.scrollable = true,
     this.controller,
     this.padding,
+    this.showRating = true,
   });
 
   final Widget? header;
@@ -79,6 +82,11 @@ class PersonalizationCatalog extends StatelessWidget {
 
   /// Текст пустой выдачи. `null` — без пустого состояния, плитка остаётся на месте.
   final String? emptyText;
+
+  /// Кнопка под пустым состоянием — например, «повторить» после ошибки загрузки.
+  /// `null` — без кнопки. На время загрузки прячется, как «загрузить ещё».
+  final String? emptyActionText;
+  final VoidCallback? onEmptyAction;
   final bool loading;
   final PersonalizationCatalogCount? count;
 
@@ -106,6 +114,10 @@ class PersonalizationCatalog extends StatelessWidget {
   /// Поля ленты. Содержимое прокручивается под ними, а не обрезается по их краю.
   final EdgeInsetsGeometry? padding;
 
+  /// Рисовать ли рейтинг товаров. `false` — карточки без рейтинга, даже если он у
+  /// товара есть.
+  final bool showRating;
+
   /// Шаг между блоками каталога.
   static const double _gapBlock = PersonalizationSpacing.lg;
 
@@ -130,6 +142,8 @@ class PersonalizationCatalog extends StatelessWidget {
     final int rows = grid ? (products.length + 1) ~/ 2 : products.length;
     final footer = <Widget>[
       if (empty) PersonalizationEmptyState(message: emptyText!),
+      if (empty && (emptyActionText ?? '').isNotEmpty && !loading)
+        _button(emptyActionText!, onEmptyAction),
       // Во фреймах с лоадером (296:3544, 299:6606) счётчика и кнопки нет — на время
       // загрузки лоадер встаёт на их место.
       if (loading) const PersonalizationLoader(),
@@ -141,14 +155,7 @@ class PersonalizationCatalog extends StatelessWidget {
           total: count!.total,
         ),
       if (loadMoreText != null && loadMoreText!.isNotEmpty && !loading)
-        PersonalizationButton(
-          label: loadMoreText,
-          size: PersonalizationButtonSize.md,
-          view: PersonalizationButtonView.secondary,
-          iconStart: PersonalizationIcons.arrowRotateCw,
-          iconBuilder: iconBuilder,
-          onPressed: onLoadMore,
-        ),
+        _button(loadMoreText!, onLoadMore),
     ];
 
     return CustomScrollView(
@@ -203,6 +210,17 @@ class PersonalizationCatalog extends StatelessWidget {
     );
   }
 
+  /// Кнопка под лентой: «загрузить ещё» или действие пустого состояния.
+  Widget _button(String label, VoidCallback? onPressed) =>
+      PersonalizationButton(
+        label: label,
+        size: PersonalizationButtonSize.md,
+        view: PersonalizationButtonView.secondary,
+        iconStart: PersonalizationIcons.arrowRotateCw,
+        iconBuilder: iconBuilder,
+        onPressed: onPressed,
+      );
+
   /// Строка плитки. IntrinsicHeight + stretch: соседние карточки одной высоты, и
   /// цена с кнопкой у них на одной линии (см. [PersonalizationProductsList]).
   Widget _gridRow(int row) {
@@ -239,7 +257,7 @@ class PersonalizationCatalog extends StatelessWidget {
       imageAspect: imageAspect,
       brand: product.brand,
       name: product.name,
-      rating: product.rating,
+      rating: showRating ? product.rating : null,
       price: product.price,
       oldPrice: product.oldPrice,
       discount: product.discount,

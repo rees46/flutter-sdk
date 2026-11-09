@@ -1,16 +1,46 @@
 package com.rees46.rees46_flutter_sdk_example
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
+    /** Demo link the activity was started with, until Dart takes it (`getInitialLink`). */
+    private var initialLink: String? = null
+    private var links: MethodChannel? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // A recreated activity (rotation, process restore) does not open the link again.
+        if (savedInstanceState == null) initialLink = demoLink(intent)
+        super.onCreate(savedInstanceState)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // singleTop: a link while the app is open comes here, not to onCreate.
+        demoLink(intent)?.let { links?.invokeMethod("onLink", it) }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        links = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LINKS_CHANNEL)
+            .apply {
+                setMethodCallHandler { call, result ->
+                    when (call.method) {
+                        "getInitialLink" -> {
+                            result.success(initialLink)
+                            initialLink = null
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
+            }
         // The Flutter layer asks for the notification permission from a post-frame
         // callback (see main.dart) instead of from onCreate. Requesting it only after
         // the engine and first frame are up keeps the system dialog from racing
@@ -44,8 +74,20 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * A VIEW link of the demo scheme, whatever its host and path: a stories "Share" link
+     * (`r46_stories`) or the game's (`rees46flutter://game`). Dart tells them apart.
+     */
+    private fun demoLink(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        val data = intent.data ?: return null
+        return if (data.scheme.equals(DEMO_SCHEME, ignoreCase = true)) data.toString() else null
+    }
+
     private companion object {
         const val CHANNEL = "rees46_sdk_example/platform"
+        const val LINKS_CHANNEL = "rees46_sdk_example/links"
+        const val DEMO_SCHEME = "rees46flutter"
         const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
     }
 }

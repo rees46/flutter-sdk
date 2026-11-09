@@ -349,61 +349,92 @@ class _PersonalizationFiltersState extends State<PersonalizationFilters> {
   Widget build(BuildContext context) {
     final colors = PersonalizationTheme.of(context).colors;
     const double sectionGap = 16;
+    final Widget title = PersonalizationTitle(
+      title: widget.title,
+      trailing: PersonalizationButton(
+        size: PersonalizationButtonSize.md,
+        view: PersonalizationButtonView.ghost,
+        iconStart: PersonalizationIcons.crossLarge,
+        iconBuilder: widget.iconBuilder,
+        onPressed: widget.onClose,
+      ),
+    );
+    final List<Widget> sections = <Widget>[
+      for (final section in _sections) ...<Widget>[
+        const SizedBox(height: sectionGap),
+        _label(
+          context,
+          section.title,
+          PersonalizationTypography.lgEmphasized,
+          FontWeight.w600,
+        ),
+        const SizedBox(height: 12),
+        switch (section) {
+          PersonalizationFilterRange() => _range(context, section),
+          PersonalizationFilterOptions() => _options(context, section),
+        },
+      ],
+    ];
+    final Widget buttons = Row(
+      children: <Widget>[
+        Expanded(
+          child: PersonalizationButton(
+            label: widget.resetText,
+            size: PersonalizationButtonSize.md,
+            view: PersonalizationButtonView.secondary,
+            onPressed: widget.onReset,
+          ),
+        ),
+        const SizedBox(width: sectionGap),
+        Expanded(
+          child: PersonalizationButton(
+            label: widget.applyText,
+            size: PersonalizationButtonSize.md,
+            view: PersonalizationButtonView.primary,
+            onPressed: widget.onApply == null
+                ? null
+                : () => widget.onApply!(_sections),
+          ),
+        ),
+      ],
+    );
+    // Заголовок и кнопки закреплены, прокручиваются только секции: фасетов бывает десятки,
+    // и до «Apply» не надо листать весь список. Без заданной высоты (экран в общей
+    // прокрутке хоста) — всё по содержимому, как одна колонка.
     return ColoredBox(
       color: colors.backgroundGeneric,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          PersonalizationTitle(
-            title: widget.title,
-            trailing: PersonalizationButton(
-              size: PersonalizationButtonSize.md,
-              view: PersonalizationButtonView.ghost,
-              iconStart: PersonalizationIcons.crossLarge,
-              iconBuilder: widget.iconBuilder,
-              onPressed: widget.onClose,
-            ),
-          ),
-          for (final section in _sections) ...<Widget>[
-            const SizedBox(height: sectionGap),
-            _label(
-              context,
-              section.title,
-              PersonalizationTypography.lgEmphasized,
-              FontWeight.w600,
-            ),
-            const SizedBox(height: 12),
-            switch (section) {
-              PersonalizationFilterRange() => _range(context, section),
-              PersonalizationFilterOptions() => _options(context, section),
-            },
-          ],
-          const SizedBox(height: sectionGap * 2),
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (!constraints.hasBoundedHeight) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                title,
+                ...sections,
+                const SizedBox(height: sectionGap * 2),
+                buttons,
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              title,
               Expanded(
-                child: PersonalizationButton(
-                  label: widget.resetText,
-                  size: PersonalizationButtonSize.md,
-                  view: PersonalizationButtonView.secondary,
-                  onPressed: widget.onReset,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: sectionGap),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: sections,
+                  ),
                 ),
               ),
-              const SizedBox(width: sectionGap),
-              Expanded(
-                child: PersonalizationButton(
-                  label: widget.applyText,
-                  size: PersonalizationButtonSize.md,
-                  view: PersonalizationButtonView.primary,
-                  onPressed: widget.onApply == null
-                      ? null
-                      : () => widget.onApply!(_sections),
-                ),
-              ),
+              const SizedBox(height: sectionGap),
+              buttons,
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }

@@ -1272,11 +1272,16 @@ class PersonalizationHostApi {
 
   /// Returns a category product listing as a JSON string.
   /// [limit] and [page] paginate the result; both are optional.
+  /// [paramsJson] is a JSON object string with the optional filters: "brands" and
+  /// "locations" (comma-separated strings), "filters" (facet name → [values]),
+  /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+  /// passes on only what its native SDK takes for a category.
   /// Dart layer parses the result into [CategoryResponse].
   Future<String> getCategory(
     String category,
     int? limit,
     int? page,
+    String? paramsJson,
     String? shopId,
   ) async {
     final String pigeonVar_channelName =
@@ -1288,7 +1293,7 @@ class PersonalizationHostApi {
           binaryMessenger: pigeonVar_binaryMessenger,
         );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[category, limit, page, shopId],
+      <Object?>[category, limit, page, paramsJson, shopId],
     );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -1411,6 +1416,44 @@ class PersonalizationHostApi {
       );
     } else {
       return (pigeonVar_replyList[0] as bool?)!;
+    }
+  }
+
+  /// Shows the system share sheet with one link [url] — the "Share" button of the stories
+  /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+  /// `UIActivityViewController`; Android — the window got its focus back after the
+  /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+  /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+  Future<void> shareUrl(
+    String url,
+    double anchorX,
+    double anchorY,
+    double anchorWidth,
+    double anchorHeight,
+  ) async {
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel =
+        BasicMessageChannel<Object?>(
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[url, anchorX, anchorY, anchorWidth, anchorHeight],
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
     }
   }
 

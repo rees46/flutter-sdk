@@ -22,6 +22,13 @@ enum StoriesPauseReason {
   /// Пауза от хоста (`PersonalizationStoriesController.pause`).
   host,
 
+  /// Открыто системное окно «Поделиться».
+  share,
+
+  /// Опрос слайда: карточку держат пальцем, в фокусе её поле или идёт отправка ответа.
+  /// Снимается и при заходе на другой слайд — не залипает.
+  poll,
+
   /// Медиа слайда ещё грузится.
   loading,
 
@@ -69,9 +76,12 @@ enum StoriesStep {
 ///
 /// Сторис без слайдов отбрасываются при создании.
 class StoriesPlayback {
+  /// [initialSlide] — слайд начальной сторис в обход правил стартового слайда (ссылка
+  /// «Поделиться» открывает слайд ссылки); действует до первого захода на неё.
   StoriesPlayback({
     required List<Story> stories,
     int initialStory = 0,
+    int? initialSlide,
     Map<String, Set<String>> seen = const <String, Set<String>>{},
   }) : stories = List<Story>.unmodifiable(
          stories.where((story) => story.slides.isNotEmpty),
@@ -85,6 +95,7 @@ class StoriesPlayback {
       if (stories[i].slides.isNotEmpty) kept++;
     }
     _story = this.stories.isEmpty ? 0 : kept.clamp(0, this.stories.length - 1);
+    _initialSlide = this.stories.isEmpty ? null : initialSlide;
   }
 
   /// Сторис со слайдами в порядке ленты.
@@ -98,6 +109,9 @@ class StoriesPlayback {
   bool _entered = false;
   bool _sheet = false;
   int? _turnTarget;
+
+  /// Слайд начальной сторис в обход правил, пока на неё не зашли.
+  int? _initialSlide;
   Duration _elapsed = Duration.zero;
   Duration _duration = Duration.zero;
   bool _byVideo = false;
@@ -166,9 +180,14 @@ class StoriesPlayback {
     return story.startPosition.clamp(0, slides.length - 1);
   }
 
-  /// Стартовый слайд сторис [index] по текущему состоянию просмотренного.
+  /// Стартовый слайд сторис [index] по текущему состоянию просмотренного; у начальной
+  /// сторис до первого захода — заданный при создании, если он был.
   int startSlideFor(int index) {
     final story = stories[index];
+    final initial = _initialSlide;
+    if (initial != null && index == _story && !_entered) {
+      return initial.clamp(0, story.slides.length - 1);
+    }
     return startSlideOf(story, _seen[story.id] ?? const <String>{});
   }
 
@@ -183,6 +202,7 @@ class StoriesPlayback {
     if (_entered && target == _story) return false;
     _story = target;
     _slide = startSlideFor(target);
+    _initialSlide = null;
     _enter();
     return true;
   }
@@ -334,6 +354,7 @@ class StoriesPlayback {
     _reasons
       ..remove(StoriesPauseReason.sheet)
       ..remove(StoriesPauseReason.error)
+      ..remove(StoriesPauseReason.poll)
       ..add(StoriesPauseReason.loading);
     (_seen[story.id] ??= <String>{}).add(slide.id);
   }

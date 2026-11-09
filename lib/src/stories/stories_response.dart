@@ -1,10 +1,15 @@
+import 'package:flutter/foundation.dart' show debugPrint;
+
 import '../json_number.dart';
+
+part 'stories_poll.dart';
+part 'stories_share_v3.dart';
+
+// The `payload` of API v3 (`/api/v3/storefront/stories/{code}`) has the same keys and
+// is parsed here too.
 
 /// A stories block (`GET stories/{code}`), parsed from the server JSON both bridges hand
 /// over untouched.
-///
-/// Internal to the UI kit until its release: the package barrel does not export it, the
-/// kit barrel (`src/ui/personalization_ui.dart`) does.
 ///
 /// Parsing is tolerant, the way the native SDKs read the same payload: numbers may arrive
 /// as strings (`font_size`, `y_offset`, `duration`), ids as numbers or strings, and a
@@ -43,6 +48,10 @@ class Story {
   final int startPosition;
   final List<StorySlide> slides;
 
+  // Sharing of API v3: behind the v3 gate, read through [StoryShareV3].
+  final bool _shareable;
+  final String _shareUrl;
+
   const Story({
     required this.id,
     required this.name,
@@ -51,10 +60,25 @@ class Story {
     this.pinned = false,
     this.startPosition = 0,
     required this.slides,
+  }) : _shareable = true,
+       _shareUrl = '';
+
+  const Story._json(
+    this._shareable,
+    this._shareUrl, {
+    required this.id,
+    required this.name,
+    required this.avatar,
+    required this.viewed,
+    required this.pinned,
+    required this.startPosition,
+    required this.slides,
   });
 
   factory Story.fromJson(Map<String, dynamic> json) {
-    return Story(
+    return Story._json(
+      json['shareable'] != false,
+      _text(json['share_url']),
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       avatar: json['avatar'] as String? ?? '',
@@ -97,6 +121,9 @@ class StorySlide {
   final Duration duration;
   final List<StoryElement> elements;
 
+  // Sharing of API v3: behind the v3 gate, read through [StorySlideShareV3].
+  final String _shareUrl;
+
   /// Seconds a slide lasts when the server does not say (or says 0) — the same on every
   /// platform.
   static const int defaultDurationSeconds = 10;
@@ -109,11 +136,23 @@ class StorySlide {
     this.preview = '',
     this.duration = const Duration(seconds: defaultDurationSeconds),
     this.elements = const [],
+  }) : _shareUrl = '';
+
+  const StorySlide._json(
+    this._shareUrl, {
+    required this.id,
+    required this.type,
+    required this.background,
+    required this.backgroundColor,
+    required this.preview,
+    required this.duration,
+    required this.elements,
   });
 
   factory StorySlide.fromJson(Map<String, dynamic> json) {
     final seconds = toIntOrNull(json['duration']);
-    return StorySlide(
+    return StorySlide._json(
+      _text(json['share_url']),
       id: json['id']?.toString() ?? '',
       type: switch (json['type']) {
         'image' => StorySlideType.image,
@@ -144,7 +183,7 @@ class StorySlide {
 }
 
 /// An element placed on a slide. Unknown types and `header` (not drawn by the kit) are
-/// dropped while parsing.
+/// dropped while parsing, and so is a `poll` of a kind the kit does not draw.
 sealed class StoryElement {
   const StoryElement();
 
@@ -155,6 +194,7 @@ sealed class StoryElement {
       'product' => StoryProductElement.fromJson(json),
       'products' => StoryProductsElement.fromJson(json),
       'text_block' => StoryTextBlockElement.fromJson(json),
+      'poll' => StoryPollElement.tryParse(json),
       _ => null,
     };
   }
@@ -406,6 +446,9 @@ double parseStoryOpacity(dynamic value) {
   final fraction = isText || number > 1 ? number / 100 : number;
   return fraction.clamp(0, 1).toDouble();
 }
+
+// A string field; JSON `null` (API v3 sends it for empty fields) and other types are empty.
+String _text(dynamic value) => value is String ? value : '';
 
 Iterable<Map<String, dynamic>> _maps(dynamic raw) {
   if (raw is! List) return const [];

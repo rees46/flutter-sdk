@@ -263,7 +263,22 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     ]
     if let pf = p.priceFormatted { dict["price_formatted"] = pf }
     if let pff = p.priceFullFormatted { dict["price_full_formatted"] = pff }
+    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
+    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
     return dict
+  }
+
+  /// Old price and discount as the API sends them: only for a discounted product. The
+  /// native models fill an absent value with 0 or "", which would read as a real one.
+  private static func _putDiscount(
+    _ dict: inout [String: Any],
+    oldPrice: Double,
+    oldPriceFormatted: String?,
+    discount: Int
+  ) {
+    if oldPrice > 0 { dict["oldprice"] = oldPrice }
+    if let v = oldPriceFormatted, !v.isEmpty { dict["oldprice_formatted"] = v }
+    if discount > 0 { dict["discount"] = discount }
   }
 
   private static func _categoryToDict(_ c: REES46.Category) -> [String: Any] {
@@ -340,17 +355,35 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     // As of REES46 3.24+, ProductsListResponse.products is [Product] (not [ProductInfo]);
     // Product carries no categories, which the Dart parser already treats as optional.
     var dict: [String: Any] = [
-      "products": r.products.map { _searchProductToDict($0) },
+      "products": r.products.map { _productsListProductToDict($0) },
       "products_total": r.productsTotal,
     ]
     if let pr = r.priceRange {
       dict["price_range"] = ["min": pr.min, "max": pr.max]
     }
+    if let brands = r.brands {
+      dict["brands"] = brands
+    }
+    if let filters = r.filters {
+      dict["filters"] = filters.mapValues { ["count": $0.count, "values": $0.values] as [String: Any] }
+    }
+    return dict
+  }
+
+  /// A products list item for the Dart `Product`, whose old price and discount are
+  /// nullable: they go out only for a discounted product, as on Android. Search keeps
+  /// sending the native zeros, which its model reads as "none".
+  private static func _productsListProductToDict(_ p: Product) -> [String: Any] {
+    var dict = _searchProductToDict(p)
+    dict.removeValue(forKey: "oldprice")
+    dict.removeValue(forKey: "oldprice_formatted")
+    dict.removeValue(forKey: "discount")
+    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
     return dict
   }
 
   private static func _productInfoToDict(_ p: ProductInfo) -> [String: Any] {
-    return [
+    var dict: [String: Any] = [
       "id": p.id,                          // normalised from "uniqid"
       "name": p.name,
       "brand": p.brand,
@@ -372,6 +405,11 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
         return d
       },
     ]
+    if !p.resizedImageUrl.isEmpty { dict["picture"] = p.resizedImageUrl }
+    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
+    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
+    if let isNew = p.isNew { dict["is_new"] = isNew }
+    return dict
   }
 
   func searchBlank(shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
@@ -587,7 +625,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       "oldprice_formatted": p.oldPriceFormatted,
       "discount": p.discount,
     ]
-    _ = dict // suppress unused warning; all fields set above
+    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
+    if let isNew = p.isNew { dict["is_new"] = isNew }
     return dict
   }
 
@@ -691,7 +730,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func getCategory(category: String, limit: Int64?, page: Int64?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+  func getCategory(category: String, limit: Int64?, page: Int64?, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
     guard let sdk = sdk(shopId) else {
       completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
       return
@@ -700,13 +739,23 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       completion(.failure(PigeonError(code: "bad_args", message: "category is required", details: nil)))
       return
     }
+    let p = parseJsonObject(paramsJson)
+    let brands = (p?["brands"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+    let locations = (p?["locations"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+    let filters = (p?["filters"] as? [String: Any]).flatMap { $0.isEmpty ? nil : $0 }
+    let sortBy = (p?["sort_by"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+    let sortDir = (p?["sort_dir"] as? String).flatMap { $0.isEmpty ? nil : $0 }
     sdk.getCategory(
       category: category,
       limit: limit.map { Int($0) },
       page: page.map { Int($0) },
-      brands: nil,
-      locations: nil,
-      filters: nil
+      brands: brands,
+      locations: locations,
+      filters: filters,
+      priceMin: p?["price_min"] as? Double,
+      priceMax: p?["price_max"] as? Double,
+      sortBy: sortBy,
+      sortDir: sortDir
     ) { result in
       switch result {
       case .success(let response):
@@ -782,6 +831,69 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
+  func shareUrl(
+    url: String,
+    anchorX: Double,
+    anchorY: Double,
+    anchorWidth: Double,
+    anchorHeight: Double,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    guard let target = URL(string: url) else {
+      completion(.failure(PigeonError(code: "bad_args", message: "invalid url", details: nil)))
+      return
+    }
+    DispatchQueue.main.async {
+      guard let presenter = Self._topViewController() else {
+        completion(.failure(PigeonError(code: "share_failed", message: "no view controller to present from", details: nil)))
+        return
+      }
+      let sheet = UIActivityViewController(activityItems: [target], applicationActivities: nil)
+      // The handler may come more than once (an activity done, then the sheet gone): one reply.
+      var replied = false
+      sheet.completionWithItemsHandler = { _, _, _, _ in
+        if replied { return }
+        replied = true
+        completion(.success(()))
+      }
+      // iPad shows the sheet as a popover, and a popover without a source crashes. The anchor
+      // is the button in the Flutter view's points; without one the popover sits in the middle.
+      if let popover = sheet.popoverPresentationController {
+        let source = Self._flutterView() ?? presenter.view!
+        let anchor = CGRect(x: anchorX, y: anchorY, width: anchorWidth, height: anchorHeight)
+        popover.sourceView = source
+        if anchor.isEmpty {
+          popover.sourceRect = CGRect(x: source.bounds.midX, y: source.bounds.midY, width: 0, height: 0)
+          popover.permittedArrowDirections = []
+        } else {
+          popover.sourceRect = anchor
+        }
+      }
+      presenter.present(sheet, animated: true)
+    }
+  }
+
+  /// The key window of the app.
+  private static func _keyWindow() -> UIWindow? {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    return scenes.flatMap { $0.windows }.first { $0.isKeyWindow }
+      ?? (UIApplication.shared.delegate?.window ?? nil)
+  }
+
+  /// The controller on top of the key window: the one a sheet is presented from.
+  private static func _topViewController() -> UIViewController? {
+    var top = _keyWindow()?.rootViewController
+    while let presented = top?.presentedViewController, !presented.isBeingDismissed {
+      top = presented
+    }
+    return top
+  }
+
+  /// The view Flutter draws into: the coordinates Dart measures the anchor in.
+  private static func _flutterView() -> UIView? {
+    return (_keyWindow()?.rootViewController as? FlutterViewController)?.view
+  }
+
   // MARK: - Stories viewer (UI kit)
 
   func getStoriesSeen(shop: String) throws -> [String: [Any?]] {
@@ -845,6 +957,12 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return [
       "products_total": r.productsTotal,
       "products": r.products.map { _categoryProductToDict($0) },
+      "brands": r.brands.compactMap { b -> [String: Any]? in
+        guard let name = b.name, !name.isEmpty else { return nil }
+        var d: [String: Any] = ["name": name]
+        if let count = b.count { d["count"] = count }
+        return d
+      },
     ]
   }
 

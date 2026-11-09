@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/src/personalization_sdk.dart'
+    show PersonalizationStoryViewerBridge;
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_sound.dart';
@@ -35,6 +37,17 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
 
   @override
   Future<void> endStoriesAudio() async => audio.add('end');
+
+  final List<String> shares = <String>[];
+
+  @override
+  Future<void> shareUrl(
+    String url,
+    double anchorX,
+    double anchorY,
+    double anchorWidth,
+    double anchorHeight,
+  ) async => shares.add('$url $anchorX,$anchorY $anchorWidth×$anchorHeight');
 }
 
 void main() {
@@ -87,5 +100,17 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(api.audio, <String>['begin', 'muted', 'sound', 'muted', 'end']);
     expect(sound.muted.value, isTrue, reason: 'the choice outlives a viewer');
+  });
+
+  test('share hands the link and the button frame to the platform', () async {
+    final api = _FakeHostApi();
+    final sdk = PersonalizationSdk(api: api, shopId: 'shop-a');
+    await sdk.shareUrl(
+      'https://shop.test/?r46_story=5',
+      const Rect.fromLTWH(320, 60, 32, 32),
+    );
+    expect(api.shares, <String>[
+      'https://shop.test/?r46_story=5 320.0,60.0 32.0×32.0',
+    ]);
   });
 }

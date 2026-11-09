@@ -1,0 +1,93 @@
+import 'package:flutter/material.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
+// v3 (popups of the new builder, stories over API v3) is not public API; its gate is
+// lifted when v3 goes public. The example reaches it directly, which the analyzer
+// flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
+
+import 'demo_app.dart';
+import 'shop/shop_home.dart';
+import 'shop/shop_product.dart';
+
+/// The demo shop alone: home → category → product, search and stories, without the
+/// API and UI Kit tabs and their developer tools. Same app, same SDK init and the
+/// same stories links as the full demo (`main.dart`):
+/// `flutter run -t lib/main_shop.dart`.
+void main() => runApp(const ShopApp());
+
+class ShopApp extends StatelessWidget {
+  const ShopApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'REES46 Shop',
+      theme: demoTheme(Brightness.light),
+      darkTheme: demoTheme(Brightness.dark),
+      // The game opens on it, over the shop.
+      navigatorKey: demoNavigatorKey,
+      // The shop's screens for popups v3; the home reports itself once the SDK is up.
+      navigatorObservers: <NavigatorObserver>[
+        PersonalizationScreenObserver(
+          shopId: demoShopId,
+          screenName: demoScreenName,
+        ),
+      ],
+      home: const _ShopHome(),
+    );
+  }
+}
+
+/// Initializes the demo shop, then is its home; the game's link opens the game over
+/// the shop, a stories link the campaign.
+class _ShopHome extends StatefulWidget {
+  const _ShopHome();
+
+  @override
+  State<_ShopHome> createState() => _ShopHomeState();
+}
+
+class _ShopHomeState extends State<_ShopHome> {
+  late final PersonalizationSdk _sdk;
+
+  @override
+  void initState() {
+    super.initState();
+    // Registers the shop and sends the native init before the shop's first request.
+    final sdk = _sdk = initializeDemoShop();
+    enableDemoPopupsV3(
+      sdk,
+      // A product of a popup opens in the shop, and the popup goes.
+      onProductClick: (product) {
+        if (!mounted) return false;
+        ShopProductScreen.open(context, demoShopId, product.id);
+        return true;
+      },
+    );
+    sdk.popups.screenOpened(DemoScreens.home);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      requestDemoNotificationPermission();
+    });
+    // Links of the demo scheme, the one of a cold start included.
+    DemoLinks.listen(_openLink);
+  }
+
+  @override
+  void dispose() {
+    DemoLinks.cancel();
+    // The handler holds this screen; a new one sets its own.
+    _sdk.popups.onProductClick = null;
+    super.dispose();
+  }
+
+  void _openLink(String url) {
+    if (!mounted || openDemoGameLink(url)) return;
+    if (!openShopStoriesLink(context, url, demoShopId)) {
+      debugPrint('Demo: neither the game nor a stories link — $url');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => const ShopPane(shopId: demoShopId);
+}

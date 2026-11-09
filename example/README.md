@@ -2,6 +2,9 @@
 
 Demonstrates how to use the rees46_flutter_sdk plugin.
 
+The demo shop alone, without the API and UI Kit tabs: `flutter run -t lib/main_shop.dart`
+(build: `flutter build apk -t lib/main_shop.dart`, `flutter build ios -t lib/main_shop.dart`).
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

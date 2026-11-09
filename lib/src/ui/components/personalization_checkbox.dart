@@ -12,12 +12,21 @@ enum PersonalizationCheckboxState { unchecked, checked, indeterminate }
 ///
 /// Галка и черта рисуются штрихом по геометрии из макета:
 /// `M5 10 L8.75 13.75 L15 7.5` и `M5 10 H15`, толщина 2, круглые концы.
+///
+/// Цвета по умолчанию — токены кита. Хост, который рисует чекбокс в своих
+/// цветах, задаёт [checkedColor], [checkmarkColor], [uncheckedColor] и
+/// [borderColor]; каждый заменяет один токен, остальные остаются из темы.
+/// Заливки отключённого чекбокса — всегда токены `*Disabled`.
 class PersonalizationCheckbox extends StatelessWidget {
   const PersonalizationCheckbox({
     super.key,
     this.state = PersonalizationCheckboxState.unchecked,
     this.disabled = false,
     this.onChanged,
+    this.checkedColor,
+    this.checkmarkColor,
+    this.uncheckedColor,
+    this.borderColor,
   });
 
   final PersonalizationCheckboxState state;
@@ -25,6 +34,18 @@ class PersonalizationCheckbox extends StatelessWidget {
 
   /// Зовётся с состоянием, в которое чекбокс переходит по нажатию.
   final ValueChanged<PersonalizationCheckboxState>? onChanged;
+
+  /// Заливка отмеченного и частичного. `null` — Button/Primary.
+  final Color? checkedColor;
+
+  /// Галка и черта. `null` — Text/Light Primary.
+  final Color? checkmarkColor;
+
+  /// Заливка пустого. `null` — Background/Input.
+  final Color? uncheckedColor;
+
+  /// Рамка пустого. `null` — Line/Input.
+  final Color? borderColor;
 
   static const double size = 20;
 
@@ -39,12 +60,14 @@ class PersonalizationCheckbox extends StatelessWidget {
       painter: _CheckboxPainter(
         state: state,
         fill: isFilled
-            ? (disabled ? colors.buttonPrimaryDisabled : colors.buttonPrimary)
+            ? (disabled
+                  ? colors.buttonPrimaryDisabled
+                  : checkedColor ?? colors.buttonPrimary)
             : (disabled
                   ? colors.backgroundInputDisabled
-                  : colors.backgroundInput),
-        border: isFilled ? null : colors.lineInput,
-        glyph: colors.textLightPrimary,
+                  : uncheckedColor ?? colors.backgroundInput),
+        border: isFilled ? null : borderColor ?? colors.lineInput,
+        glyph: checkmarkColor ?? colors.textLightPrimary,
         radius: theme.radius.resolve(PersonalizationRadiusToken.sm),
       ),
     );

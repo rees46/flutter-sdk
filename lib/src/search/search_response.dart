@@ -1,4 +1,5 @@
 import '../json_number.dart';
+import 'search_facets.dart';
 
 /// Response from [PersonalizationSdk.searchFull].
 ///
@@ -18,6 +19,9 @@ class SearchFullResponse {
   /// Brand names found in the results (Android carries counts too, iOS only names).
   final List<String> brands;
 
+  /// Product count per brand name, where the native side carries it (not iOS).
+  final Map<String, int> brandCounts;
+
   /// Shop facets keyed by name: value → product count.
   final Map<String, SearchFilter> filters;
   final SearchIndustrialFilters? industrialFilters;
@@ -29,6 +33,7 @@ class SearchFullResponse {
     this.priceRange,
     this.locations,
     this.brands = const [],
+    this.brandCounts = const {},
     this.filters = const {},
     this.industrialFilters,
   });
@@ -50,8 +55,9 @@ class SearchFullResponse {
       locations: (json['locations'] as List<dynamic>?)
           ?.map((e) => SearchLocation.fromJson(e as Map<String, dynamic>))
           .toList(),
-      brands: _parseBrands(json['brands']),
-      filters: _parseFilters(json['filters']),
+      brands: parseBrandNames(json['brands']),
+      brandCounts: parseFacetCounts(json['brands'], 'name'),
+      filters: parseFacetFilters(json['filters']),
       industrialFilters: json['industrial_filters'] is Map
           ? SearchIndustrialFilters.fromJson(
               Map<String, dynamic>.from(json['industrial_filters'] as Map),
@@ -59,27 +65,6 @@ class SearchFullResponse {
           : null,
     );
   }
-}
-
-/// Brands arrive as `[{name, count}]` (Android) or `[name]` (iOS); both become names.
-List<String> _parseBrands(dynamic raw) {
-  if (raw is! List) return const [];
-  return raw
-      .map((e) => e is Map ? e['name']?.toString() : e?.toString())
-      .whereType<String>()
-      .where((name) => name.isNotEmpty)
-      .toList();
-}
-
-Map<String, SearchFilter> _parseFilters(dynamic raw) {
-  if (raw is! Map) return const {};
-  return {
-    for (final entry in raw.entries)
-      if (entry.value is Map)
-        entry.key.toString(): SearchFilter.fromJson(
-          Map<String, dynamic>.from(entry.value as Map),
-        ),
-  };
 }
 
 /// One facet of a full search: how many products carry it and the count per value.
@@ -108,9 +93,15 @@ class SearchIndustrialFilters {
   final List<String> colors;
   final List<String> fashionSizes;
 
+  /// Product count per colour and per size, where the answer carries one.
+  final Map<String, int> colorCounts;
+  final Map<String, int> fashionSizeCounts;
+
   const SearchIndustrialFilters({
     this.colors = const [],
     this.fashionSizes = const [],
+    this.colorCounts = const {},
+    this.fashionSizeCounts = const {},
   });
 
   factory SearchIndustrialFilters.fromJson(Map<String, dynamic> json) {
@@ -123,6 +114,8 @@ class SearchIndustrialFilters {
     return SearchIndustrialFilters(
       colors: names(json['colors'], 'color'),
       fashionSizes: names(json['fashion_sizes'], 'size'),
+      colorCounts: parseFacetCounts(json['colors'], 'color'),
+      fashionSizeCounts: parseFacetCounts(json['fashion_sizes'], 'size'),
     );
   }
 }
@@ -132,8 +125,11 @@ class SearchIndustrialFilters {
 ///
 /// Excluded Android-only fields: _id, imageUrlHandle, urlHandle, categoryIds,
 /// locationIds, categories (product-level category model differs from search-level).
-/// Excluded iOS-only fields: barcode, model, deeplinkIos, oldPriceFull (and its
-/// formatted variant), isNew, params.
+/// Excluded iOS-only fields: barcode, model, oldPriceFull (and its formatted
+/// variant), params.
+///
+/// The fields after [discountFormatted] are nullable: a bridge fills them only where
+/// its native model carries them, see each field.
 class SearchProduct {
   final String id;
   final String name;
@@ -164,6 +160,21 @@ class SearchProduct {
   final int discount;
   final String? discountFormatted;
 
+  /// Discount in percent as the shop computes it (`discount_percent`). Full search
+  /// on Android only for now: the native product models drop it.
+  final int? discountPercent;
+
+  /// Android app link to the product (`deeplink_android`). Full search only for now,
+  /// on Android: iOS and the instant and blank search models drop it.
+  final String? deeplinkAndroid;
+
+  /// iOS app link to the product (`deeplink_ios`). Full search on Android, every
+  /// search on iOS; the Android instant and blank search models drop it.
+  final String? deeplinkIos;
+
+  /// The shop marks the product as new (`is_new`).
+  final bool? isNew;
+
   const SearchProduct({
     required this.id,
     required this.name,
@@ -184,6 +195,10 @@ class SearchProduct {
     this.oldPriceFormatted,
     this.discount = 0,
     this.discountFormatted,
+    this.discountPercent,
+    this.deeplinkAndroid,
+    this.deeplinkIos,
+    this.isNew,
   });
 
   factory SearchProduct.fromJson(Map<String, dynamic> json) {
@@ -207,6 +222,10 @@ class SearchProduct {
       oldPriceFormatted: json['oldprice_formatted'] as String?,
       discount: toIntOrNull(json['discount']) ?? 0,
       discountFormatted: json['discount_formatted'] as String?,
+      discountPercent: toIntOrNull(json['discount_percent']),
+      deeplinkAndroid: toNonEmptyStringOrNull(json['deeplink_android']),
+      deeplinkIos: toNonEmptyStringOrNull(json['deeplink_ios']),
+      isNew: toBoolOrNull(json['is_new']),
     );
   }
 }

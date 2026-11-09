@@ -8,6 +8,7 @@ import '../../search/search_params.dart';
 import '../../search/search_response.dart';
 import '../../tracking/tracking_models.dart';
 import '../components/personalization_instant_search.dart';
+import 'product_mapping.dart';
 import 'search_support.dart';
 
 /// Мгновенный поиск с данными SDK: поле ввода, недавние запросы, подсказки, категории и
@@ -309,7 +310,7 @@ class _PersonalizationInstantSearchFieldState
       for (final product in (source ?? const <SearchProduct>[]).take(
         widget.productsLimit,
       )) {
-        final card = toCardProduct(product, null);
+        final card = productFromSearch(product);
         products.add(
           PersonalizationSuggestion(
             id: card.id,

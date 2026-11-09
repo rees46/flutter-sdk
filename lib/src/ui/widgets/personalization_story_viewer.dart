@@ -8,15 +8,19 @@ import 'package:video_player/video_player.dart';
 
 import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
+import 'stories_api_v3.dart';
 import 'stories_gif.dart';
 import 'stories_gif_player.dart';
 import 'stories_image.dart';
 import 'stories_media_cache.dart';
 import 'stories_playback.dart';
+import 'stories_poll.dart';
+import 'stories_polls_api.dart';
 import 'stories_seen_store.dart';
 import 'stories_slide_view.dart';
 import 'stories_sound.dart';
 import 'stories_support.dart';
+import 'stories_v3_scope.dart';
 
 /// Полноэкранный просмотр сторис: слайды по таймеру, листание, товары, ссылки.
 ///
@@ -67,6 +71,7 @@ class PersonalizationStoryViewer extends StatefulWidget {
     super.key,
     required this.stories,
     this.initialStory = 0,
+    this.initialSlide,
     this.seen = const <String, Set<String>>{},
     this.code,
     this.sdk,
@@ -95,6 +100,10 @@ class PersonalizationStoryViewer extends StatefulWidget {
 
   /// С какой сторис начать — индекс в [stories].
   final int initialStory;
+
+  /// Слайд начальной сторис в обход правила «первый непросмотренный»; `null` — по
+  /// правилам. Так ссылка «Поделиться» открывает свой слайд.
+  final int? initialSlide;
 
   /// Уже просмотренные слайды: id слайдов по id сторис. По ним выбирается стартовый слайд
   /// сторис (первый непросмотренный). С [sdk] к ним добавляется сохранённое на устройстве.
@@ -186,11 +195,23 @@ class PersonalizationStoryViewer extends StatefulWidget {
       _PersonalizationStoryViewerState();
 }
 
+// Режим API v3 — [StoriesV3Scope] над просмотром (его ставит шлюз v3), без него —
+// глобальный хост [StoriesApiV3.domain]:
+// - события уходят из Dart на v3 — и у слайдов с id не числом тоже ([StoriesApiV3]);
+// - «Поделиться» — с `sdk` и `code`: у слайда со ссылкой ([storySlideShareUrl]) в шапке
+//   кнопка. Нажатие — пауза, событие `share` и системное окно с ссылкой; закрыли окно —
+//   пауза снята, слайд идёт дальше, если шёл;
+// - опросы слайдов (мини-опросы, NPS, CSAT, CES): ответы уходят через транспорт режима,
+//   без него — на хост API v3 просмотра ([StoriesPollsApi], нужен `sdk`); нет ни того ни
+//   другого — опросы не рисуются. Свой транспорт рисует их и без API v3. Пока карточку
+//   держат пальцем, в фокусе её поле или идёт отправка — пауза; касания карточки слайд не
+//   листают. Ответы помнятся до конца процесса ([StoryPollStore]).
 class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final StoriesPlayback _playback = StoriesPlayback(
     stories: widget.stories,
     initialStory: widget.initialStory,
+    initialSlide: widget.initialSlide,
     seen: _initialSeen(),
   );
   late final PageController _pages = PageController(
@@ -217,6 +238,12 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   StoriesTimer? _timeout;
   StoriesTimer? _autoRetry;
   bool _closing = false;
+
+  /// Открыто окно «Поделиться»: второе не открывается.
+  bool _sharing = false;
+
+  // Режим API v3 над просмотром; `null` — его нет.
+  StoriesV3Options? _v3;
 
   static const Duration _turn = Duration(milliseconds: 300);
   static const Duration _readyTimeout = Duration(seconds: 10);
@@ -269,6 +296,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // До первого захода: initState его откладывает на после кадра.
+    _v3 = StoriesV3Scope.of(context);
     // Просмотр закрыт непрозрачным экраном — навигатор глушит тикеры его поддерева.
     _setPaused(
       StoriesPauseReason.covered,
@@ -448,7 +477,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     final sdk = widget.sdk;
     if (sdk != null) {
       StoriesSeenStore.instance.mark(sdk, story.id, slide.id);
-      if (storyTrackableId(story.id) && storyTrackableId(slide.id)) {
+      if (_v3Code != null) {
+        _trackV3(StoriesV3Event.view, story, slide);
+      } else if (storyTrackableId(story.id) && storyTrackableId(slide.id)) {
         sdk.tracking
             .storyView(storyId: story.id, slideId: slide.id, code: widget.code)
             .catchError((Object error) {
@@ -469,6 +500,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     final sdk = widget.sdk;
     final story = _playback.story;
     final slide = _playback.slide;
+    if (sdk != null && _v3Code != null) {
+      return _trackV3(StoriesV3Event.click, story, slide);
+    }
     if (sdk == null ||
         !storyTrackableId(story.id) ||
         !storyTrackableId(slide.id)) {
@@ -479,6 +513,82 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         .catchError((Object error) {
           debugPrint('PersonalizationStoryViewer: storyClick — $error');
         });
+  }
+
+  // Хост API v3 просмотра: режима над ним, без него — глобальный; `null` — старый API.
+  String? get _v3Host => StoriesApiV3.host(_v3?.apiV3Domain);
+
+  // Код блока для событий v3: у просмотра есть хост API v3, SDK и код; иначе `null` —
+  // старый трекинг через мост.
+  String? get _v3Code {
+    final code = widget.code;
+    if (_v3Host == null || widget.sdk == null) return null;
+    return code == null || code.isEmpty ? null : code;
+  }
+
+  void _trackV3(StoriesV3Event event, Story story, StorySlide slide) {
+    final sdk = widget.sdk;
+    final code = _v3Code;
+    final host = _v3Host;
+    if (sdk == null || code == null || host == null) return;
+    unawaited(
+      StoriesApiV3.track(
+        sdk,
+        host,
+        code: code,
+        event: event,
+        storyId: story.id,
+        slideId: slide.id,
+      ),
+    );
+  }
+
+  StoriesPollsApi? _pollsApi;
+
+  // Куда отправлять ответы опросов: транспорт режима v3, иначе HTTP API v3 хоста
+  // просмотра; без транспорта, API v3 или [PersonalizationStoryViewer.sdk] — `null`,
+  // опросы не рисуются.
+  StoryPollsTransport? get _polls {
+    final own = _v3?.pollsTransport;
+    if (own != null) return own;
+    final host = _v3Host;
+    final sdk = widget.sdk;
+    if (host == null || sdk == null) return null;
+    final api = _pollsApi;
+    if (api != null && api.sdk == sdk && api.host == host) return api;
+    return _pollsApi = StoriesPollsApi(sdk, host);
+  }
+
+  /// «Поделиться»: своя пауза, `share` сразу, до результата, системное окно; закрыли —
+  /// пауза снята (остальные причины паузы держат слайд, как держали).
+  void _share(String url, Rect anchor) {
+    final sdk = widget.sdk;
+    if (sdk == null || _sharing || _closing) return;
+    _sharing = true;
+    _setPaused(StoriesPauseReason.share, true);
+    _trackV3(StoriesV3Event.share, _playback.story, _playback.slide);
+    sdk
+        .shareUrl(_shareLink(url), anchor)
+        .catchError((Object error) {
+          debugPrint('PersonalizationStoryViewer: share $url — $error');
+        })
+        .whenComplete(() {
+          _sharing = false;
+          if (mounted) _setPaused(StoriesPauseReason.share, false);
+        });
+  }
+
+  // Ссылка для окна «Поделиться» после `shareUrlTransform` режима v3; он упал — ссылка
+  // как есть.
+  String _shareLink(String url) {
+    final transform = _v3?.shareUrlTransform;
+    if (transform == null) return url;
+    try {
+      return transform(url);
+    } catch (error) {
+      debugPrint('PersonalizationStoryViewer: shareUrlTransform — $error');
+      return url;
+    }
   }
 
   // --- Медиа --------------------------------------------------------------------------
@@ -834,12 +944,22 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onTap: _tap,
       onHold: (held) => _setPaused(StoriesPauseReason.hold, held),
       onClose: _close,
+      onShare: _v3Code == null ? null : _share,
+      shareLabel: _v3?.shareLabel ?? 'Share',
       onToggleMute: StoriesSound.instance.toggle,
       onSheet: _sheet,
       onButton: _button,
       onProduct: _product,
       onPromoCopied: _promo,
       onRetry: _retry,
+      pollsTransport: _polls,
+      pollTexts: _v3?.pollTexts ?? const StoryPollTexts(),
+      pollShopId: widget.sdk == null
+          ? ''
+          : StoriesSeenStore.shopOf(widget.sdk!),
+      onPollHold: (held) {
+        if (mounted) _setPaused(StoriesPauseReason.poll, held);
+      },
     );
   }
 }

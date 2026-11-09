@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 /// Host API that answers `searchFull` from memory: [total] products, a page of the
 /// requested limit at a time. While [hold] is set, answers wait for it.
@@ -15,6 +14,12 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   /// Pages asked for, in order.
   final List<int> pages = <int>[];
   Completer<void>? hold;
+
+  /// Pages that fail while listed here.
+  final Set<int> failing = <int>{};
+
+  /// `search` events tracked.
+  int searches = 0;
 
   @override
   Future<String> searchFull(
@@ -27,6 +32,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
     final limit = params['limit'] as int;
     pages.add(page);
     await hold?.future;
+    if (failing.contains(page)) throw StateError('offline');
     final from = (page - 1) * limit;
     return jsonEncode(<String, Object>{
       'products': <Map<String, Object>>[
@@ -42,7 +48,9 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
     String query,
     List<String>? results,
     String? shopId,
-  ) async {}
+  ) async {
+    searches++;
+  }
 }
 
 Widget _host(Widget screen) => MaterialApp(
@@ -78,6 +86,8 @@ int _cards() => find
     .byType(PersonalizationProductCard, skipOffstage: false)
     .evaluate()
     .length;
+
+const int _total = _FakeHostApi.total;
 
 void main() {
   late _FakeHostApi api;
@@ -178,5 +188,222 @@ void main() {
 
     expect(_position(tester).pixels, 0);
     expect(api.pages, <int>[1, 1]);
+  });
+
+  testWidgets('cards go without a rating unless asked for', (tester) async {
+    bool showRating() => tester
+        .widget<PersonalizationCatalog>(find.byType(PersonalizationCatalog))
+        .showRating;
+
+    await tester.pumpWidget(
+      _host(PersonalizationSearchResultsScreen(sdk: sdk, query: 'jacket')),
+    );
+    await tester.pump();
+    expect(showRating(), isFalse);
+
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          showRating: true,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(showRating(), isTrue);
+  });
+
+  testWidgets('a failed first page shows the error and retries it', (
+    tester,
+  ) async {
+    final errors = <Object>[];
+    api.failing.add(1);
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          onError: errors.add,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    const errorText =
+        'Something went wrong. Check your connection and try again.';
+    expect(find.text(errorText), findsOneWidget);
+    expect(find.text('No results for your request.'), findsNothing);
+    expect(find.widgetWithText(PersonalizationButton, 'Retry'), findsOneWidget);
+    expect(errors, hasLength(1));
+    expect(_cards(), 0);
+    // No "Found 0 products" above the error.
+    expect(find.text('Found'), findsNothing);
+
+    api.failing.clear();
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    expect(find.text('Found'), findsOneWidget);
+
+    expect(api.pages, <int>[1, 1]);
+    expect(find.text(errorText), findsNothing);
+    expect(find.text('Retry'), findsNothing);
+    expect(find.text('Item 0'), findsOneWidget);
+    expect(errors, hasLength(1));
+    // A retry asks for the page again, it is not a new search.
+    expect(api.searches, 1);
+  });
+
+  testWidgets('the found count waits for the first page of each request', (
+    tester,
+  ) async {
+    api.hold = Completer<void>();
+    Widget screen(String? sortBy) => _host(
+      PersonalizationSearchResultsScreen(
+        sdk: sdk,
+        query: 'jacket',
+        sortBy: sortBy,
+      ),
+    );
+    await tester.pumpWidget(screen(null));
+    await tester.pump();
+    // Loading: the filter button is there, "Found 0 products" is not.
+    expect(find.text('Found'), findsNothing);
+    expect(find.byType(PersonalizationButton), findsWidgets);
+
+    api.hold!.complete();
+    api.hold = null;
+    await tester.pump();
+    expect(find.text('Found'), findsOneWidget);
+    expect(find.text('$_total'), findsOneWidget);
+
+    api.hold = Completer<void>();
+    await tester.pumpWidget(screen('price'));
+    await tester.pump();
+    expect(find.text('Found'), findsNothing);
+
+    api.hold!.complete();
+    api.hold = null;
+    await tester.pump();
+    expect(find.text('Found'), findsOneWidget);
+  });
+
+  testWidgets('a failed next page turns load more into retry', (tester) async {
+    final errors = <Object>[];
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          errorText: 'Oops',
+          retryText: 'Again',
+          onError: errors.add,
+        ),
+      ),
+    );
+    await tester.pump();
+    PersonalizationCatalog catalog() => tester.widget<PersonalizationCatalog>(
+      find.byType(PersonalizationCatalog),
+    );
+    expect(catalog().loadMoreText, 'Load more');
+
+    api.failing.add(2);
+    catalog().onLoadMore!();
+    await tester.pump();
+
+    expect(api.pages, <int>[1, 2]);
+    expect(errors, hasLength(1));
+    expect(catalog().loadMoreText, 'Again');
+    expect(catalog().loading, isFalse);
+    // The loaded page stays, and the error text is for a failed first page only.
+    expect(find.text('Item 0'), findsOneWidget);
+    expect(catalog().emptyText, isNot('Oops'));
+    expect(find.text('Oops'), findsNothing);
+
+    api.failing.clear();
+    catalog().onLoadMore!();
+    await tester.pump();
+
+    expect(api.pages, <int>[1, 2, 2]);
+    expect(catalog().loadMoreText, 'Load more');
+    expect(catalog().count!.shown, 40);
+    expect(api.searches, 1);
+  });
+
+  testWidgets('infinite scroll stops at a failed page until it is retried', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          infiniteScroll: true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    api.failing.add(2);
+    final position = _position(tester);
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pump();
+    expect(api.pages, <int>[1, 2]);
+
+    position.jumpTo(position.maxScrollExtent - 1);
+    await tester.pump();
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pump();
+    expect(api.pages, <int>[1, 2]);
+
+    final catalog = tester.widget<PersonalizationCatalog>(
+      find.byType(PersonalizationCatalog),
+    );
+    expect(catalog.loadMoreText, 'Retry');
+    api.failing.clear();
+    catalog.onLoadMore!();
+    await tester.pump();
+    expect(api.pages, <int>[1, 2, 2]);
+  });
+
+  testWidgets('empty error and retry texts fall back to the defaults', (
+    tester,
+  ) async {
+    api.failing.add(1);
+    await tester.pumpWidget(
+      _host(
+        PersonalizationSearchResultsScreen(
+          sdk: sdk,
+          query: 'jacket',
+          errorText: null,
+          retryText: '',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.text(PersonalizationSearchResultsScreen.defaultErrorText),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(PersonalizationButton, 'Retry'), findsOneWidget);
+
+    api.failing
+      ..clear()
+      ..add(2);
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    final catalog = tester.widget<PersonalizationCatalog>(
+      find.byType(PersonalizationCatalog),
+    );
+    catalog.onLoadMore!();
+    await tester.pump();
+    expect(api.pages, <int>[1, 1, 2]);
+    expect(
+      tester
+          .widget<PersonalizationCatalog>(find.byType(PersonalizationCatalog))
+          .loadMoreText,
+      'Retry',
+    );
   });
 }

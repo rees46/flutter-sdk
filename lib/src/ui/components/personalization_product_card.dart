@@ -5,6 +5,7 @@ import 'personalization_badge.dart';
 import 'personalization_button.dart';
 import 'personalization_product_image.dart';
 import 'personalization_rating.dart';
+import 'personalization_wrap_row.dart';
 
 /// Тип карточки товара.
 enum PersonalizationProductCardType { carousel, grid, list }
@@ -138,8 +139,12 @@ class PersonalizationProductCard extends StatelessWidget {
             reviews: rating!.reviews,
             iconBuilder: iconBuilder,
           );
+    // Цены не ломаются посреди числа: не влезают рядом — старая цена уходит на свою строку.
     final Widget priceText = Text(
       price,
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.ellipsis,
       style: style(
         metrics.priceSize,
         metrics.priceLineHeight,
@@ -152,6 +157,9 @@ class PersonalizationProductCard extends StatelessWidget {
         ? null
         : Text(
             oldPrice!,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
             style: style(
               metrics.oldPriceSize,
               metrics.oldPriceLineHeight,
@@ -209,23 +217,21 @@ class PersonalizationProductCard extends StatelessWidget {
                         ],
                       ],
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    // В узкой колонке (360 dp, крупный шрифт) цена, бейдж и кнопка в строку
+                    // не влезают: бейдж переносится под цену, кнопка — под блок цены вправо.
+                    PersonalizationWrapRow(
+                      horizontalGap: 8,
+                      verticalGap: 8,
+                      pinEnd: true,
                       children: <Widget>[
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                priceText,
-                                if (discountBadge != null) ...<Widget>[
-                                  const SizedBox(width: 8),
-                                  discountBadge,
-                                ],
-                              ],
+                            PersonalizationWrapRow(
+                              horizontalGap: 8,
+                              verticalGap: 4,
+                              children: <Widget>[priceText, ?discountBadge],
                             ),
                             ?oldPriceText,
                           ],
@@ -282,16 +288,15 @@ class PersonalizationProductCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: <Widget>[
-                priceText,
-                if (oldPriceText != null) ...<Widget>[
-                  const SizedBox(width: 8),
-                  oldPriceText,
-                ],
-              ],
+            // Длинные цены («799 990 ₽» и «1 574 990 ₽») в колонку плитки рядом не
+            // влезают: старая цена встаёт строкой над ценой, и цена с кнопкой остаются
+            // на линии соседей.
+            PersonalizationWrapRow(
+              horizontalGap: 8,
+              verticalGap: 0,
+              wrapAbove: true,
+              alignBottom: true,
+              children: <Widget>[priceText, ?oldPriceText],
             ),
             if (action != null) ...<Widget>[const SizedBox(height: 8), action],
           ],

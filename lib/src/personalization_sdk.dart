@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:ui' show Rect;
 
 import 'pigeon/personalization_api.g.dart' as pigeon;
+import 'category/category_params.dart';
 import 'category/category_response.dart';
 import 'collection/collection_response.dart';
 import 'init/sdk_init_handler.dart';
@@ -10,6 +12,7 @@ import 'multi_instance/push_event.dart';
 import 'popups/in_app_popup.dart';
 import 'popups/popup_dispatcher.dart';
 import 'popups/popup_presenter.dart';
+import 'popups_v3/popups_v3_hooks.dart';
 import 'products/product_counters_response.dart';
 import 'profile/profile_params.dart';
 import 'profile/profile_response.dart';
@@ -107,8 +110,19 @@ class PersonalizationSdk {
     _popups.autoPresentation = config.enableAutoPopupPresentation ?? true;
     // The native side reports popups under the shop id it was initialized with.
     PopupDispatcher.instance.register(config.shopId, _popups);
+    PopupsV3Hooks.initialized(tracking, config);
     return _initHandler.initialize(config);
   }
+
+  /// Whether the SDK shows popups by itself: the server popups while no [onPopup] is
+  /// set, and the other popups the SDK shows by itself (one shown by hand is shown all
+  /// the same).
+  /// `enableAutoPopupPresentation` of the config sets it on [initialize]; it may be
+  /// changed at any time — off, say, while a screen of the app must not be covered.
+  bool get enableAutoPopupPresentation => _popups.autoPresentation;
+
+  set enableAutoPopupPresentation(bool value) =>
+      _popups.autoPresentation = value;
 
   /// Takes the server popups (in-app messages) of this shop instead of the SDK showing
   /// them.
@@ -133,13 +147,22 @@ class PersonalizationSdk {
   Future<void> presentPopup(InAppPopup popup) => _popups.present(popup);
 
   Future<void> setProfile(ProfileParams params) {
-    return _api.setProfile(params.toWire(), shopId);
+    final wire = params.toWire();
+    PopupsV3Hooks.contextChanged(tracking, 'profile', 'set', wire.encode());
+    return _api.setProfile(wire, shopId);
   }
 
   /// Subscribes or unsubscribes the client per channel and mailing type, see
   /// [ManageSubscriptionParams].
   Future<void> manageSubscription(ManageSubscriptionParams params) {
-    return _api.manageSubscription(params.toWire(), shopId);
+    final wire = params.toWire();
+    PopupsV3Hooks.contextChanged(
+      tracking,
+      'subscription',
+      'manage',
+      wire.encode(),
+    );
+    return _api.manageSubscription(wire, shopId);
   }
 
   Future<String> getSid() {
@@ -258,16 +281,45 @@ class PersonalizationSdk {
 
   /// Returns a category product listing (native `CategoryManager.getCategory`).
   ///
-  /// [limit] and [page] paginate the result; both are optional.
+  /// [limit] and [page] paginate the result; both are optional. The filters are
+  /// optional too: [brands] and [locations] are comma-separated, [filters] are the
+  /// shop's own facets by name — `{"Материал корпуса": ["Металл"]}` — as the
+  /// response lists them in [CategoryResponse.filters].
+  ///
+  /// [priceMin], [priceMax], [sortBy] (`price`, `discount`, …) and [sortDir]
+  /// (`asc` / `desc`) are sent, but not applied yet: the native SDKs this plugin
+  /// is built against take no price range or sort for a category. They apply with
+  /// no change to the call once the plugin moves to native releases that do.
   Future<CategoryResponse> getCategory(
     String category, {
     int? limit,
     int? page,
+    String? brands,
+    String? locations,
+    Map<String, List<String>>? filters,
+    double? priceMin,
+    double? priceMax,
+    String? sortBy,
+    String? sortDir,
   }) async {
     if (category.isEmpty) {
       throw ArgumentError.value(category, 'category', 'must be non-empty');
     }
-    final json = await _api.getCategory(category, limit, page, shopId);
+    final json = await _api.getCategory(
+      category,
+      limit,
+      page,
+      categoryParamsJson(
+        brands: brands,
+        locations: locations,
+        filters: filters,
+        priceMin: priceMin,
+        priceMax: priceMax,
+        sortBy: sortBy,
+        sortDir: sortDir,
+      ),
+      shopId,
+    );
     return CategoryResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
@@ -316,6 +368,7 @@ class PersonalizationSdk {
     final customFieldsJson = customFields == null
         ? null
         : jsonEncode(customFields);
+    PopupsV3Hooks.trackEvent(tracking, event);
     return _api.trackEvent(
       event,
       time,
@@ -355,6 +408,7 @@ class PersonalizationSdk {
     if (items.isEmpty) {
       throw ArgumentError.value(items, 'items', 'must be non-empty');
     }
+    PopupsV3Hooks.purchase(tracking);
     final wireItems = items
         .map(
           (e) => pigeon.PurchaseLineItemWire(
@@ -390,9 +444,8 @@ class PersonalizationSdk {
   }
 }
 
-/// Stories for the UI kit — hidden from the package barrel (`export ... hide`) until the
-/// kit's release, and reached by the kit through a direct `src` import. It lives in this
-/// library because it calls the host API the handle owns.
+/// Stories of the UI kit: the block data and the system handler for its links. It lives
+/// in this library because it calls the host API the handle owns.
 extension PersonalizationStoriesBridge on PersonalizationSdk {
   /// The stories block [code] (`stories/{code}`).
   Future<StoriesBlock> getStories(String code) async {
@@ -405,6 +458,17 @@ extension PersonalizationStoriesBridge on PersonalizationSdk {
 
   /// Opens [url] with the system handler; `false` when nothing could open it.
   Future<bool> openUrl(String url) => _api.openUrl(url);
+}
+
+/// The plumbing of the kit's story viewer: the share sheet and the slides seen on this
+/// device. Hidden from the package barrel (`export ... hide`) — the viewer reaches it
+/// through a direct `src` import.
+extension PersonalizationStoryViewerBridge on PersonalizationSdk {
+  /// Shows the system share sheet with the link [url]; completes when the sheet is gone.
+  /// [anchor] is the "Share" button in global logical pixels: the sheet's popover points
+  /// at it on iPad.
+  Future<void> shareUrl(String url, Rect anchor) =>
+      _api.shareUrl(url, anchor.left, anchor.top, anchor.width, anchor.height);
 
   /// The stories slides seen on this device for [shop] (slide ids by story id), from the
   /// plugin's own persistent store.

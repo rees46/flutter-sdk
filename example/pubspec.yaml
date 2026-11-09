@@ -32,6 +32,9 @@ dependencies:
   # The SDK ships its icons as SVG assets and leaves rendering to the host.
   flutter_svg: ^2.2.0
 
+  # The demo's mini-game is a web page: the game's link opens it in a WebView.
+  webview_flutter: ^4.14.1
+
 dev_dependencies:
   integration_test:
     sdk: flutter
@@ -45,6 +48,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   patrol: ^4.5.0
+  # A WebView of the tests' own: the game screen's page without a platform.
+  webview_flutter_platform_interface: ^2.15.1
 
 patrol:
   app_name: rees46_sdk_example
@@ -70,6 +75,8 @@ flutter:
   # demo-only: the SDK does not ship it.
   assets:
     - assets/uikit/
+    # The mini-game: one web page, the same file in every demo.
+    - assets/game/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

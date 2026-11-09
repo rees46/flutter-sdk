@@ -8,6 +8,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.os.SystemClock
+import android.view.View
+import android.view.ViewTreeObserver
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
 import com.rees46.rees46_flutter_sdk.pigeon.InitConfig
 import com.rees46.rees46_flutter_sdk.pigeon.ManageSubscriptionParamsWire
@@ -467,6 +469,7 @@ class Rees46FlutterSdkPlugin :
         category: String,
         limit: Long?,
         page: Long?,
+        paramsJson: String?,
         shopId: String?,
         callback: (Result<String>) -> Unit,
     ) {
@@ -475,10 +478,22 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
+            val p = if (!paramsJson.isNullOrBlank()) JSONObject(paramsJson) else null
+            val filters: Map<String, Any>? = p?.optJSONObject("filters")?.let { obj ->
+                obj.keys().asSequence().associateWith { key -> obj.get(key) }
+            }?.takeIf { it.isNotEmpty() }
+            fun price(key: String): Double? = p?.takeIf { it.has(key) && !it.isNull(key) }?.getDouble(key)
             sdk(shopId).categoryManager.getCategory(
                 category = category,
                 limit = limit?.toInt(),
                 page = page?.toInt(),
+                brands = p?.optString("brands")?.takeIf { it.isNotEmpty() },
+                locations = p?.optString("locations")?.takeIf { it.isNotEmpty() },
+                filters = filters,
+                priceMin = price("price_min"),
+                priceMax = price("price_max"),
+                sortBy = p?.optString("sort_by")?.takeIf { it.isNotEmpty() },
+                sortDir = p?.optString("sort_dir")?.takeIf { it.isNotEmpty() },
                 onSuccess = { response ->
                     callback(Result.success(Gson().toJson(response)))
                 },
@@ -553,6 +568,34 @@ class Rees46FlutterSdkPlugin :
         } catch (e: ActivityNotFoundException) {
             callback(Result.success(false))
         }
+    }
+
+    override fun shareUrl(
+        url: String,
+        anchorX: Double,
+        anchorY: Double,
+        anchorWidth: Double,
+        anchorHeight: Double,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        // The anchor is for the iPad popover; the Android chooser has none.
+        val send = Intent(Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT, url)
+        val chooser = Intent.createChooser(send, null)
+        val activity = activityBinding?.activity
+        if (activity == null) chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            (activity ?: applicationContext).startActivity(chooser)
+        } catch (e: ActivityNotFoundException) {
+            callback(Result.failure(FlutterError("share_failed", e.message, null)))
+            return
+        }
+        if (activity == null) {
+            callback(Result.success(Unit))
+            return
+        }
+        ShareSheetWatcher(activity.window.decorView, callback).start()
     }
 
     override fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit) =
@@ -1182,4 +1225,42 @@ private fun NotificationData.toPayload(): Map<String, String?> {
         map["event"] = json.toString()
     }
     return map
+}
+
+/**
+ * Completes [shareUrl][Rees46FlutterSdkPlugin.shareUrl] when the chooser is gone: the window of
+ * the activity lost its focus to the chooser and got it back (the user picked a target and came
+ * back, or closed the chooser). A chooser that never took the focus does not hold the viewer:
+ * the call completes after [NO_SHEET_MS].
+ */
+private class ShareSheetWatcher(
+    private val view: View,
+    private val done: (Result<Unit>) -> Unit,
+) : ViewTreeObserver.OnWindowFocusChangeListener {
+    private var lost = !view.hasWindowFocus()
+    private var finished = false
+
+    fun start() {
+        view.viewTreeObserver.addOnWindowFocusChangeListener(this)
+        view.postDelayed({ if (!lost) finish() }, NO_SHEET_MS)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        if (!hasFocus) {
+            lost = true
+        } else if (lost) {
+            finish()
+        }
+    }
+
+    private fun finish() {
+        if (finished) return
+        finished = true
+        view.viewTreeObserver.removeOnWindowFocusChangeListener(this)
+        done(Result.success(Unit))
+    }
+
+    private companion object {
+        const val NO_SHEET_MS = 1500L
+    }
 }

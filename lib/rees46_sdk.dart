@@ -1,5 +1,5 @@
-// Stories stay with the UI kit until its release: the kit imports them from src.
-export 'src/personalization_sdk.dart' hide PersonalizationStoriesBridge;
+// The story viewer's plumbing stays internal: the kit imports it from src.
+export 'src/personalization_sdk.dart' hide PersonalizationStoryViewerBridge;
 export 'src/multi_instance/rees46.dart';
 export 'src/multi_instance/rees46_config.dart';
 export 'src/multi_instance/push_event.dart';
@@ -22,14 +22,5 @@ export 'src/subscriptions/manage_subscription_params.dart';
 export 'src/tracking/purchase_line_item.dart';
 export 'src/tracking/tracking_api.dart';
 export 'src/tracking/tracking_models.dart';
-// The first widget of the UI kit open to apps: the server popup, for apps that draw
-// popups themselves (`onPopup`), and the theme the SDK's UI is drawn in — brand
-// colours, font, radii and the light/dark mode. The rest of the kit stays internal
-// until its release.
-export 'src/ui/components/personalization_in_app_popup.dart';
-export 'src/ui/personalization_colors.dart' show PersonalizationColors;
-export 'src/ui/personalization_theme.dart'
-    show
-        PersonalizationTheme,
-        PersonalizationFontFamily,
-        PersonalizationRadiusScale;
+// The UI kit: tokens, the theme, components and the widgets with SDK data.
+export 'src/ui/personalization_ui.dart';

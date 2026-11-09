@@ -1,36 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
+// v3 (popups of the new builder, stories over API v3) is not public API; its gate is
+// lifted when v3 goes public. The example reaches it directly, which the analyzer
+// flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 
 import 'app_theme_mode.dart';
+import 'demo_app.dart';
+import 'demo_tabs.dart';
 import 'multi_instance_pane.dart';
+import 'shop/shop_home.dart';
+import 'shop/shop_product.dart';
 import 'ui_kit_pane.dart';
 
+// The shop alone, without the tabs, is `main_shop.dart`.
 void main() => runApp(const App());
+
+/// Screens of the "Shop" tab for popups v3. The tabs report their own codes; the
+/// shop tab, when it is back, the screen open in it.
+final PersonalizationScreenObserver _shopScreens =
+    PersonalizationScreenObserver(
+      shopId: demoShopId,
+      screenName: demoScreenName,
+    );
+
+void _reportTab(int tab) => switch (tab) {
+  0 => _shopScreens.reportScreen(DemoScreens.api),
+  1 => _shopScreens.reportScreen(DemoScreens.uiKit),
+  _ => switch (_shopScreens.current) {
+    final screen? => _shopScreens.reportScreen(screen),
+    // Opened for the first time: its navigator reports the home itself.
+    null => null,
+  },
+};
 
 class App extends StatelessWidget {
   const App({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // themeMode is driven by the switch on the UI Kit screen, so the kit's dark
+    // themeMode is driven by the switch on the UI Kit tab, so the kit's dark
     // set can be checked without changing the device setting.
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: appThemeMode,
       builder: (context, mode, _) => MaterialApp(
         title: 'REES46 Flutter SDK',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        ),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.dark,
-          ),
-        ),
+        // The game opens on it, over the tabs.
+        navigatorKey: demoNavigatorKey,
+        theme: demoTheme(Brightness.light),
+        darkTheme: demoTheme(Brightness.dark),
         themeMode: mode,
-        home: const InitPage(),
+        // The sections are bottom tabs, as in the native demos.
+        home: DemoTabs(
+          api: const InitPage(),
+          uiKit: const UiKitPane(shopId: demoShopId),
+          shop: const ShopPane(shopId: demoShopId),
+          shopObservers: <NavigatorObserver>[_shopScreens],
+          onTab: _reportTab,
+        ),
       ),
     );
   }
@@ -158,17 +187,6 @@ class _InitPageState extends State<InitPage> {
   // [_initialize] (rebuilt on re-initialize).
   late PersonalizationSdk _sdk;
 
-  // Platform channel used to ask the host for the Android 13+ notification
-  // permission. See [_requestNotificationPermission].
-  static const _platformChannel = MethodChannel('rees46_sdk_example/platform');
-
-  // Hardcoded demo credentials — the demo does not need editable init inputs.
-  static const _shopId = 'c1140c8254976de297c3caf971701a';
-  static const _apiDomain = 'api.rees46.ru';
-  final _stream = defaultTargetPlatform == TargetPlatform.android
-      ? 'android'
-      : 'ios';
-
   bool _enableLogs = false;
   bool _autoSendPushToken = true;
   bool _sendAdvertisingId = false;
@@ -255,6 +273,11 @@ class _InitPageState extends State<InitPage> {
 
   @override
   void dispose() {
+    DemoLinks.cancel();
+    // The popups' product handler holds this page; a new one sets its own.
+    if (REES46.isInitialized(demoShopId)) {
+      REES46.getInstance(demoShopId).popups.onProductClick = null;
+    }
     _recBlockController.dispose();
     _productIdController.dispose();
     _searchQueryController.dispose();
@@ -274,22 +297,20 @@ class _InitPageState extends State<InitPage> {
     // first await) and wires the push callbacks. The button below only
     // re-initializes (e.g. after toggling flags).
     _initialize();
-    // Ask for the notification permission after the first frame. Triggering it from
-    // Dart (rather than MainActivity.onCreate) guarantees it runs after Patrol's
-    // app-service handshake, so the system dialog never hangs an integration test.
+    // After the first frame: see [requestDemoNotificationPermission].
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestNotificationPermission();
+      requestDemoNotificationPermission();
     });
+    // Links of the demo scheme, the one of a cold start included.
+    DemoLinks.listen(_openLink);
   }
 
-  Future<void> _requestNotificationPermission() async {
-    try {
-      await _platformChannel.invokeMethod<void>(
-        'requestNotificationPermission',
-      );
-    } catch (_) {
-      // Best-effort: the app still runs without it (pushes just won't be shown
-      // until the permission is granted), and non-Android hosts ignore it.
+  /// Opens the game over the tabs, or the stories campaign of [url] over API v3; the
+  /// SDK waits for its init.
+  void _openLink(String url) {
+    if (!mounted || openDemoGameLink(url)) return;
+    if (!openStoriesLink(context, url, shopId: demoShopId)) {
+      debugPrint('Demo: neither the game nor a stories link — $url');
     }
   }
 
@@ -305,20 +326,30 @@ class _InitPageState extends State<InitPage> {
       // so the Multi-instance screen resolves the very same instance via
       // REES46.getInstance(shopId). Re-initializing rebuilds the handle with the
       // current toggles.
-      _sdk = REES46.initialize(
-        REES46Config(
-          shopId: _shopId,
-          apiDomain: _apiDomain,
-          stream: _stream,
-          enableLogs: _enableLogs,
-          autoSendPushToken: _autoSendPushToken,
-          sendAdvertisingId: _sendAdvertisingId,
-          enableAutoPopupPresentation: _enableAutoPopupPresentation,
-          needReInitialization: _needReInitialization,
-        ),
+      _sdk = initializeDemoShop(
+        enableLogs: _enableLogs,
+        autoSendPushToken: _autoSendPushToken,
+        sendAdvertisingId: _sendAdvertisingId,
+        enableAutoPopupPresentation: _enableAutoPopupPresentation,
+        needReInitialization: _needReInitialization,
       );
       // Holding popups back: the app takes each one and shows it when the user asks.
       _sdk.onPopup = _holdPopups ? _holdPopup : null;
+      // Popups v3: the API tab is the full demo's first screen. A product of a
+      // popup opens in the shop tab, and the popup goes.
+      enableDemoPopupsV3(
+        _sdk,
+        onProductClick: (product) {
+          final tabs = mounted ? DemoTabs.of(context) : null;
+          if (tabs == null) return false;
+          tabs.openInShop(
+            (shop) =>
+                shop.push(ShopProductScreen.route(demoShopId, product.id)),
+          );
+          return true;
+        },
+      );
+      _sdk.popups.screenOpened(DemoScreens.api);
       _sdk.setPushNotificationCallbacks(
         onReceived: (payload) {
           // In the demo we only surface init/token state; push payloads can be
@@ -358,7 +389,7 @@ class _InitPageState extends State<InitPage> {
         title: 'Weekend sale',
         text: 'Up to 30% off home appliances until Sunday.',
         imageUrl: picture
-            ? 'https://pictures.rees46.ru/resize-images/520/$_shopId/143748.jpg'
+            ? 'https://pictures.rees46.ru/resize-images/520/$demoShopId/143748.jpg'
             : null,
         linkText: 'Shop now',
         linkUrl: 'https://rees46.com',
@@ -777,16 +808,6 @@ class _InitPageState extends State<InitPage> {
         title: const Text('REES46 SDK init demo'),
         actions: [
           IconButton(
-            key: const Key('open-ui-kit'),
-            tooltip: 'UI Kit',
-            icon: const Icon(Icons.widgets_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const UiKitPane(shopId: _shopId),
-              ),
-            ),
-          ),
-          IconButton(
             key: const Key('open-multi-instance'),
             tooltip: 'Multi-instance (two shops)',
             icon: const Icon(Icons.storefront),
@@ -822,17 +843,6 @@ class _InitPageState extends State<InitPage> {
               ),
               icon: const Icon(Icons.storefront),
               label: const Text('Open multi-instance demo (two shops)'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.tonalIcon(
-              key: const Key('open-ui-kit-button'),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const UiKitPane(shopId: _shopId),
-                ),
-              ),
-              icon: const Icon(Icons.widgets_outlined),
-              label: const Text('Open UI Kit (components and blocks)'),
             ),
             const SizedBox(height: 12),
             _PushTokenCard(

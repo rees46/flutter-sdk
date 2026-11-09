@@ -227,4 +227,57 @@ void main() {
       PersonalizationSpacing.lg,
     );
   });
+
+  testWidgets('the rating shows only with showRating', (tester) async {
+    Widget catalog({required bool showRating}) => _host(
+      PersonalizationCatalog(
+        showRating: showRating,
+        products: const <PersonalizationProduct>[
+          PersonalizationProduct(
+            id: '1',
+            name: 'Rated',
+            price: '1',
+            rating: PersonalizationProductRating(value: '4,7', reviews: 12),
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(catalog(showRating: true));
+    expect(find.byType(PersonalizationRating), findsOneWidget);
+
+    await tester.pumpWidget(catalog(showRating: false));
+    expect(find.byType(PersonalizationRating), findsNothing);
+  });
+
+  testWidgets('an empty state action sits under it and hides while loading', (
+    tester,
+  ) async {
+    var taps = 0;
+    Widget catalog({required bool loading}) => _host(
+      PersonalizationCatalog(
+        products: const <PersonalizationProduct>[],
+        emptyText: 'Failed',
+        emptyActionText: 'Retry',
+        onEmptyAction: () => taps++,
+        loading: loading,
+      ),
+    );
+
+    await tester.pumpWidget(catalog(loading: false));
+    final retry = find.widgetWithText(PersonalizationButton, 'Retry');
+    expect(retry, findsOneWidget);
+    expect(
+      tester.getRect(retry).top,
+      greaterThan(
+        tester.getRect(find.byType(PersonalizationEmptyState)).bottom,
+      ),
+    );
+    await tester.tap(retry);
+    expect(taps, 1);
+
+    await tester.pumpWidget(catalog(loading: true));
+    expect(retry, findsNothing);
+    expect(find.byType(PersonalizationLoader), findsOneWidget);
+  });
 }

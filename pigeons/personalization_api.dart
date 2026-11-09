@@ -307,9 +307,19 @@ abstract class PersonalizationHostApi {
 
   /// Returns a category product listing as a JSON string.
   /// [limit] and [page] paginate the result; both are optional.
+  /// [paramsJson] is a JSON object string with the optional filters: "brands" and
+  /// "locations" (comma-separated strings), "filters" (facet name → [values]),
+  /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+  /// passes on only what its native SDK takes for a category.
   /// Dart layer parses the result into [CategoryResponse].
   @async
-  String getCategory(String category, int? limit, int? page, String? shopId);
+  String getCategory(
+    String category,
+    int? limit,
+    int? page,
+    String? paramsJson,
+    String? shopId,
+  );
 
   /// Returns a merchandised collection's products as a JSON string.
   /// Dart layer parses the result into [CollectionResponse].
@@ -327,6 +337,20 @@ abstract class PersonalizationHostApi {
   /// Returns false when nothing could open it.
   @async
   bool openUrl(String url);
+
+  /// Shows the system share sheet with one link [url] — the "Share" button of the stories
+  /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+  /// `UIActivityViewController`; Android — the window got its focus back after the
+  /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+  /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+  @async
+  void shareUrl(
+    String url,
+    double anchorX,
+    double anchorY,
+    double anchorWidth,
+    double anchorHeight,
+  );
 
   /// The slide ids seen per story id for [shop] — the plugin's own store
   /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It

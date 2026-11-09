@@ -63,8 +63,12 @@ class PersonalizationBadge extends StatelessWidget {
             : colors.semanticWarning,
         borderRadius: BorderRadius.circular(theme.radius.resolve(radius)),
       ),
+      // Плашка в одну строку: в тесноте подпись укорачивается, а не ломается по буквам.
       child: Text(
         label,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: fontSize,
           height: lineHeight / fontSize,

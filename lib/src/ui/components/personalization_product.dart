@@ -19,6 +19,8 @@ class PersonalizationProduct {
     this.oldPrice,
     this.discount,
     this.actionText,
+    this.url,
+    this.deeplink,
   });
 
   final String id;
@@ -30,4 +32,11 @@ class PersonalizationProduct {
   final String? oldPrice;
   final String? discount;
   final String? actionText;
+
+  /// Страница товара на сайте магазина.
+  final String? url;
+
+  /// Ссылка на товар в приложении для платформы, на которой оно запущено:
+  /// `deeplink_android` на Android, `deeplink_ios` на iOS.
+  final String? deeplink;
 }

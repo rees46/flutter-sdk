@@ -4,23 +4,30 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
+// v3 (popups of the new builder, stories over API v3) is not public API; its gate is
+// lifted when v3 goes public. The example reaches it directly, which the analyzer
+// flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 
 import 'app_theme_mode.dart';
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
-// ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'demo_app.dart';
+import 'stories_polls_demo.dart';
 
-/// "UI Kit" screen — the design system, one exhibit per component.
+/// "UI Kit" tab (see `DemoTabs`) — the design system, one exhibit per component.
 ///
 /// "Components" walks through the primitives in every size, view and state the
 /// design file defines; "Blocks" shows the compositions built from them
-/// (product cards, recommender layouts, instant search, the catalogue, the filters screen,
-/// in-app popups, the toast, the loyalty card);
+/// (the live recommender block of the demo shop, product cards, products blocks,
+/// instant search, the catalogue, the filters screen, in-app popups, the toast,
+/// the loyalty card);
 /// "Search" runs the two data-bound search widgets against the demo shop: the
 /// instant search field, and the results screen it opens on submit;
 /// "Stories" shows the Stories V2 components one by one, a sample viewer that runs
-/// offline and the live stories block of the demo shop.
+/// offline and the live stories block of the demo shop twice: on the old API, and on the
+/// stories API v3 (its own `apiV3Domain`) with the "Share" button; a field opens a
+/// "Share" link.
 /// Mirror of the Android `UiKitPane` / iOS `UIKitShowcaseViewController` /
 /// React Native `UiKitPane`.
 ///
@@ -31,7 +38,8 @@ import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 class UiKitPane extends StatelessWidget {
   const UiKitPane({super.key, required this.shopId});
 
-  /// Shop the Search and Stories tabs' widgets resolve their SDK instance by.
+  /// Shop the data-bound widgets of the Blocks, Search and Stories tabs resolve
+  /// their SDK instance by.
   final String shopId;
 
   @override
@@ -54,7 +62,7 @@ class UiKitPane extends StatelessWidget {
         body: TabBarView(
           children: [
             _Showcase(exhibits: _componentExhibits),
-            _Showcase(exhibits: _blockExhibits),
+            _Showcase(exhibits: _blockExhibits(shopId)),
             _SearchFlow(shopId: shopId),
             _Showcase(exhibits: _storyExhibits(shopId)),
           ],
@@ -490,7 +498,24 @@ final List<_Exhibit> _componentExhibits = [
   }),
 ];
 
-final List<_Exhibit> _blockExhibits = [
+List<_Exhibit> _blockExhibits(String shopId) => [
+  _Exhibit(
+    'Recommender Block — live block $_recommenderCode (demo shop), carousel; '
+    'Reload goes past the cache',
+    (context) => _LiveRecommender(
+      shopId: shopId,
+      layout: PersonalizationProductsLayout.carousel,
+    ),
+  ),
+  _Exhibit(
+    'Recommender Block — the same code as a grid of four: one request serves '
+    'both blocks',
+    (context) => _LiveRecommender(
+      shopId: shopId,
+      layout: PersonalizationProductsLayout.grid,
+      limit: 4,
+    ),
+  ),
   _Exhibit('Product Card — carousel, grid, list', (context) {
     return _Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,22 +562,22 @@ final List<_Exhibit> _blockExhibits = [
       ],
     );
   }),
-  _Exhibit('Recommender Block — carousel', (context) {
-    return _recommender(
+  _Exhibit('Products Block — carousel, products from the host', (context) {
+    return _productsBlock(
       PersonalizationProductsLayout.carousel,
       'Recommended for you',
       _products,
     );
   }),
-  _Exhibit('Recommender Block — grid', (context) {
-    return _recommender(
+  _Exhibit('Products Block — grid, products from the host', (context) {
+    return _productsBlock(
       PersonalizationProductsLayout.grid,
       'Similar products',
       _products.take(4).toList(),
     );
   }),
-  _Exhibit('Recommender Block — list', (context) {
-    return _recommender(
+  _Exhibit('Products Block — list, products from the host', (context) {
+    return _productsBlock(
       PersonalizationProductsLayout.list,
       'Recently viewed',
       _products.take(3).toList(),
@@ -688,8 +713,116 @@ final List<_Exhibit> _blockExhibits = [
   ),
 ];
 
-/// The Stories V2 block the demo shop serves (api.rees46.ru).
+/// The recommender block the demo shop serves (api.rees46.ru).
+const String _recommenderCode = 'e6249bb15043644bf25b135006149962';
+
+/// A live [PersonalizationRecommenderBlock] of the demo shop with a caption of what it
+/// reported: how many products it shows, or the error. The block takes no space
+/// until its products arrive; "Reload" asks for them again past the cache.
+class _LiveRecommender extends StatefulWidget {
+  const _LiveRecommender({
+    required this.shopId,
+    required this.layout,
+    this.limit,
+  });
+
+  final String shopId;
+  final PersonalizationProductsLayout layout;
+  final int? limit;
+
+  @override
+  State<_LiveRecommender> createState() => _LiveRecommenderState();
+}
+
+class _LiveRecommenderState extends State<_LiveRecommender> {
+  final PersonalizationRecommenderBlockController _controller =
+      PersonalizationRecommenderBlockController();
+  String _status = 'Loading…';
+
+  void _report(String status) {
+    if (mounted) setState(() => _status = status);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final caption = Theme.of(context).textTheme.bodySmall;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(_status, style: caption)),
+            PersonalizationButton(
+              label: 'Reload',
+              size: PersonalizationButtonSize.sm,
+              view: PersonalizationButtonView.secondary,
+              onPressed: () {
+                _report('Reloading…');
+                _controller.reload();
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        PersonalizationRecommenderBlock(
+          code: _recommenderCode,
+          shopId: widget.shopId,
+          controller: _controller,
+          layout: widget.layout,
+          limit: widget.limit,
+          actionText: 'Add to cart',
+          showAllText: 'Show all',
+          onShowAll: () => PersonalizationToast.show(context, 'Show all'),
+          onProductTap: (product) => PersonalizationToast.show(
+            context,
+            'Product: ${product.name} — ${product.deeplink ?? product.url}',
+          ),
+          onProductAction: (product) => PersonalizationToast.show(
+            context,
+            'Add to cart: ${product.name}',
+          ),
+          onLoaded: (count) => _report(
+            count == 0
+                ? 'onLoaded(0): the block is hidden'
+                : 'onLoaded($count)',
+          ),
+          onError: (error) => _report('onError: $error'),
+          iconBuilder: _icon,
+        ),
+      ],
+    );
+  }
+}
+
+/// The Stories V2 block the demo shop serves.
 const String _storiesCode = '115bd0b67cf5989a1b60c841790b2af6';
+
+/// Opens a stories "Share" link over API v3 ([demoStoriesApiV3Domain]) — from the link
+/// field and from the demo's deep links; a button's link to the game opens the game.
+/// `false` — not a stories link (no `r46_stories`).
+bool openStoriesLink(
+  BuildContext context,
+  String url, {
+  required String shopId,
+}) => PersonalizationStoriesV3.handleLink(
+  context,
+  url,
+  shopId: shopId,
+  promoCopiedText: 'Code copied to clipboard',
+  onLinkClick: demoStoriesLinkClick(shopId),
+  onProductClick: (product) =>
+      PersonalizationToast.show(context, 'Product: ${product.name}'),
+  onError: (error) => _snack(context, 'Stories link error: $error'),
+  iconBuilder: _icon,
+  shareUrlTransform: demoShareUrl,
+  apiV3Domain: demoStoriesApiV3Domain,
+);
+
+/// A "Share" link of the live block: campaign 40 from its second slide (37). The link
+/// field starts empty, so a pasted link is never mixed up with it; "Sample link" puts
+/// it in.
+const String _storiesSampleLink =
+    'https://demo.rees46.ru/?r46_stories=$_storiesCode&r46_story=40&r46_slide=37';
 
 /// End of the timer exhibits: fixed on first use, so a rebuild does not restart them.
 final DateTime _timerEnd = DateTime.now().add(
@@ -702,8 +835,9 @@ final PersonalizationStoriesController _storiesController =
 
 List<_Exhibit> _storyExhibits(String shopId) => [
   _Exhibit(
-    'Stories — live block $_storiesCode (demo shop); '
-    'links open in the system browser. Seen slides survive a restart.',
+    'Stories V2 — live block $_storiesCode (demo shop) on the old API: no '
+    '"Share" button; links open in the system browser. Seen slides survive a '
+    'restart.',
     (context) => PersonalizationStories(
       code: _storiesCode,
       shopId: shopId,
@@ -717,7 +851,34 @@ List<_Exhibit> _storyExhibits(String shopId) => [
     ),
   ),
   _Exhibit(
-    'Stories — programmatic control: open the second story, pause and '
+    'Stories V2 with Sharing — the same block over API v3 '
+    '($demoStoriesApiV3Domain): slides with a link have "Share" left of the cross; '
+    'the link is shared with the demo scheme ($demoLinkScheme://), which opens '
+    'the slide in this app',
+    (context) => PersonalizationStoriesV3(
+      apiV3Domain: demoStoriesApiV3Domain,
+      shareUrlTransform: demoShareUrl,
+      child: PersonalizationStories(
+        code: _storiesCode,
+        shopId: shopId,
+        padding: EdgeInsets.zero,
+        promoCopiedText: 'Code copied to clipboard',
+        onProductClick: (product) =>
+            PersonalizationToast.show(context, 'Product: ${product.name}'),
+        onError: (error) => _snack(context, 'Stories error: $error'),
+        iconBuilder: _icon,
+      ),
+    ),
+  ),
+  _Exhibit(
+    'Stories link — paste a "Share" link (https:// or $demoLinkScheme://) and open '
+    'it with PersonalizationStoriesV3.handleLink; "Sample link" fills in campaign 40 '
+    'from its second slide. Links in the $demoLinkScheme:// scheme open the app '
+    'too; App Links / Universal Links are not set up',
+    (context) => _StoriesLinkExhibit(shopId: shopId),
+  ),
+  _Exhibit(
+    'Stories V2 — programmatic control of the first block: open the second story, pause and '
     'resume it after 3 s, reload the block, show the block without the bar',
     (context) => Wrap(
       spacing: 8,
@@ -785,6 +946,19 @@ List<_Exhibit> _storyExhibits(String shopId) => [
         iconBuilder: _icon,
       );
     },
+  ),
+  _Exhibit(
+    'Stories V2 polls (offline) — every poll kind on its slide over API v3 with a fake '
+    'transport: answers take 0.6 s, the text poll fails once, choices get results',
+    (context) => Align(
+      alignment: Alignment.centerLeft,
+      child: PersonalizationButton(
+        key: const Key('stories-polls-open'),
+        label: 'Open',
+        size: PersonalizationButtonSize.sm,
+        onPressed: () => openStoriesPollsDemo(context, iconBuilder: _icon),
+      ),
+    ),
   ),
   _Exhibit('Story Cover — default, pinned, viewed, skeleton', (context) {
     return _ScrollRow(
@@ -1886,12 +2060,12 @@ Widget _card(
   );
 }
 
-Widget _recommender(
+Widget _productsBlock(
   PersonalizationProductsLayout layout,
   String title,
   List<PersonalizationProduct> products,
 ) {
-  return PersonalizationRecommenderBlock(
+  return PersonalizationProductsBlock(
     layout: layout,
     title: title,
     showAllText: 'Show all',
@@ -2005,6 +2179,69 @@ extension on PersonalizationProduct {
       oldPrice: oldPrice,
       discount: discount,
       actionText: actionText,
+    );
+  }
+}
+
+/// A "Share" link field: [PersonalizationStoriesV3.handleLink] opens the campaign of the
+/// link over API v3 ([demoStoriesApiV3Domain]); `false` — not a stories link.
+class _StoriesLinkExhibit extends StatefulWidget {
+  const _StoriesLinkExhibit({required this.shopId});
+
+  final String shopId;
+
+  @override
+  State<_StoriesLinkExhibit> createState() => _StoriesLinkExhibitState();
+}
+
+class _StoriesLinkExhibitState extends State<_StoriesLinkExhibit> {
+  final TextEditingController _link = TextEditingController();
+
+  @override
+  void dispose() {
+    _link.dispose();
+    super.dispose();
+  }
+
+  void _open() {
+    final handled = openStoriesLink(context, _link.text, shopId: widget.shopId);
+    if (!handled) _snack(context, 'Not a stories link');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PersonalizationInputField(
+          key: const Key('stories-link-field'),
+          controller: _link,
+          type: PersonalizationInputFieldType.input,
+          size: PersonalizationInputFieldSize.md,
+          placeholder: 'Stories link',
+          onSubmitted: (_) => _open(),
+          iconBuilder: _icon,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            PersonalizationButton(
+              key: const Key('stories-link-open'),
+              label: 'Open',
+              size: PersonalizationButtonSize.sm,
+              onPressed: _open,
+            ),
+            const SizedBox(width: 8),
+            PersonalizationButton(
+              key: const Key('stories-link-sample'),
+              label: 'Sample link',
+              size: PersonalizationButtonSize.sm,
+              view: PersonalizationButtonView.secondary,
+              onPressed: () => _link.text = _storiesSampleLink,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

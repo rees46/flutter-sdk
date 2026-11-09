@@ -151,6 +151,45 @@ void main() {
       expect(r.products, isEmpty);
     });
 
+    test('sends the filters as params JSON, none when unset', () async {
+      final calls = <List<Object?>>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMessageHandler(_categoryChannel, (message) async {
+            calls.add(messageCodec.decodeMessage(message)! as List<Object?>);
+            return reply(jsonEncode({'products_total': 0}));
+          });
+
+      await PersonalizationSdk().getCategory('shoes', limit: 5, page: 2);
+      await PersonalizationSdk().getCategory(
+        'shoes',
+        brands: 'Bosch,Philips',
+        locations: '1,2',
+        filters: {
+          'Материал': ['Металл'],
+          'Цвет': [],
+        },
+        priceMin: 10,
+        priceMax: 99.5,
+        sortBy: 'price',
+        sortDir: 'asc',
+      );
+
+      expect(calls[0], ['shoes', 5, 2, null, null]);
+      expect(calls[1].take(3), ['shoes', null, null]);
+      expect(jsonDecode(calls[1][3]! as String), {
+        'brands': 'Bosch,Philips',
+        'locations': '1,2',
+        // A facet with nothing checked is not a filter.
+        'filters': {
+          'Материал': ['Металл'],
+        },
+        'price_min': 10.0,
+        'price_max': 99.5,
+        'sort_by': 'price',
+        'sort_dir': 'asc',
+      });
+    });
+
     test('empty category throws ArgumentError (no native call)', () async {
       expect(
         () => PersonalizationSdk().getCategory(''),

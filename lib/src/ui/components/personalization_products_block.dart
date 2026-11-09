@@ -9,7 +9,8 @@ import 'personalization_product_image.dart';
 import 'personalization_products_list.dart';
 import 'personalization_title.dart';
 
-/// Блок рекомендаций: заголовок, товары, у карусели — точки.
+/// Блок товаров: заголовок, товары, у карусели — точки. Товары даёт хост; блок
+/// рекомендаций, который сам грузит товары по коду, — `PersonalizationRecommenderBlock`.
 ///
 /// Источник: Figma Mobile SDK UI Kit, секция Card — Recommender/Carousel (90:655),
 /// Recommender/Grid (126:1944), Recommender/List (126:2551).
@@ -18,29 +19,34 @@ import 'personalization_title.dart';
 ///
 /// Собран из [PersonalizationTitle], [PersonalizationButton],
 /// [PersonalizationProductsList], [PersonalizationDots].
-class PersonalizationRecommenderBlock extends StatefulWidget {
-  const PersonalizationRecommenderBlock({
+class PersonalizationProductsBlock extends StatefulWidget {
+  const PersonalizationProductsBlock({
     super.key,
     this.layout = PersonalizationProductsLayout.carousel,
-    required this.title,
+    this.title,
     this.showAllText,
     this.onShowAll,
-    this.showDots = true,
+    this.showDots = false,
     required this.products,
     this.imageAspect = PersonalizationProductImageAspect.square,
     this.onProductAction,
     this.onProductTap,
+    this.showRating = true,
     this.iconBuilder,
   });
 
   final PersonalizationProductsLayout layout;
-  final String title;
+
+  /// Заголовок блока. `null` или пустая строка — без заголовка; строка заголовка
+  /// остаётся, только если в ней есть кнопка «показать все».
+  final String? title;
 
   /// Подпись кнопки «показать все» у карусели. `null` — без кнопки.
   final String? showAllText;
   final VoidCallback? onShowAll;
 
-  /// У карусели точки под лентой; выключаются, как в макете (showDots).
+  /// Точки под каруселью (showDots в макете). По умолчанию выключены: лента прокручивается
+  /// свободно, а не постранично, и точка на каждый товар индикатором не служит.
   final bool showDots;
   final List<PersonalizationProduct> products;
 
@@ -51,6 +57,10 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
   /// Нажатие на карточку — открыть товар.
   final ValueChanged<PersonalizationProduct>? onProductTap;
 
+  /// Рисовать ли рейтинг товаров. `false` — карточки без рейтинга, даже если он у
+  /// товара есть.
+  final bool showRating;
+
   final Widget Function(
     BuildContext context,
     String asset,
@@ -60,12 +70,12 @@ class PersonalizationRecommenderBlock extends StatefulWidget {
   iconBuilder;
 
   @override
-  State<PersonalizationRecommenderBlock> createState() =>
-      _PersonalizationRecommenderBlockState();
+  State<PersonalizationProductsBlock> createState() =>
+      _PersonalizationProductsBlockState();
 }
 
-class _PersonalizationRecommenderBlockState
-    extends State<PersonalizationRecommenderBlock> {
+class _PersonalizationProductsBlockState
+    extends State<PersonalizationProductsBlock> {
   int _page = 0;
 
   @override
@@ -76,31 +86,36 @@ class _PersonalizationRecommenderBlockState
         carousel &&
         widget.showAllText != null &&
         widget.showAllText!.isNotEmpty;
+    final title = widget.title ?? '';
+    final bool header = title.isNotEmpty || showAll;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        PersonalizationTitle(
-          title: widget.title,
-          trailing: showAll
-              ? PersonalizationButton(
-                  label: widget.showAllText,
-                  size: PersonalizationButtonSize.sm,
-                  view: PersonalizationButtonView.ghost,
-                  iconEnd: PersonalizationIcons.angleLargeRight,
-                  iconBuilder: widget.iconBuilder,
-                  onPressed: widget.onShowAll,
-                )
-              : null,
-        ),
-        SizedBox(height: gap),
+        if (header) ...<Widget>[
+          PersonalizationTitle(
+            title: title,
+            trailing: showAll
+                ? PersonalizationButton(
+                    label: widget.showAllText,
+                    size: PersonalizationButtonSize.sm,
+                    view: PersonalizationButtonView.ghost,
+                    iconEnd: PersonalizationIcons.angleLargeRight,
+                    iconBuilder: widget.iconBuilder,
+                    onPressed: widget.onShowAll,
+                  )
+                : null,
+          ),
+          SizedBox(height: gap),
+        ],
         PersonalizationProductsList(
           layout: widget.layout,
           products: widget.products,
           imageAspect: widget.imageAspect,
           onProductAction: widget.onProductAction,
           onProductTap: widget.onProductTap,
+          showRating: widget.showRating,
           onFirstVisibleChanged: carousel
               ? (int index) => setState(() => _page = index)
               : null,

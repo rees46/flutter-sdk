@@ -291,6 +291,24 @@ class PersonalizationBrightness extends InheritedWidget {
 
   final Brightness brightness;
 
+  /// Яркость кита на непрозрачном фоне [background], который задаёт содержимое: та,
+  /// у темы которой основной текст (Text/Primary) контрастнее с фоном по WCAG.
+  /// Поровну — светлая.
+  static Brightness on(Color background) {
+    final luminance = background.computeLuminance();
+    double contrast(PersonalizationTheme theme) {
+      final text = theme.colors.textPrimary.computeLuminance();
+      return text > luminance
+          ? (text + 0.05) / (luminance + 0.05)
+          : (luminance + 0.05) / (text + 0.05);
+    }
+
+    return contrast(PersonalizationTheme._dark) >
+            contrast(PersonalizationTheme._light)
+        ? Brightness.dark
+        : Brightness.light;
+  }
+
   static Brightness? _of(BuildContext context) => context
       .dependOnInheritedWidgetOfExactType<PersonalizationBrightness>()
       ?.brightness;

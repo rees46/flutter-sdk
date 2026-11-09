@@ -663,8 +663,12 @@ protocol PersonalizationHostApi {
   func getProductCounters(item: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns a category product listing as a JSON string.
   /// [limit] and [page] paginate the result; both are optional.
+  /// [paramsJson] is a JSON object string with the optional filters: "brands" and
+  /// "locations" (comma-separated strings), "filters" (facet name → [values]),
+  /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+  /// passes on only what its native SDK takes for a category.
   /// Dart layer parses the result into [CategoryResponse].
-  func getCategory(category: String, limit: Int64?, page: Int64?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func getCategory(category: String, limit: Int64?, page: Int64?, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
   /// Returns a merchandised collection's products as a JSON string.
   /// Dart layer parses the result into [CollectionResponse].
   func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
@@ -676,6 +680,12 @@ protocol PersonalizationHostApi {
   /// Opens [url] with the system handler (browser or the app that claims the link).
   /// Returns false when nothing could open it.
   func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void)
+  /// Shows the system share sheet with one link [url] — the "Share" button of the stories
+  /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+  /// `UIActivityViewController`; Android — the window got its focus back after the
+  /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+  /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+  func shareUrl(url: String, anchorX: Double, anchorY: Double, anchorWidth: Double, anchorHeight: Double, completion: @escaping (Result<Void, Error>) -> Void)
   /// The slide ids seen per story id for [shop] — the plugin's own store
   /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
   /// survives app restarts. The inner lists are untyped on purpose: the channel
@@ -1088,6 +1098,10 @@ class PersonalizationHostApiSetup {
     }
     /// Returns a category product listing as a JSON string.
     /// [limit] and [page] paginate the result; both are optional.
+    /// [paramsJson] is a JSON object string with the optional filters: "brands" and
+    /// "locations" (comma-separated strings), "filters" (facet name → [values]),
+    /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
+    /// passes on only what its native SDK takes for a category.
     /// Dart layer parses the result into [CategoryResponse].
     let getCategoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCategory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
@@ -1096,8 +1110,9 @@ class PersonalizationHostApiSetup {
         let categoryArg = args[0] as! String
         let limitArg: Int64? = nilOrValue(args[1])
         let pageArg: Int64? = nilOrValue(args[2])
-        let shopIdArg: String? = nilOrValue(args[3])
-        api.getCategory(category: categoryArg, limit: limitArg, page: pageArg, shopId: shopIdArg) { result in
+        let paramsJsonArg: String? = nilOrValue(args[3])
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.getCategory(category: categoryArg, limit: limitArg, page: pageArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
           switch result {
           case .success(let res):
             reply(wrapResult(res))
@@ -1169,6 +1184,32 @@ class PersonalizationHostApiSetup {
       }
     } else {
       openUrlChannel.setMessageHandler(nil)
+    }
+    /// Shows the system share sheet with one link [url] — the "Share" button of the stories
+    /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+    /// `UIActivityViewController`; Android — the window got its focus back after the
+    /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+    /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+    let shareUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      shareUrlChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let urlArg = args[0] as! String
+        let anchorXArg = args[1] as! Double
+        let anchorYArg = args[2] as! Double
+        let anchorWidthArg = args[3] as! Double
+        let anchorHeightArg = args[4] as! Double
+        api.shareUrl(url: urlArg, anchorX: anchorXArg, anchorY: anchorYArg, anchorWidth: anchorWidthArg, anchorHeight: anchorHeightArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      shareUrlChannel.setMessageHandler(nil)
     }
     /// The slide ids seen per story id for [shop] — the plugin's own store
     /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It

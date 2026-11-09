@@ -8,9 +8,16 @@ import '../../personalization_sdk.dart';
 import '../../stories/stories_response.dart';
 import '../components/personalization_stories_bar.dart';
 import 'personalization_story_viewer.dart';
+import 'stories_api_v3.dart';
 import 'stories_playback.dart';
+import 'stories_poll.dart';
+import 'stories_polls_api.dart';
 import 'stories_seen_store.dart';
+import 'stories_share.dart';
 import 'stories_support.dart';
+import 'stories_v3_scope.dart';
+
+part 'personalization_stories_v3.dart';
 
 /// Программное управление блоком сторис: открыть сторис, пауза, продолжение, перезагрузка.
 ///
@@ -280,11 +287,13 @@ class PersonalizationStories extends StatefulWidget {
       imageProvider: imageProvider,
       iconBuilder: iconBuilder,
     );
+    // Режим v3 — как у блока: от PersonalizationStoriesV3 над контекстом.
+    final v3 = StoriesV3Scope.peek(context);
     final PersonalizationSdk resolved;
     final List<Story> stories;
     try {
       resolved = await _resolve(sdk, shopId);
-      stories = await _fetch(resolved, code);
+      stories = await _fetch(resolved, code, apiV3Domain: v3?.apiV3Domain);
       if (stories.isEmpty) {
         throw StateError('stories block "$code" has no stories');
       }
@@ -298,6 +307,7 @@ class PersonalizationStories extends StatefulWidget {
     await _present(
       context,
       config: config,
+      v3: v3,
       sdk: resolved,
       stories: stories,
       index: index < 0 ? 0 : index,
@@ -309,22 +319,126 @@ class PersonalizationStories extends StatefulWidget {
   State<PersonalizationStories> createState() => _PersonalizationStoriesState();
 }
 
-/// Открыть просмотр [stories] со сторис [index] поверх корневого навигатора; тексты и
-/// колбэки — из [config]. Пока просмотр открыт, [controller] ставит его на паузу и
-/// листает. Завершается, когда просмотр закроют.
+/// Ссылки [PersonalizationStoriesV3.handleLink], которые грузятся (`null`) или открыты
+/// (маршрут просмотра): повтор той же ссылки в это время ничего не делает.
+final Map<String, Route<void>?> _openLinks = <String, Route<void>?>{};
+
+/// Ссылка [key] грузится или её просмотр открыт. Маршрут, который ушёл без закрытия
+/// (навигатор убран вместе с ним), ссылку не держит.
+bool _linkBusy(String key) {
+  if (!_openLinks.containsKey(key)) return false;
+  final route = _openLinks[key];
+  return route == null || route.isActive;
+}
+
+/// Открытый просмотр V2 — виджета, `show` или ссылки; `null` — нет.
+Route<void>? _openViewer;
+
+/// Закрыть открытый просмотр V2, если он есть: сверху — обычным закрытием, под другим
+/// экраном — сразу.
+void _closeOpenViewer() {
+  final route = _openViewer;
+  _openViewer = null;
+  final navigator = route?.navigator;
+  if (route == null || navigator == null || !route.isActive) return;
+  if (route.isCurrent) {
+    navigator.pop();
+  } else {
+    navigator.removeRoute(route);
+  }
+}
+
+// Загрузить кампанию ссылки [link] с хоста API v3 режима [v3] и открыть её вместо
+// открытого просмотра V2. Завершается, когда просмотр закроют или загрузка не удалась.
+Future<void> _openLink(
+  BuildContext context,
+  StoriesShareLink link, {
+  required PersonalizationStories config,
+  required StoriesV3Options v3,
+  PersonalizationSdk? sdk,
+  String? shopId,
+  PersonalizationStoriesController? controller,
+  ValueChanged<Object>? onError,
+}) async {
+  final PersonalizationSdk resolved;
+  final List<Story> stories;
+  try {
+    resolved = await _resolve(sdk, shopId);
+    stories = await _fetch(
+      resolved,
+      link.code,
+      link: link,
+      apiV3Domain: v3.apiV3Domain,
+    );
+    if (stories.isEmpty) {
+      throw StateError('stories link ${link.key} has no stories');
+    }
+  } catch (error) {
+    debugPrint('PersonalizationStoriesV3.handleLink: ${link.key} — $error');
+    onError?.call(error);
+    return;
+  }
+  if (!context.mounted) return;
+  final story = stories.first;
+  // Слайд ссылки, если он есть в ответе: `start_position` сервер ставит только по своим
+  // слайдам, виртуальные слайды товарных кампаний (`39_2`) он не знает.
+  final linked = link.slideId == null
+      ? -1
+      : story.slides.indexWhere((slide) => slide.id == link.slideId);
+  final start = linked >= 0
+      ? linked
+      : story.startPosition.clamp(0, story.slides.length - 1);
+  var opened = false;
+  _closeOpenViewer();
+  await _present(
+    context,
+    config: config,
+    v3: v3,
+    sdk: resolved,
+    stories: stories,
+    index: 0,
+    initialSlide: start,
+    controller: controller,
+    onRoute: (route) => _openLinks[link.key] = route,
+    onSlideShown: (_, _) {
+      // `shared_open` — один раз, после показа: кампания и слайд, с которого начали.
+      if (opened) return;
+      opened = true;
+      unawaited(
+        StoriesApiV3.track(
+          resolved,
+          v3.apiV3Domain!,
+          code: link.code,
+          event: StoriesV3Event.sharedOpen,
+          storyId: story.id,
+          slideId: story.slides[start].id,
+        ),
+      );
+    },
+  );
+}
+
+// Открыть просмотр [stories] со сторис [index] поверх корневого навигатора; тексты и
+// колбэки — из [config], режим API v3 — из [v3] (`null` — его нет). Пока просмотр
+// открыт, [controller] ставит его на паузу и листает. Завершается, когда просмотр
+// закроют.
 Future<void> _present(
   BuildContext context, {
   required PersonalizationStories config,
+  required StoriesV3Options? v3,
   required PersonalizationSdk? sdk,
   required List<Story> stories,
   required int index,
+  int? initialSlide,
   PersonalizationStoriesController? controller,
   void Function(Story story, int slideIndex)? onSlideShown,
+  ValueChanged<Route<void>>? onRoute,
 }) async {
   final session = controller?._begin(stories);
-  final viewer = PersonalizationStoryViewer(
+  Widget viewer = PersonalizationStoryViewer(
     stories: stories,
     initialStory: index,
+    initialSlide: initialSlide,
     seen: sdk == null
         ? const <String, Set<String>>{}
         : StoriesSeenStore.instance.seen(sdk),
@@ -348,18 +462,27 @@ Future<void> _present(
     imageProvider: config.imageProvider,
     iconBuilder: config.iconBuilder,
   );
-  final navigator = Navigator.of(context, rootNavigator: true);
-  try {
-    // Тема едет с просмотром: хост мог задать её поддереву, а не приложению.
-    await navigator.push(
-      PersonalizationStoryViewer.route(
-        InheritedTheme.capture(
-          from: context,
-          to: navigator.context,
-        ).wrap(viewer),
-      ),
+  if (v3 != null) {
+    // Режим v3 едет с просмотром: тот открывается вне поддерева хоста. Опросы только с
+    // API v3: в старой ленте их нет, свой транспорт их не включает.
+    viewer = StoriesV3Scope(
+      options: StoriesApiV3.host(v3.apiV3Domain) == null
+          ? v3.withoutPollsTransport()
+          : v3,
+      child: viewer,
     );
+  }
+  final navigator = Navigator.of(context, rootNavigator: true);
+  // Тема едет с просмотром: хост мог задать её поддереву, а не приложению.
+  final route = PersonalizationStoryViewer.route(
+    InheritedTheme.capture(from: context, to: navigator.context).wrap(viewer),
+  );
+  _openViewer = route;
+  onRoute?.call(route);
+  try {
+    await navigator.push(route);
   } finally {
+    if (_openViewer == route) _openViewer = null;
     if (session != null) controller?._end(session);
   }
 }
@@ -388,15 +511,32 @@ Future<PersonalizationSdk> _resolve(
   }
 }
 
-/// Блок [code] со сторис, у которых есть слайды, и просмотренное магазина — не дольше
-/// [PersonalizationStories.loadTimeout].
-Future<List<Story>> _fetch(PersonalizationSdk sdk, String code) async {
+// Блок [code] со сторис, у которых есть слайды, и просмотренное магазина — не дольше
+// [PersonalizationStories.loadTimeout]. С хостом API v3 ([apiV3Domain], без него —
+// глобальный) — лента v3, а с [link] — кампания ссылки; без хоста — лента через мост.
+Future<List<Story>> _fetch(
+  PersonalizationSdk sdk,
+  String code, {
+  StoriesShareLink? link,
+  String? apiV3Domain,
+}) async {
   if (code.isEmpty) {
     throw ArgumentError.value(code, 'code', 'must be non-empty');
   }
+  final host = StoriesApiV3.host(apiV3Domain);
+  final Future<StoriesBlock> request;
+  if (host != null && link != null) {
+    request = StoriesApiV3.story(sdk, host, link);
+  } else if (link != null) {
+    throw StateError('stories links need API v3');
+  } else if (host != null) {
+    request = StoriesApiV3.feed(sdk, host, code);
+  } else {
+    request = sdk.getStories(code);
+  }
   // Просмотренное читается вместе с блоком; ошибка блока приходит как есть.
   final results = await Future.wait<Object>(<Future<Object>>[
-    sdk.getStories(code),
+    request,
     StoriesSeenStore.instance.load(sdk),
   ]).timeout(PersonalizationStories.loadTimeout);
   final block = results.first as StoriesBlock;
@@ -410,11 +550,26 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
   int _seq = 0;
   bool _presenting = false;
 
+  // Режим API v3 от PersonalizationStoriesV3 над блоком; `null` — его нет.
+  StoriesV3Options? _v3;
+  bool _loaded = false;
+
   @override
   void initState() {
     super.initState();
     widget.controller?._bar = this;
-    _load();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Первая загрузка — здесь, а не в initState: ей нужен режим над блоком. Сменился его
+    // хост — блок грузится заново; прочее (тексты, транспорт) берёт следующий просмотр.
+    final v3 = StoriesV3Scope.of(context);
+    final reload = !_loaded || v3?.apiV3Domain != _v3?.apiV3Domain;
+    _v3 = v3;
+    _loaded = true;
+    if (reload) _load();
   }
 
   @override
@@ -457,7 +612,11 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
         widget.shopId,
         alive: () => mounted && seq == _seq,
       );
-      final stories = await _fetch(sdk, widget.code);
+      final stories = await _fetch(
+        sdk,
+        widget.code,
+        apiV3Domain: _v3?.apiV3Domain,
+      );
       if (!mounted || seq != _seq) return;
       setState(() {
         _sdk = sdk;
@@ -496,6 +655,7 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
       await _present(
         context,
         config: widget,
+        v3: _v3,
         sdk: sdk,
         stories: _stories,
         index: index,
