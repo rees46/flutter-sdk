@@ -45,8 +45,9 @@ class StoriesV3Exception implements Exception {
 
 /// Сторис V2 на API v3 — из Dart, без нативного SDK: `dart:io` и `did` через мост.
 ///
-/// Включается хостом: своим у виджета, `show` или `handleLink` (их `apiV3Domain`), без
-/// него — глобальным [domain] (`PersonalizationStories.apiV3Domain`); см. [host]. Нет
+/// Включается хостом: своим у `PersonalizationStoriesV3` над блоком, `show` или
+/// просмотром или у `PersonalizationStoriesV3.handleLink` (их `apiV3Domain`), без него —
+/// глобальным [domain] (`PersonalizationStoriesV3.apiV3Domain`); см. [host]. Нет
 /// хоста — лента и события идут по-старому, через мост (`stories/{code}`,
 /// `track/stories`). Есть — все запросы V2 этого блока идут на `https://{host}`:
 /// - лента — `GET /api/v3/storefront/stories/{code}`;

@@ -1,11 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
-// ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
-
 /// Card data of a catalog product (`getCategory`, `getProductInfo`). The kit's data
 /// widgets map their products by the same rules, but keep that mapper to themselves,
 /// so a host showing its own lists maps them like this:

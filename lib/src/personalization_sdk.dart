@@ -115,7 +115,8 @@ class PersonalizationSdk {
   }
 
   /// Whether the SDK shows popups by itself: the server popups while no [onPopup] is
-  /// set, and the popups v3 of triggers (one shown by hand is shown all the same).
+  /// set, and the other popups the SDK shows by itself (one shown by hand is shown all
+  /// the same).
   /// `enableAutoPopupPresentation` of the config sets it on [initialize]; it may be
   /// changed at any time — off, say, while a screen of the app must not be covered.
   bool get enableAutoPopupPresentation => _popups.autoPresentation;
@@ -443,9 +444,8 @@ class PersonalizationSdk {
   }
 }
 
-/// Stories for the UI kit — hidden from the package barrel (`export ... hide`) until the
-/// kit's release, and reached by the kit through a direct `src` import. It lives in this
-/// library because it calls the host API the handle owns.
+/// Stories of the UI kit: the block data and the system handler for its links. It lives
+/// in this library because it calls the host API the handle owns.
 extension PersonalizationStoriesBridge on PersonalizationSdk {
   /// The stories block [code] (`stories/{code}`).
   Future<StoriesBlock> getStories(String code) async {
@@ -458,7 +458,12 @@ extension PersonalizationStoriesBridge on PersonalizationSdk {
 
   /// Opens [url] with the system handler; `false` when nothing could open it.
   Future<bool> openUrl(String url) => _api.openUrl(url);
+}
 
+/// The plumbing of the kit's story viewer: the share sheet and the slides seen on this
+/// device. Hidden from the package barrel (`export ... hide`) — the viewer reaches it
+/// through a direct `src` import.
+extension PersonalizationStoryViewerBridge on PersonalizationSdk {
   /// Shows the system share sheet with the link [url]; completes when the sheet is gone.
   /// [anchor] is the "Share" button in global logical pixels: the sheet's popover points
   /// at it on iPad.

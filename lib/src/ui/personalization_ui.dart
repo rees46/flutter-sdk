@@ -1,18 +1,6 @@
 /// UI-кит дизайн-системы: токены, тема и все собранные на них компоненты.
 ///
-/// Намеренно не экспортируется из `package:rees46_sdk/rees46_sdk.dart`. Кит ещё
-/// собирается и ничем в SDK не используется, поэтому до релиза, который его
-/// выпустит, он остаётся вне публичной поверхности. Пока единственный вход —
-/// прямой импорт этого файла; анализатор помечает его как implementation
-/// import, и это ожидаемо:
-///
-/// ```dart
-/// // ignore: implementation_imports
-/// import 'package:rees46_sdk/src/ui/personalization_ui.dart';
-/// ```
-///
-/// Перед релизом эти экспорты переезжают в барель пакета, и кит становится
-/// обычным публичным API.
+/// Входит в `package:rees46_sdk/rees46_sdk.dart`.
 library;
 
 export 'personalization_typography.dart';
@@ -75,17 +63,26 @@ export 'widgets/personalization_instant_search_field.dart';
 export 'widgets/personalization_search_results_screen.dart';
 export 'widgets/personalization_category_screen.dart';
 export 'widgets/personalization_recommender_block.dart';
-// Модели блока сторис живут рядом с остальными ответами SDK, но до релиза кита
-// видны только отсюда: пакетный барель их не экспортирует.
-export '../stories/stories_response.dart' hide parseStoryOpacity;
+// Модели блока сторис живут рядом с остальными ответами SDK. Списком, а не целиком: модели
+// опросов и «Поделиться» в той же библиотеке — за шлюзом v3.
+export '../stories/stories_response.dart'
+    show
+        StoriesBlock,
+        Story,
+        StorySlideType,
+        StorySlide,
+        StoryElement,
+        StoryButtonElement,
+        StoryProductElement,
+        StoryProductsElement,
+        StoryTextBlockElement,
+        StoryProduct;
 export 'widgets/stories_support.dart' show PersonalizationStoryImageProvider;
-// Опросы слайдов: шов транспорта ответов (тесты, офлайн-демо). Карточка и её логика —
-// внутренности просмотра.
-export 'widgets/stories_polls_api.dart'
-    show StoryPollsTransport, StoryPollReply;
-export 'widgets/personalization_story_viewer.dart';
-export 'widgets/personalization_stories.dart';
-// Попапы нового конструктора (документ design): `sdk.popups` — включение, экраны,
-// ручной показ, — и наблюдатель экранов навигатора. Движок и рендер — внутренности.
-export '../popups_v3/popups_v3.dart';
-export 'popups_v3/personalization_screen_observer.dart';
+// Списком: режим v3 сторис живёт в тех же библиотеках, но за шлюзом v3.
+export 'widgets/personalization_story_viewer.dart'
+    show PersonalizationStoryViewer;
+export 'widgets/personalization_stories.dart'
+    show PersonalizationStories, PersonalizationStoriesController;
+
+// Попапы нового конструктора, сторис на API v3 («Поделиться», ссылки, опросы) — за
+// отдельным шлюзом v3 (`src/v3/personalization_v3.dart`), не здесь.

@@ -4,14 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
+// v3 (popups of the new builder, stories over API v3) is not public API; its gate is
+// lifted when v3 goes public. The example reaches it directly, which the analyzer
+// flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 
 import 'app_theme_mode.dart';
 import 'demo_app.dart';
 import 'stories_polls_demo.dart';
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
-// ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 /// "UI Kit" tab (see `DemoTabs`) — the design system, one exhibit per component.
 ///
@@ -802,7 +804,7 @@ bool openStoriesLink(
   BuildContext context,
   String url, {
   required String shopId,
-}) => PersonalizationStories.handleLink(
+}) => PersonalizationStoriesV3.handleLink(
   context,
   url,
   shopId: shopId,
@@ -853,22 +855,24 @@ List<_Exhibit> _storyExhibits(String shopId) => [
     '($demoStoriesApiV3Domain): slides with a link have "Share" left of the cross; '
     'the link is shared with the demo scheme ($demoLinkScheme://), which opens '
     'the slide in this app',
-    (context) => PersonalizationStories(
-      code: _storiesCode,
-      shopId: shopId,
+    (context) => PersonalizationStoriesV3(
       apiV3Domain: demoStoriesApiV3Domain,
       shareUrlTransform: demoShareUrl,
-      padding: EdgeInsets.zero,
-      promoCopiedText: 'Code copied to clipboard',
-      onProductClick: (product) =>
-          PersonalizationToast.show(context, 'Product: ${product.name}'),
-      onError: (error) => _snack(context, 'Stories error: $error'),
-      iconBuilder: _icon,
+      child: PersonalizationStories(
+        code: _storiesCode,
+        shopId: shopId,
+        padding: EdgeInsets.zero,
+        promoCopiedText: 'Code copied to clipboard',
+        onProductClick: (product) =>
+            PersonalizationToast.show(context, 'Product: ${product.name}'),
+        onError: (error) => _snack(context, 'Stories error: $error'),
+        iconBuilder: _icon,
+      ),
     ),
   ),
   _Exhibit(
     'Stories link — paste a "Share" link (https:// or $demoLinkScheme://) and open '
-    'it with PersonalizationStories.handleLink; "Sample link" fills in campaign 40 '
+    'it with PersonalizationStoriesV3.handleLink; "Sample link" fills in campaign 40 '
     'from its second slide. Links in the $demoLinkScheme:// scheme open the app '
     'too; App Links / Universal Links are not set up',
     (context) => _StoriesLinkExhibit(shopId: shopId),
@@ -2179,7 +2183,7 @@ extension on PersonalizationProduct {
   }
 }
 
-/// A "Share" link field: [PersonalizationStories.handleLink] opens the campaign of the
+/// A "Share" link field: [PersonalizationStoriesV3.handleLink] opens the campaign of the
 /// link over API v3 ([demoStoriesApiV3Domain]); `false` — not a stories link.
 class _StoriesLinkExhibit extends StatefulWidget {
   const _StoriesLinkExhibit({required this.shopId});

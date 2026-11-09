@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 import 'package:rees46_sdk/src/ui/widgets/personalization_results_screen_base.dart'
     show visibleFacets;
 

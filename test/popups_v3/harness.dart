@@ -2,13 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rees46_sdk/rees46_sdk.dart';
-import 'package:rees46_sdk/src/personalization_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/popups_v3/popup_v3.dart';
 import 'package:rees46_sdk/src/popups_v3/popups_v3_api.dart';
 import 'package:rees46_sdk/src/popups_v3/popups_v3_engine.dart';
 import 'package:rees46_sdk/src/popups_v3/popups_v3_frequency.dart';
-import 'package:rees46_sdk/src/ui/components/personalization_product.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 
 /// Мост без натива: `did`, `sid` и вызовы профиля, подписки, ссылок.

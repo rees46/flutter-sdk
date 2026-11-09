@@ -157,7 +157,7 @@ String? storyPollBandText(StoryPollElement poll, num? rate) {
 typedef StoryPollState = ({StoryPollAnswer? answer, StoryPollResults? results});
 
 /// Ответы опросов за сессию: в памяти процесса, одно на все виджеты, `show` и
-/// `handleLink`. Ключ — магазин, вид опроса и код. Важнее ответа из ленты: лента
+/// ссылки. Ключ — магазин, вид опроса и код. Важнее ответа из ленты: лента
 /// сторис не перезагружается после ответа. На диск не пишется.
 class StoryPollStore {
   /// Хранилище процесса. Тесты подменяют его.

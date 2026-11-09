@@ -68,6 +68,7 @@ class StorySlideView extends StatelessWidget {
     this.onHold,
     this.onClose,
     this.onShare,
+    this.shareLabel = 'Share',
     this.onToggleMute,
     this.onSheet,
     this.onButton,
@@ -75,6 +76,7 @@ class StorySlideView extends StatelessWidget {
     this.onPromoCopied,
     this.onRetry,
     this.pollsTransport,
+    this.pollTexts = const StoryPollTexts(),
     this.pollShopId = '',
     this.onPollHold,
   });
@@ -107,6 +109,9 @@ class StorySlideView extends StatelessWidget {
 
   /// «Поделиться» ссылкой [url]; [anchor] — кнопка в глобальных координатах.
   final void Function(String url, Rect anchor)? onShare;
+
+  /// Подпись «Поделиться» для скринридера.
+  final String shareLabel;
   final VoidCallback? onToggleMute;
   final ValueChanged<bool>? onSheet;
   final ValueChanged<StoryButtonElement>? onButton;
@@ -116,6 +121,9 @@ class StorySlideView extends StatelessWidget {
 
   /// Куда отправлять ответы опросов; `null` — опросы не рисуются.
   final StoryPollsTransport? pollsTransport;
+
+  /// Тексты карточки опроса от хоста.
+  final StoryPollTexts pollTexts;
 
   /// Магазин — ключ хранилища ответов опросов сессии.
   final String pollShopId;
@@ -276,7 +284,7 @@ class StorySlideView extends StatelessWidget {
           : (anchor) {
               if (live) share(url, anchor);
             },
-      shareLabel: config.shareLabel,
+      shareLabel: shareLabel,
       iconBuilder: config.iconBuilder,
     );
     final progress = this.progress;
@@ -635,11 +643,7 @@ class StorySlideView extends StatelessWidget {
                   slideId: slide.id,
                   transport: transport,
                   shopId: pollShopId,
-                  texts: StoryPollTexts(
-                    reanswer: config.pollReanswerText,
-                    error: config.pollErrorText,
-                    submit: config.pollSubmitText,
-                  ),
+                  texts: pollTexts,
                   live: live,
                   onHold: onPollHold,
                 ),

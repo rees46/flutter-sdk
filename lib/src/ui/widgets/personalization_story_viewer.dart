@@ -14,12 +14,13 @@ import 'stories_gif_player.dart';
 import 'stories_image.dart';
 import 'stories_media_cache.dart';
 import 'stories_playback.dart';
+import 'stories_poll.dart';
 import 'stories_polls_api.dart';
 import 'stories_seen_store.dart';
-import 'stories_share.dart';
 import 'stories_slide_view.dart';
 import 'stories_sound.dart';
 import 'stories_support.dart';
+import 'stories_v3_scope.dart';
 
 /// Полноэкранный просмотр сторис: слайды по таймеру, листание, товары, ссылки.
 ///
@@ -56,21 +57,9 @@ import 'stories_support.dart';
 ///
 /// Трекинг через [sdk] с кодом [code]: `view` — на каждый слайд, ставший текущим на
 /// осевшей странице; `click` — кнопка, товар карусели, копирование промокода. Id, которые
-/// не целые положительные числа (`39_0`), не трекаются. С API v3 ([apiV3Domain]) события
-/// уходят из Dart на v3 — и у таких слайдов тоже ([StoriesApiV3]). Просмотренные слайды с [sdk] запоминаются на
-/// устройстве по магазину ([StoriesSeenStore]); хосту о показе слайда сообщает
-/// [onSlideShown].
-///
-/// «Поделиться» — только с API v3, [sdk] и [code]: у слайда со ссылкой
-/// ([storySlideShareUrl]) в шапке кнопка. Нажатие — пауза, событие `share` и системное
-/// окно с ссылкой; закрыли окно — пауза снята, слайд идёт дальше, если шёл.
-///
-/// Опросы слайдов (мини-опросы, NPS, CSAT, CES): ответы уходят через [pollsTransport],
-/// без него — на хост API v3 просмотра ([StoriesPollsApi], нужен [sdk]); нет ни того ни
-/// другого — опросы не рисуются. `PersonalizationStories` даёт транспорт только с API v3:
-/// в старой ленте опросов нет. Пока карточку держат пальцем, в фокусе её
-/// поле или идёт отправка — пауза; касания карточки слайд не листают. Ответы помнятся до
-/// конца процесса ([StoryPollStore]).
+/// не целые положительные числа (`39_0`), не трекаются. Просмотренные слайды с [sdk]
+/// запоминаются на устройстве по магазину ([StoriesSeenStore]); хосту о показе слайда
+/// сообщает [onSlideShown].
 ///
 /// Кнопки и товары карусели сначала закрывают просмотр, потом зовут [onLinkClick] /
 /// [onProductClick]; не заданы — ссылку открывает система через SDK. Кнопка без ссылки
@@ -86,7 +75,6 @@ class PersonalizationStoryViewer extends StatefulWidget {
     this.seen = const <String, Set<String>>{},
     this.code,
     this.sdk,
-    this.apiV3Domain,
     this.paused,
     this.storyRequests,
     this.onSlideShown,
@@ -101,16 +89,10 @@ class PersonalizationStoryViewer extends StatefulWidget {
     this.hideProductsText = 'Hide products',
     this.retryText = 'Retry',
     this.closeLabel = 'Close',
-    this.shareLabel = 'Share',
     this.soundOnLabel = 'Sound on',
     this.soundOffLabel = 'Sound off',
     this.imageProvider,
     this.iconBuilder,
-    this.shareUrlTransform,
-    this.pollsTransport,
-    this.pollReanswerText = 'Answer again',
-    this.pollSubmitText = 'Send',
-    this.pollErrorText = 'Failed to send the answer. Please try again',
   });
 
   /// Сторис блока; сторис без слайдов пропускаются.
@@ -132,10 +114,6 @@ class PersonalizationStoryViewer extends StatefulWidget {
 
   /// Инстанс для трекинга, хранения просмотренного и системных ссылок; `null` — без них.
   final PersonalizationSdk? sdk;
-
-  /// Хост API v3 для событий, без схемы (`app.rees46.ru`); `null` — глобальный
-  /// `PersonalizationStories.apiV3Domain`, пустая строка — старый трекинг и при нём.
-  final String? apiV3Domain;
 
   /// Пауза от хоста: пока `true`, слайд стоит.
   final ValueListenable<bool>? paused;
@@ -176,10 +154,9 @@ class PersonalizationStoryViewer extends StatefulWidget {
   /// Подпись кнопки повтора загрузки медиа.
   final String retryText;
 
-  /// Подписи для скринридера: крестик, «Поделиться» и кнопка звука — её текущее
-  /// состояние (звук включён / выключен).
+  /// Подписи для скринридера: крестик и кнопка звука — её текущее состояние (звук
+  /// включён / выключен).
   final String closeLabel;
-  final String shareLabel;
   final String soundOnLabel;
   final String soundOffLabel;
 
@@ -193,21 +170,6 @@ class PersonalizationStoryViewer extends StatefulWidget {
     Color color,
   )?
   iconBuilder;
-
-  /// Что сделать со ссылкой слайда перед системным окном «Поделиться» (например, сменить
-  /// `https://` на схему приложения); `null` — ссылка как есть. Событие `share` не
-  /// меняется.
-  final String Function(String url)? shareUrlTransform;
-
-  /// Куда отправлять ответы опросов (тесты, офлайн-демо); задан — опросы рисуются и без
-  /// API v3. `null` — HTTP API v3 хоста просмотра.
-  final StoryPollsTransport? pollsTransport;
-
-  /// Тексты карточки опроса: ссылка «Ответить заново», кнопка отправки без своей подписи
-  /// опроса и ошибка отправки. Непустые `labels` опроса от сервера важнее.
-  final String pollReanswerText;
-  final String pollSubmitText;
-  final String pollErrorText;
 
   /// Маршрут просмотра: во весь экран, с появлением. Непрозрачен только сам просмотр —
   /// при свайпе вниз под ним виден экран хоста.
@@ -233,6 +195,17 @@ class PersonalizationStoryViewer extends StatefulWidget {
       _PersonalizationStoryViewerState();
 }
 
+// Режим API v3 — [StoriesV3Scope] над просмотром (его ставит шлюз v3), без него —
+// глобальный хост [StoriesApiV3.domain]:
+// - события уходят из Dart на v3 — и у слайдов с id не числом тоже ([StoriesApiV3]);
+// - «Поделиться» — с `sdk` и `code`: у слайда со ссылкой ([storySlideShareUrl]) в шапке
+//   кнопка. Нажатие — пауза, событие `share` и системное окно с ссылкой; закрыли окно —
+//   пауза снята, слайд идёт дальше, если шёл;
+// - опросы слайдов (мини-опросы, NPS, CSAT, CES): ответы уходят через транспорт режима,
+//   без него — на хост API v3 просмотра ([StoriesPollsApi], нужен `sdk`); нет ни того ни
+//   другого — опросы не рисуются. Свой транспорт рисует их и без API v3. Пока карточку
+//   держат пальцем, в фокусе её поле или идёт отправка — пауза; касания карточки слайд не
+//   листают. Ответы помнятся до конца процесса ([StoryPollStore]).
 class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final StoriesPlayback _playback = StoriesPlayback(
@@ -268,6 +241,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   /// Открыто окно «Поделиться»: второе не открывается.
   bool _sharing = false;
+
+  // Режим API v3 над просмотром; `null` — его нет.
+  StoriesV3Options? _v3;
 
   static const Duration _turn = Duration(milliseconds: 300);
   static const Duration _readyTimeout = Duration(seconds: 10);
@@ -320,6 +296,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // До первого захода: initState его откладывает на после кадра.
+    _v3 = StoriesV3Scope.of(context);
     // Просмотр закрыт непрозрачным экраном — навигатор глушит тикеры его поддерева.
     _setPaused(
       StoriesPauseReason.covered,
@@ -537,20 +515,21 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         });
   }
 
-  /// Код блока для событий v3: у просмотра есть хост API v3, SDK и код; иначе `null` —
-  /// старый трекинг через мост.
+  // Хост API v3 просмотра: режима над ним, без него — глобальный; `null` — старый API.
+  String? get _v3Host => StoriesApiV3.host(_v3?.apiV3Domain);
+
+  // Код блока для событий v3: у просмотра есть хост API v3, SDK и код; иначе `null` —
+  // старый трекинг через мост.
   String? get _v3Code {
     final code = widget.code;
-    if (StoriesApiV3.host(widget.apiV3Domain) == null || widget.sdk == null) {
-      return null;
-    }
+    if (_v3Host == null || widget.sdk == null) return null;
     return code == null || code.isEmpty ? null : code;
   }
 
   void _trackV3(StoriesV3Event event, Story story, StorySlide slide) {
     final sdk = widget.sdk;
     final code = _v3Code;
-    final host = StoriesApiV3.host(widget.apiV3Domain);
+    final host = _v3Host;
     if (sdk == null || code == null || host == null) return;
     unawaited(
       StoriesApiV3.track(
@@ -566,13 +545,13 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   StoriesPollsApi? _pollsApi;
 
-  /// Куда отправлять ответы опросов: транспорт хоста, иначе HTTP API v3 хоста просмотра;
-  /// без транспорта, API v3 или [PersonalizationStoryViewer.sdk] — `null`, опросы не
-  /// рисуются.
+  // Куда отправлять ответы опросов: транспорт режима v3, иначе HTTP API v3 хоста
+  // просмотра; без транспорта, API v3 или [PersonalizationStoryViewer.sdk] — `null`,
+  // опросы не рисуются.
   StoryPollsTransport? get _polls {
-    final own = widget.pollsTransport;
+    final own = _v3?.pollsTransport;
     if (own != null) return own;
-    final host = StoriesApiV3.host(widget.apiV3Domain);
+    final host = _v3Host;
     final sdk = widget.sdk;
     if (host == null || sdk == null) return null;
     final api = _pollsApi;
@@ -599,10 +578,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         });
   }
 
-  /// Ссылка для окна «Поделиться» после [PersonalizationStoryViewer.shareUrlTransform];
-  /// он упал — ссылка как есть.
+  // Ссылка для окна «Поделиться» после `shareUrlTransform` режима v3; он упал — ссылка
+  // как есть.
   String _shareLink(String url) {
-    final transform = widget.shareUrlTransform;
+    final transform = _v3?.shareUrlTransform;
     if (transform == null) return url;
     try {
       return transform(url);
@@ -966,6 +945,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onHold: (held) => _setPaused(StoriesPauseReason.hold, held),
       onClose: _close,
       onShare: _v3Code == null ? null : _share,
+      shareLabel: _v3?.shareLabel ?? 'Share',
       onToggleMute: StoriesSound.instance.toggle,
       onSheet: _sheet,
       onButton: _button,
@@ -973,6 +953,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onPromoCopied: _promo,
       onRetry: _retry,
       pollsTransport: _polls,
+      pollTexts: _v3?.pollTexts ?? const StoryPollTexts(),
       pollShopId: widget.sdk == null
           ? ''
           : StoriesSeenStore.shopOf(widget.sdk!),

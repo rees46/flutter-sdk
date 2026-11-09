@@ -6,11 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
-// ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
-
 /// The recommender block the demo shop serves (api.rees46.ru) that has products:
 /// "Популярные" on home and under a product.
 const String shopRecommenderCode = 'e6249bb15043644bf25b135006149962';

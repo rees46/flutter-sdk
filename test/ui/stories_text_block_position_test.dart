@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/src/ui/components/personalization_story_poll.dart';
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_poll.dart';
 
 /// A transport that never answers: the card only has to be drawn.
@@ -89,11 +90,13 @@ Future<void> _open(WidgetTester tester, List<Story> stories) async {
           child: GestureDetector(
             onTap: () => Navigator.of(context).push(
               PersonalizationStoryViewer.route(
-                PersonalizationStoryViewer(
-                  stories: stories,
+                PersonalizationStoriesV3(
                   apiV3Domain: 'app.example',
                   pollsTransport: _Transport(),
-                  iconBuilder: _icon,
+                  child: PersonalizationStoryViewer(
+                    stories: stories,
+                    iconBuilder: _icon,
+                  ),
                 ),
               ),
             ),

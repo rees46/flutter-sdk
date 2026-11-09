@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 // ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk_example/demo_app.dart';
 import 'package:rees46_sdk_example/game/game_screen.dart';
 import 'package:rees46_sdk_example/main_shop.dart';

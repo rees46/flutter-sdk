@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_share.dart';
 

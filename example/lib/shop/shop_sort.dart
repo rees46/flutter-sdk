@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
-// ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
 
 import 'shop.dart';
 

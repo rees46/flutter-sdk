@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_gif_player.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_image.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';

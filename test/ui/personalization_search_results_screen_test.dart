@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 /// Host API that answers `searchFull` from memory: [total] products, a page of the
 /// requested limit at a time. While [hold] is set, answers wait for it.

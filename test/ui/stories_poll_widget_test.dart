@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/ui/components/personalization_story_poll.dart';
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_poll.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
@@ -163,13 +163,15 @@ void main() {
             child: GestureDetector(
               onTap: () => Navigator.of(context).push(
                 PersonalizationStoryViewer.route(
-                  PersonalizationStoryViewer(
-                    stories: stories,
+                  PersonalizationStoriesV3(
                     apiV3Domain: apiV3Domain,
                     pollsTransport: own ? transport : null,
-                    storyRequests: requests.stream,
                     pollErrorText: 'Ошибка',
-                    iconBuilder: _icon,
+                    child: PersonalizationStoryViewer(
+                      stories: stories,
+                      storyRequests: requests.stream,
+                      iconBuilder: _icon,
+                    ),
                   ),
                 ),
               ),
@@ -1133,13 +1135,15 @@ void main() {
               alignment: Alignment.topLeft,
               child: SizedBox(
                 width: 400,
-                child: PersonalizationStories(
-                  key: UniqueKey(),
-                  code: 'block',
-                  sdk: sdk,
+                child: PersonalizationStoriesV3(
                   apiV3Domain: apiV3Domain,
                   pollsTransport: own ? transport : null,
-                  iconBuilder: _icon,
+                  child: PersonalizationStories(
+                    key: UniqueKey(),
+                    code: 'block',
+                    sdk: sdk,
+                    iconBuilder: _icon,
+                  ),
                 ),
               ),
             ),

@@ -3,13 +3,13 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import '../json_number.dart';
 
 part 'stories_poll.dart';
+part 'stories_share_v3.dart';
+
+// The `payload` of API v3 (`/api/v3/storefront/stories/{code}`) has the same keys and
+// is parsed here too.
 
 /// A stories block (`GET stories/{code}`), parsed from the server JSON both bridges hand
-/// over untouched, or the `payload` of API v3 (`/api/v3/storefront/stories/{code}`), which
-/// has the same keys.
-///
-/// Internal to the UI kit until its release: the package barrel does not export it, the
-/// kit barrel (`src/ui/personalization_ui.dart`) does.
+/// over untouched.
 ///
 /// Parsing is tolerant, the way the native SDKs read the same payload: numbers may arrive
 /// as strings (`font_size`, `y_offset`, `duration`), ids as numbers or strings, and a
@@ -48,14 +48,9 @@ class Story {
   final int startPosition;
   final List<StorySlide> slides;
 
-  /// The shop allows sharing the campaign (`shareable`, API v3). A missing field allows it,
-  /// only `false` forbids.
-  final bool shareable;
-
-  /// "Share" link of the campaign (`share_url`, API v3); empty when not sent. Product
-  /// campaigns have only this one, their slides have none: a slide shares it with its
-  /// id in `r46_slide`.
-  final String shareUrl;
+  // Sharing of API v3: behind the v3 gate, read through [StoryShareV3].
+  final bool _shareable;
+  final String _shareUrl;
 
   const Story({
     required this.id,
@@ -65,12 +60,25 @@ class Story {
     this.pinned = false,
     this.startPosition = 0,
     required this.slides,
-    this.shareable = true,
-    this.shareUrl = '',
+  }) : _shareable = true,
+       _shareUrl = '';
+
+  const Story._json(
+    this._shareable,
+    this._shareUrl, {
+    required this.id,
+    required this.name,
+    required this.avatar,
+    required this.viewed,
+    required this.pinned,
+    required this.startPosition,
+    required this.slides,
   });
 
   factory Story.fromJson(Map<String, dynamic> json) {
-    return Story(
+    return Story._json(
+      json['shareable'] != false,
+      _text(json['share_url']),
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       avatar: json['avatar'] as String? ?? '',
@@ -78,8 +86,6 @@ class Story {
       pinned: json['pinned'] == true,
       startPosition: toIntOrNull(json['start_position']) ?? 0,
       slides: _maps(json['slides']).map(StorySlide.fromJson).toList(),
-      shareable: json['shareable'] != false,
-      shareUrl: _text(json['share_url']),
     );
   }
 }
@@ -115,8 +121,8 @@ class StorySlide {
   final Duration duration;
   final List<StoryElement> elements;
 
-  /// "Share" link of the slide (`share_url`, API v3); empty when not sent.
-  final String shareUrl;
+  // Sharing of API v3: behind the v3 gate, read through [StorySlideShareV3].
+  final String _shareUrl;
 
   /// Seconds a slide lasts when the server does not say (or says 0) — the same on every
   /// platform.
@@ -130,12 +136,23 @@ class StorySlide {
     this.preview = '',
     this.duration = const Duration(seconds: defaultDurationSeconds),
     this.elements = const [],
-    this.shareUrl = '',
+  }) : _shareUrl = '';
+
+  const StorySlide._json(
+    this._shareUrl, {
+    required this.id,
+    required this.type,
+    required this.background,
+    required this.backgroundColor,
+    required this.preview,
+    required this.duration,
+    required this.elements,
   });
 
   factory StorySlide.fromJson(Map<String, dynamic> json) {
     final seconds = toIntOrNull(json['duration']);
-    return StorySlide(
+    return StorySlide._json(
+      _text(json['share_url']),
       id: json['id']?.toString() ?? '',
       type: switch (json['type']) {
         'image' => StorySlideType.image,
@@ -153,7 +170,6 @@ class StorySlide {
       elements: _maps(
         json['elements'],
       ).map(StoryElement.fromJson).whereType<StoryElement>().toList(),
-      shareUrl: _text(json['share_url']),
     );
   }
 
@@ -431,7 +447,7 @@ double parseStoryOpacity(dynamic value) {
   return fraction.clamp(0, 1).toDouble();
 }
 
-/// A string field; JSON `null` (API v3 sends it for empty fields) and other types are empty.
+// A string field; JSON `null` (API v3 sends it for empty fields) and other types are empty.
 String _text(dynamic value) => value is String ? value : '';
 
 Iterable<Map<String, dynamic>> _maps(dynamic raw) {

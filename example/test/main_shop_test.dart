@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 // ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk_example/demo_app.dart';
 import 'package:rees46_sdk_example/main_shop.dart';
 import 'package:rees46_sdk_example/shop/shop.dart';
@@ -78,8 +78,12 @@ void main() {
   ) async {
     await tester.pumpWidget(const ShopApp());
 
-    final stories = tester.widget<PersonalizationStories>(
-      find.byType(PersonalizationStories),
+    // The home's block runs under the v3 gate's widget.
+    final stories = tester.widget<PersonalizationStoriesV3>(
+      find.ancestor(
+        of: find.byType(PersonalizationStories),
+        matching: find.byType(PersonalizationStoriesV3),
+      ),
     );
     expect(stories.ownApiV3Domain, demoStoriesApiV3Domain);
     expect(

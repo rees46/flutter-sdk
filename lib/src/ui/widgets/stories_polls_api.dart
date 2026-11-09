@@ -19,7 +19,7 @@ class StoryPollReply {
 /// пишет сам транспорт (карточка не пишет).
 ///
 /// По умолчанию — [StoriesPollsApi] (HTTP API v3). Тесты и офлайн-демо подменяют его у
-/// виджета, `show` и `handleLink` (`pollsTransport`).
+/// `PersonalizationStoriesV3` и `PersonalizationStoriesV3.handleLink` (`pollsTransport`).
 abstract interface class StoryPollsTransport {
   /// Ответ мини-опроса [code]. [body] — `{option_ids | text, story_id, slide_id}`
   /// ([storyPollAnswerBody]); `shop_id`, `did` и `sid` добавляет транспорт.

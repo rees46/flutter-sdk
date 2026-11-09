@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
-
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
+// v3 (popups of the new builder, stories over API v3) is not public API; its gate is
+// lifted when v3 goes public. The example reaches it directly, which the analyzer
+// flags as an implementation import on purpose.
 // ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 
 import '../demo_app.dart';
 import 'shop.dart';
@@ -136,17 +136,19 @@ class _ShopPaneState extends State<ShopPane> {
         // and opens here. Over API v3: slides with a link have "Share", and the link
         // goes out in the demo scheme, which opens the campaign in the app. A button's
         // link to the game opens the game here.
-        PersonalizationStories(
-          code: shopStoriesCode,
-          shopId: shopId,
-          padding: side,
-          promoCopiedText: shopPromoCopiedText,
-          onLinkClick: demoStoriesLinkClick(shopId),
-          onProductClick: (product) =>
-              ShopProductScreen.open(context, shopId, product.id),
-          iconBuilder: shopIcon,
+        PersonalizationStoriesV3(
           apiV3Domain: demoStoriesApiV3Domain,
           shareUrlTransform: demoShareUrl,
+          child: PersonalizationStories(
+            code: shopStoriesCode,
+            shopId: shopId,
+            padding: side,
+            promoCopiedText: shopPromoCopiedText,
+            onLinkClick: demoStoriesLinkClick(shopId),
+            onProductClick: (product) =>
+                ShopProductScreen.open(context, shopId, product.id),
+            iconBuilder: shopIcon,
+          ),
         ),
         if (_popularCount > 0)
           const SizedBox(height: PersonalizationSpacing.xl3),
@@ -339,7 +341,7 @@ class _ShopCategoryGroup extends StatelessWidget {
 /// a story's product opens on the product page, a button's link to the game the game.
 /// `false` — not a stories link.
 bool openShopStoriesLink(BuildContext context, String url, String shopId) =>
-    PersonalizationStories.handleLink(
+    PersonalizationStoriesV3.handleLink(
       context,
       url,
       shopId: shopId,

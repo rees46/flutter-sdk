@@ -2,12 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:rees46_sdk/rees46_sdk.dart';
+// v3 (popups of the new builder, stories over API v3) is not public API; its gate is
+// lifted when v3 goes public. The example reaches it directly, which the analyzer
+// flags as an implementation import on purpose.
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 
 import 'demo_app.dart';
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
-// ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
 
 /// "Stories V2 polls (offline)" of the UI Kit showcase: campaign 9001 of the shared poll
 /// feed (`assets/uikit/stories_polls_feed.json` — every poll kind, an answered choice
@@ -35,12 +37,14 @@ Future<void> openStoriesPollsDemo(
   if (!context.mounted) return;
   await Navigator.of(context, rootNavigator: true).push(
     PersonalizationStoryViewer.route(
-      PersonalizationStoryViewer(
-        stories: stories,
-        // API v3 mode turns the polls on; the transport keeps them offline.
+      // API v3 mode turns the polls on; the transport keeps them offline.
+      PersonalizationStoriesV3(
         apiV3Domain: demoStoriesApiV3Domain,
         pollsTransport: DemoPollsTransport(stories),
-        iconBuilder: iconBuilder,
+        child: PersonalizationStoryViewer(
+          stories: stories,
+          iconBuilder: iconBuilder,
+        ),
       ),
     ),
   );

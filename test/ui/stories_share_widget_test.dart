@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
 
@@ -271,12 +271,14 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _host(
-        PersonalizationStories(
-          code: _code,
-          sdk: sdk,
-          iconBuilder: _icon,
+        PersonalizationStoriesV3(
           shareUrlTransform: (url) =>
               url.replaceFirst('https://', 'demoapp://'),
+          child: PersonalizationStories(
+            code: _code,
+            sdk: sdk,
+            iconBuilder: _icon,
+          ),
         ),
       ),
     );
@@ -325,11 +327,13 @@ void main() {
     StoriesApiV3.domain = 'global.example';
     await tester.pumpWidget(
       _host(
-        PersonalizationStories(
-          code: _code,
-          sdk: sdk,
+        PersonalizationStoriesV3(
           apiV3Domain: 'own.example',
-          iconBuilder: _icon,
+          child: PersonalizationStories(
+            code: _code,
+            sdk: sdk,
+            iconBuilder: _icon,
+          ),
         ),
       ),
     );
@@ -362,11 +366,13 @@ void main() {
                   sdk: sdk,
                   iconBuilder: _icon,
                 ),
-                PersonalizationStories(
-                  code: _code,
-                  sdk: sdk,
+                PersonalizationStoriesV3(
                   apiV3Domain: 'own.example',
-                  iconBuilder: _icon,
+                  child: PersonalizationStories(
+                    code: _code,
+                    sdk: sdk,
+                    iconBuilder: _icon,
+                  ),
                 ),
               ],
             ),
@@ -410,7 +416,7 @@ void main() {
       await tester.pumpWidget(_host(const Placeholder()));
       final context = placeholder(tester);
       expect(
-        PersonalizationStories.handleLink(
+        PersonalizationStoriesV3.handleLink(
           context,
           'https://shop.example/',
           sdk: sdk,
@@ -418,7 +424,7 @@ void main() {
         isFalse,
       );
       expect(
-        PersonalizationStories.handleLink(
+        PersonalizationStoriesV3.handleLink(
           context,
           '?r46_stories=$_code',
           sdk: sdk,
@@ -427,7 +433,7 @@ void main() {
       );
       StoriesApiV3.domain = null;
       expect(
-        PersonalizationStories.handleLink(context, link, sdk: sdk),
+        PersonalizationStoriesV3.handleLink(context, link, sdk: sdk),
         isFalse,
       );
       await tester.pump();
@@ -440,7 +446,7 @@ void main() {
           (status: 200, body: _feed(start40: 1, only: <String>['40']));
       await tester.pumpWidget(_host(const Placeholder()));
       expect(
-        PersonalizationStories.handleLink(
+        PersonalizationStoriesV3.handleLink(
           placeholder(tester),
           link,
           sdk: sdk,
@@ -475,7 +481,7 @@ void main() {
       await tester.pumpWidget(_host(const Placeholder()));
       final context = placeholder(tester);
       expect(
-        PersonalizationStories.handleLink(
+        PersonalizationStoriesV3.handleLink(
           context,
           link,
           sdk: sdk,
@@ -493,7 +499,7 @@ void main() {
 
       // The same link while its viewer is open: nothing new.
       expect(
-        PersonalizationStories.handleLink(context, link, sdk: sdk),
+        PersonalizationStoriesV3.handleLink(context, link, sdk: sdk),
         isTrue,
       );
       await _settle(tester);
@@ -508,7 +514,7 @@ void main() {
       );
 
       expect(
-        PersonalizationStories.handleLink(context, link, sdk: sdk),
+        PersonalizationStoriesV3.handleLink(context, link, sdk: sdk),
         isTrue,
       );
       await _settle(tester);
@@ -522,7 +528,7 @@ void main() {
       server.answer = (_) => (status: 200, body: _feed(only: <String>['39']));
       await tester.pumpWidget(_host(const Placeholder()));
       expect(
-        PersonalizationStories.handleLink(
+        PersonalizationStoriesV3.handleLink(
           placeholder(tester),
           'demoapp://demo.example/?r46_stories=$_code&r46_story=39'
           '&r46_slide=39_1',
@@ -547,7 +553,7 @@ void main() {
           (status: 200, body: _feed(start40: 1, only: <String>['40']));
       await tester.pumpWidget(_host(const Placeholder()));
       expect(
-        PersonalizationStories.handleLink(
+        PersonalizationStoriesV3.handleLink(
           placeholder(tester),
           'https://demo.example/?r46_stories=$_code&r46_story=40&r46_slide=99',
           sdk: sdk,
@@ -570,7 +576,7 @@ void main() {
       await tester.pumpWidget(_host(const Placeholder()));
       final errors = <Object>[];
       expect(
-        PersonalizationStories.handleLink(
+        PersonalizationStoriesV3.handleLink(
           placeholder(tester),
           link,
           sdk: sdk,
@@ -593,7 +599,7 @@ void main() {
       server.answer = (_) =>
           (status: 200, body: _feed(start40: 1, only: <String>['40']));
       expect(
-        PersonalizationStories.handleLink(
+        PersonalizationStoriesV3.handleLink(
           tester.element(find.byType(PersonalizationStories)),
           link,
           sdk: sdk,

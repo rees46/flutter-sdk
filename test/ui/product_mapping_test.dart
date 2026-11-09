@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
-import 'package:rees46_sdk/src/ui/components/personalization_product.dart';
 import 'package:rees46_sdk/src/ui/widgets/product_mapping.dart';
 
 Map<String, dynamic> _fixture(String name) =>

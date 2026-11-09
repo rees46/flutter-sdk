@@ -2,14 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose; the
-// same goes for the bridge through which the kit has the system open a link.
+// v3 (popups of the new builder, stories over API v3) is not public API; its gate is
+// lifted when v3 goes public. The example reaches it directly, which the analyzer
+// flags as an implementation import on purpose.
 // ignore: implementation_imports
-import 'package:rees46_sdk/src/personalization_sdk.dart'
-    show PersonalizationStoriesBridge;
-// ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 
 import 'game/game_screen.dart';
 
@@ -113,7 +110,7 @@ ThemeData demoTheme(Brightness brightness) {
 const String demoLinkScheme = 'rees46flutter';
 
 /// Host of the stories API v3 of the demo's stories with sharing and of their links;
-/// the global `PersonalizationStories.apiV3Domain` stays unset.
+/// the global `PersonalizationStoriesV3.apiV3Domain` stays unset.
 const String demoStoriesApiV3Domain = 'app.rees46.ru';
 
 /// The slide link with the demo scheme instead of `http(s)://`.

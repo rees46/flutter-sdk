@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
-// The kit stays out of the package barrel until its release; the example reaches
-// it directly, which the analyzer flags as an implementation import on purpose.
+// v3 (popups of the new builder, stories over API v3) is not public API; its gate is
+// lifted when v3 goes public. The example reaches it directly, which the analyzer
+// flags as an implementation import on purpose.
 // ignore: implementation_imports
-import 'package:rees46_sdk/src/ui/personalization_ui.dart';
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 
 import 'app_theme_mode.dart';
 import 'demo_app.dart';
