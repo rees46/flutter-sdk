@@ -1,6 +1,10 @@
 import Flutter
 import UIKit
 import REES46
+// The SDK's Category by name. A module-qualified `REES46.Category` breaks a synchronized copy
+// where the module and the SDK's facade enum share a name: Swift looks for Category inside the
+// enum. A bare `Category` alone is ambiguous with the Objective-C runtime's.
+import struct REES46.Category
 import Foundation
 import UserNotifications
 
@@ -281,7 +285,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     if discount > 0 { dict["discount"] = discount }
   }
 
-  private static func _categoryToDict(_ c: REES46.Category) -> [String: Any] {
+  private static func _categoryToDict(_ c: Category) -> [String: Any] {
     var dict: [String: Any] = ["id": c.id, "name": c.name]
     if let parentId = c.parentId { dict["parent_id"] = parentId }
     if let url = c.url { dict["url"] = url }
@@ -630,7 +634,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return dict
   }
 
-  private static func _searchCategoryToDict(_ c: REES46.Category) -> [String: Any] {
+  private static func _searchCategoryToDict(_ c: Category) -> [String: Any] {
     var dict: [String: Any] = ["id": c.id, "name": c.name]
     if let url = c.url { dict["url"] = url }
     if let parent = c.parentId { dict["parent"] = parent }
