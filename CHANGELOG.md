@@ -1,3 +1,15 @@
+## [1.6.2](https://github.com/rees46/flutter-sdk/compare/v1.6.1...v1.6.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* **ios:** a products list carries its categories on iOS, a listing category keeps its parent on Android, and the plugin asks for notification permission only with autoSendPushToken, as the native SDK does ([5ef2bc6](https://github.com/rees46/flutter-sdk/commit/5ef2bc6d7242f93a311218501e5b347fc6ff27cc))
+* **sdk:** native iOS SDK 3.37.1, which keeps the device's A/B segment across launches ([c8dd210](https://github.com/rees46/flutter-sdk/commit/c8dd210567c356f7e7314d4e3443bea3a81177ac))
+
+
+
+
+
 ## [1.6.1](https://github.com/rees46/flutter-sdk/compare/v1.6.0...v1.6.1) (2026-11-10)
 
 
