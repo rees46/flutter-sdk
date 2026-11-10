@@ -1,3 +1,14 @@
+## [1.6.1](https://github.com/rees46/flutter-sdk/compare/v1.6.0...v1.6.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **ios:** the plugin imports the SDK's Category by name instead of qualifying it with the module, so it builds where the module and the SDK's facade enum share a name ([1cf2db7](https://github.com/rees46/flutter-sdk/commit/1cf2db7f5c3ea358e27c047e2d21aa13c3ee2c27))
+
+
+
+
+
 # [1.6.0](https://github.com/rees46/flutter-sdk/compare/v1.5.0...v1.6.0) (2026-11-09)
 
 
