@@ -108,7 +108,7 @@ native init threw).
 | `shopId` | — (**required**) | Your REES46 shop key |
 | `apiDomain` | `api.rees46.ru` | API host |
 | `stream` | `android` / `ios` | Traffic stream label; defaults to the current platform |
-| `autoSendPushToken` | `true` | Fetches and sends the push token during init |
+| `autoSendPushToken` | `true` | Fetches and sends the push token during init; on iOS it also asks for notification permission. With `false` the app asks and sends the token itself |
 | `needReInitialization` | `false` | Forces a fresh session / device id |
 | `enableAutoPopupPresentation` | `true` | Shows server popups without an `onPopup` handler, see [Popups](#popups) |
 

@@ -57,10 +57,16 @@ public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplication
       payload: Self._stringPayload(userInfo)
     ) { _ in }
 
-    Rees46FlutterSdkPlugin.notificationService?
-      .didReceiveRemoteNotifications(application, didReceiveRemoteNotification: userInfo) { result, _ in
-        completionHandler(result)
-      }
+    guard let notificationService = Rees46FlutterSdkPlugin.notificationService else {
+      // No notification service (the app sends the push token itself): the delivery is still
+      // tracked, and the system is told the push is handled.
+      Rees46.handlePush(userInfo, event: .delivered)
+      completionHandler(.newData)
+      return true
+    }
+    notificationService.didReceiveRemoteNotifications(application, didReceiveRemoteNotification: userInfo) { result, _ in
+      completionHandler(result)
+    }
     return true
   }
 }
@@ -188,12 +194,15 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     // which still uses the last-initialized instance until F4 routes by shop.
     Rees46FlutterSdkPlugin.sdk = sdk
 
-    // Create notification service to receive AppDelegate callbacks (device token, remote notification).
-    let logger = NotificationLogger()
-    Rees46FlutterSdkPlugin.notificationService = NotificationService(
-      sdk: sdk,
-      notificationLogger: logger
-    )
+    // The notification service asks for notification permission as it is created and sends the
+    // device token it gets, so it is created only for a shop that sends the token itself, as the
+    // native SDK asks for permission only then. Otherwise the app asks and sends the token.
+    if config.autoSendPushToken {
+      Rees46FlutterSdkPlugin.notificationService = NotificationService(
+        sdk: sdk,
+        notificationLogger: NotificationLogger()
+      )
+    }
   }
 
   func getPlatformVersion() throws -> String {
@@ -358,9 +367,11 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
   private static func _productsListResponseToDict(_ r: ProductsListResponse) -> [String: Any] {
     // As of REES46 3.24+, ProductsListResponse.products is [Product] (not [ProductInfo]);
     // Product carries no categories, which the Dart parser already treats as optional.
+    // The listing's own categories come with the response itself.
     var dict: [String: Any] = [
       "products": r.products.map { _productsListProductToDict($0) },
       "products_total": r.productsTotal,
+      "categories": r.categories.map { _categoryToDict($0) },
     ]
     if let pr = r.priceRange {
       dict["price_range"] = ["min": pr.min, "max": pr.max]
