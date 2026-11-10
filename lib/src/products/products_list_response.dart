@@ -20,9 +20,7 @@ class ProductsListResponse {
   final Map<String, SearchFilter> filters;
 
   /// Categories of the listing (`categories`); the top-level ones have no
-  /// [ProductCategory.parentId]. Android only for now: the iOS bridge builds the
-  /// response from the native model, which gets them in the next iOS SDK release,
-  /// so on iOS the list stays empty until then.
+  /// [ProductCategory.parentId].
   final List<ProductCategory> categories;
 
   const ProductsListResponse({

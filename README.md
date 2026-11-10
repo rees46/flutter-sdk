@@ -66,7 +66,7 @@ repository. The tag is the version the plugin requires — the `REES46` dependen
 [`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
 
 ```ruby
-pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.37.0'
+pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.37.1'
 ```
 
 `pod install` then runs as part of `flutter run`. Update the tag together with the
@@ -108,7 +108,7 @@ native init threw).
 | `shopId` | — (**required**) | Your REES46 shop key |
 | `apiDomain` | `api.rees46.ru` | API host |
 | `stream` | `android` / `ios` | Traffic stream label; defaults to the current platform |
-| `autoSendPushToken` | `true` | Fetches and sends the push token during init |
+| `autoSendPushToken` | `true` | Fetches and sends the push token during init; on iOS it also asks for notification permission. With `false` the app asks and sends the token itself |
 | `needReInitialization` | `false` | Forces a fresh session / device id |
 | `enableAutoPopupPresentation` | `true` | Shows server popups without an `onPopup` handler, see [Popups](#popups) |
 

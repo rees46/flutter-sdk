@@ -184,7 +184,8 @@ class ProductCategory {
     return ProductCategory(
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
-      parentId: json['parent_id'] as String?,
+      // A product's categories name the parent `parent_id`, a listing's own ones `parent`.
+      parentId: (json['parent_id'] ?? json['parent']) as String?,
       url: json['url'] as String?,
     );
   }

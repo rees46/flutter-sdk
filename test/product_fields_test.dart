@@ -97,8 +97,6 @@ void main() {
       });
       expect(ios.brands, <String>['Apple']);
       expect(ios.filters['color']!.values, <String, int>{'red': 2});
-      // The native model has no categories yet, so the bridge sends none.
-      expect(ios.categories, isEmpty);
     });
 
     test('categories of the listing, top-level ones without a parent', () {
@@ -113,7 +111,26 @@ void main() {
       expect(first.url, contains('/catalog/noutbuki-i-komp-jutery'));
     });
 
-    test('a nested category keeps its parent', () {
+    // The API names a listing category's parent `parent`; read as `parent_id`
+    // only, every listing category looked top-level on Android.
+    test('a nested category keeps its parent as the API names it', () {
+      final nested = ProductsListResponse.fromJson(<String, dynamic>{
+        'products': <Object>[],
+        'products_total': 0,
+        'categories': <Object>[
+          <String, Object>{'id': '313', 'name': 'Apparel', 'count': 180},
+          <String, Object>{
+            'id': '14',
+            'name': 'Apparel - Men',
+            'parent': '313',
+            'count': 120,
+          },
+        ],
+      });
+      expect(nested.categories.map((c) => c.parentId), <String?>[null, '313']);
+    });
+
+    test('a nested category keeps its parent from the iOS bridge', () {
       final nested = ProductsListResponse.fromJson(<String, dynamic>{
         'products': <Object>[],
         'products_total': 0,
