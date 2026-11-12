@@ -8,8 +8,10 @@ import 'tracking_models.dart';
 /// Standard tracking events — the `tracking` namespace of the SDK.
 ///
 /// Reached through an SDK handle: `REES46.getInstance().tracking.productView('sku-1')`.
-/// Every method routes to the native namespace of the same name, so an event fired from Dart
-/// is the same request the native SDKs send.
+/// An event fired from Dart is the same request the native SDKs send. Most methods go to the
+/// method of the same name in the native `tracking` namespace; on iOS [custom], [popupShown] and
+/// [purchase] go to the native SDK's own `trackEvent`, `trackPopupShown` and `trackPurchase`,
+/// which send the same requests.
 class TrackingApi {
   TrackingApi(
     this._api,

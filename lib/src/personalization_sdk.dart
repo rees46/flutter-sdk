@@ -111,8 +111,17 @@ class PersonalizationSdk {
     // The native side reports popups under the shop id it was initialized with.
     PopupDispatcher.instance.register(config.shopId, _popups);
     PopupsV3Hooks.initialized(tracking, config);
-    return _initHandler.initialize(config);
+    return _ready = _initHandler.initialize(config);
   }
+
+  Future<void>? _ready;
+
+  /// The outcome of the native initialization: completes when it is done, with its
+  /// error when it fails. [REES46.initialize] hands the handle back at once — await
+  /// this to learn whether the shop is up. On Android the native SDK does not report
+  /// when its initialization ends, so it completes as soon as the init starts. Before
+  /// [initialize] is called it completes at once.
+  Future<void> get ready => _ready ?? Future<void>.value();
 
   /// Whether the SDK shows popups by itself: the server popups while no [onPopup] is
   /// set, and the other popups the SDK shows by itself (one shown by hand is shown all
@@ -287,9 +296,9 @@ class PersonalizationSdk {
   /// response lists them in [CategoryResponse.filters].
   ///
   /// [priceMin], [priceMax], [sortBy] (`price`, `discount`, …) and [sortDir]
-  /// (`asc` / `desc`) are sent, but not applied yet: the native SDKs this plugin
-  /// is built against take no price range or sort for a category. They apply with
-  /// no change to the call once the plugin moves to native releases that do.
+  /// (`asc` / `desc`) narrow and order the listing. The response carries the
+  /// shop's facets ([CategoryResponse.filters]) and the price range of the
+  /// listing ([CategoryResponse.priceRange]) on both platforms.
   Future<CategoryResponse> getCategory(
     String category, {
     int? limit,

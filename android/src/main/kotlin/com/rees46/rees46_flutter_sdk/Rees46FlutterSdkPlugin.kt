@@ -241,15 +241,7 @@ class Rees46FlutterSdkPlugin :
         try {
             sdk(shopId).productsManager.getProductInfo(
                 itemId = itemId,
-                listener = object : OnApiCallbackListener() {
-                    override fun onSuccess(response: org.json.JSONObject?) {
-                        if (response != null) {
-                            callback(Result.success(response.toString()))
-                        } else {
-                            callback(Result.failure(FlutterError("product_info_failed", "Empty response", null)))
-                        }
-                    }
-                }
+                listener = jsonObjectListener("product_info_failed", callback)
             )
         } catch (t: Throwable) {
             callback(Result.failure(FlutterError("product_info_failed", t.message, null)))
@@ -276,15 +268,7 @@ class Rees46FlutterSdkPlugin :
                 limit = limit,
                 page = page,
                 filters = filters,
-                listener = object : OnApiCallbackListener() {
-                    override fun onSuccess(response: org.json.JSONObject?) {
-                        if (response != null) {
-                            callback(Result.success(response.toString()))
-                        } else {
-                            callback(Result.failure(FlutterError("products_list_failed", "Empty response", null)))
-                        }
-                    }
-                }
+                listener = jsonObjectListener("products_list_failed", callback)
             )
         } catch (t: Throwable) {
             callback(Result.failure(FlutterError("products_list_failed", t.message, null)))
@@ -1264,3 +1248,28 @@ private class ShareSheetWatcher(
         const val NO_SHEET_MS = 1500L
     }
 }
+
+/**
+ * A listener for a call answered with JSON. Every answer completes the Dart `Future` — an object,
+ * an array, an error: a listener with only `onSuccess(JSONObject)` left it waiting for good.
+ */
+internal fun jsonObjectListener(errorCode: String, callback: (Result<String>) -> Unit) =
+    object : OnApiCallbackListener() {
+        override fun onSuccess(response: org.json.JSONObject?) {
+            if (response != null) {
+                callback(Result.success(response.toString()))
+            } else {
+                callback(Result.failure(FlutterError(errorCode, "Empty response", null)))
+            }
+        }
+
+        override fun onSuccess(response: org.json.JSONArray) {
+            callback(Result.success(response.toString()))
+        }
+
+        override fun onError(code: Int, msg: String?) {
+            // The SDK passes an error answer's body, empty for most: the status says what failed.
+            val message = msg?.takeIf { it.isNotBlank() } ?: "error $code"
+            callback(Result.failure(FlutterError(errorCode, message, null)))
+        }
+    }

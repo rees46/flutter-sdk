@@ -66,7 +66,7 @@ repository. The tag is the version the plugin requires — the `REES46` dependen
 [`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
 
 ```ruby
-pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.37.1'
+pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.37.2'
 ```
 
 `pod install` then runs as part of `flutter run`. Update the tag together with the
@@ -99,7 +99,9 @@ synchronously** and starts native initialization in the background; calls issued
 right after are queued natively until the session is ready, so the handle is
 usable straight away. A broken setup surfaces as a `PlatformException` on the
 first call you make with it (`bad_args` for an empty `shopId`, `init_failed` if
-native init threw).
+native init threw). To learn the outcome of the init itself, await the handle's
+`ready`: it fails with that `PlatformException`. On Android it completes as soon
+as the native init starts.
 
 `shopId` is the only required field:
 
