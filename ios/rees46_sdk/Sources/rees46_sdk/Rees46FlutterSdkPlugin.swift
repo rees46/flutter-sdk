@@ -373,14 +373,9 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       "products_total": r.productsTotal,
       "categories": r.categories.map { _categoryToDict($0) },
     ]
-    if let pr = r.priceRange {
-      dict["price_range"] = ["min": pr.min, "max": pr.max]
-    }
+    _addFacets(to: &dict, priceRange: r.priceRange, filters: r.filters)
     if let brands = r.brands {
       dict["brands"] = brands
-    }
-    if let filters = r.filters {
-      dict["filters"] = filters.mapValues { ["count": $0.count, "values": $0.values] as [String: Any] }
     }
     return dict
   }
@@ -470,29 +465,15 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     let locations = p?["locations"] as? String
     let excludedBrands = p?["excluded_brands"] as? [String]
 
-    sdk.search(
+    // Instant search is the native `suggest` (`type=instant_search`), as on Android; `search`
+    // sent the full search.
+    sdk.suggest(
       query: query,
-      limit: nil,
-      offset: nil,
-      categoryLimit: nil,
-      brandLimit: nil,
-      categories: nil,
-      extended: nil,
-      sortBy: nil,
-      sortDir: nil,
       locations: locations,
       excludedMerchants: nil,
       excludedBrands: excludedBrands,
-      brands: nil,
-      filters: nil,
-      priceMin: nil,
-      priceMax: nil,
-      colors: nil,
-      fashionSizes: nil,
-      exclude: nil,
-      email: nil,
       timeOut: nil,
-      disableClarification: nil
+      extended: nil
     ) { result in
       switch result {
       case .success(let response):
@@ -594,14 +575,9 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       "products_total": r.productsTotal,
       "queries": r.queries.map { ["name": $0.name, "url": $0.url] },
     ]
-    if let pr = r.priceRange {
-      dict["price_range"] = ["min": pr.min, "max": pr.max]
-    }
+    _addFacets(to: &dict, priceRange: r.priceRange, filters: r.filters)
     if let brands = r.brands {
       dict["brands"] = brands
-    }
-    if let filters = r.filters {
-      dict["filters"] = filters.mapValues { ["count": $0.count, "values": $0.values] as [String: Any] }
     }
     if let industrial = r.industrialFilters {
       dict["industrial_filters"] = [
@@ -968,8 +944,21 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return d
   }
 
-  private static func _categoryResponseToDict(_ r: CategoryResponse) -> [String: Any] {
-    return [
+  /// The facets of a listing — its price range and the shop's filters — as the Dart models read
+  /// them. The search, the products list and the category send the same shape.
+  private static func _addFacets(to dict: inout [String: Any], priceRange: PriceRange?, filters: [String: Filter]?) {
+    if let pr = priceRange {
+      dict["price_range"] = ["min": pr.min, "max": pr.max]
+    }
+    if let filters = filters {
+      dict["filters"] = filters.mapValues { ["count": $0.count, "values": $0.values] as [String: Any] }
+    }
+  }
+
+  /// The category listing for the Dart `CategoryResponse`: the facets and the price range go
+  /// along, as in the search and the products list.
+  static func _categoryResponseToDict(_ r: CategoryResponse) -> [String: Any] {
+    var dict: [String: Any] = [
       "products_total": r.productsTotal,
       "products": r.products.map { _categoryProductToDict($0) },
       "brands": r.brands.compactMap { b -> [String: Any]? in
@@ -979,6 +968,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
         return d
       },
     ]
+    _addFacets(to: &dict, priceRange: r.priceRange, filters: r.filters)
+    return dict
   }
 
   private static func _collectionResponseToDict(_ r: CollectionResponse) -> [String: Any] {
@@ -1143,8 +1134,9 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
 
   // MARK: - Tracking namespace
   //
-  // Each method hands straight to the native `tracking` namespace of the resolved instance;
-  // the wire models are translated one to one.
+  // Most methods hand straight to the native `tracking` namespace of the resolved instance;
+  // `trackEvent`, `trackPopupShown` and `trackPurchase` go to the SDK's own methods of those
+  // names, which send the same requests. The wire models are translated one to one.
 
   func trackProductView(
     itemId: String,
