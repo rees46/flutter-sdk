@@ -66,7 +66,7 @@ repository. The tag is the version the plugin requires — the `REES46` dependen
 [`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
 
 ```ruby
-pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.37.1'
+pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.37.2'
 ```
 
 `pod install` then runs as part of `flutter run`. Update the tag together with the
