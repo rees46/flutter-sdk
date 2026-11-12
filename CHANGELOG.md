@@ -1,3 +1,17 @@
+## [1.6.3](https://github.com/rees46/flutter-sdk/compare/v1.6.2...v1.6.3) (2026-11-12)
+
+
+### Bug Fixes
+
+* **sdk:** native Android SDK 2.48.0 and iOS SDK 3.37.2 with the fixes from the SDK audit ([585b4de](https://github.com/rees46/flutter-sdk/commit/585b4dee52446efed5f9defa5a0b934770e2911f))
+* **sdk:** on Android getProductInfo and getProductsList end in an error when the native call fails, instead of never completing ([04ae29f](https://github.com/rees46/flutter-sdk/commit/04ae29fa5db65df883fde4f45e624ae1057f3d2b))
+* **sdk:** on iOS instant search is the native suggest, not the full search, and a category answer carries the facets and the price range ([c059394](https://github.com/rees46/flutter-sdk/commit/c059394e74c43767879a090188c9d16ab4b95dce))
+* **sdk:** REES46.initialize no longer leaves a failed native init as an unhandled error; the handle's ready gives its outcome ([5caf286](https://github.com/rees46/flutter-sdk/commit/5caf2869a98f37bdb1b1fb9faa10dbb3d026c554))
+
+
+
+
+
 ## [1.6.2](https://github.com/rees46/flutter-sdk/compare/v1.6.1...v1.6.2) (2026-11-10)
 
 
