@@ -11,9 +11,6 @@ export '../products/products_list_response.dart' show Product;
 /// with a category as with full search. Products are parsed with the shared
 /// [Product] model (Android returns a richer product than iOS; the parser tolerates
 /// the missing fields).
-///
-/// On iOS only [brands] arrive for now: the native category model has no filters
-/// or price range.
 class CategoryResponse {
   final int productsTotal;
   final List<Product> products;

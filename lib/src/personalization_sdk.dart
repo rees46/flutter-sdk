@@ -296,9 +296,9 @@ class PersonalizationSdk {
   /// response lists them in [CategoryResponse.filters].
   ///
   /// [priceMin], [priceMax], [sortBy] (`price`, `discount`, …) and [sortDir]
-  /// (`asc` / `desc`) are sent, but not applied yet: the native SDKs this plugin
-  /// is built against take no price range or sort for a category. They apply with
-  /// no change to the call once the plugin moves to native releases that do.
+  /// (`asc` / `desc`) narrow and order the listing. The response carries the
+  /// shop's facets ([CategoryResponse.filters]) and the price range of the
+  /// listing ([CategoryResponse.priceRange]) on both platforms.
   Future<CategoryResponse> getCategory(
     String category, {
     int? limit,

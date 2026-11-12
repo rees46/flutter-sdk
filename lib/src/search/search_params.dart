@@ -74,10 +74,8 @@ class SearchParams {
 
 /// Parameters for [PersonalizationSdk.searchInstant].
 ///
-/// Android passes these directly to `searchManager.searchInstant()`.
-/// iOS passes them to `sdk.search()` with the remaining fields set to nil.
-///
-/// Excluded Android-only params: `excludedMerchants`.
+/// The bridges pass them to the native instant search: `searchManager.searchInstant()` on
+/// Android, `sdk.suggest()` on iOS.
 class SearchInstantParams {
   final String? locations;
   final List<String>? excludedBrands;
