@@ -641,7 +641,9 @@ class Rees46FlutterSdkPlugin :
             params.age?.let { builder.put("age", it.toInt()) }
             params.gender?.let { builder.put("gender", it) }
             params.location?.let { builder.put("location", it) }
-            params.advertisingId?.let { builder.put("advertising_id", it) }
+            // The API has no `advertising_id`: the server drops it silently. The native SDK sends the
+            // Google advertising id as `google_advertising_id` too.
+            params.advertisingId?.let { builder.put("google_advertising_id", it) }
             params.fbId?.let { builder.put("fb_id", it) }
             params.vkId?.let { builder.put("vk_id", it) }
             params.telegramId?.let { builder.put("telegram_id", it) }
