@@ -13,7 +13,7 @@ let package = Package(
     ],
     dependencies: [
         // Keep in step with the dependency in ../rees46_sdk.podspec.
-        .package(url: "https://github.com/rees46/ios-sdk.git", exact: "3.37.2")
+        .package(url: "https://github.com/rees46/ios-sdk.git", exact: "3.37.3")
     ],
     targets: [
         .target(
