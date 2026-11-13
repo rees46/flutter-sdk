@@ -1,3 +1,15 @@
+## [1.6.4](https://github.com/rees46/flutter-sdk/compare/v1.6.3...v1.6.4) (2026-11-13)
+
+
+### Bug Fixes
+
+* **android:** the profile sends the advertising id as google_advertising_id; the API has no advertising_id and dropped it silently ([a12a8af](https://github.com/rees46/flutter-sdk/commit/a12a8af510c50c75bee6b2aeda336b5e35ed241a))
+* **sdk:** native Android SDK 2.49.0 and iOS SDK 3.37.3 with the fixes checked against the live API: instant search merchants, push click attribution, profile dates, search filters, timeouts, APNs pushes and subscriptions ([d2b0b3c](https://github.com/rees46/flutter-sdk/commit/d2b0b3c1217af62854296549b0e7479e2668434f))
+
+
+
+
+
 ## [1.6.3](https://github.com/rees46/flutter-sdk/compare/v1.6.2...v1.6.3) (2026-11-12)
 
 
