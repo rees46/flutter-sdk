@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/native_events.dart';
+import '../models/push_models.dart';
 import '../personalization_sdk.dart';
 import '../popups/in_app_popup.dart';
 import '../popups/popup_presenter.dart';
@@ -132,6 +134,12 @@ class REES46 {
   static set onPopup(void Function(InAppPopup popup)? handler) =>
       PopupPresenter.sharedOnPopup = handler;
 
+  /// The app's callbacks on the pushes of every shop: [PushPayload.shopId] tells the
+  /// shop. A shop's own callback of an event (`notifications.setCallbacks`) wins
+  /// over the one here. Replaces the callbacks set before; null clears them.
+  static void setPushCallbacks(PushCallbacks? callbacks) =>
+      NativeEvents.instance.sharedPushCallbacks = callbacks;
+
   /// Shops that are live (initialized), sorted.
   static List<String> get liveShopIds => _instance._live.keys.toList()..sort();
 
@@ -238,5 +246,6 @@ class REES46 {
     _instance._pending.clear();
     _instance._factory = _defaultFactory;
     PopupPresenter.sharedOnPopup = null;
+    NativeEvents.instance.reset();
   }
 }

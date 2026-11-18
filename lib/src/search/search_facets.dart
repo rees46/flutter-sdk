@@ -5,6 +5,7 @@
 library;
 
 import '../json_number.dart';
+import '../models/catalog_models.dart';
 import 'search_response.dart' show SearchFilter;
 
 /// Brands arrive as `[{name, count}]` (Android, raw API) or `[name]` (iOS); both
@@ -45,4 +46,53 @@ Map<String, SearchFilter> parseFacetFilters(dynamic raw) {
           Map<String, dynamic>.from(entry.value as Map),
         ),
   };
+}
+
+/// A product's parameters (`params`): an array `[{key, values}]`, or in the product
+/// card (`products/get`) an object of the parameter's name → `{value: [...]}`.
+List<ProductParam> parseProductParams(dynamic raw) {
+  List<String> values(dynamic v) => v is List
+      ? v.where((e) => e != null).map((e) => e.toString()).toList()
+      : v == null
+      ? const []
+      : [v.toString()];
+  if (raw is List) {
+    return raw
+        .whereType<Map>()
+        .where((e) => e['key'] != null)
+        .map(
+          (e) => ProductParam(
+            key: e['key'].toString(),
+            values: values(e['values']),
+          ),
+        )
+        .toList();
+  }
+  if (raw is Map) {
+    return [
+      for (final entry in raw.entries)
+        ProductParam(
+          key: entry.key.toString(),
+          values: values(
+            entry.value is Map ? entry.value['value'] : entry.value,
+          ),
+        ),
+    ];
+  }
+  return const [];
+}
+
+/// The price histogram (`price_ranges`) of a listing or a search.
+List<PriceInterval> parsePriceIntervals(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map>()
+      .map(
+        (e) => PriceInterval(
+          from: toDoubleOrNull(e['from']) ?? 0,
+          to: toDoubleOrNull(e['to']),
+          count: toIntOrNull(e['count']),
+        ),
+      )
+      .toList();
 }

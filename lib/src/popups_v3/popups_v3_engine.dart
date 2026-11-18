@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import '../personalization_sdk.dart';
 import '../popups/popup_presenter.dart';
+import '../models/values.dart';
 import '../profile/profile_params.dart';
 import '../subscriptions/manage_subscription_params.dart';
 import '../ui/components/personalization_product.dart';
@@ -810,8 +811,8 @@ class _EngineActions implements PopupV3Actions {
         lastName: submission.lastName,
         birthday: submission.birthday,
         gender: switch (submission.gender) {
-          'm' => ProfileGender.male,
-          'f' => ProfileGender.female,
+          'm' => Gender.male,
+          'f' => Gender.female,
           _ => null,
         },
         customProperties: submission.custom.isEmpty ? null : submission.custom,

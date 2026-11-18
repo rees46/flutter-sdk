@@ -1,11 +1,11 @@
 import '../pigeon/personalization_api.g.dart' as pigeon;
 
-/// Changes to a client's subscriptions for [PersonalizationSdk.manageSubscription].
+/// Changes to a client's subscriptions for [SubscriptionsApi.manage].
 ///
 /// [email], [phone], [externalId], [loyaltyId] and [telegramId] identify the client; the device is
 /// always sent. Each flag is a channel and mailing type: `true` subscribes, `false` unsubscribes,
-/// `null` keeps the current status. Wallet has the bulk type only.
-class ManageSubscriptionParams {
+/// `null` keeps the current status.
+class SubscriptionsUpdateRequest {
   final String? email;
   final String? phone;
   final String? externalId;
@@ -33,8 +33,10 @@ class ManageSubscriptionParams {
   final bool? maxChain;
   final bool? maxTransactional;
   final bool? walletBulk;
+  final bool? walletChain;
+  final bool? walletTransactional;
 
-  const ManageSubscriptionParams({
+  const SubscriptionsUpdateRequest({
     this.email,
     this.phone,
     this.externalId,
@@ -62,10 +64,12 @@ class ManageSubscriptionParams {
     this.maxChain,
     this.maxTransactional,
     this.walletBulk,
+    this.walletChain,
+    this.walletTransactional,
   });
 
-  pigeon.ManageSubscriptionParamsWire toWire() {
-    return pigeon.ManageSubscriptionParamsWire(
+  pigeon.SubscriptionsUpdateRequestWire toWire() {
+    return pigeon.SubscriptionsUpdateRequestWire(
       email: email,
       phone: phone,
       externalId: externalId,
@@ -93,6 +97,12 @@ class ManageSubscriptionParams {
       maxChain: maxChain,
       maxTransactional: maxTransactional,
       walletBulk: walletBulk,
+      walletChain: walletChain,
+      walletTransactional: walletTransactional,
     );
   }
 }
+
+/// The released name of [SubscriptionsUpdateRequest], which has the same fields.
+@Deprecated('Use SubscriptionsUpdateRequest.')
+typedef ManageSubscriptionParams = SubscriptionsUpdateRequest;

@@ -1,4 +1,6 @@
 import '../json_number.dart';
+import '../models/catalog_models.dart';
+import '../recommendation/recommendation_response.dart' show ProductCategory;
 import 'search_facets.dart';
 
 /// Response from [PersonalizationSdk.searchFull].
@@ -26,6 +28,19 @@ class SearchFullResponse {
   final Map<String, SearchFilter> filters;
   final SearchIndustrialFilters? industrialFilters;
 
+  /// The query after the fixes of the keyboard layout and typos (`search_query`).
+  final String? searchQuery;
+  final String? searchQueryOriginal;
+
+  /// Whether the clarifying search worked (`clarification`).
+  final bool? clarification;
+
+  /// The price histogram (`price_ranges`).
+  final List<PriceInterval> priceRanges;
+
+  /// The median price (`price_median`).
+  final double? priceMedian;
+
   const SearchFullResponse({
     required this.products,
     required this.categories,
@@ -36,6 +51,11 @@ class SearchFullResponse {
     this.brandCounts = const {},
     this.filters = const {},
     this.industrialFilters,
+    this.searchQuery,
+    this.searchQueryOriginal,
+    this.clarification,
+    this.priceRanges = const [],
+    this.priceMedian,
   });
 
   factory SearchFullResponse.fromJson(Map<String, dynamic> json) {
@@ -63,6 +83,13 @@ class SearchFullResponse {
               Map<String, dynamic>.from(json['industrial_filters'] as Map),
             )
           : null,
+      searchQuery: toNonEmptyStringOrNull(json['search_query']),
+      searchQueryOriginal: toNonEmptyStringOrNull(
+        json['search_query_original'],
+      ),
+      clarification: toBoolOrNull(json['clarification']),
+      priceRanges: parsePriceIntervals(json['price_ranges']),
+      priceMedian: toDoubleOrNull(json['price_median']),
     );
   }
 }
@@ -72,7 +99,20 @@ class SearchFilter {
   final int count;
   final Map<String, int> values;
 
-  const SearchFilter({required this.count, required this.values});
+  /// The order of the facets (`priority`).
+  final int? priority;
+
+  /// The bounds of a numeric facet (`ranges.min`, `ranges.max`).
+  final double? min;
+  final double? max;
+
+  const SearchFilter({
+    required this.count,
+    required this.values,
+    this.priority,
+    this.min,
+    this.max,
+  });
 
   factory SearchFilter.fromJson(Map<String, dynamic> json) {
     final values = json['values'];
@@ -84,6 +124,9 @@ class SearchFilter {
                 entry.key.toString(): toIntOrNull(entry.value) ?? 0,
             }
           : const {},
+      priority: toIntOrNull(json['priority']),
+      min: json['ranges'] is Map ? toDoubleOrNull(json['ranges']['min']) : null,
+      max: json['ranges'] is Map ? toDoubleOrNull(json['ranges']['max']) : null,
     );
   }
 }
@@ -175,6 +218,37 @@ class SearchProduct {
   /// The shop marks the product as new (`is_new`).
   final bool? isNew;
 
+  /// The product's categories (`categories`).
+  final List<ProductCategory> categories;
+
+  /// The group of variants of the product (`group_id`).
+  final String? groupId;
+
+  /// The product's model (`model`).
+  final String? model;
+
+  /// The product's barcode (`barcode`).
+  final String? barcode;
+
+  /// The old price with kopecks (`oldprice_full`) and its display form.
+  final double? oldPriceFull;
+  final String? oldPriceFullFormatted;
+
+  /// The rating (`rating`); the API sends it only when it is not 0.
+  final int? rating;
+
+  /// How many are in stock (`stock_quantity`).
+  final int? stockQuantity;
+
+  /// The ids of the product's categories (`category_ids`).
+  final List<String>? categoryIds;
+
+  /// The product's parameters (`params`).
+  final List<ProductParam> params;
+
+  /// The locations where the product is (`location_ids`).
+  final List<String>? locationIds;
+
   const SearchProduct({
     required this.id,
     required this.name,
@@ -199,6 +273,17 @@ class SearchProduct {
     this.deeplinkAndroid,
     this.deeplinkIos,
     this.isNew,
+    this.categories = const [],
+    this.groupId,
+    this.model,
+    this.barcode,
+    this.oldPriceFull,
+    this.oldPriceFullFormatted,
+    this.rating,
+    this.stockQuantity,
+    this.categoryIds,
+    this.params = const [],
+    this.locationIds,
   });
 
   factory SearchProduct.fromJson(Map<String, dynamic> json) {
@@ -226,6 +311,22 @@ class SearchProduct {
       deeplinkAndroid: toNonEmptyStringOrNull(json['deeplink_android']),
       deeplinkIos: toNonEmptyStringOrNull(json['deeplink_ios']),
       isNew: toBoolOrNull(json['is_new']),
+      categories: (json['categories'] as List<dynamic>? ?? [])
+          .whereType<Map>()
+          .map((e) => ProductCategory.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      groupId: toNonEmptyStringOrNull(json['group_id']),
+      model: toNonEmptyStringOrNull(json['model']),
+      barcode: toNonEmptyStringOrNull(json['barcode']),
+      oldPriceFull: toDoubleOrNull(json['oldprice_full']),
+      oldPriceFullFormatted: toNonEmptyStringOrNull(
+        json['oldprice_full_formatted'],
+      ),
+      rating: toIntOrNull(json['rating']),
+      stockQuantity: toIntOrNull(json['stock_quantity']),
+      categoryIds: toStringListOrNull(json['category_ids']),
+      params: parseProductParams(json['params']),
+      locationIds: toStringListOrNull(json['location_ids']),
     );
   }
 }
@@ -248,12 +349,26 @@ class SearchInstantResponse {
   /// Phrases suggested for the typed text (`queries`).
   final List<SearchSuggest> queries;
 
+  /// The query after the fixes of the keyboard layout and typos (`search_query`).
+  final String? searchQuery;
+  final String? searchQueryOriginal;
+
+  /// Whether the clarifying search worked (`clarification`).
+  final bool? clarification;
+
+  /// Where the shop sends this query instead of the results.
+  final SearchRedirect? redirect;
+
   const SearchInstantResponse({
     required this.products,
     required this.categories,
     required this.productsTotal,
     this.locations,
     this.queries = const [],
+    this.searchQuery,
+    this.searchQueryOriginal,
+    this.clarification,
+    this.redirect,
   });
 
   factory SearchInstantResponse.fromJson(Map<String, dynamic> json) {
@@ -269,6 +384,24 @@ class SearchInstantResponse {
           ?.map((e) => SearchLocation.fromJson(e as Map<String, dynamic>))
           .toList(),
       queries: _parseSuggests(json['queries']),
+      searchQuery: toNonEmptyStringOrNull(json['search_query']),
+      searchQueryOriginal: toNonEmptyStringOrNull(
+        json['search_query_original'],
+      ),
+      clarification: toBoolOrNull(json['clarification']),
+      redirect: json['search_query_redirects'] is Map
+          ? SearchRedirect(
+              query: toNonEmptyStringOrNull(
+                json['search_query_redirects']['query'],
+              ),
+              url: toNonEmptyStringOrNull(
+                json['search_query_redirects']['redirect_link'],
+              ),
+              deeplink: toNonEmptyStringOrNull(
+                json['search_query_redirects']['deeplink'],
+              ),
+            )
+          : null,
     );
   }
 }
@@ -306,12 +439,20 @@ class SearchCategory {
   final String? parentId;
   final int? count;
 
+  /// The category's alias (`alias`).
+  final String? alias;
+
+  /// The category's depth (`level`), when the answer has it.
+  final int? level;
+
   const SearchCategory({
     required this.id,
     required this.name,
     this.url,
     this.parentId,
     this.count,
+    this.alias,
+    this.level,
   });
 
   factory SearchCategory.fromJson(Map<String, dynamic> json) {
@@ -321,6 +462,8 @@ class SearchCategory {
       url: json['url'] as String?,
       parentId: json['parent'] as String?,
       count: toIntOrNull(json['count']),
+      alias: toNonEmptyStringOrNull(json['alias']),
+      level: toIntOrNull(json['level']),
     );
   }
 }
@@ -353,11 +496,22 @@ class SearchBlankResponse {
   final List<SearchSuggest> lastQueries;
   final List<SearchSuggest> popularCategories;
 
+  /// `true` — [products] are the ones the customer viewed lately; `false` — the
+  /// popular ones (`last_products`).
+  final bool lastProducts;
+
+  /// Popular brands and links (`popular_brands`, `popular_links`).
+  final List<SearchSuggest> popularBrands;
+  final List<SearchSuggest> popularLinks;
+
   const SearchBlankResponse({
     required this.products,
     required this.suggests,
     this.lastQueries = const [],
     this.popularCategories = const [],
+    this.lastProducts = false,
+    this.popularBrands = const [],
+    this.popularLinks = const [],
   });
 
   factory SearchBlankResponse.fromJson(Map<String, dynamic> json) {
@@ -368,6 +522,9 @@ class SearchBlankResponse {
       suggests: _parseSuggests(json['suggests']),
       lastQueries: _parseSuggests(json['last_queries']),
       popularCategories: _parseSuggests(json['popular_categories']),
+      lastProducts: toBoolOrNull(json['last_products']) ?? false,
+      popularBrands: _parseSuggests(json['popular_brands']),
+      popularLinks: _parseSuggests(json['popular_links']),
     );
   }
 }
@@ -379,7 +536,10 @@ class SearchSuggest {
   final String name;
   final String url;
 
-  const SearchSuggest({required this.name, required this.url});
+  /// How well a suggested query matches (`score`), when the answer has it.
+  final double? score;
+
+  const SearchSuggest({required this.name, required this.url, this.score});
 
   factory SearchSuggest.fromJson(Map<String, dynamic> json) {
     return SearchSuggest(

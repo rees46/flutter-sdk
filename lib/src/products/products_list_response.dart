@@ -1,13 +1,13 @@
 import '../recommendation/recommendation_response.dart' show ProductCategory;
 import '../json_number.dart';
 import '../search/search_facets.dart';
-import '../search/search_response.dart' show SearchFilter;
+import '../models/catalog_models.dart';
+import '../search/search_response.dart'
+    show SearchFilter, SearchIndustrialFilters, SearchLocation;
 
 export '../recommendation/recommendation_response.dart' show ProductCategory;
 
-/// Response from [PersonalizationSdk.getProductsList].
-///
-/// Excluded Android-only fields: priceRanges, priceMedian.
+/// A page of the catalog's listing with its facets ([ProductsApi.getList]).
 class ProductsListResponse {
   final List<Product> products;
   final int productsTotal;
@@ -23,6 +23,21 @@ class ProductsListResponse {
   /// [ProductCategory.parentId].
   final List<ProductCategory> categories;
 
+  /// Product count per brand name (`brands`).
+  final Map<String, int> brandCounts;
+
+  /// The locations of the listing (`locations`).
+  final List<SearchLocation>? locations;
+
+  /// The fashion facets (`industrial_filters`): only a search sends them.
+  final SearchIndustrialFilters? industrialFilters;
+
+  /// The price histogram (`price_ranges`).
+  final List<PriceInterval> priceRanges;
+
+  /// The median price (`price_median`).
+  final double? priceMedian;
+
   const ProductsListResponse({
     required this.products,
     required this.productsTotal,
@@ -30,6 +45,11 @@ class ProductsListResponse {
     this.brands = const [],
     this.filters = const {},
     this.categories = const [],
+    this.brandCounts = const {},
+    this.locations,
+    this.industrialFilters,
+    this.priceRanges = const [],
+    this.priceMedian,
   });
 
   factory ProductsListResponse.fromJson(Map<String, dynamic> json) {
@@ -47,6 +67,13 @@ class ProductsListResponse {
           .whereType<Map<dynamic, dynamic>>()
           .map((e) => ProductCategory.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
+      brandCounts: parseFacetCounts(json['brands'], 'name'),
+      locations: (json['locations'] as List<dynamic>?)
+          ?.whereType<Map<dynamic, dynamic>>()
+          .map((e) => SearchLocation.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      priceRanges: parsePriceIntervals(json['price_ranges']),
+      priceMedian: toDoubleOrNull(json['price_median']),
     );
   }
 }
@@ -113,6 +140,35 @@ class Product {
   /// collections.
   final bool? isNew;
 
+  /// The group of variants of the product (`group_id`).
+  final String? groupId;
+
+  /// The product's model (`model`).
+  final String? model;
+
+  /// The product's barcode (`barcode`).
+  final String? barcode;
+
+  /// The old price with kopecks (`oldprice_full`) and its display form.
+  final double? oldPriceFull;
+  final String? oldPriceFullFormatted;
+
+  /// The rating (`rating`); the API sends it only when it is not 0.
+  final int? rating;
+
+  /// How many are in stock (`stock_quantity`).
+  final int? stockQuantity;
+
+  /// The ids of the product's categories (`category_ids`).
+  final List<String>? categoryIds;
+
+  /// The product's parameters (`params`).
+  final List<ProductParam> params;
+
+  /// The locations where the product is (`location_ids`): with `withLocations` of a
+  /// recommendation block, or `["global"]`.
+  final List<String>? locationIds;
+
   const Product({
     required this.id,
     required this.name,
@@ -138,6 +194,16 @@ class Product {
     this.deeplinkAndroid,
     this.deeplinkIos,
     this.isNew,
+    this.groupId,
+    this.model,
+    this.barcode,
+    this.oldPriceFull,
+    this.oldPriceFullFormatted,
+    this.rating,
+    this.stockQuantity,
+    this.categoryIds,
+    this.params = const [],
+    this.locationIds,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -169,6 +235,18 @@ class Product {
       deeplinkAndroid: toNonEmptyStringOrNull(json['deeplink_android']),
       deeplinkIos: toNonEmptyStringOrNull(json['deeplink_ios']),
       isNew: toBoolOrNull(json['is_new']),
+      groupId: toNonEmptyStringOrNull(json['group_id']),
+      model: toNonEmptyStringOrNull(json['model']),
+      barcode: toNonEmptyStringOrNull(json['barcode']),
+      oldPriceFull: toDoubleOrNull(json['oldprice_full']),
+      oldPriceFullFormatted: toNonEmptyStringOrNull(
+        json['oldprice_full_formatted'],
+      ),
+      rating: toIntOrNull(json['rating']),
+      stockQuantity: toIntOrNull(json['stock_quantity']),
+      categoryIds: toStringListOrNull(json['category_ids']),
+      params: parseProductParams(json['params']),
+      locationIds: toStringListOrNull(json['location_ids']),
     );
   }
 }

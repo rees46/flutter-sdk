@@ -1,8 +1,6 @@
-import 'dart:convert';
-
+import '../models/values.dart';
+import '../namespaces/to_wire.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
-
-enum ProfileGender { male, female }
 
 class ProfileParams {
   final String? email;
@@ -14,7 +12,7 @@ class ProfileParams {
   /// Date of birth in "yyyy-MM-dd" format.
   final String? birthday;
   final int? age;
-  final ProfileGender? gender;
+  final Gender? gender;
   final String? location;
   final String? advertisingId;
   final String? fbId;
@@ -51,34 +49,8 @@ class ProfileParams {
     this.customProperties,
   });
 
-  pigeon.ProfileParamsWire toWire() {
-    return pigeon.ProfileParamsWire(
-      email: email,
-      phone: phone,
-      loyaltyId: loyaltyId,
-      firstName: firstName,
-      lastName: lastName,
-      birthday: birthday,
-      age: age,
-      gender: switch (gender) {
-        ProfileGender.male => 'm',
-        ProfileGender.female => 'f',
-        null => null,
-      },
-      location: location,
-      advertisingId: advertisingId,
-      fbId: fbId,
-      vkId: vkId,
-      telegramId: telegramId,
-      loyaltyCardLocation: loyaltyCardLocation,
-      loyaltyStatus: loyaltyStatus,
-      loyaltyBonuses: loyaltyBonuses,
-      loyaltyBonusesToNextLevel: loyaltyBonusesToNextLevel,
-      boughtSomething: boughtSomething,
-      userId: userId,
-      customPropertiesJson: customProperties == null
-          ? null
-          : jsonEncode(customProperties),
-    );
-  }
+  /// The request of [ProfileApi.set] these parameters make, as the native channel
+  /// takes it.
+  pigeon.ProfileUpdateRequestWire toWire() =>
+      profileUpdateRequestToWire(profileParamsToRequest(this));
 }
