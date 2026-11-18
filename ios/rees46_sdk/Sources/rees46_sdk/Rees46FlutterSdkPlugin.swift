@@ -776,7 +776,13 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
   /// false`) gave the SDK none: then, without a provider or for APNs, the device token the plugin
   /// kept is the answer, as `getStoredPushToken` always gave it.
   func notificationsGetPushToken(provider: String?, shopId: String?) throws -> PushTokenWire? {
-    let native = try provider.map(nativePushProvider)
+    // A synchronous call hands Dart what it throws as it is: only a `PigeonError` keeps its type.
+    let native: Rees46.PushProvider?
+    do {
+      native = try provider.map(nativePushProvider)
+    } catch {
+      throw BridgeFailure.error(error)
+    }
     if let token = try instance(shopId).notifications.getPushToken(provider: native) {
       return token.toWire()
     }
