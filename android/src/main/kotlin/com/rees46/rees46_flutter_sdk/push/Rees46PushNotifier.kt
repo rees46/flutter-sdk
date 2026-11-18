@@ -12,6 +12,7 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.personalization.Rees46
 import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.R
 import java.net.URL
@@ -73,8 +74,11 @@ object Rees46PushNotifier {
         }
     }
 
-    /** Builds and posts the notification. Must run off the main thread (downloads images). */
-    fun show(context: Context, data: NotificationData) {
+    /**
+     * Builds and posts the notification; true once it is posted. Must run off the main thread (downloads
+     * images). [shopId], the shop the push routed to, rides on the tap's intent so the click finds it.
+     */
+    fun show(context: Context, data: NotificationData, shopId: String? = null): Boolean {
         Log.d(TAG, "show() title=${data.title} body=${data.body} image=${data.image}")
         try {
             ensureChannel(context)
@@ -90,7 +94,7 @@ object Rees46PushNotifier {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setDefaults(NotificationCompat.DEFAULT_ALL)
-                .setContentIntent(buildContentIntent(context, data))
+                .setContentIntent(buildContentIntent(context, data, shopId))
 
             if (largeIcon != null) builder.setLargeIcon(largeIcon)
             if (bigPicture != null) {
@@ -105,12 +109,29 @@ object Rees46PushNotifier {
             val manager = ContextCompat.getSystemService(context, NotificationManager::class.java)
             if (manager == null) {
                 Log.e(TAG, "NotificationManager unavailable — cannot post notification")
-                return
+                return false
             }
             manager.notify(id, builder.build())
             Log.d(TAG, "notify() posted id=$id (bigPicture=${bigPicture != null})")
+            return true
         } catch (t: Throwable) {
             Log.e(TAG, "Failed to post notification", t)
+            return false
+        }
+    }
+
+    /**
+     * The notification of [data] is on screen: the bridge draws it, so the bridge reports it — the native
+     * `notifications.trackOpened` of the shop, through its queue, once per message. A push without its id or
+     * type is not the SDK's and reports nothing.
+     */
+    fun reportShown(shopId: String, data: NotificationData) {
+        val code = data.id?.takeIf { it.isNotBlank() } ?: return
+        val type = data.type?.takeIf { it.isNotBlank() } ?: return
+        try {
+            Rees46.instance(shopId).notifications.trackOpened(code, type)
+        } catch (t: Throwable) {
+            Log.w(TAG, "The shown push was not reported: ${t.javaClass.simpleName}")
         }
     }
 
@@ -119,12 +140,13 @@ object Rees46PushNotifier {
      * launch-intent handler reports the click to the SDK (and to Dart via onPushClicked). The keys
      * match the SDK's NotificationConstants (NOTIFICATION_TYPE / NOTIFICATION_ID).
      */
-    private fun buildContentIntent(context: Context, data: NotificationData): PendingIntent {
+    private fun buildContentIntent(context: Context, data: NotificationData, shopId: String?): PendingIntent {
         val intent = context.packageManager
             .getLaunchIntentForPackage(context.packageName)
             ?.apply {
                 putExtra("NOTIFICATION_TYPE", data.type)
                 putExtra("NOTIFICATION_ID", data.id)
+                shopId?.let { putExtra("shop_id", it) }
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
             ?: Intent()

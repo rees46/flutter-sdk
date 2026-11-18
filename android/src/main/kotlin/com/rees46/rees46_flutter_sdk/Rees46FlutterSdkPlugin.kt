@@ -6,45 +6,70 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.os.SystemClock
+import android.provider.Settings
 import android.view.View
 import android.view.ViewTreeObserver
+import com.personalization.Cancellable
+import com.personalization.Rees46
+import com.personalization.SDK
+import com.personalization.api.OnApiCallbackListener
+import com.personalization.api.models.purchase.PurchaseTrackingRequest
+import com.personalization.core.PushEvent
+import com.personalization.sdk.data.models.dto.notification.NotificationData
+import com.rees46.rees46_flutter_sdk.pigeon.AgentDialogResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.AgentResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.BackInStockPropertiesWire
+import com.rees46.rees46_flutter_sdk.pigeon.CartItemWire
+import com.rees46.rees46_flutter_sdk.pigeon.CesCampaignWire
+import com.rees46.rees46_flutter_sdk.pigeon.ClientReviewWire
+import com.rees46.rees46_flutter_sdk.pigeon.CollectionResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.CsatCampaignWire
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
 import com.rees46.rees46_flutter_sdk.pigeon.InitConfig
-import com.rees46.rees46_flutter_sdk.pigeon.ManageSubscriptionParamsWire
+import com.rees46.rees46_flutter_sdk.pigeon.LoyaltyMemberWire
+import com.rees46.rees46_flutter_sdk.pigeon.LoyaltyPromotionWire
+import com.rees46.rees46_flutter_sdk.pigeon.LoyaltyStatusWire
+import com.rees46.rees46_flutter_sdk.pigeon.NotificationHistoryWire
+import com.rees46.rees46_flutter_sdk.pigeon.NpsCategoryWire
+import com.rees46.rees46_flutter_sdk.pigeon.OrderWire
 import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationFlutterApi
 import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationHostApi
 import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationPopupFlutterApi
-import com.rees46.rees46_flutter_sdk.pigeon.ProfileParamsWire
+import com.rees46.rees46_flutter_sdk.pigeon.PersonalizationStateFlutterApi
+import com.rees46.rees46_flutter_sdk.pigeon.PollChannelWire
+import com.rees46.rees46_flutter_sdk.pigeon.PollReviewWire
+import com.rees46.rees46_flutter_sdk.pigeon.ProductCountersResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.ProductReviewsResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.ProductWire
+import com.rees46.rees46_flutter_sdk.pigeon.ProductsListRequestWire
+import com.rees46.rees46_flutter_sdk.pigeon.ProductsListResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.ProfileUpdateRequestWire
+import com.rees46.rees46_flutter_sdk.pigeon.ProfileWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
+import com.rees46.rees46_flutter_sdk.pigeon.PurchaseProbabilityWire
+import com.rees46.rees46_flutter_sdk.pigeon.PushTokenWire
+import com.rees46.rees46_flutter_sdk.pigeon.RecommendationRequestWire
+import com.rees46.rees46_flutter_sdk.pigeon.RecommendationResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.SdkSnapshotWire
+import com.rees46.rees46_flutter_sdk.pigeon.SearchBlankResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.SearchFullRequestWire
+import com.rees46.rees46_flutter_sdk.pigeon.SearchFullResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.SearchInstantResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.SegmentWire
+import com.rees46.rees46_flutter_sdk.pigeon.SliderWire
+import com.rees46.rees46_flutter_sdk.pigeon.StoriesBlockWire
+import com.rees46.rees46_flutter_sdk.pigeon.SubscriptionStatusWire
+import com.rees46.rees46_flutter_sdk.pigeon.SubscriptionsUpdateRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.TrackingItemWire
 import com.rees46.rees46_flutter_sdk.pigeon.TrackingSourceWire
-import com.google.gson.Gson
-import com.personalization.Params
-import com.personalization.PopupPresentationListener
-import com.personalization.PushEventType
-import com.personalization.PushProvider
-import com.personalization.Rees46
-import com.personalization.Rees46Config
-import com.personalization.SDK
-import com.personalization.api.OnApiCallbackListener
-import com.personalization.api.managers.TrackingApi
-import com.personalization.api.models.purchase.PurchaseItemRequest
-import com.personalization.api.models.purchase.PurchaseTrackingRequest
-import com.personalization.api.models.tracking.TrackingItem
-import com.personalization.api.models.tracking.TrackingSource
-import com.personalization.api.models.tracking.TrackingSourceType
-import com.personalization.api.params.ProfileParams
-import com.personalization.api.params.SearchParams as NativeSearchParams
-import com.personalization.SearchParams as LegacySearchParams
-import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.push.Rees46PushNotifier
 import com.rees46.rees46_flutter_sdk.push.Rees46ShopStore
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.PluginRegistry
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -54,7 +79,14 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Rees46FlutterSdkPlugin */
+/**
+ * The Flutter bridge over the native Android SDK. Each shop runs on the native SDK's new core
+ * (`Rees46.initializeBridge`); each method of the host API calls the native method of the same meaning on
+ * the shop's instance — a namespace method (`sdk.products.getInfo`, …) or the `tracking` namespace — and
+ * hands its model to Dart as the Pigeon wire type of the contract. The native registry holds the instances;
+ * the plugin keeps no requests, storage or queue of its own, only its subscriptions to the instances' state
+ * and session and to the SDK's push events, to tell Dart.
+ */
 class Rees46FlutterSdkPlugin :
     FlutterPlugin,
     ActivityAware,
@@ -63,7 +95,14 @@ class Rees46FlutterSdkPlugin :
     private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
     private var flutterApi: PersonalizationFlutterApi? = null
     private var popupApi: PersonalizationPopupFlutterApi? = null
+    private var stateApi: PersonalizationStateFlutterApi? = null
     private var activityBinding: ActivityPluginBinding? = null
+
+    /** Per shop, the subscriptions that tell Dart the instance's state and session. */
+    private val subscriptions = ConcurrentHashMap<String, Cancellable>()
+
+    /** The SDK's push events and new tokens of every shop, for Dart. */
+    private var pushSinks: List<Cancellable> = emptyList()
 
     private val onNewIntentListener =
         object : PluginRegistry.NewIntentListener {
@@ -78,12 +117,35 @@ class Rees46FlutterSdkPlugin :
         PersonalizationHostApi.setUp(flutterPluginBinding.binaryMessenger, this)
         flutterApi = PersonalizationFlutterApi(flutterPluginBinding.binaryMessenger)
         popupApi = PersonalizationPopupFlutterApi(flutterPluginBinding.binaryMessenger)
+        stateApi = PersonalizationStateFlutterApi(flutterPluginBinding.binaryMessenger)
+        pushSinks = listOf(
+            Rees46.onPushEvent { event, payload ->
+                val wire = runCatching { payload.toWire() }.getOrNull() ?: return@onPushEvent
+                runCatching {
+                    stateApi?.onPushEvent(payload.shopId.orEmpty(), event.name.lowercase(), wire) { }
+                }
+            },
+            Rees46.onPushToken { token ->
+                runCatching { stateApi?.onPushToken(token.toWire()) { } }
+                // The shops' snapshots carry the token: they changed.
+                BridgeShops.shopIds().forEach { shopId ->
+                    runCatching { Rees46.instance(shopId) }.getOrNull()?.let { emit(snapshotOf(it)) }
+                }
+            },
+        )
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         PersonalizationHostApi.setUp(binding.binaryMessenger, null)
+        pushSinks.forEach { it.cancel() }
+        pushSinks = emptyList()
+        subscriptions.values.forEach { it.cancel() }
+        subscriptions.clear()
+        // Popups wait for the next engine instead of going to a channel nobody listens on.
+        PopupRelay.disconnectAll()
         flutterApi = null
         popupApi = null
+        stateApi = null
         coroutineScope.cancel()
     }
 
@@ -117,424 +179,652 @@ class Rees46FlutterSdkPlugin :
 
     override fun getPlatformVersion(): String = "Android ${android.os.Build.VERSION.RELEASE}"
 
+    // region shop
+
     /**
-     * Resolves the SDK instance a call targets via the multi-instance [Rees46]
-     * facade. A null [shopId] resolves the single default instance; an unknown or
-     * (with no id) ambiguous shop throws [com.personalization.UnknownShopIdException]
-     * / [com.personalization.AmbiguousShopException], which the calling method turns
-     * into a Flutter error. This is the F3 wiring; requires the native `Rees46`
-     * facade (local `android-sdk` via `includeBuild`, or a version that ships it).
+     * The instance of [shopId], or of the single shop with none. An unknown or (with no id) ambiguous shop
+     * throws, and the calling method reports `notInitialized`.
      */
-    private fun sdk(shopId: String?): SDK = Rees46.getInstance(shopId)
+    private fun sdk(shopId: String?): SDK = Rees46.instance(shopId?.trim()?.ifEmpty { null })
 
-    override fun getStoredPushToken(shopId: String?): String? =
+    /** Resolves the instance and runs [body]; a failure before the native call reaches [callback]. */
+    private inline fun <R> call(shopId: String?, noinline callback: (Result<R>) -> Unit, body: (SDK) -> Unit) {
         try {
-            // Read the token from the resolved instance's own storage via the SDK's
-            // public getter — NOT the legacy `DEFAULT_STORAGE_KEY` prefs. Multi-instance
-            // partitions storage per shop_id (`personalization_sdk_<shopId>`), so the
-            // legacy shared file is empty on a fresh install and the token would never
-            // be found there.
-            val sdk = sdk(shopId)
-            sdk.getPushToken(PushProvider.FCM) ?: sdk.getPushToken(PushProvider.HMS)
+            body(sdk(shopId))
         } catch (t: Throwable) {
-            // Unknown/ambiguous shop, or the instance is not initialized yet.
-            null
+            callback(Result.failure(BridgeFailures.of(t)))
         }
+    }
 
-    override fun initialize(config: InitConfig, callback: (Result<Unit>) -> Unit) {
-        val shopId = config.shopId
-        if (shopId.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "shopId is required", null)))
+    override fun initialize(config: InitConfig, callback: (Result<SdkSnapshotWire>) -> Unit) {
+        if (config.shopId.isBlank()) {
+            callback(Result.failure(BridgeFailures.invalidArgument("shopId must not be empty")))
             return
         }
         try {
-            val shopConfig = Rees46Config(
-                shopId = shopId,
-                apiDomain = config.apiDomain,
-                stream = config.stream,
-                autoSendPushToken = config.autoSendPushToken,
-                needReInitialization = config.needReInitialization,
-                enableAutoPopupPresentation = config.enableAutoPopupPresentation,
-            )
-            // F3: initialize (and register) the instance through the multi-instance
-            // `Rees46` facade so it is reachable by shopId via Rees46.getInstance.
-            val sdk = Rees46.initialize(context = applicationContext, config = shopConfig)
+            val nativeConfig = config.toNative()
+            val shopId = nativeConfig.shopId
+            // A Dart restart initializes the shop again: the old subscriptions go first, so a release of an
+            // instance started with another configuration tells Dart nothing.
+            subscriptions.remove(shopId)?.cancel()
+            val sdk = BridgeShops.start(applicationContext, nativeConfig)
 
-            // Dart draws popups with the UI kit: every popup is kept back from the native SDK
-            // (null — not shown, not reported, not remembered) and handed over. Dart decides
-            // whether to show it, and reports it once it is on screen. The listener runs on the
-            // main thread, where the Pigeon channel has to be called.
-            sdk.popupPresentationListener = PopupPresentationListener { _, popup ->
-                runCatching { popupApi?.onPopup(shopId, popup.toJson().toString()) { _ -> } }
-                null
-            }
+            // Dart draws popups with the UI kit: every popup is kept back from the native SDK and handed
+            // over, those that came before Dart connected the shop among them. Dart decides whether to show
+            // it, and reports it once it is on screen.
+            PopupRelay.connect(shopId, sink = { json ->
+                onMain { runCatching { popupApi?.onPopup(shopId, json) { } } }
+            })
 
-            // Persist so the cold-start push provider (Rees46PushInitProvider) can re-register this
-            // shop on a process FCM spins up before Dart runs — otherwise the registry is empty and
-            // Rees46.handlePush drops the push (killed-app "push never arrives" on Android).
-            Rees46ShopStore.save(applicationContext, shopConfig)
-
+            // Persist so the cold-start push provider (Rees46PushInitProvider) starts this shop on a process
+            // FCM spins up before Dart runs — otherwise the registry is empty and the push is dropped.
+            Rees46ShopStore.save(applicationContext, nativeConfig)
             Rees46PushNotifier.ensureChannel(applicationContext)
+            installMessageListener()
 
-            // FL-5: one process-global, shop-aware listener (not per-instance) so a push for any
-            // shop routes here with its shopId. Shows a heads-up BigPicture notification (pop-up,
-            // image, tap opens the app) and forwards to Dart (onPushReceived / onPushDelivered)
-            // tagged with the shop it routed to, so the Dart dispatcher delivers it to that shop.
-            Rees46.setOnMessageListener { messageShopId, data ->
-                android.util.Log.d(
-                    Rees46PushNotifier.TAG,
-                    "onMessage (plugin listener) shop=$messageShopId id=${data.id}",
-                )
-                val payload = data.toPayload()
-                // The listener fires on an FCM background thread, but flutterApi is a Pigeon
-                // channel whose methods are @UiThread — calling them off the main thread throws
-                // and would abort before the notification is posted. Hop to Main (coroutineScope
-                // is Dispatchers.Main) for every flutterApi call, download+post the notification
-                // off the main thread, and never let a flutterApi failure block the display.
-                coroutineScope.launch {
-                    runCatching { flutterApi?.onPushReceived(messageShopId, payload) { _ -> } }
-                    withContext(Dispatchers.IO) {
-                        Rees46PushNotifier.show(applicationContext, data)
-                    }
-                    runCatching { flutterApi?.onPushDelivered(messageShopId, payload) { _ -> } }
-                }
-            }
-
-            callback(Result.success(Unit))
+            val state = sdk.onStateChange { emit(snapshotOf(sdk, it)) }
+            val session = sdk.onSessionChange { emit(snapshotOf(sdk)) }
+            subscriptions.put(shopId, Cancellable { state.cancel(); session.cancel() })?.cancel()
+            callback(Result.success(snapshotOf(sdk)))
         } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("init_failed", t.message, null)))
+            callback(Result.failure(BridgeFailures.of(t)))
         }
     }
 
-    override fun getRecommendation(
-        code: String,
-        paramsJson: String?,
+    /** Tells Dart a shop's snapshot, on the main thread. */
+    private fun emit(snapshot: SdkSnapshotWire) {
+        onMain { runCatching { stateApi?.onSnapshot(snapshot) { } } }
+    }
+
+    override fun getSnapshot(shopId: String?): SdkSnapshotWire = try {
+        snapshotOf(sdk(shopId))
+    } catch (t: Throwable) {
+        throw BridgeFailures.of(t)
+    }
+
+    override fun getSid(shopId: String?): String = try {
+        sdk(shopId).sessionId.orEmpty()
+    } catch (t: Throwable) {
+        throw BridgeFailures.of(t)
+    }
+
+    override fun getDid(shopId: String?): String? = try {
+        sdk(shopId).deviceId
+    } catch (t: Throwable) {
+        throw BridgeFailures.of(t)
+    }
+
+    // endregion
+
+    // region tracking
+    //
+    // Each method hands straight to the native `tracking` namespace of the instance; its listener completes
+    // the Dart future with the native answer, or the whole native error.
+
+    override fun trackEvent(
+        event: String,
+        time: Long?,
+        category: String?,
+        label: String?,
+        value: Long?,
+        customFields: Map<String, Any?>?,
         shopId: String?,
-        callback: (Result<String>) -> Unit,
-    ) {
-        if (code.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "code is required", null)))
-            return
-        }
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) {
+        it.tracking.custom(
+            event = event,
+            time = time?.let(::toIntClamped),
+            category = category,
+            label = label,
+            value = value?.let(::toIntClamped),
+            customFields = customFields,
+            listener = answered(callback),
+        )
+    }
+
+    override fun trackProductView(
+        itemId: String,
+        source: TrackingSourceWire?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.tracking.productView(itemId, source?.toNative(), answered(callback)) }
+
+    override fun trackCategoryView(categoryId: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.tracking.categoryView(categoryId, answered(callback)) }
+
+    override fun trackSearch(
+        query: String,
+        results: List<String>?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.tracking.search(query, results, answered(callback)) }
+
+    override fun trackAddToCart(
+        item: TrackingItemWire,
+        source: TrackingSourceWire?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.tracking.addToCart(item.toNative(), source?.toNative(), answered(callback)) }
+
+    override fun trackSyncCart(items: List<TrackingItemWire>, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.tracking.syncCart(items.map { item -> item.toNative() }, answered(callback)) }
+
+    override fun trackRemoveFromCart(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.tracking.removeFromCart(itemId, answered(callback)) }
+
+    override fun trackAddToFavorites(
+        itemId: String,
+        source: TrackingSourceWire?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.tracking.addToFavorites(itemId, source?.toNative(), answered(callback)) }
+
+    override fun trackSyncFavorites(itemIds: List<String>, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.tracking.syncFavorites(itemIds, answered(callback)) }
+
+    override fun trackRemoveFromFavorites(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.tracking.removeFromFavorites(itemId, answered(callback)) }
+
+    override fun trackStoryView(
+        storyId: String,
+        slideId: String,
+        code: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.tracking.storyView(storyId, slideId, code, answered(callback)) }
+
+    override fun trackStoryClick(
+        storyId: String,
+        slideId: String,
+        code: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.tracking.storyClick(storyId, slideId, code, answered(callback)) }
+
+    override fun trackBannerView(bannerId: String, code: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.tracking.bannerView(bannerId, code, done(callback)) }
+
+    override fun trackBannerClick(bannerId: String, code: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.tracking.bannerClick(bannerId, code, done(callback)) }
+
+    override fun trackSetSource(source: TrackingSourceWire, shopId: String?) {
         try {
-            val params = buildRecommendationParams(paramsJson)
-            sdk(shopId).recommendationManager.getExtendedRecommendation(
-                recommenderCode = code,
-                params = params,
-                onGetExtendedRecommendation = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("recommendation_failed", message ?: "error $code", null)))
-                },
-            )
+            sdk(shopId).tracking.setSource(source.toNative())
         } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("recommendation_failed", t.message, null)))
+            throw BridgeFailures.of(t)
         }
     }
 
-    override fun getProductInfo(itemId: String, shopId: String?, callback: (Result<String>) -> Unit) {
-        if (itemId.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "itemId is required", null)))
-            return
-        }
-        try {
-            sdk(shopId).productsManager.getProductInfo(
-                itemId = itemId,
-                listener = jsonObjectListener("product_info_failed", callback)
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("product_info_failed", t.message, null)))
-        }
+    override fun trackPurchase(
+        orderId: String,
+        orderPrice: Double,
+        items: List<PurchaseLineItemWire>,
+        deliveryType: String?,
+        deliveryAddress: String?,
+        paymentType: String?,
+        isTaxFree: Boolean,
+        isGiftPackage: Boolean,
+        promocode: String?,
+        orderCash: Double?,
+        orderBonuses: Double?,
+        orderDelivery: Double?,
+        orderDiscount: Double?,
+        channel: String?,
+        custom: Map<String, Any?>?,
+        recommendedSource: Map<String, Any?>?,
+        stream: String?,
+        segment: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) {
+        val request = PurchaseTrackingRequest(
+            orderId = orderId,
+            orderPrice = orderPrice,
+            items = items.map { item -> item.toNative() },
+            deliveryType = deliveryType,
+            deliveryAddress = deliveryAddress,
+            paymentType = paymentType,
+            isTaxFree = isTaxFree,
+            promocode = promocode,
+            orderCash = orderCash,
+            orderBonuses = orderBonuses,
+            orderDelivery = orderDelivery,
+            orderDiscount = orderDiscount,
+            channel = channel,
+            custom = custom,
+            recommendedSource = recommendedSource?.toJsonObject(),
+            stream = stream,
+            segment = segment,
+            isGiftPackage = isGiftPackage,
+        )
+        // No per-call source: Dart stores one with `setSource`, and the native namespace attaches it.
+        it.tracking.purchase(request, null, answered(callback))
     }
 
-    override fun getProductsList(paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit) {
-        try {
-            val p = if (!paramsJson.isNullOrBlank()) JSONObject(paramsJson) else null
-            val brands = p?.optString("brands")?.takeIf { it.isNotEmpty() }
-            val merchants = p?.optString("merchants")?.takeIf { it.isNotEmpty() }
-            val categories = p?.optString("categories")?.takeIf { it.isNotEmpty() }
-            val locations = p?.optString("locations")?.takeIf { it.isNotEmpty() }
-            val limit = if (p?.has("limit") == true) p.optInt("limit") else null
-            val page = if (p?.has("page") == true) p.optInt("page") else null
-            val filters: Map<String, Any>? = p?.optJSONObject("filters")?.let { obj ->
-                obj.keys().asSequence().associateWith { key -> obj.get(key) }
-            }
-            sdk(shopId).productsManager.getProductsList(
-                brands = brands,
-                merchants = merchants,
-                categories = categories,
-                locations = locations,
-                limit = limit,
-                page = page,
-                filters = filters,
-                listener = jsonObjectListener("products_list_failed", callback)
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("products_list_failed", t.message, null)))
-        }
+    override fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.tracking.popupShown(popupId.toInt(), answered(callback)) }
+
+    // endregion
+
+    // region products, collections, recommendations
+
+    override fun productsGetInfo(itemId: String, shopId: String?, callback: (Result<ProductWire?>) -> Unit) =
+        call(shopId, callback) { it.products.getInfo(itemId, completion(callback) { product -> product?.toWire() }) }
+
+    override fun productsGetList(
+        request: ProductsListRequestWire,
+        shopId: String?,
+        callback: (Result<ProductsListResponseWire>) -> Unit,
+    ) = call(shopId, callback) { it.products.getList(request.toNative(), completion(callback) { r -> r.toWire() }) }
+
+    override fun productsGetCounters(
+        itemId: String,
+        shopId: String?,
+        callback: (Result<ProductCountersResponseWire>) -> Unit,
+    ) = call(shopId, callback) { it.products.getCounters(itemId, completion(callback) { r -> r.toWire() }) }
+
+    override fun productsGetCategory(
+        categoryId: String,
+        request: ProductsListRequestWire,
+        shopId: String?,
+        callback: (Result<ProductsListResponseWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.products.getCategory(categoryId, request.toCategoryRequest(), completion(callback) { r -> r.toWire() })
     }
 
-    override fun searchBlank(shopId: String?, callback: (Result<String>) -> Unit) {
-        try {
-            sdk(shopId).searchManager.searchBlank(
-                onSearchBlank = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("search_blank_failed", message ?: "error $code", null)))
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("search_blank_failed", t.message, null)))
-        }
+    override fun collectionsGet(
+        collectionId: String,
+        shopId: String?,
+        callback: (Result<CollectionResponseWire>) -> Unit,
+    ) = call(shopId, callback) { it.collections.get(collectionId, completion(callback) { r -> r.toWire() }) }
+
+    override fun recommendationsGet(
+        code: String,
+        request: RecommendationRequestWire,
+        shopId: String?,
+        callback: (Result<RecommendationResponseWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.recommendations.get(code, request.toNative(), completion(callback) { r -> r.toWire() })
     }
+
+    // endregion
+
+    // region search
+
+    override fun searchAgentEnabled(shopId: String?): Boolean = try {
+        sdk(shopId).search.agentEnabled
+    } catch (t: Throwable) {
+        throw BridgeFailures.of(t)
+    }
+
+    override fun searchBlank(shopId: String?, callback: (Result<SearchBlankResponseWire>) -> Unit) =
+        call(shopId, callback) { it.search.blank(completion(callback) { r -> r.toWire() }) }
 
     override fun searchInstant(
         query: String,
-        paramsJson: String?,
+        locations: List<String>?,
+        excludedMerchants: List<String>?,
+        excludedBrands: List<String>?,
         shopId: String?,
-        callback: (Result<String>) -> Unit,
-    ) {
-        if (query.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "query is required", null)))
-            return
-        }
-        try {
-            val json = if (!paramsJson.isNullOrBlank()) JSONObject(paramsJson) else null
-            val locations = json?.optString("locations")?.takeIf { it.isNotEmpty() }
-            val excludedBrands = jsonArrayToStringList(json?.optJSONArray("excluded_brands"))
-            sdk(shopId).searchManager.searchInstant(
-                query = query,
-                locations = locations,
-                excludedMerchants = null,
-                excludedBrands = excludedBrands,
-                onSearchInstant = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("search_instant_failed", message ?: "error $code", null)))
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("search_instant_failed", t.message, null)))
-        }
+        callback: (Result<SearchInstantResponseWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.search.instant(query, locations, excludedMerchants, excludedBrands, completion(callback) { r -> r.toWire() })
     }
 
     override fun searchFull(
         query: String,
-        paramsJson: String?,
+        request: SearchFullRequestWire,
         shopId: String?,
-        callback: (Result<String>) -> Unit,
-    ) {
-        if (query.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "query is required", null)))
-            return
-        }
-        try {
-            // The raw, deprecated SDK.search entry point rather than the typed
-            // searchManager.searchFull: up to android-sdk v2.38.0 the typed SearchFullResponse and
-            // Product had no `filters`, `industrial_filters`, `oldprice`, `oldprice_formatted`,
-            // `discount` or `discount_formatted`, so Gson dropped them before they reached Dart,
-            // and the results screen needs the facets and the old price. The raw entry point
-            // returns the server JSON as is.
-            // TODO: v2.39.0, which this plugin now pins, has those fields. Switch to
-            //  sdk(shopId).searchManager.searchFull(query, NativeSearchParams, …) with
-            //  Gson().toJson(response), as searchInstant does, and move the params builder to
-            //  NativeSearchParams — after checking against a live shop that the typed response
-            //  carries everything the results screen reads.
-            val params = buildLegacySearchParams(paramsJson)
-            @Suppress("DEPRECATION")
-            sdk(shopId).search(
-                query,
-                LegacySearchParams.TYPE.FULL,
-                params,
-                object : OnApiCallbackListener() {
-                    override fun onSuccess(response: JSONObject?) {
-                        callback(Result.success(response?.toString() ?: "{}"))
-                    }
+        callback: (Result<SearchFullResponseWire>) -> Unit,
+    ) = call(shopId, callback) { it.search.full(query, request.toNative(), completion(callback) { r -> r.toWire() }) }
 
-                    override fun onError(code: Int, msg: String?) {
-                        callback(Result.failure(FlutterError("search_failed", msg ?: "error $code", null)))
-                    }
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("search_failed", t.message, null)))
-        }
+    override fun searchAgentDialog(
+        sessionId: Long?,
+        locations: List<String>?,
+        shopId: String?,
+        callback: (Result<AgentDialogResponseWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.search.agentDialog(sessionId, locations, completion(callback) { r -> r.toWire() })
     }
 
-    override fun joinLoyalty(
-        phone: String,
+    override fun searchAgent(
+        message: String,
+        sessionId: Long?,
+        locations: List<String>?,
+        shopId: String?,
+        callback: (Result<AgentResponseWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.search.agent(message, sessionId, locations, completion(callback) { r -> r.toWire() })
+    }
+
+    // endregion
+
+    // region cart, profile
+
+    override fun cartGet(shopId: String?, callback: (Result<List<CartItemWire>>) -> Unit) =
+        call(shopId, callback) { it.cart.get(completion(callback) { items -> items.map { item -> item.toWire() } }) }
+
+    override fun cartClear(
+        shopSecret: String,
         email: String?,
-        firstName: String?,
-        lastName: String?,
+        phone: String?,
+        loyaltyId: String?,
+        externalId: String?,
+        telegramId: String?,
         shopId: String?,
-        callback: (Result<String>) -> Unit,
-    ) {
-        if (phone.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "phone is required", null)))
-            return
-        }
-        try {
-            sdk(shopId).loyaltyManager.join(
-                phone = phone,
-                email = email,
-                firstName = firstName,
-                lastName = lastName,
-                onSuccess = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("join_loyalty_failed", message ?: "error $code", null)))
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("join_loyalty_failed", t.message, null)))
-        }
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) {
+        it.cart.clear(shopSecret, email, phone, loyaltyId, externalId, telegramId, done(callback))
     }
 
-    override fun getLoyaltyStatus(identifier: String, shopId: String?, callback: (Result<String>) -> Unit) {
-        if (identifier.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "identifier is required", null)))
-            return
+    override fun profileGet(shopId: String?, callback: (Result<ProfileWire>) -> Unit) =
+        call(shopId, callback) { it.profile.get(completion(callback) { r -> r.toWire() }) }
+
+    override fun profileSet(request: ProfileUpdateRequestWire, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.profile.set(request.toNative(), done(callback)) }
+
+    override fun profileGetLastOrder(shopId: String?, callback: (Result<List<ProductWire>>) -> Unit) =
+        call(shopId, callback) {
+            it.profile.getLastOrder(completion(callback) { products -> products.map { p -> p.toWire() } })
         }
-        try {
-            sdk(shopId).loyaltyManager.getStatus(
-                identifier = identifier,
-                onSuccess = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("loyalty_status_failed", message ?: "error $code", null)))
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("loyalty_status_failed", t.message, null)))
-        }
+
+    override fun profileGetOrders(
+        shopSecret: String,
+        did: String?,
+        email: String?,
+        phone: String?,
+        loyaltyId: String?,
+        externalId: String?,
+        dateFrom: String?,
+        shopId: String?,
+        callback: (Result<List<OrderWire>>) -> Unit,
+    ) = call(shopId, callback) {
+        it.profile.getOrders(
+            shopSecret, did, email, phone, loyaltyId, externalId, dateFrom,
+            completion(callback) { orders -> orders.map { order -> order.toWire() } },
+        )
     }
 
-    override fun getProfile(shopId: String?, callback: (Result<String>) -> Unit) {
-        try {
-            sdk(shopId).profileManager.getProfile(
-                onSuccess = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("get_profile_failed", message ?: "error $code", null)))
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("get_profile_failed", t.message, null)))
-        }
+    // endregion
+
+    // region subscriptions, segments
+
+    override fun subscriptionsManage(
+        request: SubscriptionsUpdateRequestWire,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.subscriptions.manage(request.toNative(), done(callback)) }
+
+    override fun subscriptionsCheck(shopId: String?, callback: (Result<SubscriptionStatusWire>) -> Unit) =
+        call(shopId, callback) { it.subscriptions.check(completion(callback) { r -> r.toWire() }) }
+
+    override fun subscriptionsSubscribeForPriceDrop(
+        itemId: String,
+        currentPrice: Double,
+        email: String?,
+        phone: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) {
+        it.subscriptions.subscribeForPriceDrop(itemId, currentPrice, email, phone, done(callback))
     }
 
-    override fun getProductCounters(item: String, shopId: String?, callback: (Result<String>) -> Unit) {
-        if (item.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "item is required", null)))
-            return
-        }
-        try {
-            sdk(shopId).productsManager.getProductCounters(
-                item = item,
-                onSuccess = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("product_counters_failed", message ?: "error $code", null)))
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("product_counters_failed", t.message, null)))
-        }
+    override fun subscriptionsUnsubscribeFromPriceDrop(
+        itemIds: List<String>,
+        email: String?,
+        phone: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.subscriptions.unsubscribeFromPriceDrop(itemIds, email, phone, done(callback)) }
+
+    override fun subscriptionsSubscribeForBackInStock(
+        itemId: String,
+        properties: BackInStockPropertiesWire?,
+        email: String?,
+        phone: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) {
+        it.subscriptions.subscribeForBackInStock(itemId, properties?.toNative(), email, phone, done(callback))
     }
 
-    override fun getCategory(
-        category: String,
+    override fun subscriptionsUnsubscribeFromBackInStock(
+        itemIds: List<String>,
+        email: String?,
+        phone: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.subscriptions.unsubscribeFromBackInStock(itemIds, email, phone, done(callback)) }
+
+    override fun segmentsAdd(
+        segmentId: Long,
+        email: String?,
+        phone: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.segments.add(toIntExact(segmentId, "segmentId"), email, phone, done(callback)) }
+
+    override fun segmentsRemove(
+        segmentId: Long,
+        email: String?,
+        phone: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.segments.remove(toIntExact(segmentId, "segmentId"), email, phone, done(callback)) }
+
+    override fun segmentsGet(shopId: String?, callback: (Result<List<SegmentWire>>) -> Unit) =
+        call(shopId, callback) { it.segments.get(completion(callback) { list -> list.map { s -> s.toWire() } }) }
+
+    // endregion
+
+    // region notifications
+
+    override fun notificationsTrackDelivered(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.notifications.trackDelivered(code, type, done(callback)) }
+
+    override fun notificationsTrackOpened(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.notifications.trackOpened(code, type, done(callback)) }
+
+    override fun notificationsTrackClicked(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.notifications.trackClicked(code, type, done(callback)) }
+
+    override fun notificationsTrackClosed(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.notifications.trackClosed(code, type, done(callback)) }
+
+    override fun notificationsGetPushToken(provider: String?, shopId: String?): PushTokenWire? = try {
+        sdk(shopId).notifications.getPushToken(provider?.let(::pushProvider))?.toWire()
+    } catch (t: Throwable) {
+        throw BridgeFailures.of(t)
+    }
+
+    override fun notificationsSetPushToken(
+        token: String,
+        provider: String,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = call(shopId, callback) { it.notifications.setPushToken(token, pushProvider(provider), done(callback)) }
+
+    override fun notificationsGetHistory(
+        shopSecret: String,
+        type: String,
+        phone: String?,
+        email: String?,
+        externalId: String?,
+        loyaltyId: String?,
+        channel: String?,
         limit: Long?,
         page: Long?,
-        paramsJson: String?,
+        dateFrom: String?,
+        did: String?,
         shopId: String?,
-        callback: (Result<String>) -> Unit,
-    ) {
-        if (category.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "category is required", null)))
-            return
-        }
-        try {
-            val p = if (!paramsJson.isNullOrBlank()) JSONObject(paramsJson) else null
-            val filters: Map<String, Any>? = p?.optJSONObject("filters")?.let { obj ->
-                obj.keys().asSequence().associateWith { key -> obj.get(key) }
-            }?.takeIf { it.isNotEmpty() }
-            fun price(key: String): Double? = p?.takeIf { it.has(key) && !it.isNull(key) }?.getDouble(key)
-            sdk(shopId).categoryManager.getCategory(
-                category = category,
-                limit = limit?.toInt(),
-                page = page?.toInt(),
-                brands = p?.optString("brands")?.takeIf { it.isNotEmpty() },
-                locations = p?.optString("locations")?.takeIf { it.isNotEmpty() },
-                filters = filters,
-                priceMin = price("price_min"),
-                priceMax = price("price_max"),
-                sortBy = p?.optString("sort_by")?.takeIf { it.isNotEmpty() },
-                sortDir = p?.optString("sort_dir")?.takeIf { it.isNotEmpty() },
-                onSuccess = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("get_category_failed", message ?: "error $code", null)))
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("get_category_failed", t.message, null)))
-        }
+        callback: (Result<NotificationHistoryWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.notifications.getHistory(
+            shopSecret, type, phone, email, externalId, loyaltyId, channel,
+            limit?.let { value -> toIntExact(value, "limit") },
+            page?.let { value -> toIntExact(value, "page") },
+            dateFrom, did,
+            completion(callback) { r -> r.toWire() },
+        )
     }
 
-    override fun getCollection(collectionId: String, shopId: String?, callback: (Result<String>) -> Unit) {
-        if (collectionId.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "collectionId is required", null)))
-            return
+    /**
+     * Hands a push to the native `Rees46.handlePush`, which finds its shop by `shop_id` and sends the event
+     * once per message. [event] is the index of Dart's released `PushEvent`: `received` is the push reaching
+     * the app (`delivered`), Dart's `delivered` is the notification on screen (`opened`), `clicked` a tap.
+     */
+    override fun handlePush(payload: Map<String, String>, event: Long, callback: (Result<Unit>) -> Unit) {
+        val nativeEvent = when (event) {
+            0L -> PushEvent.DELIVERED
+            1L -> PushEvent.OPENED
+            2L -> PushEvent.CLICKED
+            else -> {
+                callback(Result.failure(BridgeFailures.invalidArgument("Unknown push event: $event")))
+                return
+            }
         }
-        try {
-            sdk(shopId).collectionManager.getCollection(
-                collectionId = collectionId,
-                onSuccess = { response ->
-                    callback(Result.success(Gson().toJson(response)))
-                },
-                onError = { code, message ->
-                    callback(Result.failure(FlutterError("get_collection_failed", message ?: "error $code", null)))
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("get_collection_failed", t.message, null)))
-        }
+        // Never throws; a push that is not the SDK's, or of no shop, is dropped natively.
+        Rees46.handlePush(payload, nativeEvent)
+        callback(Result.success(Unit))
     }
 
-    override fun getStories(code: String, shopId: String?, callback: (Result<String>) -> Unit) {
-        if (code.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "code is required", null)))
-            return
-        }
-        try {
-            // The public raw entry point: the listener gets the server JSON as is, the same payload
-            // the iOS bridge hands over, so Dart parses one shape. The typed loader
-            // (storiesManager.loadStories) is internal to the SDK module.
-            sdk(shopId).stories(
-                code,
-                object : OnApiCallbackListener() {
-                    override fun onSuccess(response: JSONObject?) {
-                        callback(Result.success(response?.toString() ?: "{}"))
-                    }
+    // endregion
 
-                    override fun onError(code: Int, msg: String?) {
-                        callback(Result.failure(FlutterError("get_stories_failed", msg ?: "error $code", null)))
-                    }
-                },
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("get_stories_failed", t.message, null)))
-        }
+    // region stories, predict, loyalty, sliders
+
+    override fun storiesGet(code: String, shopId: String?, callback: (Result<StoriesBlockWire>) -> Unit) =
+        call(shopId, callback) { it.stories.get(code, completion(callback) { r -> r.toWire() }) }
+
+    override fun predictGetProbabilityToPurchase(shopId: String?, callback: (Result<PurchaseProbabilityWire>) -> Unit) =
+        call(shopId, callback) { it.predict.getProbabilityToPurchase(completion(callback) { r -> r.toWire() }) }
+
+    override fun loyaltyJoin(
+        phone: String,
+        firstName: String?,
+        lastName: String?,
+        gender: String?,
+        birthday: String?,
+        shopId: String?,
+        callback: (Result<LoyaltyMemberWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.loyalty.join(phone, firstName, lastName, gender(gender), birthday, completion(callback) { r -> r.toWire() })
     }
+
+    override fun loyaltyGetStatus(phone: String, shopId: String?, callback: (Result<LoyaltyStatusWire>) -> Unit) =
+        call(shopId, callback) { it.loyalty.getStatus(phone, completion(callback) { r -> r.toWire() }) }
+
+    override fun loyaltyGetPromotions(
+        locationId: String?,
+        promoCodes: List<String>?,
+        chargeBonuses: Boolean?,
+        currentTime: String?,
+        shopId: String?,
+        callback: (Result<List<LoyaltyPromotionWire>>) -> Unit,
+    ) = call(shopId, callback) {
+        it.loyalty.getPromotions(
+            locationId, promoCodes, chargeBonuses, currentTime,
+            completion(callback) { list -> list.map { p -> p.toWire() } },
+        )
+    }
+
+    override fun slidersGet(
+        code: String,
+        tags: List<String>?,
+        locationId: String?,
+        shopId: String?,
+        callback: (Result<SliderWire>) -> Unit,
+    ) = call(shopId, callback) { it.sliders.get(code, tags, locationId, completion(callback) { r -> r.toWire() }) }
+
+    // endregion
+
+    // region reviews
+
+    override fun reviewsCreateNps(
+        rate: Long,
+        channel: String,
+        category: String,
+        orderId: String?,
+        comment: String?,
+        label: String?,
+        shopId: String?,
+        callback: (Result<PollReviewWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.reviews.createNps(
+            toIntExact(rate, "rate"), channel, category, orderId, comment, label,
+            completion(callback) { r -> r.toWire() },
+        )
+    }
+
+    override fun reviewsCreateCsat(
+        rate: Long,
+        channel: String,
+        campaign: String,
+        orderId: String?,
+        comment: String?,
+        label: String?,
+        shopId: String?,
+        callback: (Result<PollReviewWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.reviews.createCsat(
+            toIntExact(rate, "rate"), channel, campaign, orderId, comment, label,
+            completion(callback) { r -> r.toWire() },
+        )
+    }
+
+    override fun reviewsCreateCes(
+        rate: Long,
+        channel: String,
+        campaign: String,
+        orderId: String?,
+        comment: String?,
+        label: String?,
+        shopId: String?,
+        callback: (Result<PollReviewWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.reviews.createCes(
+            toIntExact(rate, "rate"), channel, campaign, orderId, comment, label,
+            completion(callback) { r -> r.toWire() },
+        )
+    }
+
+    override fun reviewsGetNpsCategories(shopId: String?, callback: (Result<List<NpsCategoryWire>>) -> Unit) =
+        call(shopId, callback) { it.reviews.getNpsCategories(completion(callback) { l -> l.map { c -> c.toWire() } }) }
+
+    override fun reviewsGetNpsChannels(shopId: String?, callback: (Result<List<PollChannelWire>>) -> Unit) =
+        call(shopId, callback) { it.reviews.getNpsChannels(completion(callback) { l -> l.map { c -> c.toWire() } }) }
+
+    override fun reviewsGetCsatCampaigns(shopId: String?, callback: (Result<List<CsatCampaignWire>>) -> Unit) =
+        call(shopId, callback) { it.reviews.getCsatCampaigns(completion(callback) { l -> l.map { c -> c.toWire() } }) }
+
+    override fun reviewsGetCesCampaigns(shopId: String?, callback: (Result<List<CesCampaignWire>>) -> Unit) =
+        call(shopId, callback) { it.reviews.getCesCampaigns(completion(callback) { l -> l.map { c -> c.toWire() } }) }
+
+    override fun reviewsGetProductReviews(
+        itemId: String,
+        limit: Long?,
+        offset: Long?,
+        shopId: String?,
+        callback: (Result<ProductReviewsResponseWire>) -> Unit,
+    ) = call(shopId, callback) {
+        it.reviews.getProductReviews(
+            itemId,
+            limit?.let { value -> toIntExact(value, "limit") },
+            offset?.let { value -> toIntExact(value, "offset") },
+            completion(callback) { r -> r.toWire() },
+        )
+    }
+
+    override fun reviewsGetClientReviews(
+        orderId: String,
+        shopId: String?,
+        callback: (Result<List<ClientReviewWire>>) -> Unit,
+    ) = call(shopId, callback) {
+        it.reviews.getClientReviews(orderId, completion(callback) { l -> l.map { r -> r.toWire() } })
+    }
+
+    // endregion
+
+    // region UI plumbing
 
     override fun openUrl(url: String, callback: (Result<Boolean>) -> Unit) {
         val uri = Uri.parse(url)
@@ -582,11 +872,6 @@ class Rees46FlutterSdkPlugin :
         ShareSheetWatcher(activity.window.decorView, callback).start()
     }
 
-    override fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        trackingCall(callback, shopId) {
-            it.popupShown(popupId.toInt(), trackingListener(callback))
-        }
-
     override fun openNotificationSettings() {
         val packageName = applicationContext.packageName
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -625,380 +910,38 @@ class Rees46FlutterSdkPlugin :
 
     // endregion
 
-    override fun getSid(shopId: String?): String = sdk(shopId).getSid()
-
-    override fun getDid(shopId: String?): String? = sdk(shopId).getDid()
-
-    override fun setProfile(params: ProfileParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit) {
-        try {
-            val builder = ProfileParams.Builder()
-            params.email?.let { builder.put("email", it) }
-            params.phone?.let { builder.put("phone", it) }
-            params.loyaltyId?.let { builder.put("loyalty_id", it) }
-            params.firstName?.let { builder.put("first_name", it) }
-            params.lastName?.let { builder.put("last_name", it) }
-            params.birthday?.let { builder.put("birthday", it) }
-            params.age?.let { builder.put("age", it.toInt()) }
-            params.gender?.let { builder.put("gender", it) }
-            params.location?.let { builder.put("location", it) }
-            // The API has no `advertising_id`: the server drops it silently. The native SDK sends the
-            // Google advertising id as `google_advertising_id` too.
-            params.advertisingId?.let { builder.put("google_advertising_id", it) }
-            params.fbId?.let { builder.put("fb_id", it) }
-            params.vkId?.let { builder.put("vk_id", it) }
-            params.telegramId?.let { builder.put("telegram_id", it) }
-            params.loyaltyCardLocation?.let { builder.put("loyalty_card_location", it) }
-            params.loyaltyStatus?.let { builder.put("loyalty_status", it) }
-            params.loyaltyBonuses?.let { builder.put("loyalty_bonuses", it.toInt()) }
-            params.loyaltyBonusesToNextLevel?.let { builder.put("loyalty_bonuses_to_next_level", it.toInt()) }
-            params.boughtSomething?.let { builder.put("bought_something", if (it) "1" else "0") }
-            params.userId?.let { builder.put("id", it) }
-            params.customPropertiesJson?.let { json ->
-                val obj = JSONObject(json)
-                obj.keys().forEach { key -> builder.put(key, obj.getString(key)) }
-            }
-            sdk(shopId).profile(builder.build(), object : OnApiCallbackListener() {
-                override fun onSuccess(response: JSONObject?) {
-                    callback(Result.success(Unit))
-                }
-                override fun onError(code: Int, msg: String?) {
-                    callback(Result.failure(FlutterError("set_profile_failed", msg ?: "error $code", null)))
-                }
-            })
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("set_profile_failed", t.message, null)))
-        }
-    }
-
-    override fun manageSubscription(params: ManageSubscriptionParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit) {
-        try {
-            val subscriptions = HashMap<String, Boolean>()
-            params.emailBulk?.let { subscriptions["email_bulk"] = it }
-            params.emailChain?.let { subscriptions["email_chain"] = it }
-            params.emailTransactional?.let { subscriptions["email_transactional"] = it }
-            params.smsBulk?.let { subscriptions["sms_bulk"] = it }
-            params.smsChain?.let { subscriptions["sms_chain"] = it }
-            params.smsTransactional?.let { subscriptions["sms_transactional"] = it }
-            params.webPushBulk?.let { subscriptions["web_push_bulk"] = it }
-            params.webPushChain?.let { subscriptions["web_push_chain"] = it }
-            params.webPushTransactional?.let { subscriptions["web_push_transactional"] = it }
-            params.mobilePushBulk?.let { subscriptions["mobile_push_bulk"] = it }
-            params.mobilePushChain?.let { subscriptions["mobile_push_chain"] = it }
-            params.mobilePushTransactional?.let { subscriptions["mobile_push_transactional"] = it }
-            params.telegramBulk?.let { subscriptions["telegram_bulk"] = it }
-            params.telegramChain?.let { subscriptions["telegram_chain"] = it }
-            params.telegramTransactional?.let { subscriptions["telegram_transactional"] = it }
-            params.whatsappBulk?.let { subscriptions["whatsapp_bulk"] = it }
-            params.whatsappChain?.let { subscriptions["whatsapp_chain"] = it }
-            params.whatsappTransactional?.let { subscriptions["whatsapp_transactional"] = it }
-            params.maxBulk?.let { subscriptions["max_bulk"] = it }
-            params.maxChain?.let { subscriptions["max_chain"] = it }
-            params.maxTransactional?.let { subscriptions["max_transactional"] = it }
-            params.walletBulk?.let { subscriptions["wallet_bulk"] = it }
-            sdk(shopId).manageSubscription(
-                params.email,
-                params.phone,
-                params.externalId,
-                params.loyaltyId,
-                params.telegramId,
-                subscriptions,
-                object : OnApiCallbackListener() {
-                    override fun onSuccess(response: JSONObject?) {
-                        callback(Result.success(Unit))
-                    }
-                    override fun onError(code: Int, msg: String?) {
-                        callback(Result.failure(FlutterError("manage_subscription_failed", msg ?: "error $code", null)))
-                    }
-                }
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("manage_subscription_failed", t.message, null)))
-        }
-    }
-
-    // region tracking namespace
-    //
-    // Each method hands straight to the native `tracking` namespace of the resolved instance;
-    // the wire models are translated one to one.
-
-    override fun trackProductView(
-        itemId: String,
-        source: TrackingSourceWire?,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) {
-        it.productView(itemId, source.toNative(), trackingListener(callback))
-    }
-
-    override fun trackCategoryView(
-        categoryId: String,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) { it.categoryView(categoryId, trackingListener(callback)) }
-
-    override fun trackSearch(
-        query: String,
-        results: List<String>?,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) { it.search(query, results, trackingListener(callback)) }
-
-    override fun trackAddToCart(
-        item: TrackingItemWire,
-        source: TrackingSourceWire?,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) {
-        it.addToCart(item.toNative(), source.toNative(), trackingListener(callback))
-    }
-
-    override fun trackSyncCart(
-        items: List<TrackingItemWire>,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) {
-        it.syncCart(items.map { item -> item.toNative() }, trackingListener(callback))
-    }
-
-    override fun trackRemoveFromCart(
-        itemId: String,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) { it.removeFromCart(itemId, trackingListener(callback)) }
-
-    override fun trackAddToFavorites(
-        itemId: String,
-        source: TrackingSourceWire?,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) {
-        it.addToFavorites(itemId, source.toNative(), trackingListener(callback))
-    }
-
-    override fun trackSyncFavorites(
-        itemIds: List<String>,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) { it.syncFavorites(itemIds, trackingListener(callback)) }
-
-    override fun trackRemoveFromFavorites(
-        itemId: String,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) {
-        it.removeFromFavorites(itemId, trackingListener(callback))
-    }
-
-    override fun trackStoryView(
-        storyId: String,
-        slideId: String,
-        code: String?,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) {
-        it.storyView(storyId, slideId, code, trackingListener(callback))
-    }
-
-    override fun trackStoryClick(
-        storyId: String,
-        slideId: String,
-        code: String?,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) = trackingCall(callback, shopId) {
-        it.storyClick(storyId, slideId, code, trackingListener(callback))
-    }
-
-    override fun trackSetSource(source: TrackingSourceWire, shopId: String?) {
-        val native = source.toNative()
-            ?: throw FlutterError("bad_args", "unknown source type: ${source.type}", null)
-        sdk(shopId).tracking.setSource(native)
-    }
-
-    /** Resolves the instance, reports a resolution failure through [callback], then tracks. */
-    private fun trackingCall(
-        callback: (Result<Unit>) -> Unit,
-        shopId: String?,
-        body: (TrackingApi) -> Unit,
-    ) {
-        try {
-            body(sdk(shopId).tracking)
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("track_failed", t.message, null)))
-        }
-    }
-
-    private fun trackingListener(callback: (Result<Unit>) -> Unit) =
-        object : OnApiCallbackListener() {
-            override fun onSuccess(response: JSONObject?) {
-                callback(Result.success(Unit))
-            }
-
-            override fun onError(code: Int, msg: String?) {
-                val message = listOfNotNull(code.toString(), msg).joinToString(": ")
-                callback(Result.failure(FlutterError("track_failed", message, null)))
-            }
-        }
-
-    /// The native builder reports client-side validation with this code; the previous
-    /// hand-rolled path surfaced it in `details`, so keep that shape.
-    private val PURCHASE_CLIENT_VALIDATION_ERROR_CODE = -2
-
-    private fun purchaseListener(callback: (Result<Unit>) -> Unit) =
-        object : OnApiCallbackListener() {
-            override fun onSuccess(response: JSONObject?) {
-                callback(Result.success(Unit))
-            }
-
-            override fun onError(code: Int, msg: String?) {
-                if (code == PURCHASE_CLIENT_VALIDATION_ERROR_CODE) {
-                    callback(
-                        Result.failure(
-                            FlutterError(
-                                "track_purchase_failed",
-                                msg ?: "validation failed",
-                                mapOf("code" to code),
-                            ),
-                        ),
-                    )
-                } else {
-                    val message = listOfNotNull(code.toString(), msg).joinToString(": ")
-                    callback(Result.failure(FlutterError("track_purchase_failed", message, null)))
-                }
-            }
-        }
-
-    private fun PurchaseLineItemWire.toNative(): PurchaseItemRequest = PurchaseItemRequest(
-        id = id,
-        amount = amount.toInt(),
-        price = price,
-        lineId = lineId,
-        fashionSize = fashionSize,
-    )
-
-    private fun TrackingItemWire.toNative(): TrackingItem = TrackingItem(
-        id = id,
-        quantity = quantity.toInt(),
-        price = price,
-        fashionSize = fashionSize,
-    )
-
-    /** An unknown source type is dropped rather than guessed — Dart only sends known values. */
-    private fun TrackingSourceWire?.toNative(): TrackingSource? {
-        val wire = this ?: return null
-        val type = TrackingSourceType.entries.firstOrNull { it.value == wire.type } ?: return null
-        return TrackingSource(type = type, code = wire.code)
-    }
-
     // endregion
 
-    override fun trackEvent(
-        event: String,
-        time: Long?,
-        category: String?,
-        label: String?,
-        value: Long?,
-        customFieldsJson: String?,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        if (event.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "event is required", null)))
-            return
-        }
-        try {
-            val customFields = jsonObjectStringToMap(customFieldsJson)
-            FlutterTrackingBridge.postTrackEvent(
-                sdk = sdk(shopId),
-                event = event,
-                time = time,
-                category = category,
-                label = label,
-                value = value,
-                customFields = customFields,
-                callback = callback,
-            )
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("track_event_failed", t.message, null)))
+    // region pushes the plugin draws
+
+    /**
+     * One process-global, shop-aware listener (not per instance) so a push for any shop routes here with its
+     * shop id: it draws a heads-up BigPicture notification (image, tap opens the app), reports it shown
+     * (`opened`: the bridge draws the notification, so the bridge reports it) and forwards the push to Dart
+     * (`onPushReceived` / `onPushDelivered`), tagged with its shop.
+     */
+    private fun installMessageListener() {
+        Rees46.setOnMessageListener { messageShopId, data ->
+            android.util.Log.d(Rees46PushNotifier.TAG, "onMessage (plugin listener) shop=$messageShopId id=${data.id}")
+            val payload = data.toPayload()
+            // The listener fires on an FCM background thread, but the Pigeon channels are @UiThread: every
+            // call to Dart goes from the main thread, and the notification is drawn off it.
+            coroutineScope.launch {
+                runCatching { flutterApi?.onPushReceived(messageShopId, payload) { _ -> } }
+                val shown = withContext(Dispatchers.IO) {
+                    Rees46PushNotifier.show(applicationContext, data, messageShopId)
+                }
+                if (shown) Rees46PushNotifier.reportShown(messageShopId, data)
+                runCatching { flutterApi?.onPushDelivered(messageShopId, payload) { _ -> } }
+            }
         }
     }
 
-    override fun trackPurchase(
-        orderId: String,
-        orderPrice: Double,
-        items: List<PurchaseLineItemWire>,
-        deliveryType: String?,
-        deliveryAddress: String?,
-        paymentType: String?,
-        isTaxFree: Boolean,
-        isGiftPackage: Boolean,
-        promocode: String?,
-        orderCash: Double?,
-        orderBonuses: Double?,
-        orderDelivery: Double?,
-        orderDiscount: Double?,
-        channel: String?,
-        customJson: String?,
-        recommendedSourceJson: String?,
-        stream: String?,
-        segment: String?,
-        shopId: String?,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        if (orderId.isBlank()) {
-            callback(Result.failure(FlutterError("bad_args", "orderId is required", null)))
-            return
-        }
-        if (items.isEmpty()) {
-            callback(Result.failure(FlutterError("bad_args", "items must be non-empty", null)))
-            return
-        }
-        try {
-            val request = PurchaseTrackingRequest(
-                orderId = orderId,
-                orderPrice = orderPrice,
-                items = items.map { it.toNative() },
-                deliveryType = deliveryType,
-                deliveryAddress = deliveryAddress,
-                paymentType = paymentType,
-                isTaxFree = isTaxFree,
-                promocode = promocode,
-                orderCash = orderCash,
-                orderBonuses = orderBonuses,
-                orderDelivery = orderDelivery,
-                orderDiscount = orderDiscount,
-                channel = channel,
-                custom = jsonObjectStringToMap(customJson),
-                recommendedSource =
-                    if (recommendedSourceJson.isNullOrBlank()) null else JSONObject(recommendedSourceJson),
-                stream = stream,
-                segment = segment,
-                isGiftPackage = isGiftPackage,
-            )
-            // No per-call source: the Dart API only stores one via `setSource`, and the native
-            // manager attaches that stored attribution itself.
-            sdk(shopId).tracking.purchase(request, null, purchaseListener(callback))
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("track_purchase_failed", t.message, null)))
-        }
-    }
-
-    override fun handlePush(
-        payload: Map<String, String>,
-        event: Long,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        try {
-            // Flutter PushEvent index: 0=received, 1=delivered, 2=clicked. Android's
-            // PushEventType has no `delivered`, so received & delivered both track received.
-            val type = if (event.toInt() == 2) PushEventType.CLICKED else PushEventType.RECEIVED
-            Rees46.handlePush(payload, type)
-            callback(Result.success(Unit))
-        } catch (t: Throwable) {
-            callback(Result.failure(FlutterError("handle_push_failed", t.message, null)))
-        }
-    }
-
+    /**
+     * A tap on a notification the plugin drew opened the app: the native `Rees46.handlePush` tracks the click
+     * once per message (the intent's `NOTIFICATION_TYPE` and `NOTIFICATION_ID` are the push's type and id),
+     * and Dart hears it, tagged with the shop.
+     */
     private fun handleNotificationLaunchIntent(intent: Intent?) {
         val extras = intent?.extras ?: return
         if (!extras.isPersonalizationNotificationClick()) {
@@ -1012,17 +955,16 @@ class Rees46FlutterSdkPlugin :
             return
         }
         try {
-            // FL-5: route the click through the multi-instance facade — it resolves the shop from
-            // the payload's shop_id and tracks the click on that instance. Forward to Dart tagged
-            // with the shop so the dispatcher delivers the click to it.
             val shopId = payload[SHOP_ID_KEY]
             val stringPayload = payload.filterValues { it != null }.mapValues { it.value!! }
-            Rees46.handlePush(stringPayload, PushEventType.CLICKED)
+            Rees46.handlePush(stringPayload, PushEvent.CLICKED)
             flutterApi?.onPushClicked(shopId, payload) { _ -> }
         } catch (_: Throwable) {
-            // SDK may not be initialized yet; ignore.
+            // The shop may not be up yet; the push is the SDK's to drop.
         }
     }
+
+    // endregion
 
     companion object {
         private const val NOTIFICATION_CLICK_DEBOUNCE_MS = 800L
@@ -1041,121 +983,16 @@ class Rees46FlutterSdkPlugin :
             return true
         }
     }
-
 }
 
-/**
- * Search parameters from the bridge JSON, on the legacy params class the raw search entry point
- * takes. Keys come from the current parameter enum — both classes implement the same interface —
- * so the wire names stay identical.
- */
-@Suppress("DEPRECATION")
-private fun buildLegacySearchParams(paramsJson: String?): LegacySearchParams {
-    val params = LegacySearchParams()
-    if (paramsJson.isNullOrBlank()) return params
-    val json = JSONObject(paramsJson)
-    json.optInt("limit").takeIf { it > 0 }
-        ?.let { params.put(NativeSearchParams.Parameter.LIMIT, it) }
-    json.optInt("page").takeIf { it > 0 }
-        ?.let { params.put(NativeSearchParams.Parameter.PAGE, it) }
-    json.optInt("category_limit").takeIf { it > 0 }
-        ?.let { params.put(NativeSearchParams.Parameter.CATEGORY_LIMIT, it) }
-    json.optInt("brand_limit").takeIf { it > 0 }
-        ?.let { params.put(NativeSearchParams.Parameter.BRAND_LIMIT, it) }
-    json.optString("sort_by").takeIf { it.isNotEmpty() }
-        ?.let { params.put(NativeSearchParams.Parameter.SORT_BY, it) }
-    json.optString("sort_dir").takeIf { it.isNotEmpty() }
-        ?.let { params.put(NativeSearchParams.Parameter.SORT_DIR, it) }
-    json.optString("locations").takeIf { it.isNotEmpty() }
-        ?.let { params.put(NativeSearchParams.Parameter.LOCATIONS, it) }
-    json.optString("brands").takeIf { it.isNotEmpty() }
-        ?.let { params.put(NativeSearchParams.Parameter.BRANDS, it) }
-    if (json.has("price_min"))
-        params.put(NativeSearchParams.Parameter.PRICE_MIN, json.getDouble("price_min").toString())
-    if (json.has("price_max"))
-        params.put(NativeSearchParams.Parameter.PRICE_MAX, json.getDouble("price_max").toString())
-    jsonArrayToStringArray(json.optJSONArray("categories"))
-        ?.let { params.put(NativeSearchParams.Parameter.CATEGORIES, it) }
-    jsonArrayToStringArray(json.optJSONArray("excluded_brands"))
-        ?.let { params.put(NativeSearchParams.Parameter.EXCLUDED_BRANDS, it) }
-    jsonArrayToStringArray(json.optJSONArray("colors"))
-        ?.let { params.put(NativeSearchParams.Parameter.COLORS, it) }
-    jsonArrayToStringArray(json.optJSONArray("fashion_sizes"))
-        ?.let { params.put(NativeSearchParams.Parameter.FASHION_SIZES, it) }
-    json.optJSONObject("filters")?.let { facets ->
-        val searchFilters = NativeSearchParams.SearchFilters()
-        var any = false
-        facets.keys().forEach { name ->
-            jsonArrayToStringArray(facets.optJSONArray(name))?.let {
-                searchFilters.put(name, it)
-                any = true
-            }
-        }
-        if (any) params.put(NativeSearchParams.Parameter.FILTERS, searchFilters.toString())
-    }
-    return params
+/** A whole number from Dart as the native `Int`; one outside it is `invalidArgument`. */
+internal fun toIntExact(value: Long, name: String): Int {
+    if (value < Int.MIN_VALUE || value > Int.MAX_VALUE) throw IllegalArgumentException("$name is out of range")
+    return value.toInt()
 }
 
-private fun jsonArrayToStringArray(arr: org.json.JSONArray?): Array<String>? {
-    if (arr == null || arr.length() == 0) return null
-    return Array(arr.length()) { i -> arr.getString(i) }
-}
-
-private fun jsonArrayToStringList(arr: org.json.JSONArray?): List<String>? {
-    if (arr == null || arr.length() == 0) return null
-    return (0 until arr.length()).map { arr.getString(it) }
-}
-
-private fun buildRecommendationParams(paramsJson: String?): Params {
-    val params = Params()
-    if (paramsJson.isNullOrBlank()) return params
-    val json = JSONObject(paramsJson)
-    json.optString("item_id").takeIf { it.isNotEmpty() }
-        ?.let { params.put(Params.Parameter.ITEM, it) }
-    json.optString("category_id").takeIf { it.isNotEmpty() }
-        ?.let { params.put(Params.Parameter.CATEGORY_ID, it) }
-    json.optString("locations").takeIf { it.isNotEmpty() }
-        ?.let { params.put(Params.Parameter.LOCATIONS, it) }
-    if (json.has("image_size"))
-        params.put(Params.Parameter.IMAGE_SIZE, json.getInt("image_size").toString())
-    if (json.has("with_locations"))
-        params.put(Params.Parameter.WITH_LOCATIONS, json.getBoolean("with_locations").toString())
-    return params
-}
-
-private fun jsonObjectStringToMap(json: String?): Map<String, Any?>? {
-    if (json.isNullOrBlank()) return null
-    val root = JSONObject(json)
-    return jsonObjectToNestedMap(root)
-}
-
-private fun jsonObjectToNestedMap(obj: JSONObject): Map<String, Any?> {
-    val out = LinkedHashMap<String, Any?>()
-    val keys = obj.keys()
-    while (keys.hasNext()) {
-        val key = keys.next()
-        val raw = obj.get(key)
-        out[key] = jsonValueToKotlin(raw)
-    }
-    return out
-}
-
-private fun jsonValueToKotlin(value: Any?): Any? {
-    return when (value) {
-        null, JSONObject.NULL -> null
-        is JSONObject -> jsonObjectToNestedMap(value)
-        is JSONArray -> jsonArrayToList(value)
-        else -> value
-    }
-}
-
-private fun jsonArrayToList(arr: JSONArray): List<Any?> {
-    val list = ArrayList<Any?>(arr.length())
-    for (i in 0 until arr.length()) {
-        list.add(jsonValueToKotlin(arr.opt(i)))
-    }
-    return list
-}
+/** An event's whole number (`time`, `value`) as the native `Int`, held to its range as before. */
+internal fun toIntClamped(value: Long): Int = value.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
 
 /** Matches [com.personalization.features.notification.domain.model.NotificationConstants]. */
 private object NotificationClickExtraKeys {
@@ -1251,27 +1088,3 @@ private class ShareSheetWatcher(
     }
 }
 
-/**
- * A listener for a call answered with JSON. Every answer completes the Dart `Future` — an object,
- * an array, an error: a listener with only `onSuccess(JSONObject)` left it waiting for good.
- */
-internal fun jsonObjectListener(errorCode: String, callback: (Result<String>) -> Unit) =
-    object : OnApiCallbackListener() {
-        override fun onSuccess(response: org.json.JSONObject?) {
-            if (response != null) {
-                callback(Result.success(response.toString()))
-            } else {
-                callback(Result.failure(FlutterError(errorCode, "Empty response", null)))
-            }
-        }
-
-        override fun onSuccess(response: org.json.JSONArray) {
-            callback(Result.success(response.toString()))
-        }
-
-        override fun onError(code: Int, msg: String?) {
-            // The SDK passes an error answer's body, empty for most: the status says what failed.
-            val message = msg?.takeIf { it.isNotBlank() } ?: "error $code"
-            callback(Result.failure(FlutterError(errorCode, message, null)))
-        }
-    }
