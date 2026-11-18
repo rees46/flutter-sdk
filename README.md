@@ -5,8 +5,9 @@
 
 Flutter plugin for the REES46 personalization platform — a thin bridge over the
 native [Android](https://github.com/rees46/android-sdk) and
-[iOS](https://github.com/rees46/ios-sdk) SDKs. Storage, sessions, identity and
-push delivery happen natively; Dart only routes calls to the right shop instance.
+[iOS](https://github.com/rees46/ios-sdk) SDKs. Init, sessions, identity, the event
+queue, storage, requests and push delivery happen natively; Dart routes each call
+to the right shop instance and hands back the native SDK's typed answer.
 
 ## Add the package
 
@@ -51,8 +52,8 @@ maven(url = "https://jitpack.io")
 
 ### iOS
 
-The plugin declares the iOS 13.0 minimum itself and registers its own application
-delegate — your `AppDelegate` stays untouched.
+The plugin declares the iOS 15.0 minimum itself (the native SDK needs it) and
+registers its own application delegate — your `AppDelegate` stays untouched.
 
 **With Swift Package Manager** — the default since Flutter 3.44, and on earlier
 versions after `flutter config --enable-swift-package-manager` — there is nothing to
@@ -66,7 +67,7 @@ repository. The tag is the version the plugin requires — the `REES46` dependen
 [`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
 
 ```ruby
-pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.37.3'
+pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.40.0'
 ```
 
 `pod install` then runs as part of `flutter run`. Update the tag together with the
@@ -96,12 +97,13 @@ void main() {
 
 `REES46` is the entry point. `REES46.initialize` **returns the handle
 synchronously** and starts native initialization in the background; calls issued
-right after are queued natively until the session is ready, so the handle is
-usable straight away. A broken setup surfaces as a `PlatformException` on the
-first call you make with it (`bad_args` for an empty `shopId`, `init_failed` if
-native init threw). To learn the outcome of the init itself, await the handle's
-`ready`: it fails with that `PlatformException`. On Android it completes as soon
-as the native init starts.
+right after wait natively until the shop is ready, so the handle is usable straight
+away. To learn the outcome of the init itself, await the handle's `ready`: it
+completes once the shop works (`SdkState.ready`, or `retrying` with a device id from
+an earlier launch) and fails with an [`SdkException`](#errors) — `shopBlocked` when
+the server refused the shop, `invalidArgument` for an empty `shopId`. `state` and
+`stateChanges` follow the init as it goes: `notInitialized`, `initializing`, `ready`,
+`retrying`, `refused`.
 
 `shopId` is the only required field:
 
@@ -109,7 +111,7 @@ as the native init starts.
 |---|---|---|
 | `shopId` | — (**required**) | Your REES46 shop key |
 | `apiDomain` | `api.rees46.ru` | API host |
-| `stream` | `android` / `ios` | Traffic stream label; defaults to the current platform |
+| `stream` | `flutter` | Traffic stream label |
 | `autoSendPushToken` | `true` | Fetches and sends the push token during init; on iOS it also asks for notification permission. With `false` the app asks and sends the token itself |
 | `needReInitialization` | `false` | Forces a fresh session / device id |
 | `enableAutoPopupPresentation` | `true` | Shows server popups without an `onPopup` handler, see [Popups](#popups) |
@@ -133,11 +135,16 @@ class REES46Service {
 ### Check that it worked
 
 ```dart
-final sid = await sdk.getSid();   // session id
-final did = await sdk.getDid();   // device id issued by REES46
+await sdk.ready;
+print(sdk.deviceId);   // device id issued by REES46
+print(sdk.sessionId);  // session id
+
+final did = await sdk.getDid();   // the same, read from the native SDK now
 ```
 
-A non-empty `did` means the native SDK completed its handshake with the API.
+A non-empty `did` means the native SDK completed its handshake with the API. An
+app that ran an earlier release keeps its `did`: the native SDK takes over the data
+it stored.
 
 ### Several shops in one app
 
@@ -286,10 +293,12 @@ Standard events live in the `tracking` namespace of the handle:
 await sdk.tracking.productView('sku-1');
 ```
 
-Each method returns a `Future<void>` that completes once the native SDK has the
-API's answer; a rejected request throws a `PlatformException` (`track_failed`, or
-`track_event_failed` / `track_purchase_failed` for custom events and orders).
-Awaiting is optional — fire-and-forget from UI code is fine.
+Events go through the native SDK's event queue on disk, which sends them in order
+and retries them after a failure or a restart. Each method returns a `Future<void>`:
+on iOS it completes once the queue took the event, on Android once the API answered
+it. A rejected event throws an [`SdkException`](#errors) — `invalidArgument` for an
+empty id or a source the API does not take in an event. Awaiting is optional —
+fire-and-forget from UI code is fine.
 
 With several shops the namespace follows the instance:
 
@@ -369,6 +378,17 @@ await sdk.tracking.storyClick(
 `code` is the stories block; omit it and the native SDK uses the block it loaded
 last. A tracked story also becomes the source of the events that follow it — the
 same rule as [`setSource`](#attribution).
+
+### Banners
+
+A banner of a [slider](#sliders) shown and tapped — once per showing of the slider:
+
+```dart
+final slider = await sdk.sliders.get('main_slider');
+final banner = slider.banners.first;
+await sdk.tracking.bannerView(banner.id, banner.code);
+await sdk.tracking.bannerClick(banner.id, banner.code);
+```
 
 ### Purchase
 
@@ -477,6 +497,241 @@ A per-call `source` wins over the stored one, and an order is attributed by the
 | `fullSearch` | `full_search` | Full search results page |
 | `stories` | `stories` | Stories block |
 | `webPushDigest` | `web_push_digest` | Web push digest |
+
+## Namespaces
+
+Besides `tracking`, every domain of the SDK is a namespace of the handle —
+`sdk.<namespace>.<method>(…)`. Each method calls the native SDK's method of the
+same name and answers with a typed model:
+
+```dart
+final product = await sdk.products.getInfo('37');          // Product?
+final results = await sdk.search.full('kettle');            // SearchFullResponse
+final cart = await sdk.cart.get();                          // List<CartItem>
+```
+
+With several shops the namespaces follow the instance, as `tracking` does:
+`REES46.getInstance('shop-b').products.getInfo('37')`.
+
+### Errors
+
+A failed call throws an `SdkException` whose `error` is one of the closed set of
+`SdkError`s — the same on every platform:
+
+| `type` | Class | When |
+|---|---|---|
+| `notInitialized` | `SdkErrorNotInitialized` | the shop is not initialized, or the plugin does not know it |
+| `shopBlocked` | `SdkErrorShopBlocked` | the server refused the shop on init |
+| `invalidArgument` | `SdkErrorInvalidArgument` | an argument refused before any request; `message` says which |
+| `network` | `SdkErrorNetwork` | no connection |
+| `timeout` | `SdkErrorTimeout` | no answer in time |
+| `http` | `SdkErrorHttp` | the server answered outside `2xx`: `code`, and `serverCode` once the server sends one |
+| `decoding` | `SdkErrorDecoding` | a `2xx` answer that does not read |
+| `cancelled` | `SdkErrorCancelled` | the request was cancelled |
+
+```dart
+try {
+  await sdk.recommendations.get('block-code');
+} on SdkException catch (e) {
+  switch (e.error) {
+    case SdkErrorHttp(code: 404):
+      // no such block
+    case SdkErrorNetwork():
+      // offline
+    default:
+      debugPrint('${e.type} ${e.httpCode} ${e.serverCode}');
+  }
+}
+```
+
+`SdkException` is a `PlatformException` too (`code` is the type, `details` holds
+`httpCode` and `serverCode`), so code that catches `PlatformException` keeps working.
+
+### Products
+
+| Method | Answer |
+|---|---|
+| `getInfo(itemId)` | `Product?` — `null` for a product the catalog does not have |
+| `getList({request: ProductsListRequest})` | `ProductsListResponse` — a page of the listing with its facets |
+| `getCounters(itemId)` | `ProductCountersResponse` — views, carts, purchases today and in 30 minutes |
+| `getCategory(categoryId, {request: CategoryRequest})` | `CategoryResponse` — the category's products, facets, price range |
+
+```dart
+final page = await sdk.products.getList(
+  request: const ProductsListRequest(
+    categoryIds: ['kettles'],
+    brands: ['Bosch'],
+    filters: {'Цвет': ['белый']},
+    sortBy: SortBy.price,
+    sortDir: SortDirection.asc,
+    limit: 20,
+    page: 1,
+  ),
+);
+```
+
+`SortBy` is an open set — `SortBy('key')` passes a key the server added later.
+
+### Collections and recommendations
+
+```dart
+final collection = await sdk.collections.get('12');          // CollectionResponse
+
+final block = await sdk.recommendations.get(
+  'block-code',
+  request: const RecommendationRequest(itemId: '37', limit: 6),
+);                                                            // RecommendationResponse
+```
+
+For a view, a cart or a purchase to count for the block, pass
+`TrackingSource(type: TrackingSourceType.dynamicBlock, code: 'block-code')` to
+`sdk.tracking`.
+
+### Search
+
+| Method | Answer |
+|---|---|
+| `blank()` | `SearchBlankResponse` — what to show in an empty search field |
+| `instant(query, {locations, excludedMerchants, excludedBrands})` | `SearchInstantResponse` — products and suggestions as the user types |
+| `full(query, {request: SearchFullRequest})` | `SearchFullResponse` — the results screen with facets, order and page |
+| `agentEnabled` | `bool`, at once — whether the shop shows the AI search agent instead of the empty search |
+| `agentDialog({sessionId, locations})` | `AgentDialogResponse` — the customer's sessions with the agent and the messages of one |
+| `agent(message, {sessionId, locations})` | `AgentResponse` — the agent's answer, with the products it picked |
+
+The methods send no search event: call `sdk.tracking.search` when the user searched.
+
+### The cart on the server
+
+```dart
+final items = await sdk.cart.get(); // the cart the server built from tracking
+```
+
+`cart.clear(shopSecret, {email, phone, loyaltyId, externalId, telegramId})`
+empties the cart of the customer of the given ids. It is a server method: it takes
+the shop's secret key, which the SDK neither keeps nor logs — and a secret in an
+app's binary gives whoever unpacks it the shop's server access.
+
+### Profile
+
+| Method | Answer |
+|---|---|
+| `get()` | `Profile` — the fields the API gives without the shop's secret |
+| `set(ProfileUpdateRequest)` | — writes only the fields given; `""` erases where the API allows it |
+| `getLastOrder()` | `List<Product>` — the products of the customer's last order |
+| `getOrders(shopSecret, {did, email, phone, loyaltyId, externalId, dateFrom})` | `List<Order>` — a server method, with the shop's secret (see [the cart](#the-cart-on-the-server)) |
+
+```dart
+await sdk.profile.set(
+  const ProfileUpdateRequest(
+    externalId: 'customer-42',
+    firstName: 'Anna',
+    gender: Gender.female,
+    birthday: '1990-05-17',            // YYYY-MM-DD
+    customProperties: {'tier': 'gold'},
+  ),
+);
+```
+
+### Subscriptions and segments
+
+```dart
+await sdk.subscriptions.manage(
+  const SubscriptionsUpdateRequest(emailBulk: true, smsBulk: false),
+);
+final status = await sdk.subscriptions.check();               // SubscriptionStatus
+await sdk.subscriptions.subscribeForPriceDrop('37', 1990);
+await sdk.subscriptions.unsubscribeFromPriceDrop(const []);    // [] — every product
+await sdk.subscriptions.subscribeForBackInStock(
+  '37',
+  properties: const BackInStockProperties(fashionSize: '42'),
+);
+await sdk.subscriptions.unsubscribeFromBackInStock(const ['37']);
+
+await sdk.segments.add(12);
+await sdk.segments.remove(12);
+final segments = await sdk.segments.get();                    // List<Segment>
+final group = sdk.segments.getAbGroup();                      // "A" or "B", at once
+```
+
+A contact (`email`, `phone`) tells which address or number a subscription is for,
+and the server applies the call to the contact's owner: pass one only when it is
+the customer's own.
+
+### Notifications
+
+The plugin handles the SDK's pushes itself (it draws data pushes on Android and
+handles the notification centre on iOS) and the native SDK reports their events.
+
+| Member | What it does |
+|---|---|
+| `setCallbacks(PushCallbacks)` | this shop's callbacks: `onDelivered`, `onOpened`, `onClicked`, `onClosed`, `onToken` |
+| `getPushToken({provider})` | `PushToken?`, at once — the token the native SDK knows for the shop |
+| `setPushToken(token, provider)` | a token the app got itself (`autoSendPushToken: false`) |
+| `trackDelivered` / `trackOpened` / `trackClicked` / `trackClosed` `(code, type)` | the events of a push the app draws itself |
+| `getHistory(shopSecret, type, {…})` | `NotificationHistory` — a server method, with the shop's secret |
+
+```dart
+sdk.notifications.setCallbacks(
+  PushCallbacks(
+    onClicked: (push) => openTarget(push.target), // the SDK opens nothing itself
+    onToken: (token) => debugPrint('${token.provider}: new token'),
+  ),
+);
+```
+
+`REES46.setPushCallbacks(PushCallbacks(…))` sets them for every shop at once; a
+shop's own callback of an event wins.
+
+### Stories, predict, loyalty
+
+```dart
+final stories = await sdk.stories.get('stories-code');        // StoriesBlock
+final probability = await sdk.predict.getProbabilityToPurchase();
+
+final member = await sdk.loyalty.join('+79991234567', firstName: 'Anna');
+final loyaltyStatus = await sdk.loyalty.getStatus('+79991234567');
+final promotions = await sdk.loyalty.getPromotions(currentTime: '18:30');
+```
+
+### Sliders
+
+```dart
+final slider = await sdk.sliders.get('main_slider', tags: ['home']); // BannerSlider
+```
+
+The app draws the carousel and reports its banners with
+[`tracking.bannerView` and `bannerClick`](#banners).
+
+### Reviews
+
+```dart
+final channels = await sdk.reviews.getNpsChannels();
+final categories = await sdk.reviews.getNpsCategories();
+await sdk.reviews.createNps(9, 'android_app', 'delivery', comment: 'Fast');
+await sdk.reviews.createCsat(5, 'android_app', 'support');
+await sdk.reviews.createCes(7, 'android_app', 'checkout');
+
+final reviews = await sdk.reviews.getProductReviews('37', limit: 10);
+final mine = await sdk.reviews.getClientReviews('order-1024');
+```
+
+### Released methods
+
+The methods of earlier releases keep working as deprecated delegates of the
+namespaces, with their released types:
+
+| Released | Namespace |
+|---|---|
+| `getProductInfo`, `getProductsList`, `getProductCounters`, `getCategory` | `products.getInfo`, `getList`, `getCounters`, `getCategory` |
+| `getCollection` | `collections.get` |
+| `getRecommendation` | `recommendations.get` |
+| `searchBlank`, `searchInstant`, `searchFull` | `search.blank`, `instant`, `full` |
+| `getProfile`, `setProfile` | `profile.get`, `profile.set` |
+| `manageSubscription` (`ManageSubscriptionParams`) | `subscriptions.manage` (`SubscriptionsUpdateRequest`) |
+| `joinLoyalty`, `getLoyaltyStatus` | `loyalty.join`, `loyalty.getStatus` |
+| `getStories` | `stories.get` |
+| `getStoredPushToken`, `setPushNotificationCallbacks` | `notifications.getPushToken`, `notifications.setCallbacks` |
+| `trackEvent`, `trackPurchase` | `tracking.custom`, `tracking.purchase` |
 
 ## Example app
 
