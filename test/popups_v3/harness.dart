@@ -13,13 +13,22 @@ import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 class FakeHostApi extends pigeon.PersonalizationHostApi {
   String? did = 'DID123';
   String sid = 'SID123';
-  final List<pigeon.ProfileParamsWire> profiles = <pigeon.ProfileParamsWire>[];
-  final List<pigeon.ManageSubscriptionParamsWire> subscriptions =
-      <pigeon.ManageSubscriptionParamsWire>[];
+  final List<pigeon.ProfileUpdateRequestWire> profiles =
+      <pigeon.ProfileUpdateRequestWire>[];
+  final List<pigeon.SubscriptionsUpdateRequestWire> subscriptions =
+      <pigeon.SubscriptionsUpdateRequestWire>[];
   final List<String> opened = <String>[];
 
   @override
-  Future<void> initialize(pigeon.InitConfig config) async {}
+  Future<pigeon.SdkSnapshotWire> initialize(pigeon.InitConfig config) async =>
+      pigeon.SdkSnapshotWire(
+        shopId: config.shopId,
+        state: 'ready',
+        deviceId: did,
+        sessionId: sid,
+        agentEnabled: false,
+        pushTokens: const [],
+      );
 
   @override
   Future<String?> getDid(String? shopId) async => did;
@@ -28,16 +37,16 @@ class FakeHostApi extends pigeon.PersonalizationHostApi {
   Future<String> getSid(String? shopId) async => sid;
 
   @override
-  Future<void> setProfile(
-    pigeon.ProfileParamsWire params,
+  Future<void> profileSet(
+    pigeon.ProfileUpdateRequestWire request,
     String? shopId,
-  ) async => profiles.add(params);
+  ) async => profiles.add(request);
 
   @override
-  Future<void> manageSubscription(
-    pigeon.ManageSubscriptionParamsWire params,
+  Future<void> subscriptionsManage(
+    pigeon.SubscriptionsUpdateRequestWire request,
     String? shopId,
-  ) async => subscriptions.add(params);
+  ) async => subscriptions.add(request);
 
   @override
   Future<bool> openUrl(String url) async {

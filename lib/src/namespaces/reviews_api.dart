@@ -6,7 +6,8 @@ import 'from_wire.dart';
 /// The customer's feedback — the `reviews` namespace: NPS, CSAT and CES ratings
 /// with the dictionaries their forms take questions and thanks from, and the
 /// reviews of products. The app collects a rating with its own form and sends it
-/// with a `create…` method. The polls go to the shop's host of API v3.
+/// with a `create…` method. The polls go to the shop's app host (`app.rees46.ru`
+/// unless its cluster has its own).
 ///
 /// What an `http` error means: polls — 400 wrong parameters, 402 not paid, 403
 /// inactive, 404 no channel, category or campaign, 429 over the limit; reviews of
@@ -18,7 +19,7 @@ class ReviewsApi {
   final pigeon.PersonalizationHostApi _api;
   final String? _shopId;
 
-  /// Sends an NPS rating, [rate] 0 to 10 (`POST /api/v3/polls/nps/reviews`).
+  /// Sends an NPS rating, [rate] 0 to 10 (an NPS review).
   Future<PollReview> createNps(
     int rate,
     String channel,
@@ -40,7 +41,7 @@ class ReviewsApi {
     ),
   );
 
-  /// Sends a CSAT rating, [rate] 1 to 5 (`POST /api/v3/polls/csat/reviews`).
+  /// Sends a CSAT rating, [rate] 1 to 5 (a CSAT review).
   Future<PollReview> createCsat(
     int rate,
     String channel,
@@ -62,7 +63,7 @@ class ReviewsApi {
     ),
   );
 
-  /// Sends a CES rating, [rate] 1 to 7 (`POST /api/v3/polls/ces/reviews`).
+  /// Sends a CES rating, [rate] 1 to 7 (a CES review).
   Future<PollReview> createCes(
     int rate,
     String channel,

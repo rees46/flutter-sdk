@@ -5,8 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
+import 'support/wire.dart';
+
 const _getRecommendationChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getRecommendation';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.recommendationsGet';
 const _onReceivedChannel =
     'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived';
 const _onDeliveredChannel =
@@ -60,7 +62,9 @@ void main() {
       (ByteData? _) async => codec.encodeMessage(<Object?>[]);
 
   MessageHandler jsonHandler(String json) =>
-      (ByteData? _) async => codec.encodeMessage(<Object?>[json]);
+      (ByteData? _) async => codec.encodeMessage(<Object?>[
+        recommendationWireFromJson(jsonDecode(json) as Map<String, dynamic>),
+      ]);
 
   setUp(() {
     mockChannel(_onReceivedChannel, successHandler());
@@ -86,7 +90,11 @@ void main() {
     mockChannel(_getRecommendationChannel, (ByteData? msg) async {
       capturedArgs = codec.decodeMessage(msg) as List<Object?>;
       capturedResult = _stubJson;
-      return codec.encodeMessage(<Object?>[_stubJson]);
+      return codec.encodeMessage(<Object?>[
+        recommendationWireFromJson(
+          jsonDecode(_stubJson) as Map<String, dynamic>,
+        ),
+      ]);
     });
     return () => (args: capturedArgs!, result: capturedResult!);
   }
@@ -120,13 +128,16 @@ void main() {
       expect(capture().args[0], 'block-42');
     });
 
-    test('null paramsJson at args[1] when no params passed', () async {
+    test('a default request at args[1] when no params passed', () async {
       final capture = captureCall();
       await PersonalizationSdk().getRecommendation('block-1');
-      expect(capture().args[1], isNull);
+      final request = capture().args[1] as pigeon.RecommendationRequestWire;
+      expect(request.itemId, isNull);
+      expect(request.extended, isTrue);
+      expect(request.withLocations, isFalse);
     });
 
-    test('paramsJson is valid JSON when params passed', () async {
+    test('params go as the request when passed', () async {
       final capture = captureCall();
       await PersonalizationSdk().getRecommendation(
         'block-1',
@@ -138,13 +149,13 @@ void main() {
           withLocations: true,
         ),
       );
-      final json =
-          jsonDecode(capture().args[1] as String) as Map<String, dynamic>;
-      expect(json['item_id'], 'item-99');
-      expect(json['category_id'], 'cat-5');
-      expect(json['locations'], 'loc1,loc2');
-      expect(json['image_size'], 310);
-      expect(json['with_locations'], true);
+      final request = capture().args[1] as pigeon.RecommendationRequestWire;
+      expect(request.itemId, 'item-99');
+      expect(request.categoryId, 'cat-5');
+      expect(request.locations, ['loc1', 'loc2']);
+      // imageSize has no counterpart in the native SDKs' request.
+      expect(request.extended, isTrue);
+      expect(request.withLocations, isTrue);
     });
   });
 

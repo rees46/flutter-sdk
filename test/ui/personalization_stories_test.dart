@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
+
+import '../support/wire.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_gif_player.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_image.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
@@ -97,11 +99,14 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Map<String, List<String>> seen = <String, List<String>>{};
 
   @override
-  Future<String> getStories(String code, String? shopId) async {
+  Future<pigeon.StoriesBlockWire> storiesGet(
+    String code,
+    String? shopId,
+  ) async {
     await hold?.future;
     final json = answer;
     if (json == null) throw PlatformException(code: 'get_stories_failed');
-    return json;
+    return storiesWireFromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
   @override

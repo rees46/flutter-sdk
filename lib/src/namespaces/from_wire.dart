@@ -525,8 +525,15 @@ SearchIndustrialFilters searchIndustrialFiltersFromWire(
   return SearchIndustrialFilters(
     colors: colors.map((c) => c.color).toList(),
     fashionSizes: sizes.map((s) => s.size).toList(),
-    colorCounts: {for (final c in colors) c.color: c.count},
-    fashionSizeCounts: {for (final s in sizes) s.size: s.count},
+    // A count of 0 is no count: a facet value without products is not one.
+    colorCounts: {
+      for (final c in colors)
+        if (c.count > 0) c.color: c.count,
+    },
+    fashionSizeCounts: {
+      for (final s in sizes)
+        if (s.count > 0) s.size: s.count,
+    },
   );
 }
 
@@ -537,7 +544,7 @@ List<String> _brandNames(List<pigeon.BrandWire>? brands) => (brands ?? const [])
 
 Map<String, int> _brandCounts(List<pigeon.BrandWire>? brands) => {
   for (final b in brands ?? const <pigeon.BrandWire>[])
-    if (b.name.isNotEmpty) b.name: b.count,
+    if (b.name.isNotEmpty && b.count > 0) b.name: b.count,
 };
 
 ProductsListResponse productsListResponseFromWire(

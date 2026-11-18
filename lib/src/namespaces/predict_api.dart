@@ -11,8 +11,8 @@ class PredictApi {
   final String? _shopId;
 
   /// How likely the customer is to buy, from the products they viewed, put in the
-  /// cart or in favorites lately (`GET /api/v3/cdp/users/probability-to-purchase`
-  /// on the shop's host of API v3). `http` 402 for a shop without the service.
+  /// cart or in favorites lately, from the shop's app host (`app.rees46.ru` unless
+  /// its cluster has its own). `http` 402 for a shop without the service.
   Future<PurchaseProbability> getProbabilityToPurchase() async =>
       purchaseProbabilityFromWire(
         await sdkCall(() => _api.predictGetProbabilityToPurchase(_shopId)),

@@ -61,7 +61,7 @@ void main() {
 
   test('trackEvent sends shopId as the trailing argument', () async {
     await PersonalizationSdk(shopId: 'shop-B').trackEvent('view');
-    // event, time, category, label, value, customFieldsJson, shopId
+    // event, time, category, label, value, customFields, shopId
     expect(capturedTrackArgs.length, 7);
     expect(capturedTrackArgs.first, 'view');
     expect(capturedTrackArgs.last, 'shop-B');

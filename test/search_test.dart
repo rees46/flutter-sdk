@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
+import 'support/wire.dart';
+
 const _stubJson = {
   'products': [
     {
@@ -50,7 +52,9 @@ void main() {
   final messageCodec = pigeon.PersonalizationHostApi.pigeonChannelCodec;
 
   setUp(() {
-    codec = (String json) => messageCodec.encodeMessage([json])!;
+    codec = (String json) => messageCodec.encodeMessage([
+      searchFullWireFromJson(jsonDecode(json) as Map<String, dynamic>),
+    ])!;
   });
 
   void stubSearchFull(Object? result) {
@@ -103,7 +107,7 @@ void main() {
       expect(captured![0], equals('laptop'));
     });
 
-    test('null paramsJson when no SearchParams supplied', () async {
+    test('a default request when no SearchParams supplied', () async {
       List<Object?>? captured;
       const channel =
           'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull';
@@ -115,10 +119,13 @@ void main() {
 
       final sdk = PersonalizationSdk();
       await sdk.searchFull('laptop');
-      expect(captured![1], isNull);
+      final request = captured![1] as pigeon.SearchFullRequestWire;
+      expect(request.limit, isNull);
+      expect(request.categoryIds, isNull);
+      expect(request.sortBy, isNull);
     });
 
-    test('SearchParams serialised into paramsJson', () async {
+    test('SearchParams go as the request', () async {
       List<Object?>? captured;
       const channel =
           'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull';
@@ -143,16 +150,15 @@ void main() {
         ),
       );
 
-      final paramsStr = captured![1] as String;
-      final params = jsonDecode(paramsStr) as Map<String, dynamic>;
-      expect(params['limit'], equals(20));
-      expect(params['page'], equals(2));
-      expect(params['sort_by'], equals('price'));
-      expect(params['sort_dir'], equals('asc'));
-      expect(params['price_min'], equals(100.0));
-      expect(params['price_max'], equals(5000.0));
-      expect(params['categories'], equals(['1', '2']));
-      expect(params['colors'], equals(['red', 'blue']));
+      final request = captured![1] as pigeon.SearchFullRequestWire;
+      expect(request.limit, equals(20));
+      expect(request.page, equals(2));
+      expect(request.sortBy, equals('price'));
+      expect(request.sortDir, equals('asc'));
+      expect(request.priceMin, equals(100.0));
+      expect(request.priceMax, equals(5000.0));
+      expect(request.categoryIds, equals(['1', '2']));
+      expect(request.colors, equals(['red', 'blue']));
     });
   });
 

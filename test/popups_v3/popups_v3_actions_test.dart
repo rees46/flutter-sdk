@@ -85,7 +85,7 @@ void main() {
       expect(profile.lastName, 'Иванова');
       expect(profile.birthday, '1990-04-12');
       expect(profile.gender, 'f');
-      expect(profile.customPropertiesJson, contains('fav_color'));
+      expect(profile.customProperties, containsPair('fav_color', 'зелёный'));
       final subscription = shown.harness.host.subscriptions.single;
       expect(subscription.email, 'anna@example.com');
       expect(subscription.emailBulk, isTrue);

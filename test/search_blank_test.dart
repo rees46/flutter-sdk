@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
+import 'support/wire.dart';
+
 const _stubJson = {
   'products': [
     {
@@ -38,7 +40,9 @@ void main() {
 
   final messageCodec = pigeon.PersonalizationHostApi.pigeonChannelCodec;
 
-  ByteData reply(String value) => messageCodec.encodeMessage([value])!;
+  ByteData reply(String json) => messageCodec.encodeMessage([
+    searchBlankWireFromJson(jsonDecode(json) as Map<String, dynamic>),
+  ])!;
 
   void stubOk() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

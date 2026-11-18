@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
+
+import '../support/wire.dart';
 
 /// Host API that answers `searchFull` from memory: [total] products, a page of the
 /// requested limit at a time. While [hold] is set, answers wait for it.
@@ -22,19 +23,19 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   int searches = 0;
 
   @override
-  Future<String> searchFull(
+  Future<pigeon.SearchFullResponseWire> searchFull(
     String query,
-    String? paramsJson,
+    pigeon.SearchFullRequestWire request,
     String? shopId,
   ) async {
-    final params = jsonDecode(paramsJson!) as Map<String, dynamic>;
+    final params = legacySearchParams(request);
     final page = params['page'] as int;
     final limit = params['limit'] as int;
     pages.add(page);
     await hold?.future;
     if (failing.contains(page)) throw StateError('offline');
     final from = (page - 1) * limit;
-    return jsonEncode(<String, Object>{
+    return searchFullWireFromJson(<String, Object>{
       'products': <Map<String, Object>>[
         for (int i = from; i < from + limit && i < total; i++)
           <String, Object>{'id': '$i', 'name': 'Item $i', 'price': i},

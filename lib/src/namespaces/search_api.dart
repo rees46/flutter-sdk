@@ -16,7 +16,8 @@ import 'to_wire.dart';
 ///
 /// The search agent (AI search) is a dialog the shop may show instead of the empty
 /// search: [agentEnabled] says whether to, [agentDialog] opens it and [agent] sends
-/// the customer's message. It lives on the shop's host of API v3.
+/// the customer's message. It lives on the shop's app host (`app.rees46.ru`
+/// unless its cluster has its own).
 class SearchApi {
   SearchApi(this._api, this._shopId, this._mirror);
 

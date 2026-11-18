@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
+import 'support/wire.dart';
+
 const _stubJson = {
   'products': [
     {
@@ -37,45 +39,46 @@ const _stubJson = {
 };
 
 const _channel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductsList';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetList';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final messageCodec = pigeon.PersonalizationHostApi.pigeonChannelCodec;
 
-  ByteData reply(String value) => messageCodec.encodeMessage([value])!;
+  ByteData reply(Map<String, dynamic> json) =>
+      messageCodec.encodeMessage([productsListWireFromJson(json)])!;
 
   void stubOk([Map<String, dynamic>? json]) {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMessageHandler(
-          _channel,
-          (_) async => reply(jsonEncode(json ?? _stubJson)),
-        );
+        .setMockMessageHandler(_channel, (_) async => reply(json ?? _stubJson));
   }
 
   // -------------------------------------------------------------------------
   // Channel arguments
   // -------------------------------------------------------------------------
   group('getProductsList — channel args', () {
-    test('null paramsJson when no ProductsListParams', () async {
+    test('an empty request when no ProductsListParams', () async {
       List<Object?>? captured;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(_channel, (msg) async {
             captured = messageCodec.decodeMessage(msg) as List<Object?>;
-            return reply(jsonEncode(_stubJson));
+            return reply(_stubJson);
           });
 
       await PersonalizationSdk().getProductsList();
-      expect(captured![0], isNull);
+      final r = captured![0] as pigeon.ProductsListRequestWire;
+      expect(r.brands, isNull);
+      expect(r.categoryIds, isNull);
+      expect(r.limit, isNull);
     });
 
-    test('params serialised into paramsJson', () async {
+    test('params go as the request, lists split at commas', () async {
       List<Object?>? captured;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(_channel, (msg) async {
             captured = messageCodec.decodeMessage(msg) as List<Object?>;
-            return reply(jsonEncode(_stubJson));
+            return reply(_stubJson);
           });
 
       await PersonalizationSdk().getProductsList(
@@ -87,22 +90,16 @@ void main() {
         ),
       );
 
-      final p = jsonDecode(captured![0] as String) as Map<String, dynamic>;
-      expect(p['brands'], equals('Apple,Samsung'));
-      expect(p['limit'], equals(20));
-      expect(p['page'], equals(2));
-      expect(p['categories'], equals('1,2,3'));
+      final r = captured![0] as pigeon.ProductsListRequestWire;
+      expect(r.brands, equals(['Apple', 'Samsung']));
+      expect(r.limit, equals(20));
+      expect(r.page, equals(2));
+      expect(r.categoryIds, equals(['1', '2', '3']));
     });
 
     test('filters serialised correctly', () async {
-      List<Object?>? captured;
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler(_channel, (msg) async {
-            captured = messageCodec.decodeMessage(msg) as List<Object?>;
-            return reply(jsonEncode(_stubJson));
-          });
-
-      await PersonalizationSdk().getProductsList(
+      final api = _CapturingApi();
+      await PersonalizationSdk(api: api).getProductsList(
         params: const ProductsListParams(
           filters: {
             'color': ['red', 'blue'],
@@ -111,8 +108,9 @@ void main() {
         ),
       );
 
-      final p = jsonDecode(captured![0] as String) as Map<String, dynamic>;
-      final filters = p['filters'] as Map<String, dynamic>;
+      // Read on the Dart side, before the codec: decoding a map of lists back
+      // in Dart casts lazily and throws, which the native side never does.
+      final filters = api.request!.filters!;
       expect(filters['color'], equals(['red', 'blue']));
       expect(filters['size'], equals(['M', 'L']));
     });
@@ -219,4 +217,17 @@ void main() {
       expect(r.products.first.id, equals('correct-id'));
     });
   });
+}
+
+class _CapturingApi extends pigeon.PersonalizationHostApi {
+  pigeon.ProductsListRequestWire? request;
+
+  @override
+  Future<pigeon.ProductsListResponseWire> productsGetList(
+    pigeon.ProductsListRequestWire request,
+    String? shopId,
+  ) async {
+    this.request = request;
+    return pigeon.ProductsListResponseWire(products: const []);
+  }
 }

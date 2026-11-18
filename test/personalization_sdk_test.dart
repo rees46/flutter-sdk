@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
@@ -87,21 +85,21 @@ void main() {
   });
 
   group('trackEvent channel args', () {
-    test('customFields null → customFieldsJson (arg[5]) is null', () async {
+    test('customFields null → arg[5] is null', () async {
       final getArgs = captureArgs(_trackEventChannel);
       await PersonalizationSdk().trackEvent('ev');
       expect(getArgs()[5], isNull);
     });
 
-    test('customFields provided → valid JSON at arg[5]', () async {
+    test('customFields provided → a map at arg[5]', () async {
       final getArgs = captureArgs(_trackEventChannel);
       await PersonalizationSdk().trackEvent(
         'ev',
         customFields: {'source': 'app', 'count': 3},
       );
-      final json = jsonDecode(getArgs()[5] as String) as Map<String, dynamic>;
-      expect(json['source'], 'app');
-      expect(json['count'], 3);
+      final fields = getArgs()[5]! as Map<Object?, Object?>;
+      expect(fields['source'], 'app');
+      expect(fields['count'], 3);
     });
 
     test('all positional args sent in correct order', () async {
@@ -120,18 +118,18 @@ void main() {
       expect(args[2], 'cat'); // category
       expect(args[3], 'lbl'); // label
       expect(args[4], 42); // value
-      expect(args[5], isNotNull); // customFieldsJson
+      expect(args[5], {'k': 'v'}); // customFields
     });
 
-    test('customFields with null value → key preserved in JSON', () async {
+    test('customFields with null value → key preserved', () async {
       final getArgs = captureArgs(_trackEventChannel);
       await PersonalizationSdk().trackEvent(
         'ev',
         customFields: {'present': 'yes', 'absent': null},
       );
-      final json = jsonDecode(getArgs()[5] as String) as Map<String, dynamic>;
-      expect(json.containsKey('absent'), true);
-      expect(json['absent'], isNull);
+      final fields = getArgs()[5]! as Map<Object?, Object?>;
+      expect(fields.containsKey('absent'), true);
+      expect(fields['absent'], isNull);
     });
   });
 
@@ -198,7 +196,7 @@ void main() {
       expect(wire.fashionSize, isNull);
     });
 
-    test('custom null → customJson (arg[14]) is null', () async {
+    test('custom null → arg[14] is null', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
@@ -208,7 +206,7 @@ void main() {
       expect(getArgs()[14], isNull);
     });
 
-    test('custom provided → valid JSON at arg[14]', () async {
+    test('custom provided → a map at arg[14]', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
@@ -216,11 +214,10 @@ void main() {
         items: [const PurchaseLineItem(id: 'x', amount: 1, price: 1.0)],
         custom: {'channel': 'app'},
       );
-      final json = jsonDecode(getArgs()[14] as String) as Map<String, dynamic>;
-      expect(json['channel'], 'app');
+      expect(getArgs()[14], {'channel': 'app'});
     });
 
-    test('recommendedSource provided → valid JSON at arg[15]', () async {
+    test('recommendedSource provided → a map at arg[15]', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
@@ -228,9 +225,7 @@ void main() {
         items: [const PurchaseLineItem(id: 'x', amount: 1, price: 1.0)],
         recommendedSource: {'type': 'popular', 'code': 'rec-1'},
       );
-      final json = jsonDecode(getArgs()[15] as String) as Map<String, dynamic>;
-      expect(json['type'], 'popular');
-      expect(json['code'], 'rec-1');
+      expect(getArgs()[15], {'type': 'popular', 'code': 'rec-1'});
     });
 
     test('all positional args sent in correct order', () async {
