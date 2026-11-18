@@ -56,7 +56,8 @@ class _ShopPaneState extends State<ShopPane> {
       // the page size: a few products are enough.
       final response = await REES46
           .getInstance(widget.shopId)
-          .getProductsList(params: const ProductsListParams(limit: 10));
+          .products
+          .getList(request: const ProductsListRequest(limit: 10));
       if (mounted) setState(() => _categories = shopTopCategories(response));
     } catch (error) {
       if (mounted) setState(() => _categoriesError = error);

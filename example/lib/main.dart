@@ -350,13 +350,14 @@ class _InitPageState extends State<InitPage> {
         },
       );
       _sdk.popups.screenOpened(DemoScreens.api);
-      _sdk.setPushNotificationCallbacks(
-        onReceived: (payload) {
-          // In the demo we only surface init/token state; push payloads can be
-          // added later.
-        },
-        onDelivered: (payload) {},
-        onClicked: (payload) {},
+      // In the demo we only surface init/token state; push payloads can be
+      // added later.
+      _sdk.notifications.setCallbacks(
+        PushCallbacks(
+          onDelivered: (payload) {},
+          onOpened: (payload) {},
+          onClicked: (payload) {},
+        ),
       );
       setState(() {
         _initState = InitState.initialized;
@@ -414,7 +415,7 @@ class _InitPageState extends State<InitPage> {
   Future<void> _refreshToken() async {
     setState(() => _tokenLoading = true);
     try {
-      final token = await _sdk.getStoredPushToken();
+      final token = _sdk.notifications.getPushToken()?.token;
       setState(() {
         _storedPushToken = (token == null || token.trim().isEmpty)
             ? null
@@ -448,13 +449,13 @@ class _InitPageState extends State<InitPage> {
 
   Future<void> _setProfile() async {
     try {
-      await _sdk.setProfile(
+      await _sdk.profile.set(
         // Not example.com — the REES46 backend rejects RFC 2606 reserved test
         // domains with 400 "Invalid email or missing".
-        const ProfileParams(
+        const ProfileUpdateRequest(
           email: 'tester@rees46.com',
           firstName: 'Test',
-          gender: ProfileGender.male,
+          gender: Gender.male,
         ),
       );
       setState(() => _profileStatus = 'Profile set');
@@ -473,7 +474,7 @@ class _InitPageState extends State<InitPage> {
       _recProductCount = null;
     });
     try {
-      final response = await _sdk.getRecommendation(code);
+      final response = await _sdk.recommendations.get(code);
       setState(() {
         _recTitle = response.title;
         _recProductCount = response.products.length;
@@ -496,7 +497,7 @@ class _InitPageState extends State<InitPage> {
       _searchTotal = null;
     });
     try {
-      final response = await _sdk.searchFull(query);
+      final response = await _sdk.search.full(query);
       setState(() {
         _searchTotal = response.productsTotal;
         _searchLoading = false;
@@ -518,9 +519,9 @@ class _InitPageState extends State<InitPage> {
       _productInfoName = null;
     });
     try {
-      final product = await _sdk.getProductInfo(id);
+      final product = await _sdk.products.getInfo(id);
       setState(() {
-        _productInfoName = product.name;
+        _productInfoName = product?.name ?? 'no such product';
         _productInfoLoading = false;
       });
     } catch (e) {
@@ -538,7 +539,7 @@ class _InitPageState extends State<InitPage> {
       _productsListTotal = null;
     });
     try {
-      final response = await _sdk.getProductsList();
+      final response = await _sdk.products.getList();
       setState(() {
         _productsListTotal = response.productsTotal;
         _productsListLoading = false;
@@ -559,7 +560,7 @@ class _InitPageState extends State<InitPage> {
       _searchBlankSuggestCount = null;
     });
     try {
-      final response = await _sdk.searchBlank();
+      final response = await _sdk.search.blank();
       setState(() {
         _searchBlankProductCount = response.products.length;
         _searchBlankSuggestCount = response.suggests.length;
@@ -582,7 +583,7 @@ class _InitPageState extends State<InitPage> {
       _searchInstantTotal = null;
     });
     try {
-      final response = await _sdk.searchInstant(query);
+      final response = await _sdk.search.instant(query);
       setState(() {
         _searchInstantTotal = response.productsTotal;
         _searchInstantLoading = false;
@@ -604,9 +605,9 @@ class _InitPageState extends State<InitPage> {
       _loyaltyResult = null;
     });
     try {
-      final response = await _sdk.joinLoyalty(phone: phone);
+      final member = await _sdk.loyalty.join(phone);
       setState(() {
-        _loyaltyResult = 'join: status=${response.status}';
+        _loyaltyResult = 'join: member=${member.identifier}';
         _loyaltyLoading = false;
       });
     } catch (e) {
@@ -626,11 +627,11 @@ class _InitPageState extends State<InitPage> {
       _loyaltyResult = null;
     });
     try {
-      final response = await _sdk.getLoyaltyStatus(phone);
+      final status = await _sdk.loyalty.getStatus(phone);
       setState(() {
         _loyaltyResult =
-            'status: ${response.status}, member=${response.member}, '
-            'level=${response.level?.name ?? '-'}';
+            'status: member=${status.isMember}, '
+            'level=${status.level?.name ?? '-'}';
         _loyaltyLoading = false;
       });
     } catch (e) {
@@ -648,11 +649,12 @@ class _InitPageState extends State<InitPage> {
       _catalogProfile = null;
     });
     try {
-      final p = await _sdk.getProfile();
+      final p = await _sdk.profile.get();
       setState(() {
         _catalogProfile =
             'id=${p.id ?? '-'}, hasEmail=${p.hasEmail ?? false}, '
-            'gender=${p.gender ?? '-'}, props=${p.customProperties.length}';
+            'gender=${p.gender?.wireValue ?? '-'}, '
+            'props=${p.customProperties.length}';
         _catalogProfileLoading = false;
       });
     } catch (e) {
@@ -672,7 +674,7 @@ class _InitPageState extends State<InitPage> {
       _catalogCounters = null;
     });
     try {
-      final c = await _sdk.getProductCounters(item);
+      final c = await _sdk.products.getCounters(item);
       setState(() {
         _catalogCounters =
             'now.view=${c.now?.view ?? 0}, daily.view=${c.daily?.view ?? 0}, '
@@ -696,7 +698,10 @@ class _InitPageState extends State<InitPage> {
       _catalogCategory = null;
     });
     try {
-      final r = await _sdk.getCategory(category, limit: 5);
+      final r = await _sdk.products.getCategory(
+        category,
+        request: const CategoryRequest(limit: 5),
+      );
       setState(() {
         _catalogCategory =
             'total=${r.productsTotal}, products=${r.products.length}';
@@ -719,7 +724,7 @@ class _InitPageState extends State<InitPage> {
       _catalogCollection = null;
     });
     try {
-      final r = await _sdk.getCollection(id);
+      final r = await _sdk.collections.get(id);
       setState(() {
         _catalogCollection = 'products=${r.products.length}';
         _catalogCollectionLoading = false;

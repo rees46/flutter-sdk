@@ -97,7 +97,9 @@ class _ShopProductScreenState extends State<ShopProductScreen> {
     try {
       final product = await REES46
           .getInstance(widget.shopId)
-          .getProductInfo(widget.productId);
+          .products
+          .getInfo(widget.productId);
+      if (product == null) throw StateError('No product ${widget.productId}');
       if (mounted) setState(() => _product = product);
     } catch (error) {
       if (mounted) setState(() => _error = error);

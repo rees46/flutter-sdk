@@ -49,20 +49,18 @@ void main() {
   patrolTest('joinLoyalty — real call returns success', ($) async {
     final sdk = await initSdk();
 
-    final response = await sdk.joinLoyalty(phone: phone);
-    debugPrint(
-      'joinLoyalty -> status=${response.status} payload=${response.payload}',
-    );
-    expect(response.status, equals('success'));
+    final member = await sdk.loyalty.join(phone);
+    debugPrint('loyalty.join -> identifier=${member.identifier}');
+    expect(member.identifier, isNotEmpty);
   });
 
   patrolTest('getLoyaltyStatus — real call returns success', ($) async {
     final sdk = await initSdk();
 
-    final response = await sdk.getLoyaltyStatus(phone);
+    final status = await sdk.loyalty.getStatus(phone);
     debugPrint(
-      'getLoyaltyStatus -> status=${response.status} member=${response.member} level=${response.level?.name}',
+      'loyalty.getStatus -> member=${status.isMember} level=${status.level?.name}',
     );
-    expect(response.status, equals('success'));
+    expect(status.isMember, isA<bool>());
   });
 }
