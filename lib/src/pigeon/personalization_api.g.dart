@@ -15,11 +15,7 @@ PlatformException _createConnectionError(String channelName) {
   );
 }
 
-List<Object?> wrapResponse({
-  Object? result,
-  PlatformException? error,
-  bool empty = false,
-}) {
+List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty = false}) {
   if (empty) {
     return <Object?>[];
   }
@@ -28,24 +24,20 @@ List<Object?> wrapResponse({
   }
   return <Object?>[error.code, error.message, error.details];
 }
-
 bool _deepEquals(Object? a, Object? b) {
   if (a is List && b is List) {
     return a.length == b.length &&
-        a.indexed.every(
-          ((int, dynamic) item) => _deepEquals(item.$2, b[item.$1]),
-        );
+        a.indexed
+        .every(((int, dynamic) item) => _deepEquals(item.$2, b[item.$1]));
   }
   if (a is Map && b is Map) {
-    return a.length == b.length &&
-        a.entries.every(
-          (MapEntry<Object?, Object?> entry) =>
-              (b as Map<Object?, Object?>).containsKey(entry.key) &&
-              _deepEquals(entry.value, b[entry.key]),
-        );
+    return a.length == b.length && a.entries.every((MapEntry<Object?, Object?> entry) =>
+        (b as Map<Object?, Object?>).containsKey(entry.key) &&
+        _deepEquals(entry.value, b[entry.key]));
   }
   return a == b;
 }
+
 
 class InitConfig {
   InitConfig({
@@ -89,8 +81,7 @@ class InitConfig {
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
   static InitConfig decode(Object result) {
     result as List<Object?>;
@@ -120,7 +111,8 @@ class InitConfig {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
 
 /// Wire format for one purchase line (maps to native `PurchaseItemRequest`).
@@ -147,12 +139,17 @@ class PurchaseLineItemWire {
   String? fashionSize;
 
   List<Object?> _toList() {
-    return <Object?>[id, amount, price, lineId, fashionSize];
+    return <Object?>[
+      id,
+      amount,
+      price,
+      lineId,
+      fashionSize,
+    ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
   static PurchaseLineItemWire decode(Object result) {
     result as List<Object?>;
@@ -179,137 +176,55 @@ class PurchaseLineItemWire {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
 
-/// Wire format for profile fields sent to native SDK.
-/// All fields are optional — only non-null values are forwarded.
-/// [birthday] must be a "yyyy-MM-dd" string.
-/// [gender] must be "m" or "f".
-/// [customPropertiesJson] is a JSON object string or null.
-class ProfileParamsWire {
-  ProfileParamsWire({
-    this.email,
-    this.phone,
-    this.loyaltyId,
-    this.firstName,
-    this.lastName,
-    this.birthday,
-    this.age,
-    this.gender,
-    this.location,
-    this.advertisingId,
-    this.fbId,
-    this.vkId,
-    this.telegramId,
-    this.loyaltyCardLocation,
-    this.loyaltyStatus,
-    this.loyaltyBonuses,
-    this.loyaltyBonusesToNextLevel,
-    this.boughtSomething,
-    this.userId,
-    this.customPropertiesJson,
+/// Wire format for one product line in a tracking event (maps to native `TrackingItem`).
+///
+/// [quantity] is the domain name for the line quantity; native sends it as `amount`.
+class TrackingItemWire {
+  TrackingItemWire({
+    required this.id,
+    required this.quantity,
+    this.price,
+    this.fashionSize,
   });
 
-  String? email;
+  String id;
 
-  String? phone;
+  int quantity;
 
-  String? loyaltyId;
+  double? price;
 
-  String? firstName;
-
-  String? lastName;
-
-  String? birthday;
-
-  int? age;
-
-  String? gender;
-
-  String? location;
-
-  String? advertisingId;
-
-  String? fbId;
-
-  String? vkId;
-
-  String? telegramId;
-
-  String? loyaltyCardLocation;
-
-  String? loyaltyStatus;
-
-  int? loyaltyBonuses;
-
-  int? loyaltyBonusesToNextLevel;
-
-  bool? boughtSomething;
-
-  String? userId;
-
-  String? customPropertiesJson;
+  String? fashionSize;
 
   List<Object?> _toList() {
     return <Object?>[
-      email,
-      phone,
-      loyaltyId,
-      firstName,
-      lastName,
-      birthday,
-      age,
-      gender,
-      location,
-      advertisingId,
-      fbId,
-      vkId,
-      telegramId,
-      loyaltyCardLocation,
-      loyaltyStatus,
-      loyaltyBonuses,
-      loyaltyBonusesToNextLevel,
-      boughtSomething,
-      userId,
-      customPropertiesJson,
+      id,
+      quantity,
+      price,
+      fashionSize,
     ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
-  static ProfileParamsWire decode(Object result) {
+  static TrackingItemWire decode(Object result) {
     result as List<Object?>;
-    return ProfileParamsWire(
-      email: result[0] as String?,
-      phone: result[1] as String?,
-      loyaltyId: result[2] as String?,
-      firstName: result[3] as String?,
-      lastName: result[4] as String?,
-      birthday: result[5] as String?,
-      age: result[6] as int?,
-      gender: result[7] as String?,
-      location: result[8] as String?,
-      advertisingId: result[9] as String?,
-      fbId: result[10] as String?,
-      vkId: result[11] as String?,
-      telegramId: result[12] as String?,
-      loyaltyCardLocation: result[13] as String?,
-      loyaltyStatus: result[14] as String?,
-      loyaltyBonuses: result[15] as int?,
-      loyaltyBonusesToNextLevel: result[16] as int?,
-      boughtSomething: result[17] as bool?,
-      userId: result[18] as String?,
-      customPropertiesJson: result[19] as String?,
+    return TrackingItemWire(
+      id: result[0]! as String,
+      quantity: result[1]! as int,
+      price: result[2] as double?,
+      fashionSize: result[3] as String?,
     );
   }
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
   bool operator ==(Object other) {
-    if (other is! ProfileParamsWire || other.runtimeType != runtimeType) {
+    if (other is! TrackingItemWire || other.runtimeType != runtimeType) {
       return false;
     }
     if (identical(this, other)) {
@@ -320,13 +235,2752 @@ class ProfileParamsWire {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
 
-/// Wire format for `subscriptions/manage`: contacts that identify the client and one flag per
-/// channel and mailing type. `true` subscribes, `false` unsubscribes, `null` leaves it unchanged.
-class ManageSubscriptionParamsWire {
-  ManageSubscriptionParamsWire({
+/// Wire format for event attribution (maps to native `TrackingSource`).
+///
+/// [type] is the wire value of the source type — `dynamic`, `chain`, `bulk`,
+/// `transactional`, `instant_search`, `full_search`, `stories`. Dart only ever sends what its
+/// `TrackingSourceType` enum produces; the bridges reject anything else.
+class TrackingSourceWire {
+  TrackingSourceWire({
+    required this.type,
+    required this.code,
+  });
+
+  String type;
+
+  String code;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      type,
+      code,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static TrackingSourceWire decode(Object result) {
+    result as List<Object?>;
+    return TrackingSourceWire(
+      type: result[0]! as String,
+      code: result[1]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! TrackingSourceWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// The state of one shop's native instance, as the bridge mirrors it: on init and on each change.
+class SdkSnapshotWire {
+  SdkSnapshotWire({
+    required this.shopId,
+    required this.state,
+    this.deviceId,
+    this.sessionId,
+    this.segment,
+    required this.agentEnabled,
+    this.pushToken,
+    required this.pushTokens,
+  });
+
+  String shopId;
+
+  String state;
+
+  String? deviceId;
+
+  String? sessionId;
+
+  String? segment;
+
+  bool agentEnabled;
+
+  PushTokenWire? pushToken;
+
+  List<PushTokenWire> pushTokens;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      shopId,
+      state,
+      deviceId,
+      sessionId,
+      segment,
+      agentEnabled,
+      pushToken,
+      pushTokens,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SdkSnapshotWire decode(Object result) {
+    result as List<Object?>;
+    return SdkSnapshotWire(
+      shopId: result[0]! as String,
+      state: result[1]! as String,
+      deviceId: result[2] as String?,
+      sessionId: result[3] as String?,
+      segment: result[4] as String?,
+      agentEnabled: result[5]! as bool,
+      pushToken: result[6] as PushTokenWire?,
+      pushTokens: (result[7] as List<Object?>?)!.cast<PushTokenWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SdkSnapshotWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Product` of the contract (products.md).
+class ProductWire {
+  ProductWire({
+    required this.id,
+    this.groupId,
+    required this.name,
+    this.brand,
+    this.model,
+    this.description,
+    this.barcode,
+    required this.url,
+    this.deeplinkAndroid,
+    this.deeplinkIos,
+    this.imageUrl,
+    this.picture,
+    this.resizedImages,
+    required this.price,
+    this.priceFormatted,
+    this.priceFull,
+    this.priceFullFormatted,
+    this.oldPrice,
+    this.oldPriceFormatted,
+    this.oldPriceFull,
+    this.oldPriceFullFormatted,
+    required this.currency,
+    this.discountPercent,
+    this.discountFormatted,
+    this.salesRate,
+    this.relativeSalesRate,
+    this.rating,
+    required this.isNew,
+    this.stockQuantity,
+    this.categoryIds,
+    this.categories,
+    this.params,
+    this.locationIds,
+  });
+
+  String id;
+
+  String? groupId;
+
+  String name;
+
+  String? brand;
+
+  String? model;
+
+  String? description;
+
+  String? barcode;
+
+  String url;
+
+  String? deeplinkAndroid;
+
+  String? deeplinkIos;
+
+  String? imageUrl;
+
+  String? picture;
+
+  Map<String, String>? resizedImages;
+
+  double price;
+
+  String? priceFormatted;
+
+  double? priceFull;
+
+  String? priceFullFormatted;
+
+  double? oldPrice;
+
+  String? oldPriceFormatted;
+
+  double? oldPriceFull;
+
+  String? oldPriceFullFormatted;
+
+  String currency;
+
+  int? discountPercent;
+
+  String? discountFormatted;
+
+  int? salesRate;
+
+  double? relativeSalesRate;
+
+  int? rating;
+
+  bool isNew;
+
+  int? stockQuantity;
+
+  List<String>? categoryIds;
+
+  List<ProductCategoryWire>? categories;
+
+  List<ProductParamWire>? params;
+
+  List<String>? locationIds;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      groupId,
+      name,
+      brand,
+      model,
+      description,
+      barcode,
+      url,
+      deeplinkAndroid,
+      deeplinkIos,
+      imageUrl,
+      picture,
+      resizedImages,
+      price,
+      priceFormatted,
+      priceFull,
+      priceFullFormatted,
+      oldPrice,
+      oldPriceFormatted,
+      oldPriceFull,
+      oldPriceFullFormatted,
+      currency,
+      discountPercent,
+      discountFormatted,
+      salesRate,
+      relativeSalesRate,
+      rating,
+      isNew,
+      stockQuantity,
+      categoryIds,
+      categories,
+      params,
+      locationIds,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductWire decode(Object result) {
+    result as List<Object?>;
+    return ProductWire(
+      id: result[0]! as String,
+      groupId: result[1] as String?,
+      name: result[2]! as String,
+      brand: result[3] as String?,
+      model: result[4] as String?,
+      description: result[5] as String?,
+      barcode: result[6] as String?,
+      url: result[7]! as String,
+      deeplinkAndroid: result[8] as String?,
+      deeplinkIos: result[9] as String?,
+      imageUrl: result[10] as String?,
+      picture: result[11] as String?,
+      resizedImages: (result[12] as Map<Object?, Object?>?)?.cast<String, String>(),
+      price: result[13]! as double,
+      priceFormatted: result[14] as String?,
+      priceFull: result[15] as double?,
+      priceFullFormatted: result[16] as String?,
+      oldPrice: result[17] as double?,
+      oldPriceFormatted: result[18] as String?,
+      oldPriceFull: result[19] as double?,
+      oldPriceFullFormatted: result[20] as String?,
+      currency: result[21]! as String,
+      discountPercent: result[22] as int?,
+      discountFormatted: result[23] as String?,
+      salesRate: result[24] as int?,
+      relativeSalesRate: result[25] as double?,
+      rating: result[26] as int?,
+      isNew: result[27]! as bool,
+      stockQuantity: result[28] as int?,
+      categoryIds: (result[29] as List<Object?>?)?.cast<String>(),
+      categories: (result[30] as List<Object?>?)?.cast<ProductCategoryWire>(),
+      params: (result[31] as List<Object?>?)?.cast<ProductParamWire>(),
+      locationIds: (result[32] as List<Object?>?)?.cast<String>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductCategory`.
+class ProductCategoryWire {
+  ProductCategoryWire({
+    required this.id,
+    this.name,
+    this.url,
+    this.parentId,
+    this.level,
+    this.count,
+    this.alias,
+  });
+
+  String id;
+
+  String? name;
+
+  String? url;
+
+  String? parentId;
+
+  int? level;
+
+  int? count;
+
+  String? alias;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      name,
+      url,
+      parentId,
+      level,
+      count,
+      alias,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductCategoryWire decode(Object result) {
+    result as List<Object?>;
+    return ProductCategoryWire(
+      id: result[0]! as String,
+      name: result[1] as String?,
+      url: result[2] as String?,
+      parentId: result[3] as String?,
+      level: result[4] as int?,
+      count: result[5] as int?,
+      alias: result[6] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductCategoryWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductParam`.
+class ProductParamWire {
+  ProductParamWire({
+    required this.key,
+    required this.values,
+  });
+
+  String key;
+
+  List<String> values;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      key,
+      values,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductParamWire decode(Object result) {
+    result as List<Object?>;
+    return ProductParamWire(
+      key: result[0]! as String,
+      values: (result[1] as List<Object?>?)!.cast<String>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductParamWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Location`.
+class LocationWire {
+  LocationWire({
+    required this.id,
+    required this.name,
+    this.type,
+  });
+
+  String id;
+
+  String name;
+
+  String? type;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      name,
+      type,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static LocationWire decode(Object result) {
+    result as List<Object?>;
+    return LocationWire(
+      id: result[0]! as String,
+      name: result[1]! as String,
+      type: result[2] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LocationWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Brand`.
+class BrandWire {
+  BrandWire({
+    required this.name,
+    required this.count,
+  });
+
+  String name;
+
+  int count;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      name,
+      count,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static BrandWire decode(Object result) {
+    result as List<Object?>;
+    return BrandWire(
+      name: result[0]! as String,
+      count: result[1]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BrandWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SearchFilter`.
+class SearchFilterWire {
+  SearchFilterWire({
+    this.count,
+    this.priority,
+    this.values,
+    this.min,
+    this.max,
+  });
+
+  int? count;
+
+  int? priority;
+
+  Map<String, int>? values;
+
+  double? min;
+
+  double? max;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      count,
+      priority,
+      values,
+      min,
+      max,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchFilterWire decode(Object result) {
+    result as List<Object?>;
+    return SearchFilterWire(
+      count: result[0] as int?,
+      priority: result[1] as int?,
+      values: (result[2] as Map<Object?, Object?>?)?.cast<String, int>(),
+      min: result[3] as double?,
+      max: result[4] as double?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchFilterWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ColorFilter`.
+class ColorFilterWire {
+  ColorFilterWire({
+    required this.color,
+    required this.count,
+  });
+
+  String color;
+
+  int count;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      color,
+      count,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ColorFilterWire decode(Object result) {
+    result as List<Object?>;
+    return ColorFilterWire(
+      color: result[0]! as String,
+      count: result[1]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ColorFilterWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SizeFilter`.
+class SizeFilterWire {
+  SizeFilterWire({
+    required this.size,
+    required this.count,
+  });
+
+  String size;
+
+  int count;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      size,
+      count,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SizeFilterWire decode(Object result) {
+    result as List<Object?>;
+    return SizeFilterWire(
+      size: result[0]! as String,
+      count: result[1]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SizeFilterWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `IndustrialFilters`.
+class IndustrialFiltersWire {
+  IndustrialFiltersWire({
+    this.colors,
+    this.fashionSizes,
+  });
+
+  List<ColorFilterWire>? colors;
+
+  List<SizeFilterWire>? fashionSizes;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      colors,
+      fashionSizes,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static IndustrialFiltersWire decode(Object result) {
+    result as List<Object?>;
+    return IndustrialFiltersWire(
+      colors: (result[0] as List<Object?>?)?.cast<ColorFilterWire>(),
+      fashionSizes: (result[1] as List<Object?>?)?.cast<SizeFilterWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! IndustrialFiltersWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `PriceRange`.
+class PriceRangeWire {
+  PriceRangeWire({
+    required this.min,
+    required this.max,
+  });
+
+  double min;
+
+  double max;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      min,
+      max,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static PriceRangeWire decode(Object result) {
+    result as List<Object?>;
+    return PriceRangeWire(
+      min: result[0]! as double,
+      max: result[1]! as double,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PriceRangeWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `PriceInterval`.
+class PriceIntervalWire {
+  PriceIntervalWire({
+    required this.from,
+    this.to,
+    this.count,
+  });
+
+  double from;
+
+  double? to;
+
+  int? count;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      from,
+      to,
+      count,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static PriceIntervalWire decode(Object result) {
+    result as List<Object?>;
+    return PriceIntervalWire(
+      from: result[0]! as double,
+      to: result[1] as double?,
+      count: result[2] as int?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PriceIntervalWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductsListResponse`; `products.getCategory` answers with it too (`CategoryResponse` is its subset).
+class ProductsListResponseWire {
+  ProductsListResponseWire({
+    this.productsTotal,
+    required this.products,
+    this.categories,
+    this.brands,
+    this.locations,
+    this.filters,
+    this.industrialFilters,
+    this.priceRange,
+    this.priceRanges,
+    this.priceMedian,
+  });
+
+  int? productsTotal;
+
+  List<ProductWire> products;
+
+  List<ProductCategoryWire>? categories;
+
+  List<BrandWire>? brands;
+
+  List<LocationWire>? locations;
+
+  Map<String, SearchFilterWire>? filters;
+
+  IndustrialFiltersWire? industrialFilters;
+
+  PriceRangeWire? priceRange;
+
+  List<PriceIntervalWire>? priceRanges;
+
+  double? priceMedian;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      productsTotal,
+      products,
+      categories,
+      brands,
+      locations,
+      filters,
+      industrialFilters,
+      priceRange,
+      priceRanges,
+      priceMedian,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductsListResponseWire decode(Object result) {
+    result as List<Object?>;
+    return ProductsListResponseWire(
+      productsTotal: result[0] as int?,
+      products: (result[1] as List<Object?>?)!.cast<ProductWire>(),
+      categories: (result[2] as List<Object?>?)?.cast<ProductCategoryWire>(),
+      brands: (result[3] as List<Object?>?)?.cast<BrandWire>(),
+      locations: (result[4] as List<Object?>?)?.cast<LocationWire>(),
+      filters: (result[5] as Map<Object?, Object?>?)?.cast<String, SearchFilterWire>(),
+      industrialFilters: result[6] as IndustrialFiltersWire?,
+      priceRange: result[7] as PriceRangeWire?,
+      priceRanges: (result[8] as List<Object?>?)?.cast<PriceIntervalWire>(),
+      priceMedian: result[9] as double?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductsListResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductsListRequest`; `products.getCategory` takes it as `CategoryRequest` and leaves out `categoryIds` and `merchants`.
+class ProductsListRequestWire {
+  ProductsListRequestWire({
+    this.categoryIds,
+    this.brands,
+    this.merchants,
+    this.locations,
+    this.priceMin,
+    this.priceMax,
+    this.filters,
+    this.sortBy,
+    this.sortDir,
+    this.limit,
+    this.page,
+  });
+
+  List<String>? categoryIds;
+
+  List<String>? brands;
+
+  List<String>? merchants;
+
+  List<String>? locations;
+
+  double? priceMin;
+
+  double? priceMax;
+
+  Map<String, List<String>>? filters;
+
+  String? sortBy;
+
+  String? sortDir;
+
+  int? limit;
+
+  int? page;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      categoryIds,
+      brands,
+      merchants,
+      locations,
+      priceMin,
+      priceMax,
+      filters,
+      sortBy,
+      sortDir,
+      limit,
+      page,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductsListRequestWire decode(Object result) {
+    result as List<Object?>;
+    return ProductsListRequestWire(
+      categoryIds: (result[0] as List<Object?>?)?.cast<String>(),
+      brands: (result[1] as List<Object?>?)?.cast<String>(),
+      merchants: (result[2] as List<Object?>?)?.cast<String>(),
+      locations: (result[3] as List<Object?>?)?.cast<String>(),
+      priceMin: result[4] as double?,
+      priceMax: result[5] as double?,
+      filters: (result[6] as Map<Object?, Object?>?)?.cast<String, List<String>>(),
+      sortBy: result[7] as String?,
+      sortDir: result[8] as String?,
+      limit: result[9] as int?,
+      page: result[10] as int?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductsListRequestWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductCounter`.
+class ProductCounterWire {
+  ProductCounterWire({
+    required this.view,
+    required this.cart,
+    required this.purchase,
+  });
+
+  int view;
+
+  int cart;
+
+  int purchase;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      view,
+      cart,
+      purchase,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductCounterWire decode(Object result) {
+    result as List<Object?>;
+    return ProductCounterWire(
+      view: result[0]! as int,
+      cart: result[1]! as int,
+      purchase: result[2]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductCounterWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductCounterTriggers`.
+class ProductCounterTriggersWire {
+  ProductCounterTriggersWire({
+    required this.backInStock,
+    required this.priceDrop,
+  });
+
+  int backInStock;
+
+  int priceDrop;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      backInStock,
+      priceDrop,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductCounterTriggersWire decode(Object result) {
+    result as List<Object?>;
+    return ProductCounterTriggersWire(
+      backInStock: result[0]! as int,
+      priceDrop: result[1]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductCounterTriggersWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductCountersResponse`.
+class ProductCountersResponseWire {
+  ProductCountersResponseWire({
+    this.daily,
+    this.now,
+    this.triggers,
+  });
+
+  ProductCounterWire? daily;
+
+  ProductCounterWire? now;
+
+  ProductCounterTriggersWire? triggers;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      daily,
+      now,
+      triggers,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductCountersResponseWire decode(Object result) {
+    result as List<Object?>;
+    return ProductCountersResponseWire(
+      daily: result[0] as ProductCounterWire?,
+      now: result[1] as ProductCounterWire?,
+      triggers: result[2] as ProductCounterTriggersWire?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductCountersResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `CollectionResponse`.
+class CollectionResponseWire {
+  CollectionResponseWire({
+    required this.products,
+  });
+
+  List<ProductWire> products;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      products,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static CollectionResponseWire decode(Object result) {
+    result as List<Object?>;
+    return CollectionResponseWire(
+      products: (result[0] as List<Object?>?)!.cast<ProductWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! CollectionResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `RecommendationRequest`.
+class RecommendationRequestWire {
+  RecommendationRequestWire({
+    this.itemId,
+    this.categoryId,
+    this.searchQuery,
+    this.excludedItemIds,
+    this.brands,
+    this.locations,
+    this.limit,
+    required this.extended,
+    required this.withLocations,
+  });
+
+  String? itemId;
+
+  String? categoryId;
+
+  String? searchQuery;
+
+  List<String>? excludedItemIds;
+
+  List<String>? brands;
+
+  List<String>? locations;
+
+  int? limit;
+
+  bool extended;
+
+  bool withLocations;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      itemId,
+      categoryId,
+      searchQuery,
+      excludedItemIds,
+      brands,
+      locations,
+      limit,
+      extended,
+      withLocations,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static RecommendationRequestWire decode(Object result) {
+    result as List<Object?>;
+    return RecommendationRequestWire(
+      itemId: result[0] as String?,
+      categoryId: result[1] as String?,
+      searchQuery: result[2] as String?,
+      excludedItemIds: (result[3] as List<Object?>?)?.cast<String>(),
+      brands: (result[4] as List<Object?>?)?.cast<String>(),
+      locations: (result[5] as List<Object?>?)?.cast<String>(),
+      limit: result[6] as int?,
+      extended: result[7]! as bool,
+      withLocations: result[8]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! RecommendationRequestWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `RecommendationResponse`.
+class RecommendationResponseWire {
+  RecommendationResponseWire({
+    this.id,
+    this.title,
+    this.link,
+    required this.products,
+    required this.itemIds,
+  });
+
+  int? id;
+
+  String? title;
+
+  String? link;
+
+  List<ProductWire> products;
+
+  List<String> itemIds;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      title,
+      link,
+      products,
+      itemIds,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static RecommendationResponseWire decode(Object result) {
+    result as List<Object?>;
+    return RecommendationResponseWire(
+      id: result[0] as int?,
+      title: result[1] as String?,
+      link: result[2] as String?,
+      products: (result[3] as List<Object?>?)!.cast<ProductWire>(),
+      itemIds: (result[4] as List<Object?>?)!.cast<String>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! RecommendationResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SearchFullRequest`.
+class SearchFullRequestWire {
+  SearchFullRequestWire({
+    this.categoryIds,
+    this.brands,
+    this.excludedBrands,
+    this.merchants,
+    this.excludedMerchants,
+    this.locations,
+    this.priceMin,
+    this.priceMax,
+    this.colors,
+    this.fashionSizes,
+    this.excludedItemIds,
+    this.filters,
+    this.sortBy,
+    this.sortDir,
+    required this.disableClarification,
+    this.categoryLimit,
+    this.brandLimit,
+    this.limit,
+    this.page,
+  });
+
+  List<String>? categoryIds;
+
+  List<String>? brands;
+
+  List<String>? excludedBrands;
+
+  List<String>? merchants;
+
+  List<String>? excludedMerchants;
+
+  List<String>? locations;
+
+  double? priceMin;
+
+  double? priceMax;
+
+  List<String>? colors;
+
+  List<String>? fashionSizes;
+
+  List<String>? excludedItemIds;
+
+  Map<String, List<String>>? filters;
+
+  String? sortBy;
+
+  String? sortDir;
+
+  bool disableClarification;
+
+  int? categoryLimit;
+
+  int? brandLimit;
+
+  int? limit;
+
+  int? page;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      categoryIds,
+      brands,
+      excludedBrands,
+      merchants,
+      excludedMerchants,
+      locations,
+      priceMin,
+      priceMax,
+      colors,
+      fashionSizes,
+      excludedItemIds,
+      filters,
+      sortBy,
+      sortDir,
+      disableClarification,
+      categoryLimit,
+      brandLimit,
+      limit,
+      page,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchFullRequestWire decode(Object result) {
+    result as List<Object?>;
+    return SearchFullRequestWire(
+      categoryIds: (result[0] as List<Object?>?)?.cast<String>(),
+      brands: (result[1] as List<Object?>?)?.cast<String>(),
+      excludedBrands: (result[2] as List<Object?>?)?.cast<String>(),
+      merchants: (result[3] as List<Object?>?)?.cast<String>(),
+      excludedMerchants: (result[4] as List<Object?>?)?.cast<String>(),
+      locations: (result[5] as List<Object?>?)?.cast<String>(),
+      priceMin: result[6] as double?,
+      priceMax: result[7] as double?,
+      colors: (result[8] as List<Object?>?)?.cast<String>(),
+      fashionSizes: (result[9] as List<Object?>?)?.cast<String>(),
+      excludedItemIds: (result[10] as List<Object?>?)?.cast<String>(),
+      filters: (result[11] as Map<Object?, Object?>?)?.cast<String, List<String>>(),
+      sortBy: result[12] as String?,
+      sortDir: result[13] as String?,
+      disableClarification: result[14]! as bool,
+      categoryLimit: result[15] as int?,
+      brandLimit: result[16] as int?,
+      limit: result[17] as int?,
+      page: result[18] as int?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchFullRequestWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Query`.
+class QueryWire {
+  QueryWire({
+    required this.name,
+    this.url,
+    this.score,
+  });
+
+  String name;
+
+  String? url;
+
+  double? score;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      name,
+      url,
+      score,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static QueryWire decode(Object result) {
+    result as List<Object?>;
+    return QueryWire(
+      name: result[0]! as String,
+      url: result[1] as String?,
+      score: result[2] as double?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! QueryWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `PopularItem`.
+class PopularItemWire {
+  PopularItemWire({
+    required this.name,
+    required this.url,
+  });
+
+  String name;
+
+  String url;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      name,
+      url,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static PopularItemWire decode(Object result) {
+    result as List<Object?>;
+    return PopularItemWire(
+      name: result[0]! as String,
+      url: result[1]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PopularItemWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SearchRedirect`.
+class SearchRedirectWire {
+  SearchRedirectWire({
+    this.query,
+    this.url,
+    this.deeplink,
+  });
+
+  String? query;
+
+  String? url;
+
+  String? deeplink;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      query,
+      url,
+      deeplink,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchRedirectWire decode(Object result) {
+    result as List<Object?>;
+    return SearchRedirectWire(
+      query: result[0] as String?,
+      url: result[1] as String?,
+      deeplink: result[2] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchRedirectWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SearchBlankResponse`.
+class SearchBlankResponseWire {
+  SearchBlankResponseWire({
+    required this.products,
+    required this.lastProducts,
+    this.lastQueries,
+    this.suggests,
+    this.popularCategories,
+    this.popularBrands,
+    this.popularLinks,
+  });
+
+  List<ProductWire> products;
+
+  bool lastProducts;
+
+  List<QueryWire>? lastQueries;
+
+  List<QueryWire>? suggests;
+
+  List<PopularItemWire>? popularCategories;
+
+  List<PopularItemWire>? popularBrands;
+
+  List<PopularItemWire>? popularLinks;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      products,
+      lastProducts,
+      lastQueries,
+      suggests,
+      popularCategories,
+      popularBrands,
+      popularLinks,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchBlankResponseWire decode(Object result) {
+    result as List<Object?>;
+    return SearchBlankResponseWire(
+      products: (result[0] as List<Object?>?)!.cast<ProductWire>(),
+      lastProducts: result[1]! as bool,
+      lastQueries: (result[2] as List<Object?>?)?.cast<QueryWire>(),
+      suggests: (result[3] as List<Object?>?)?.cast<QueryWire>(),
+      popularCategories: (result[4] as List<Object?>?)?.cast<PopularItemWire>(),
+      popularBrands: (result[5] as List<Object?>?)?.cast<PopularItemWire>(),
+      popularLinks: (result[6] as List<Object?>?)?.cast<PopularItemWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchBlankResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SearchInstantResponse`.
+class SearchInstantResponseWire {
+  SearchInstantResponseWire({
+    this.searchQuery,
+    this.searchQueryOriginal,
+    this.clarification,
+    this.productsTotal,
+    required this.products,
+    this.categories,
+    this.queries,
+    this.locations,
+    this.redirect,
+  });
+
+  String? searchQuery;
+
+  String? searchQueryOriginal;
+
+  bool? clarification;
+
+  int? productsTotal;
+
+  List<ProductWire> products;
+
+  List<ProductCategoryWire>? categories;
+
+  List<QueryWire>? queries;
+
+  List<LocationWire>? locations;
+
+  SearchRedirectWire? redirect;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      searchQuery,
+      searchQueryOriginal,
+      clarification,
+      productsTotal,
+      products,
+      categories,
+      queries,
+      locations,
+      redirect,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchInstantResponseWire decode(Object result) {
+    result as List<Object?>;
+    return SearchInstantResponseWire(
+      searchQuery: result[0] as String?,
+      searchQueryOriginal: result[1] as String?,
+      clarification: result[2] as bool?,
+      productsTotal: result[3] as int?,
+      products: (result[4] as List<Object?>?)!.cast<ProductWire>(),
+      categories: (result[5] as List<Object?>?)?.cast<ProductCategoryWire>(),
+      queries: (result[6] as List<Object?>?)?.cast<QueryWire>(),
+      locations: (result[7] as List<Object?>?)?.cast<LocationWire>(),
+      redirect: result[8] as SearchRedirectWire?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchInstantResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SearchFullResponse`.
+class SearchFullResponseWire {
+  SearchFullResponseWire({
+    this.searchQuery,
+    this.searchQueryOriginal,
+    this.clarification,
+    this.productsTotal,
+    required this.products,
+    this.categories,
+    this.brands,
+    this.locations,
+    this.filters,
+    this.industrialFilters,
+    this.priceRange,
+    this.priceRanges,
+    this.priceMedian,
+  });
+
+  String? searchQuery;
+
+  String? searchQueryOriginal;
+
+  bool? clarification;
+
+  int? productsTotal;
+
+  List<ProductWire> products;
+
+  List<ProductCategoryWire>? categories;
+
+  List<BrandWire>? brands;
+
+  List<LocationWire>? locations;
+
+  Map<String, SearchFilterWire>? filters;
+
+  IndustrialFiltersWire? industrialFilters;
+
+  PriceRangeWire? priceRange;
+
+  List<PriceIntervalWire>? priceRanges;
+
+  double? priceMedian;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      searchQuery,
+      searchQueryOriginal,
+      clarification,
+      productsTotal,
+      products,
+      categories,
+      brands,
+      locations,
+      filters,
+      industrialFilters,
+      priceRange,
+      priceRanges,
+      priceMedian,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SearchFullResponseWire decode(Object result) {
+    result as List<Object?>;
+    return SearchFullResponseWire(
+      searchQuery: result[0] as String?,
+      searchQueryOriginal: result[1] as String?,
+      clarification: result[2] as bool?,
+      productsTotal: result[3] as int?,
+      products: (result[4] as List<Object?>?)!.cast<ProductWire>(),
+      categories: (result[5] as List<Object?>?)?.cast<ProductCategoryWire>(),
+      brands: (result[6] as List<Object?>?)?.cast<BrandWire>(),
+      locations: (result[7] as List<Object?>?)?.cast<LocationWire>(),
+      filters: (result[8] as Map<Object?, Object?>?)?.cast<String, SearchFilterWire>(),
+      industrialFilters: result[9] as IndustrialFiltersWire?,
+      priceRange: result[10] as PriceRangeWire?,
+      priceRanges: (result[11] as List<Object?>?)?.cast<PriceIntervalWire>(),
+      priceMedian: result[12] as double?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SearchFullResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `AgentProduct`.
+class AgentProductWire {
+  AgentProductWire({
+    required this.id,
+    this.name,
+    this.price,
+    this.oldPrice,
+    this.priceFormatted,
+    this.oldPriceFormatted,
+    this.picture,
+    this.url,
+    this.reason,
+  });
+
+  String id;
+
+  String? name;
+
+  double? price;
+
+  double? oldPrice;
+
+  String? priceFormatted;
+
+  String? oldPriceFormatted;
+
+  String? picture;
+
+  String? url;
+
+  String? reason;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      name,
+      price,
+      oldPrice,
+      priceFormatted,
+      oldPriceFormatted,
+      picture,
+      url,
+      reason,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static AgentProductWire decode(Object result) {
+    result as List<Object?>;
+    return AgentProductWire(
+      id: result[0]! as String,
+      name: result[1] as String?,
+      price: result[2] as double?,
+      oldPrice: result[3] as double?,
+      priceFormatted: result[4] as String?,
+      oldPriceFormatted: result[5] as String?,
+      picture: result[6] as String?,
+      url: result[7] as String?,
+      reason: result[8] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! AgentProductWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `AgentMessage`; [role] is the wire value (`user`, `assistant`).
+class AgentMessageWire {
+  AgentMessageWire({
+    required this.id,
+    this.role,
+    this.content,
+    this.createdAt,
+    required this.products,
+  });
+
+  int id;
+
+  String? role;
+
+  String? content;
+
+  String? createdAt;
+
+  List<AgentProductWire> products;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      role,
+      content,
+      createdAt,
+      products,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static AgentMessageWire decode(Object result) {
+    result as List<Object?>;
+    return AgentMessageWire(
+      id: result[0]! as int,
+      role: result[1] as String?,
+      content: result[2] as String?,
+      createdAt: result[3] as String?,
+      products: (result[4] as List<Object?>?)!.cast<AgentProductWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! AgentMessageWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `AgentSession`.
+class AgentSessionWire {
+  AgentSessionWire({
+    required this.id,
+    this.title,
+    this.updatedAt,
+    required this.messages,
+  });
+
+  int id;
+
+  String? title;
+
+  String? updatedAt;
+
+  List<AgentMessageWire> messages;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      title,
+      updatedAt,
+      messages,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static AgentSessionWire decode(Object result) {
+    result as List<Object?>;
+    return AgentSessionWire(
+      id: result[0]! as int,
+      title: result[1] as String?,
+      updatedAt: result[2] as String?,
+      messages: (result[3] as List<Object?>?)!.cast<AgentMessageWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! AgentSessionWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `AgentDialogResponse`.
+class AgentDialogResponseWire {
+  AgentDialogResponseWire({
+    required this.sessions,
+    this.session,
+  });
+
+  List<AgentSessionWire> sessions;
+
+  AgentSessionWire? session;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      sessions,
+      session,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static AgentDialogResponseWire decode(Object result) {
+    result as List<Object?>;
+    return AgentDialogResponseWire(
+      sessions: (result[0] as List<Object?>?)!.cast<AgentSessionWire>(),
+      session: result[1] as AgentSessionWire?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! AgentDialogResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `AgentResponse`.
+class AgentResponseWire {
+  AgentResponseWire({
+    required this.session,
+    required this.message,
+  });
+
+  AgentSessionWire session;
+
+  AgentMessageWire message;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      session,
+      message,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static AgentResponseWire decode(Object result) {
+    result as List<Object?>;
+    return AgentResponseWire(
+      session: result[0]! as AgentSessionWire,
+      message: result[1]! as AgentMessageWire,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! AgentResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `CartItem`.
+class CartItemWire {
+  CartItemWire({
+    required this.id,
+    required this.quantity,
+  });
+
+  String id;
+
+  int quantity;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      quantity,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static CartItemWire decode(Object result) {
+    result as List<Object?>;
+    return CartItemWire(
+      id: result[0]! as String,
+      quantity: result[1]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! CartItemWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Profile`; genders are the wire values `m` / `f`.
+class ProfileWire {
+  ProfileWire({
+    this.id,
+    this.hasEmail,
+    this.emailRegisteredAt,
+    this.gender,
+    this.computedGender,
+    this.boughtSomething,
+    this.customProperties,
+  });
+
+  String? id;
+
+  bool? hasEmail;
+
+  String? emailRegisteredAt;
+
+  String? gender;
+
+  String? computedGender;
+
+  bool? boughtSomething;
+
+  Map<String, Object?>? customProperties;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      hasEmail,
+      emailRegisteredAt,
+      gender,
+      computedGender,
+      boughtSomething,
+      customProperties,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProfileWire decode(Object result) {
+    result as List<Object?>;
+    return ProfileWire(
+      id: result[0] as String?,
+      hasEmail: result[1] as bool?,
+      emailRegisteredAt: result[2] as String?,
+      gender: result[3] as String?,
+      computedGender: result[4] as String?,
+      boughtSomething: result[5] as bool?,
+      customProperties: (result[6] as Map<Object?, Object?>?)?.cast<String, Object?>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProfileWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProfileKid`.
+class ProfileKidWire {
+  ProfileKidWire({
+    this.gender,
+    this.birthday,
+  });
+
+  String? gender;
+
+  String? birthday;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      gender,
+      birthday,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProfileKidWire decode(Object result) {
+    result as List<Object?>;
+    return ProfileKidWire(
+      gender: result[0] as String?,
+      birthday: result[1] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProfileKidWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProfileCar`.
+class ProfileCarWire {
+  ProfileCarWire({
+    this.brand,
+    this.model,
+    this.vds,
+  });
+
+  String? brand;
+
+  String? model;
+
+  String? vds;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      brand,
+      model,
+      vds,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProfileCarWire decode(Object result) {
+    result as List<Object?>;
+    return ProfileCarWire(
+      brand: result[0] as String?,
+      model: result[1] as String?,
+      vds: result[2] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProfileCarWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProfileUpdateRequest`; [gender] is `m` or `f`.
+class ProfileUpdateRequestWire {
+  ProfileUpdateRequestWire({
+    this.email,
+    this.phone,
+    this.externalId,
+    this.loyaltyId,
+    this.telegramId,
+    this.fbId,
+    this.vkId,
+    this.firstName,
+    this.lastName,
+    this.gender,
+    this.birthday,
+    this.age,
+    this.location,
+    this.kids,
+    this.cars,
+    this.customProperties,
+  });
+
+  String? email;
+
+  String? phone;
+
+  String? externalId;
+
+  String? loyaltyId;
+
+  String? telegramId;
+
+  String? fbId;
+
+  String? vkId;
+
+  String? firstName;
+
+  String? lastName;
+
+  String? gender;
+
+  String? birthday;
+
+  int? age;
+
+  String? location;
+
+  List<ProfileKidWire>? kids;
+
+  List<ProfileCarWire>? cars;
+
+  Map<String, Object?>? customProperties;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      email,
+      phone,
+      externalId,
+      loyaltyId,
+      telegramId,
+      fbId,
+      vkId,
+      firstName,
+      lastName,
+      gender,
+      birthday,
+      age,
+      location,
+      kids,
+      cars,
+      customProperties,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProfileUpdateRequestWire decode(Object result) {
+    result as List<Object?>;
+    return ProfileUpdateRequestWire(
+      email: result[0] as String?,
+      phone: result[1] as String?,
+      externalId: result[2] as String?,
+      loyaltyId: result[3] as String?,
+      telegramId: result[4] as String?,
+      fbId: result[5] as String?,
+      vkId: result[6] as String?,
+      firstName: result[7] as String?,
+      lastName: result[8] as String?,
+      gender: result[9] as String?,
+      birthday: result[10] as String?,
+      age: result[11] as int?,
+      location: result[12] as String?,
+      kids: (result[13] as List<Object?>?)?.cast<ProfileKidWire>(),
+      cars: (result[14] as List<Object?>?)?.cast<ProfileCarWire>(),
+      customProperties: (result[15] as Map<Object?, Object?>?)?.cast<String, Object?>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProfileUpdateRequestWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// An item of `Order`, the native SDKs' released model: sums are strings.
+class OrderItemWire {
+  OrderItemWire({
+    this.amount,
+    this.price,
+    this.status,
+    this.originalPrice,
+    this.barcode,
+    this.lineId,
+    this.cancelReason,
+    this.item,
+  });
+
+  int? amount;
+
+  String? price;
+
+  String? status;
+
+  String? originalPrice;
+
+  String? barcode;
+
+  String? lineId;
+
+  String? cancelReason;
+
+  ProductWire? item;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      amount,
+      price,
+      status,
+      originalPrice,
+      barcode,
+      lineId,
+      cancelReason,
+      item,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static OrderItemWire decode(Object result) {
+    result as List<Object?>;
+    return OrderItemWire(
+      amount: result[0] as int?,
+      price: result[1] as String?,
+      status: result[2] as String?,
+      originalPrice: result[3] as String?,
+      barcode: result[4] as String?,
+      lineId: result[5] as String?,
+      cancelReason: result[6] as String?,
+      item: result[7] as ProductWire?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! OrderItemWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Order` of `profile.getOrders`, the native SDKs' released model: sums are strings.
+class OrderWire {
+  OrderWire({
+    this.internalId,
+    this.id,
+    this.date,
+    this.value,
+    this.cashValue,
+    this.bonusesValue,
+    this.deliveryValue,
+    this.promocode,
+    this.deliveryDate,
+    this.internalStatus,
+    this.stream,
+    this.channel,
+    this.taxFree,
+    this.deliveryType,
+    this.deliveryAddress,
+    this.orderStatus,
+    this.paymentType,
+    required this.items,
+  });
+
+  int? internalId;
+
+  String? id;
+
+  String? date;
+
+  String? value;
+
+  String? cashValue;
+
+  String? bonusesValue;
+
+  String? deliveryValue;
+
+  String? promocode;
+
+  String? deliveryDate;
+
+  String? internalStatus;
+
+  String? stream;
+
+  String? channel;
+
+  bool? taxFree;
+
+  String? deliveryType;
+
+  String? deliveryAddress;
+
+  String? orderStatus;
+
+  String? paymentType;
+
+  List<OrderItemWire> items;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      internalId,
+      id,
+      date,
+      value,
+      cashValue,
+      bonusesValue,
+      deliveryValue,
+      promocode,
+      deliveryDate,
+      internalStatus,
+      stream,
+      channel,
+      taxFree,
+      deliveryType,
+      deliveryAddress,
+      orderStatus,
+      paymentType,
+      items,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static OrderWire decode(Object result) {
+    result as List<Object?>;
+    return OrderWire(
+      internalId: result[0] as int?,
+      id: result[1] as String?,
+      date: result[2] as String?,
+      value: result[3] as String?,
+      cashValue: result[4] as String?,
+      bonusesValue: result[5] as String?,
+      deliveryValue: result[6] as String?,
+      promocode: result[7] as String?,
+      deliveryDate: result[8] as String?,
+      internalStatus: result[9] as String?,
+      stream: result[10] as String?,
+      channel: result[11] as String?,
+      taxFree: result[12] as bool?,
+      deliveryType: result[13] as String?,
+      deliveryAddress: result[14] as String?,
+      orderStatus: result[15] as String?,
+      paymentType: result[16] as String?,
+      items: (result[17] as List<Object?>?)!.cast<OrderItemWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! OrderWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SubscriptionsUpdateRequest`: `true` subscribes, `false` unsubscribes, `null` leaves it.
+class SubscriptionsUpdateRequestWire {
+  SubscriptionsUpdateRequestWire({
     this.email,
     this.phone,
     this.externalId,
@@ -354,6 +3008,8 @@ class ManageSubscriptionParamsWire {
     this.maxChain,
     this.maxTransactional,
     this.walletBulk,
+    this.walletChain,
+    this.walletTransactional,
   });
 
   String? email;
@@ -410,6 +3066,10 @@ class ManageSubscriptionParamsWire {
 
   bool? walletBulk;
 
+  bool? walletChain;
+
+  bool? walletTransactional;
+
   List<Object?> _toList() {
     return <Object?>[
       email,
@@ -439,16 +3099,17 @@ class ManageSubscriptionParamsWire {
       maxChain,
       maxTransactional,
       walletBulk,
+      walletChain,
+      walletTransactional,
     ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
-  static ManageSubscriptionParamsWire decode(Object result) {
+  static SubscriptionsUpdateRequestWire decode(Object result) {
     result as List<Object?>;
-    return ManageSubscriptionParamsWire(
+    return SubscriptionsUpdateRequestWire(
       email: result[0] as String?,
       phone: result[1] as String?,
       externalId: result[2] as String?,
@@ -476,14 +3137,15 @@ class ManageSubscriptionParamsWire {
       maxChain: result[24] as bool?,
       maxTransactional: result[25] as bool?,
       walletBulk: result[26] as bool?,
+      walletChain: result[27] as bool?,
+      walletTransactional: result[28] as bool?,
     );
   }
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
   bool operator ==(Object other) {
-    if (other is! ManageSubscriptionParamsWire ||
-        other.runtimeType != runtimeType) {
+    if (other is! SubscriptionsUpdateRequestWire || other.runtimeType != runtimeType) {
       return false;
     }
     if (identical(this, other)) {
@@ -494,50 +3156,391 @@ class ManageSubscriptionParamsWire {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
 
-/// Wire format for one product line in a tracking event (maps to native `TrackingItem`).
-///
-/// [quantity] is the domain name for the line quantity; native sends it as `amount`.
-class TrackingItemWire {
-  TrackingItemWire({
-    required this.id,
-    required this.quantity,
-    this.price,
+/// `SubscriptionStatus`.
+class SubscriptionStatusWire {
+  SubscriptionStatusWire({
+    required this.exists,
+    required this.emailBulk,
+    required this.emailChain,
+    required this.emailTransactional,
+    required this.smsBulk,
+    required this.smsChain,
+    required this.smsTransactional,
+    required this.webPushBulk,
+    required this.webPushChain,
+    required this.webPushTransactional,
+    required this.mobilePushBulk,
+    required this.mobilePushChain,
+    required this.mobilePushTransactional,
+    required this.telegramBulk,
+    required this.telegramChain,
+    required this.telegramTransactional,
+    required this.whatsappBulk,
+    required this.whatsappChain,
+    required this.whatsappTransactional,
+    required this.maxBulk,
+    required this.maxChain,
+    required this.maxTransactional,
+    required this.walletBulk,
+    required this.walletChain,
+    required this.walletTransactional,
+    required this.hasWebPush,
+    required this.hasMobilePush,
+    required this.emailInvalid,
+    required this.emailBlacklisted,
+    required this.emailBounced,
+    required this.emailSuppressed,
+    required this.emailConfirmed,
+  });
+
+  bool exists;
+
+  bool emailBulk;
+
+  bool emailChain;
+
+  bool emailTransactional;
+
+  bool smsBulk;
+
+  bool smsChain;
+
+  bool smsTransactional;
+
+  bool webPushBulk;
+
+  bool webPushChain;
+
+  bool webPushTransactional;
+
+  bool mobilePushBulk;
+
+  bool mobilePushChain;
+
+  bool mobilePushTransactional;
+
+  bool telegramBulk;
+
+  bool telegramChain;
+
+  bool telegramTransactional;
+
+  bool whatsappBulk;
+
+  bool whatsappChain;
+
+  bool whatsappTransactional;
+
+  bool maxBulk;
+
+  bool maxChain;
+
+  bool maxTransactional;
+
+  bool walletBulk;
+
+  bool walletChain;
+
+  bool walletTransactional;
+
+  bool hasWebPush;
+
+  bool hasMobilePush;
+
+  bool emailInvalid;
+
+  bool emailBlacklisted;
+
+  bool emailBounced;
+
+  bool emailSuppressed;
+
+  bool emailConfirmed;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      exists,
+      emailBulk,
+      emailChain,
+      emailTransactional,
+      smsBulk,
+      smsChain,
+      smsTransactional,
+      webPushBulk,
+      webPushChain,
+      webPushTransactional,
+      mobilePushBulk,
+      mobilePushChain,
+      mobilePushTransactional,
+      telegramBulk,
+      telegramChain,
+      telegramTransactional,
+      whatsappBulk,
+      whatsappChain,
+      whatsappTransactional,
+      maxBulk,
+      maxChain,
+      maxTransactional,
+      walletBulk,
+      walletChain,
+      walletTransactional,
+      hasWebPush,
+      hasMobilePush,
+      emailInvalid,
+      emailBlacklisted,
+      emailBounced,
+      emailSuppressed,
+      emailConfirmed,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SubscriptionStatusWire decode(Object result) {
+    result as List<Object?>;
+    return SubscriptionStatusWire(
+      exists: result[0]! as bool,
+      emailBulk: result[1]! as bool,
+      emailChain: result[2]! as bool,
+      emailTransactional: result[3]! as bool,
+      smsBulk: result[4]! as bool,
+      smsChain: result[5]! as bool,
+      smsTransactional: result[6]! as bool,
+      webPushBulk: result[7]! as bool,
+      webPushChain: result[8]! as bool,
+      webPushTransactional: result[9]! as bool,
+      mobilePushBulk: result[10]! as bool,
+      mobilePushChain: result[11]! as bool,
+      mobilePushTransactional: result[12]! as bool,
+      telegramBulk: result[13]! as bool,
+      telegramChain: result[14]! as bool,
+      telegramTransactional: result[15]! as bool,
+      whatsappBulk: result[16]! as bool,
+      whatsappChain: result[17]! as bool,
+      whatsappTransactional: result[18]! as bool,
+      maxBulk: result[19]! as bool,
+      maxChain: result[20]! as bool,
+      maxTransactional: result[21]! as bool,
+      walletBulk: result[22]! as bool,
+      walletChain: result[23]! as bool,
+      walletTransactional: result[24]! as bool,
+      hasWebPush: result[25]! as bool,
+      hasMobilePush: result[26]! as bool,
+      emailInvalid: result[27]! as bool,
+      emailBlacklisted: result[28]! as bool,
+      emailBounced: result[29]! as bool,
+      emailSuppressed: result[30]! as bool,
+      emailConfirmed: result[31]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SubscriptionStatusWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `BackInStockProperties`.
+class BackInStockPropertiesWire {
+  BackInStockPropertiesWire({
     this.fashionSize,
+    this.fashionColor,
+    this.barcode,
+  });
+
+  String? fashionSize;
+
+  String? fashionColor;
+
+  String? barcode;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      fashionSize,
+      fashionColor,
+      barcode,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static BackInStockPropertiesWire decode(Object result) {
+    result as List<Object?>;
+    return BackInStockPropertiesWire(
+      fashionSize: result[0] as String?,
+      fashionColor: result[1] as String?,
+      barcode: result[2] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BackInStockPropertiesWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Segment`.
+class SegmentWire {
+  SegmentWire({
+    required this.id,
+    this.type,
+  });
+
+  int id;
+
+  String? type;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      type,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SegmentWire decode(Object result) {
+    result as List<Object?>;
+    return SegmentWire(
+      id: result[0]! as int,
+      type: result[1] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SegmentWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `PushToken`; [provider] is `apns`, `fcm` or `hms`.
+class PushTokenWire {
+  PushTokenWire({
+    required this.token,
+    required this.provider,
+  });
+
+  String token;
+
+  String provider;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      token,
+      provider,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static PushTokenWire decode(Object result) {
+    result as List<Object?>;
+    return PushTokenWire(
+      token: result[0]! as String,
+      provider: result[1]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PushTokenWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `PushAction`.
+class PushActionWire {
+  PushActionWire({
+    required this.id,
+    required this.title,
+    this.url,
   });
 
   String id;
 
-  int quantity;
+  String title;
 
-  double? price;
-
-  String? fashionSize;
+  String? url;
 
   List<Object?> _toList() {
-    return <Object?>[id, quantity, price, fashionSize];
+    return <Object?>[
+      id,
+      title,
+      url,
+    ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
-  static TrackingItemWire decode(Object result) {
+  static PushActionWire decode(Object result) {
     result as List<Object?>;
-    return TrackingItemWire(
+    return PushActionWire(
       id: result[0]! as String,
-      quantity: result[1]! as int,
-      price: result[2] as double?,
-      fashionSize: result[3] as String?,
+      title: result[1]! as String,
+      url: result[2] as String?,
     );
   }
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
   bool operator ==(Object other) {
-    if (other is! TrackingItemWire || other.runtimeType != runtimeType) {
+    if (other is! PushActionWire || other.runtimeType != runtimeType) {
       return false;
     }
     if (identical(this, other)) {
@@ -548,41 +3551,48 @@ class TrackingItemWire {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
 
-/// Wire format for event attribution (maps to native `TrackingSource`).
-///
-/// [type] is the wire value of the source type — `dynamic`, `chain`, `bulk`,
-/// `transactional`, `instant_search`, `full_search`, `stories`. Dart only ever sends what its
-/// `TrackingSourceType` enum produces; the bridges reject anything else.
-class TrackingSourceWire {
-  TrackingSourceWire({required this.type, required this.code});
+/// `PushTarget`; [type] is the wire value of `PushTargetType`.
+class PushTargetWire {
+  PushTargetWire({
+    required this.type,
+    required this.uri,
+    required this.payload,
+  });
 
   String type;
 
-  String code;
+  String uri;
+
+  Map<String, Object?> payload;
 
   List<Object?> _toList() {
-    return <Object?>[type, code];
+    return <Object?>[
+      type,
+      uri,
+      payload,
+    ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
-  static TrackingSourceWire decode(Object result) {
+  static PushTargetWire decode(Object result) {
     result as List<Object?>;
-    return TrackingSourceWire(
+    return PushTargetWire(
       type: result[0]! as String,
-      code: result[1]! as String,
+      uri: result[1]! as String,
+      payload: (result[2] as Map<Object?, Object?>?)!.cast<String, Object?>(),
     );
   }
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
   bool operator ==(Object other) {
-    if (other is! TrackingSourceWire || other.runtimeType != runtimeType) {
+    if (other is! PushTargetWire || other.runtimeType != runtimeType) {
       return false;
     }
     if (identical(this, other)) {
@@ -593,8 +3603,1760 @@ class TrackingSourceWire {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
+
+/// `PushPayload`.
+class PushPayloadWire {
+  PushPayloadWire({
+    this.shopId,
+    required this.code,
+    required this.type,
+    this.title,
+    this.body,
+    this.icon,
+    this.image,
+    required this.actions,
+    this.target,
+    this.source,
+    this.sound,
+    required this.data,
+  });
+
+  String? shopId;
+
+  String code;
+
+  String type;
+
+  String? title;
+
+  String? body;
+
+  String? icon;
+
+  String? image;
+
+  List<PushActionWire> actions;
+
+  PushTargetWire? target;
+
+  String? source;
+
+  String? sound;
+
+  Map<String, Object?> data;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      shopId,
+      code,
+      type,
+      title,
+      body,
+      icon,
+      image,
+      actions,
+      target,
+      source,
+      sound,
+      data,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static PushPayloadWire decode(Object result) {
+    result as List<Object?>;
+    return PushPayloadWire(
+      shopId: result[0] as String?,
+      code: result[1]! as String,
+      type: result[2]! as String,
+      title: result[3] as String?,
+      body: result[4] as String?,
+      icon: result[5] as String?,
+      image: result[6] as String?,
+      actions: (result[7] as List<Object?>?)!.cast<PushActionWire>(),
+      target: result[8] as PushTargetWire?,
+      source: result[9] as String?,
+      sound: result[10] as String?,
+      data: (result[11] as Map<Object?, Object?>?)!.cast<String, Object?>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PushPayloadWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// The statistics of a message in `notifications.getHistory`.
+class NotificationStatisticsWire {
+  NotificationStatisticsWire({
+    required this.clicked,
+    required this.complained,
+    required this.hardBounced,
+    required this.opened,
+    required this.purchased,
+    required this.softBounced,
+    required this.unsubscribed,
+  });
+
+  bool clicked;
+
+  bool complained;
+
+  bool hardBounced;
+
+  bool opened;
+
+  bool purchased;
+
+  bool softBounced;
+
+  bool unsubscribed;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      clicked,
+      complained,
+      hardBounced,
+      opened,
+      purchased,
+      softBounced,
+      unsubscribed,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static NotificationStatisticsWire decode(Object result) {
+    result as List<Object?>;
+    return NotificationStatisticsWire(
+      clicked: result[0]! as bool,
+      complained: result[1]! as bool,
+      hardBounced: result[2]! as bool,
+      opened: result[3]! as bool,
+      purchased: result[4]! as bool,
+      softBounced: result[5]! as bool,
+      unsubscribed: result[6]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! NotificationStatisticsWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// A message in `notifications.getHistory`.
+class NotificationMessageWire {
+  NotificationMessageWire({
+    this.body,
+    this.campaignId,
+    this.channel,
+    this.code,
+    this.date,
+    this.icon,
+    this.picture,
+    this.sentAt,
+    this.statistics,
+    this.subject,
+    this.type,
+    this.url,
+  });
+
+  String? body;
+
+  int? campaignId;
+
+  String? channel;
+
+  String? code;
+
+  String? date;
+
+  String? icon;
+
+  String? picture;
+
+  String? sentAt;
+
+  NotificationStatisticsWire? statistics;
+
+  String? subject;
+
+  String? type;
+
+  String? url;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      body,
+      campaignId,
+      channel,
+      code,
+      date,
+      icon,
+      picture,
+      sentAt,
+      statistics,
+      subject,
+      type,
+      url,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static NotificationMessageWire decode(Object result) {
+    result as List<Object?>;
+    return NotificationMessageWire(
+      body: result[0] as String?,
+      campaignId: result[1] as int?,
+      channel: result[2] as String?,
+      code: result[3] as String?,
+      date: result[4] as String?,
+      icon: result[5] as String?,
+      picture: result[6] as String?,
+      sentAt: result[7] as String?,
+      statistics: result[8] as NotificationStatisticsWire?,
+      subject: result[9] as String?,
+      type: result[10] as String?,
+      url: result[11] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! NotificationMessageWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// The answer of `notifications.getHistory`.
+class NotificationHistoryWire {
+  NotificationHistoryWire({
+    this.status,
+    required this.messages,
+  });
+
+  String? status;
+
+  List<NotificationMessageWire> messages;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      status,
+      messages,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static NotificationHistoryWire decode(Object result) {
+    result as List<Object?>;
+    return NotificationHistoryWire(
+      status: result[0] as String?,
+      messages: (result[1] as List<Object?>?)!.cast<NotificationMessageWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! NotificationHistoryWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `StoriesBlock`.
+class StoriesBlockWire {
+  StoriesBlockWire({
+    required this.id,
+    required this.stories,
+  });
+
+  String id;
+
+  List<StoryWire> stories;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      stories,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static StoriesBlockWire decode(Object result) {
+    result as List<Object?>;
+    return StoriesBlockWire(
+      id: result[0]! as String,
+      stories: (result[1] as List<Object?>?)!.cast<StoryWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! StoriesBlockWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Story`.
+class StoryWire {
+  StoryWire({
+    required this.id,
+    required this.name,
+    required this.avatar,
+    required this.viewed,
+    required this.pinned,
+    required this.startPosition,
+    required this.slides,
+  });
+
+  String id;
+
+  String name;
+
+  String avatar;
+
+  bool viewed;
+
+  bool pinned;
+
+  int startPosition;
+
+  List<StorySlideWire> slides;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      name,
+      avatar,
+      viewed,
+      pinned,
+      startPosition,
+      slides,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static StoryWire decode(Object result) {
+    result as List<Object?>;
+    return StoryWire(
+      id: result[0]! as String,
+      name: result[1]! as String,
+      avatar: result[2]! as String,
+      viewed: result[3]! as bool,
+      pinned: result[4]! as bool,
+      startPosition: result[5]! as int,
+      slides: (result[6] as List<Object?>?)!.cast<StorySlideWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! StoryWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `StorySlide`; [type] is `image`, `video` or `product`, [duration] whole seconds.
+class StorySlideWire {
+  StorySlideWire({
+    required this.id,
+    required this.type,
+    required this.background,
+    required this.backgroundColor,
+    required this.preview,
+    required this.duration,
+    required this.elements,
+  });
+
+  String id;
+
+  String type;
+
+  String background;
+
+  String backgroundColor;
+
+  String preview;
+
+  int duration;
+
+  List<StoryElementWire> elements;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      type,
+      background,
+      backgroundColor,
+      preview,
+      duration,
+      elements,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static StorySlideWire decode(Object result) {
+    result as List<Object?>;
+    return StorySlideWire(
+      id: result[0]! as String,
+      type: result[1]! as String,
+      background: result[2]! as String,
+      backgroundColor: result[3]! as String,
+      preview: result[4]! as String,
+      duration: result[5]! as int,
+      elements: (result[6] as List<Object?>?)!.cast<StoryElementWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! StorySlideWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// One element of a slide: [type] is `button`, `product`, `products` or `text_block`, and the fields of that kind are set.
+class StoryElementWire {
+  StoryElementWire({
+    required this.type,
+    this.title,
+    this.link,
+    this.linkAndroid,
+    this.linkIos,
+    this.background,
+    this.color,
+    this.textBold,
+    this.item,
+    this.showLabel,
+    this.hideLabel,
+    this.products,
+    this.text,
+    this.fontSize,
+    this.fontType,
+    this.bold,
+    this.italic,
+    this.textAlign,
+    this.textColor,
+    this.backgroundColor,
+    this.backgroundOpacity,
+    this.lineSpacing,
+    this.yOffset,
+    this.promocode,
+  });
+
+  String type;
+
+  String? title;
+
+  String? link;
+
+  String? linkAndroid;
+
+  String? linkIos;
+
+  String? background;
+
+  String? color;
+
+  bool? textBold;
+
+  StoryProductWire? item;
+
+  String? showLabel;
+
+  String? hideLabel;
+
+  List<StoryProductWire>? products;
+
+  String? text;
+
+  double? fontSize;
+
+  String? fontType;
+
+  bool? bold;
+
+  bool? italic;
+
+  String? textAlign;
+
+  String? textColor;
+
+  String? backgroundColor;
+
+  double? backgroundOpacity;
+
+  double? lineSpacing;
+
+  double? yOffset;
+
+  String? promocode;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      type,
+      title,
+      link,
+      linkAndroid,
+      linkIos,
+      background,
+      color,
+      textBold,
+      item,
+      showLabel,
+      hideLabel,
+      products,
+      text,
+      fontSize,
+      fontType,
+      bold,
+      italic,
+      textAlign,
+      textColor,
+      backgroundColor,
+      backgroundOpacity,
+      lineSpacing,
+      yOffset,
+      promocode,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static StoryElementWire decode(Object result) {
+    result as List<Object?>;
+    return StoryElementWire(
+      type: result[0]! as String,
+      title: result[1] as String?,
+      link: result[2] as String?,
+      linkAndroid: result[3] as String?,
+      linkIos: result[4] as String?,
+      background: result[5] as String?,
+      color: result[6] as String?,
+      textBold: result[7] as bool?,
+      item: result[8] as StoryProductWire?,
+      showLabel: result[9] as String?,
+      hideLabel: result[10] as String?,
+      products: (result[11] as List<Object?>?)?.cast<StoryProductWire>(),
+      text: result[12] as String?,
+      fontSize: result[13] as double?,
+      fontType: result[14] as String?,
+      bold: result[15] as bool?,
+      italic: result[16] as bool?,
+      textAlign: result[17] as String?,
+      textColor: result[18] as String?,
+      backgroundColor: result[19] as String?,
+      backgroundOpacity: result[20] as double?,
+      lineSpacing: result[21] as double?,
+      yOffset: result[22] as double?,
+      promocode: result[23] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! StoryElementWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `StoryProduct`.
+class StoryProductWire {
+  StoryProductWire({
+    required this.id,
+    required this.name,
+    required this.brand,
+    required this.picture,
+    required this.imageUrl,
+    required this.price,
+    required this.priceFormatted,
+    this.oldPrice,
+    required this.oldPriceFormatted,
+    required this.discountPercent,
+    required this.promocode,
+    required this.priceWithPromocode,
+    required this.priceWithPromocodeFormatted,
+    required this.currency,
+    required this.url,
+    required this.deeplinkAndroid,
+    required this.deeplinkIos,
+  });
+
+  String id;
+
+  String name;
+
+  String brand;
+
+  String picture;
+
+  String imageUrl;
+
+  double price;
+
+  String priceFormatted;
+
+  double? oldPrice;
+
+  String oldPriceFormatted;
+
+  double discountPercent;
+
+  String promocode;
+
+  double priceWithPromocode;
+
+  String priceWithPromocodeFormatted;
+
+  String currency;
+
+  String url;
+
+  String deeplinkAndroid;
+
+  String deeplinkIos;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      name,
+      brand,
+      picture,
+      imageUrl,
+      price,
+      priceFormatted,
+      oldPrice,
+      oldPriceFormatted,
+      discountPercent,
+      promocode,
+      priceWithPromocode,
+      priceWithPromocodeFormatted,
+      currency,
+      url,
+      deeplinkAndroid,
+      deeplinkIos,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static StoryProductWire decode(Object result) {
+    result as List<Object?>;
+    return StoryProductWire(
+      id: result[0]! as String,
+      name: result[1]! as String,
+      brand: result[2]! as String,
+      picture: result[3]! as String,
+      imageUrl: result[4]! as String,
+      price: result[5]! as double,
+      priceFormatted: result[6]! as String,
+      oldPrice: result[7] as double?,
+      oldPriceFormatted: result[8]! as String,
+      discountPercent: result[9]! as double,
+      promocode: result[10]! as String,
+      priceWithPromocode: result[11]! as double,
+      priceWithPromocodeFormatted: result[12]! as String,
+      currency: result[13]! as String,
+      url: result[14]! as String,
+      deeplinkAndroid: result[15]! as String,
+      deeplinkIos: result[16]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! StoryProductWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `PurchaseProbability`.
+class PurchaseProbabilityWire {
+  PurchaseProbabilityWire({
+    required this.probability,
+    this.clientId,
+  });
+
+  double probability;
+
+  String? clientId;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      probability,
+      clientId,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static PurchaseProbabilityWire decode(Object result) {
+    result as List<Object?>;
+    return PurchaseProbabilityWire(
+      probability: result[0]! as double,
+      clientId: result[1] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PurchaseProbabilityWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `LoyaltyMember`.
+class LoyaltyMemberWire {
+  LoyaltyMemberWire({
+    required this.identifier,
+  });
+
+  String identifier;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      identifier,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static LoyaltyMemberWire decode(Object result) {
+    result as List<Object?>;
+    return LoyaltyMemberWire(
+      identifier: result[0]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LoyaltyMemberWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `LoyaltyLevel`.
+class LoyaltyLevelWire {
+  LoyaltyLevelWire({
+    required this.code,
+    this.name,
+    this.expirationDate,
+  });
+
+  String code;
+
+  String? name;
+
+  String? expirationDate;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      code,
+      name,
+      expirationDate,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static LoyaltyLevelWire decode(Object result) {
+    result as List<Object?>;
+    return LoyaltyLevelWire(
+      code: result[0]! as String,
+      name: result[1] as String?,
+      expirationDate: result[2] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LoyaltyLevelWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `LoyaltyStatus`.
+class LoyaltyStatusWire {
+  LoyaltyStatusWire({
+    required this.isMember,
+    this.level,
+  });
+
+  bool isMember;
+
+  LoyaltyLevelWire? level;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      isMember,
+      level,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static LoyaltyStatusWire decode(Object result) {
+    result as List<Object?>;
+    return LoyaltyStatusWire(
+      isMember: result[0]! as bool,
+      level: result[1] as LoyaltyLevelWire?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LoyaltyStatusWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `LoyaltyPromotion`; [rewardType] is the wire value.
+class LoyaltyPromotionWire {
+  LoyaltyPromotionWire({
+    required this.id,
+    required this.name,
+    this.description,
+    this.startDate,
+    this.finishDate,
+    this.stream,
+    this.badgeLabel,
+    this.badgeColor,
+    this.rewardType,
+  });
+
+  int id;
+
+  String name;
+
+  String? description;
+
+  String? startDate;
+
+  String? finishDate;
+
+  String? stream;
+
+  String? badgeLabel;
+
+  String? badgeColor;
+
+  String? rewardType;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      name,
+      description,
+      startDate,
+      finishDate,
+      stream,
+      badgeLabel,
+      badgeColor,
+      rewardType,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static LoyaltyPromotionWire decode(Object result) {
+    result as List<Object?>;
+    return LoyaltyPromotionWire(
+      id: result[0]! as int,
+      name: result[1]! as String,
+      description: result[2] as String?,
+      startDate: result[3] as String?,
+      finishDate: result[4] as String?,
+      stream: result[5] as String?,
+      badgeLabel: result[6] as String?,
+      badgeColor: result[7] as String?,
+      rewardType: result[8] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! LoyaltyPromotionWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `Slider` of the contract.
+class SliderWire {
+  SliderWire({
+    required this.code,
+    required this.width,
+    required this.height,
+    required this.banners,
+  });
+
+  String code;
+
+  int width;
+
+  int height;
+
+  List<SliderBannerWire> banners;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      code,
+      width,
+      height,
+      banners,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SliderWire decode(Object result) {
+    result as List<Object?>;
+    return SliderWire(
+      code: result[0]! as String,
+      width: result[1]! as int,
+      height: result[2]! as int,
+      banners: (result[3] as List<Object?>?)!.cast<SliderBannerWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SliderWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `SliderBanner`.
+class SliderBannerWire {
+  SliderBannerWire({
+    required this.id,
+    required this.code,
+    this.imageUrl,
+    this.url,
+    this.deeplinkIos,
+    this.deeplinkAndroid,
+    this.html,
+  });
+
+  String id;
+
+  String code;
+
+  String? imageUrl;
+
+  String? url;
+
+  String? deeplinkIos;
+
+  String? deeplinkAndroid;
+
+  String? html;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      code,
+      imageUrl,
+      url,
+      deeplinkIos,
+      deeplinkAndroid,
+      html,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static SliderBannerWire decode(Object result) {
+    result as List<Object?>;
+    return SliderBannerWire(
+      id: result[0]! as String,
+      code: result[1]! as String,
+      imageUrl: result[2] as String?,
+      url: result[3] as String?,
+      deeplinkIos: result[4] as String?,
+      deeplinkAndroid: result[5] as String?,
+      html: result[6] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! SliderBannerWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `PollReview`.
+class PollReviewWire {
+  PollReviewWire({
+    required this.id,
+  });
+
+  int id;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static PollReviewWire decode(Object result) {
+    result as List<Object?>;
+    return PollReviewWire(
+      id: result[0]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PollReviewWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `NpsCategory`.
+class NpsCategoryWire {
+  NpsCategoryWire({
+    required this.code,
+    required this.name,
+    this.detractorQuestion,
+    this.passiveQuestion,
+    this.promoterQuestion,
+    this.detractorSuccess,
+    this.passiveSuccess,
+    this.promoterSuccess,
+    this.buttonLabel,
+  });
+
+  String code;
+
+  String name;
+
+  String? detractorQuestion;
+
+  String? passiveQuestion;
+
+  String? promoterQuestion;
+
+  String? detractorSuccess;
+
+  String? passiveSuccess;
+
+  String? promoterSuccess;
+
+  String? buttonLabel;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      code,
+      name,
+      detractorQuestion,
+      passiveQuestion,
+      promoterQuestion,
+      detractorSuccess,
+      passiveSuccess,
+      promoterSuccess,
+      buttonLabel,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static NpsCategoryWire decode(Object result) {
+    result as List<Object?>;
+    return NpsCategoryWire(
+      code: result[0]! as String,
+      name: result[1]! as String,
+      detractorQuestion: result[2] as String?,
+      passiveQuestion: result[3] as String?,
+      promoterQuestion: result[4] as String?,
+      detractorSuccess: result[5] as String?,
+      passiveSuccess: result[6] as String?,
+      promoterSuccess: result[7] as String?,
+      buttonLabel: result[8] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! NpsCategoryWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `CsatCampaign`.
+class CsatCampaignWire {
+  CsatCampaignWire({
+    required this.code,
+    required this.name,
+    this.dissatisfiedQuestion,
+    this.neutralQuestion,
+    this.satisfiedQuestion,
+    this.dissatisfiedSuccess,
+    this.neutralSuccess,
+    this.satisfiedSuccess,
+    this.buttonLabel,
+  });
+
+  String code;
+
+  String name;
+
+  String? dissatisfiedQuestion;
+
+  String? neutralQuestion;
+
+  String? satisfiedQuestion;
+
+  String? dissatisfiedSuccess;
+
+  String? neutralSuccess;
+
+  String? satisfiedSuccess;
+
+  String? buttonLabel;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      code,
+      name,
+      dissatisfiedQuestion,
+      neutralQuestion,
+      satisfiedQuestion,
+      dissatisfiedSuccess,
+      neutralSuccess,
+      satisfiedSuccess,
+      buttonLabel,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static CsatCampaignWire decode(Object result) {
+    result as List<Object?>;
+    return CsatCampaignWire(
+      code: result[0]! as String,
+      name: result[1]! as String,
+      dissatisfiedQuestion: result[2] as String?,
+      neutralQuestion: result[3] as String?,
+      satisfiedQuestion: result[4] as String?,
+      dissatisfiedSuccess: result[5] as String?,
+      neutralSuccess: result[6] as String?,
+      satisfiedSuccess: result[7] as String?,
+      buttonLabel: result[8] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! CsatCampaignWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `CesCampaign`.
+class CesCampaignWire {
+  CesCampaignWire({
+    required this.code,
+    required this.name,
+    this.difficultQuestion,
+    this.neutralQuestion,
+    this.easyQuestion,
+    this.difficultSuccess,
+    this.neutralSuccess,
+    this.easySuccess,
+    this.buttonLabel,
+  });
+
+  String code;
+
+  String name;
+
+  String? difficultQuestion;
+
+  String? neutralQuestion;
+
+  String? easyQuestion;
+
+  String? difficultSuccess;
+
+  String? neutralSuccess;
+
+  String? easySuccess;
+
+  String? buttonLabel;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      code,
+      name,
+      difficultQuestion,
+      neutralQuestion,
+      easyQuestion,
+      difficultSuccess,
+      neutralSuccess,
+      easySuccess,
+      buttonLabel,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static CesCampaignWire decode(Object result) {
+    result as List<Object?>;
+    return CesCampaignWire(
+      code: result[0]! as String,
+      name: result[1]! as String,
+      difficultQuestion: result[2] as String?,
+      neutralQuestion: result[3] as String?,
+      easyQuestion: result[4] as String?,
+      difficultSuccess: result[5] as String?,
+      neutralSuccess: result[6] as String?,
+      easySuccess: result[7] as String?,
+      buttonLabel: result[8] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! CesCampaignWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `PollChannel`.
+class PollChannelWire {
+  PollChannelWire({
+    required this.code,
+    required this.name,
+  });
+
+  String code;
+
+  String name;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      code,
+      name,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static PollChannelWire decode(Object result) {
+    result as List<Object?>;
+    return PollChannelWire(
+      code: result[0]! as String,
+      name: result[1]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PollChannelWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductRatingSummary`; [ratings] is the count per star.
+class ProductRatingSummaryWire {
+  ProductRatingSummaryWire({
+    required this.count,
+    this.averageRating,
+    required this.ratings,
+  });
+
+  int count;
+
+  double? averageRating;
+
+  Map<int, int> ratings;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      count,
+      averageRating,
+      ratings,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductRatingSummaryWire decode(Object result) {
+    result as List<Object?>;
+    return ProductRatingSummaryWire(
+      count: result[0]! as int,
+      averageRating: result[1] as double?,
+      ratings: (result[2] as Map<Object?, Object?>?)!.cast<int, int>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductRatingSummaryWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductReview`.
+class ProductReviewWire {
+  ProductReviewWire({
+    required this.id,
+    required this.rating,
+    this.comment,
+    this.author,
+    required this.createdAt,
+  });
+
+  int id;
+
+  int rating;
+
+  String? comment;
+
+  String? author;
+
+  String createdAt;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      rating,
+      comment,
+      author,
+      createdAt,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductReviewWire decode(Object result) {
+    result as List<Object?>;
+    return ProductReviewWire(
+      id: result[0]! as int,
+      rating: result[1]! as int,
+      comment: result[2] as String?,
+      author: result[3] as String?,
+      createdAt: result[4]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductReviewWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ProductReviewsResponse`.
+class ProductReviewsResponseWire {
+  ProductReviewsResponseWire({
+    required this.summary,
+    required this.reviews,
+  });
+
+  ProductRatingSummaryWire summary;
+
+  List<ProductReviewWire> reviews;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      summary,
+      reviews,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ProductReviewsResponseWire decode(Object result) {
+    result as List<Object?>;
+    return ProductReviewsResponseWire(
+      summary: result[0]! as ProductRatingSummaryWire,
+      reviews: (result[1] as List<Object?>?)!.cast<ProductReviewWire>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ProductReviewsResponseWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
+/// `ClientReview`; [state] is the wire value (`moderation`, `published`, `rejected`).
+class ClientReviewWire {
+  ClientReviewWire({
+    required this.id,
+    required this.itemId,
+    required this.orderId,
+    required this.rating,
+    this.comment,
+    this.state,
+    required this.createdAt,
+  });
+
+  int id;
+
+  String itemId;
+
+  String orderId;
+
+  int rating;
+
+  String? comment;
+
+  String? state;
+
+  String createdAt;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      id,
+      itemId,
+      orderId,
+      rating,
+      comment,
+      state,
+      createdAt,
+    ];
+  }
+
+  Object encode() {
+    return _toList();  }
+
+  static ClientReviewWire decode(Object result) {
+    result as List<Object?>;
+    return ClientReviewWire(
+      id: result[0]! as int,
+      itemId: result[1]! as String,
+      orderId: result[2]! as String,
+      rating: result[3]! as int,
+      comment: result[4] as String?,
+      state: result[5] as String?,
+      createdAt: result[6]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ClientReviewWire || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList())
+;
+}
+
 
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
@@ -603,23 +5365,230 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is InitConfig) {
+    }    else if (value is InitConfig) {
       buffer.putUint8(129);
       writeValue(buffer, value.encode());
-    } else if (value is PurchaseLineItemWire) {
+    }    else if (value is PurchaseLineItemWire) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    } else if (value is ProfileParamsWire) {
+    }    else if (value is TrackingItemWire) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    } else if (value is ManageSubscriptionParamsWire) {
+    }    else if (value is TrackingSourceWire) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    } else if (value is TrackingItemWire) {
+    }    else if (value is SdkSnapshotWire) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
-    } else if (value is TrackingSourceWire) {
+    }    else if (value is ProductWire) {
       buffer.putUint8(134);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductCategoryWire) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductParamWire) {
+      buffer.putUint8(136);
+      writeValue(buffer, value.encode());
+    }    else if (value is LocationWire) {
+      buffer.putUint8(137);
+      writeValue(buffer, value.encode());
+    }    else if (value is BrandWire) {
+      buffer.putUint8(138);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchFilterWire) {
+      buffer.putUint8(139);
+      writeValue(buffer, value.encode());
+    }    else if (value is ColorFilterWire) {
+      buffer.putUint8(140);
+      writeValue(buffer, value.encode());
+    }    else if (value is SizeFilterWire) {
+      buffer.putUint8(141);
+      writeValue(buffer, value.encode());
+    }    else if (value is IndustrialFiltersWire) {
+      buffer.putUint8(142);
+      writeValue(buffer, value.encode());
+    }    else if (value is PriceRangeWire) {
+      buffer.putUint8(143);
+      writeValue(buffer, value.encode());
+    }    else if (value is PriceIntervalWire) {
+      buffer.putUint8(144);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductsListResponseWire) {
+      buffer.putUint8(145);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductsListRequestWire) {
+      buffer.putUint8(146);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductCounterWire) {
+      buffer.putUint8(147);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductCounterTriggersWire) {
+      buffer.putUint8(148);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductCountersResponseWire) {
+      buffer.putUint8(149);
+      writeValue(buffer, value.encode());
+    }    else if (value is CollectionResponseWire) {
+      buffer.putUint8(150);
+      writeValue(buffer, value.encode());
+    }    else if (value is RecommendationRequestWire) {
+      buffer.putUint8(151);
+      writeValue(buffer, value.encode());
+    }    else if (value is RecommendationResponseWire) {
+      buffer.putUint8(152);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchFullRequestWire) {
+      buffer.putUint8(153);
+      writeValue(buffer, value.encode());
+    }    else if (value is QueryWire) {
+      buffer.putUint8(154);
+      writeValue(buffer, value.encode());
+    }    else if (value is PopularItemWire) {
+      buffer.putUint8(155);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchRedirectWire) {
+      buffer.putUint8(156);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchBlankResponseWire) {
+      buffer.putUint8(157);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchInstantResponseWire) {
+      buffer.putUint8(158);
+      writeValue(buffer, value.encode());
+    }    else if (value is SearchFullResponseWire) {
+      buffer.putUint8(159);
+      writeValue(buffer, value.encode());
+    }    else if (value is AgentProductWire) {
+      buffer.putUint8(160);
+      writeValue(buffer, value.encode());
+    }    else if (value is AgentMessageWire) {
+      buffer.putUint8(161);
+      writeValue(buffer, value.encode());
+    }    else if (value is AgentSessionWire) {
+      buffer.putUint8(162);
+      writeValue(buffer, value.encode());
+    }    else if (value is AgentDialogResponseWire) {
+      buffer.putUint8(163);
+      writeValue(buffer, value.encode());
+    }    else if (value is AgentResponseWire) {
+      buffer.putUint8(164);
+      writeValue(buffer, value.encode());
+    }    else if (value is CartItemWire) {
+      buffer.putUint8(165);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProfileWire) {
+      buffer.putUint8(166);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProfileKidWire) {
+      buffer.putUint8(167);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProfileCarWire) {
+      buffer.putUint8(168);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProfileUpdateRequestWire) {
+      buffer.putUint8(169);
+      writeValue(buffer, value.encode());
+    }    else if (value is OrderItemWire) {
+      buffer.putUint8(170);
+      writeValue(buffer, value.encode());
+    }    else if (value is OrderWire) {
+      buffer.putUint8(171);
+      writeValue(buffer, value.encode());
+    }    else if (value is SubscriptionsUpdateRequestWire) {
+      buffer.putUint8(172);
+      writeValue(buffer, value.encode());
+    }    else if (value is SubscriptionStatusWire) {
+      buffer.putUint8(173);
+      writeValue(buffer, value.encode());
+    }    else if (value is BackInStockPropertiesWire) {
+      buffer.putUint8(174);
+      writeValue(buffer, value.encode());
+    }    else if (value is SegmentWire) {
+      buffer.putUint8(175);
+      writeValue(buffer, value.encode());
+    }    else if (value is PushTokenWire) {
+      buffer.putUint8(176);
+      writeValue(buffer, value.encode());
+    }    else if (value is PushActionWire) {
+      buffer.putUint8(177);
+      writeValue(buffer, value.encode());
+    }    else if (value is PushTargetWire) {
+      buffer.putUint8(178);
+      writeValue(buffer, value.encode());
+    }    else if (value is PushPayloadWire) {
+      buffer.putUint8(179);
+      writeValue(buffer, value.encode());
+    }    else if (value is NotificationStatisticsWire) {
+      buffer.putUint8(180);
+      writeValue(buffer, value.encode());
+    }    else if (value is NotificationMessageWire) {
+      buffer.putUint8(181);
+      writeValue(buffer, value.encode());
+    }    else if (value is NotificationHistoryWire) {
+      buffer.putUint8(182);
+      writeValue(buffer, value.encode());
+    }    else if (value is StoriesBlockWire) {
+      buffer.putUint8(183);
+      writeValue(buffer, value.encode());
+    }    else if (value is StoryWire) {
+      buffer.putUint8(184);
+      writeValue(buffer, value.encode());
+    }    else if (value is StorySlideWire) {
+      buffer.putUint8(185);
+      writeValue(buffer, value.encode());
+    }    else if (value is StoryElementWire) {
+      buffer.putUint8(186);
+      writeValue(buffer, value.encode());
+    }    else if (value is StoryProductWire) {
+      buffer.putUint8(187);
+      writeValue(buffer, value.encode());
+    }    else if (value is PurchaseProbabilityWire) {
+      buffer.putUint8(188);
+      writeValue(buffer, value.encode());
+    }    else if (value is LoyaltyMemberWire) {
+      buffer.putUint8(189);
+      writeValue(buffer, value.encode());
+    }    else if (value is LoyaltyLevelWire) {
+      buffer.putUint8(190);
+      writeValue(buffer, value.encode());
+    }    else if (value is LoyaltyStatusWire) {
+      buffer.putUint8(191);
+      writeValue(buffer, value.encode());
+    }    else if (value is LoyaltyPromotionWire) {
+      buffer.putUint8(192);
+      writeValue(buffer, value.encode());
+    }    else if (value is SliderWire) {
+      buffer.putUint8(193);
+      writeValue(buffer, value.encode());
+    }    else if (value is SliderBannerWire) {
+      buffer.putUint8(194);
+      writeValue(buffer, value.encode());
+    }    else if (value is PollReviewWire) {
+      buffer.putUint8(195);
+      writeValue(buffer, value.encode());
+    }    else if (value is NpsCategoryWire) {
+      buffer.putUint8(196);
+      writeValue(buffer, value.encode());
+    }    else if (value is CsatCampaignWire) {
+      buffer.putUint8(197);
+      writeValue(buffer, value.encode());
+    }    else if (value is CesCampaignWire) {
+      buffer.putUint8(198);
+      writeValue(buffer, value.encode());
+    }    else if (value is PollChannelWire) {
+      buffer.putUint8(199);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductRatingSummaryWire) {
+      buffer.putUint8(200);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductReviewWire) {
+      buffer.putUint8(201);
+      writeValue(buffer, value.encode());
+    }    else if (value is ProductReviewsResponseWire) {
+      buffer.putUint8(202);
+      writeValue(buffer, value.encode());
+    }    else if (value is ClientReviewWire) {
+      buffer.putUint8(203);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -629,18 +5598,156 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129:
+      case 129: 
         return InitConfig.decode(readValue(buffer)!);
-      case 130:
+      case 130: 
         return PurchaseLineItemWire.decode(readValue(buffer)!);
-      case 131:
-        return ProfileParamsWire.decode(readValue(buffer)!);
-      case 132:
-        return ManageSubscriptionParamsWire.decode(readValue(buffer)!);
-      case 133:
+      case 131: 
         return TrackingItemWire.decode(readValue(buffer)!);
-      case 134:
+      case 132: 
         return TrackingSourceWire.decode(readValue(buffer)!);
+      case 133: 
+        return SdkSnapshotWire.decode(readValue(buffer)!);
+      case 134: 
+        return ProductWire.decode(readValue(buffer)!);
+      case 135: 
+        return ProductCategoryWire.decode(readValue(buffer)!);
+      case 136: 
+        return ProductParamWire.decode(readValue(buffer)!);
+      case 137: 
+        return LocationWire.decode(readValue(buffer)!);
+      case 138: 
+        return BrandWire.decode(readValue(buffer)!);
+      case 139: 
+        return SearchFilterWire.decode(readValue(buffer)!);
+      case 140: 
+        return ColorFilterWire.decode(readValue(buffer)!);
+      case 141: 
+        return SizeFilterWire.decode(readValue(buffer)!);
+      case 142: 
+        return IndustrialFiltersWire.decode(readValue(buffer)!);
+      case 143: 
+        return PriceRangeWire.decode(readValue(buffer)!);
+      case 144: 
+        return PriceIntervalWire.decode(readValue(buffer)!);
+      case 145: 
+        return ProductsListResponseWire.decode(readValue(buffer)!);
+      case 146: 
+        return ProductsListRequestWire.decode(readValue(buffer)!);
+      case 147: 
+        return ProductCounterWire.decode(readValue(buffer)!);
+      case 148: 
+        return ProductCounterTriggersWire.decode(readValue(buffer)!);
+      case 149: 
+        return ProductCountersResponseWire.decode(readValue(buffer)!);
+      case 150: 
+        return CollectionResponseWire.decode(readValue(buffer)!);
+      case 151: 
+        return RecommendationRequestWire.decode(readValue(buffer)!);
+      case 152: 
+        return RecommendationResponseWire.decode(readValue(buffer)!);
+      case 153: 
+        return SearchFullRequestWire.decode(readValue(buffer)!);
+      case 154: 
+        return QueryWire.decode(readValue(buffer)!);
+      case 155: 
+        return PopularItemWire.decode(readValue(buffer)!);
+      case 156: 
+        return SearchRedirectWire.decode(readValue(buffer)!);
+      case 157: 
+        return SearchBlankResponseWire.decode(readValue(buffer)!);
+      case 158: 
+        return SearchInstantResponseWire.decode(readValue(buffer)!);
+      case 159: 
+        return SearchFullResponseWire.decode(readValue(buffer)!);
+      case 160: 
+        return AgentProductWire.decode(readValue(buffer)!);
+      case 161: 
+        return AgentMessageWire.decode(readValue(buffer)!);
+      case 162: 
+        return AgentSessionWire.decode(readValue(buffer)!);
+      case 163: 
+        return AgentDialogResponseWire.decode(readValue(buffer)!);
+      case 164: 
+        return AgentResponseWire.decode(readValue(buffer)!);
+      case 165: 
+        return CartItemWire.decode(readValue(buffer)!);
+      case 166: 
+        return ProfileWire.decode(readValue(buffer)!);
+      case 167: 
+        return ProfileKidWire.decode(readValue(buffer)!);
+      case 168: 
+        return ProfileCarWire.decode(readValue(buffer)!);
+      case 169: 
+        return ProfileUpdateRequestWire.decode(readValue(buffer)!);
+      case 170: 
+        return OrderItemWire.decode(readValue(buffer)!);
+      case 171: 
+        return OrderWire.decode(readValue(buffer)!);
+      case 172: 
+        return SubscriptionsUpdateRequestWire.decode(readValue(buffer)!);
+      case 173: 
+        return SubscriptionStatusWire.decode(readValue(buffer)!);
+      case 174: 
+        return BackInStockPropertiesWire.decode(readValue(buffer)!);
+      case 175: 
+        return SegmentWire.decode(readValue(buffer)!);
+      case 176: 
+        return PushTokenWire.decode(readValue(buffer)!);
+      case 177: 
+        return PushActionWire.decode(readValue(buffer)!);
+      case 178: 
+        return PushTargetWire.decode(readValue(buffer)!);
+      case 179: 
+        return PushPayloadWire.decode(readValue(buffer)!);
+      case 180: 
+        return NotificationStatisticsWire.decode(readValue(buffer)!);
+      case 181: 
+        return NotificationMessageWire.decode(readValue(buffer)!);
+      case 182: 
+        return NotificationHistoryWire.decode(readValue(buffer)!);
+      case 183: 
+        return StoriesBlockWire.decode(readValue(buffer)!);
+      case 184: 
+        return StoryWire.decode(readValue(buffer)!);
+      case 185: 
+        return StorySlideWire.decode(readValue(buffer)!);
+      case 186: 
+        return StoryElementWire.decode(readValue(buffer)!);
+      case 187: 
+        return StoryProductWire.decode(readValue(buffer)!);
+      case 188: 
+        return PurchaseProbabilityWire.decode(readValue(buffer)!);
+      case 189: 
+        return LoyaltyMemberWire.decode(readValue(buffer)!);
+      case 190: 
+        return LoyaltyLevelWire.decode(readValue(buffer)!);
+      case 191: 
+        return LoyaltyStatusWire.decode(readValue(buffer)!);
+      case 192: 
+        return LoyaltyPromotionWire.decode(readValue(buffer)!);
+      case 193: 
+        return SliderWire.decode(readValue(buffer)!);
+      case 194: 
+        return SliderBannerWire.decode(readValue(buffer)!);
+      case 195: 
+        return PollReviewWire.decode(readValue(buffer)!);
+      case 196: 
+        return NpsCategoryWire.decode(readValue(buffer)!);
+      case 197: 
+        return CsatCampaignWire.decode(readValue(buffer)!);
+      case 198: 
+        return CesCampaignWire.decode(readValue(buffer)!);
+      case 199: 
+        return PollChannelWire.decode(readValue(buffer)!);
+      case 200: 
+        return ProductRatingSummaryWire.decode(readValue(buffer)!);
+      case 201: 
+        return ProductReviewWire.decode(readValue(buffer)!);
+      case 202: 
+        return ProductReviewsResponseWire.decode(readValue(buffer)!);
+      case 203: 
+        return ClientReviewWire.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -651,31 +5758,26 @@ class PersonalizationHostApi {
   /// Constructor for [PersonalizationHostApi].  The [binaryMessenger] named argument is
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
-  PersonalizationHostApi({
-    BinaryMessenger? binaryMessenger,
-    String messageChannelSuffix = '',
-  }) : pigeonVar_binaryMessenger = binaryMessenger,
-       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
-           ? '.$messageChannelSuffix'
-           : '';
+  PersonalizationHostApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
+      : pigeonVar_binaryMessenger = binaryMessenger,
+        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
 
   final String pigeonVar_messageChannelSuffix;
 
-  Future<void> initialize(InitConfig config) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.initialize$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[config],
+  /// Starts the shop on the native SDK's new core (`Rees46.initializeBridge`)
+  /// and answers with its state at once; [PersonalizationStateFlutterApi] tells
+  /// every change after that.
+  Future<SdkSnapshotWire> initialize(InitConfig config) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.initialize$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[config]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -686,20 +5788,23 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
     } else {
-      return;
+      return (pigeonVar_replyList[0] as SdkSnapshotWire?)!;
     }
   }
 
   Future<String> getPlatformVersion() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getPlatformVersion$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getPlatformVersion$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -721,146 +5826,15 @@ class PersonalizationHostApi {
     }
   }
 
-  /// Returns the push token stored by the native SDK (if any).
-  Future<String?> getStoredPushToken(String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoredPushToken$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[shopId],
+  /// The shop's state as the native instance has it now.
+  Future<SdkSnapshotWire> getSnapshot(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSnapshot$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return (pigeonVar_replyList[0] as String?);
-    }
-  }
-
-  /// [customFieldsJson] is JSON object string or null (maps to native custom fields map).
-  Future<void> trackEvent(
-    String event,
-    int? time,
-    String? category,
-    String? label,
-    int? value,
-    String? customFieldsJson,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[event, time, category, label, value, customFieldsJson, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> setProfile(ProfileParamsWire params, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setProfile$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[params, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> manageSubscription(
-    ManageSubscriptionParamsWire params,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.manageSubscription$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[params, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  /// Returns the recommendation block as a JSON string.
-  /// [paramsJson] is a JSON object string with optional filter parameters.
-  /// Dart layer parses the result into [RecommendationResponse].
-  Future<String> getRecommendation(
-    String code,
-    String? paramsJson,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getRecommendation$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[code, paramsJson, shopId],
-    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -877,23 +5851,19 @@ class PersonalizationHostApi {
         message: 'Host platform returned null value for non-null return value.',
       );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return (pigeonVar_replyList[0] as SdkSnapshotWire?)!;
     }
   }
 
   /// Returns the current session ID from the native SDK.
   Future<String> getSid(String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[shopId],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -916,17 +5886,13 @@ class PersonalizationHostApi {
 
   /// Returns the device ID assigned by the native SDK, or null before first sync.
   Future<String?> getDid(String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getDid$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[shopId],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getDid$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -942,20 +5908,15 @@ class PersonalizationHostApi {
     }
   }
 
-  /// Returns a single product's details as a JSON string.
-  /// Dart layer parses the result into [Product].
-  Future<String> getProductInfo(String itemId, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductInfo$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[itemId, shopId],
+  /// `tracking.custom`. [customFields] are the event's free-form fields.
+  Future<void> trackEvent(String event, int? time, String? category, String? label, int? value, Map<String, Object?>? customFields, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[event, time, category, label, value, customFields, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -966,31 +5927,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns a paginated product catalog list as a JSON string.
-  /// [paramsJson] is a JSON object with optional filter fields.
-  /// Dart layer parses the result into [ProductsListResponse].
-  Future<String> getProductsList(String? paramsJson, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductsList$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[paramsJson, shopId],
+  Future<void> trackProductView(String itemId, TrackingSourceWire? source, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackProductView$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, source, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1001,31 +5950,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns blank search results (trending/popular) as a JSON string.
-  /// No parameters — the native SDK decides what to return based on shop config.
-  /// Dart layer parses the result into [SearchBlankResponse].
-  Future<String> searchBlank(String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[shopId],
+  Future<void> trackCategoryView(String categoryId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackCategoryView$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[categoryId, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1036,35 +5973,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns instant (typeahead) search results as a JSON string.
-  /// [paramsJson] may contain optional "locations" (String) and "excluded_brands" ([String]).
-  /// Dart layer parses the result into [SearchInstantResponse].
-  Future<String> searchInstant(
-    String query,
-    String? paramsJson,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[query, paramsJson, shopId],
+  Future<void> trackSearch(String query, List<String>? results, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSearch$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[query, results, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1075,35 +5996,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns full search results as a JSON string.
-  /// [paramsJson] is a JSON object string with optional search parameters.
-  /// Dart layer parses the result into [SearchFullResponse].
-  Future<String> searchFull(
-    String query,
-    String? paramsJson,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[query, paramsJson, shopId],
+  Future<void> trackAddToCart(TrackingItemWire item, TrackingSourceWire? source, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackAddToCart$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[item, source, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1114,38 +6019,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Joins the loyalty program (`loyalty/members/join`) and returns the
-  /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
-  /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
-  /// Dart layer parses the result into [LoyaltyJoinResponse].
-  Future<String> joinLoyalty(
-    String phone,
-    String? email,
-    String? firstName,
-    String? lastName,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.joinLoyalty$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[phone, email, firstName, lastName, shopId],
+  Future<void> trackSyncCart(List<TrackingItemWire> items, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSyncCart$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[items, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1156,32 +6042,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
-  /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
-  /// [identifier] is the member identifier (phone).
-  /// Dart layer parses the result into [LoyaltyStatusResponse].
-  Future<String> getLoyaltyStatus(String identifier, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getLoyaltyStatus$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[identifier, shopId],
+  Future<void> trackRemoveFromCart(String itemId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackRemoveFromCart$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1192,30 +6065,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns the current user's profile as a JSON string.
-  /// Dart layer parses the result into [ProfileResponse].
-  Future<String> getProfile(String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProfile$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[shopId],
+  Future<void> trackAddToFavorites(String itemId, TrackingSourceWire? source, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackAddToFavorites$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, source, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1226,30 +6088,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns view / cart / purchase counters for [item] as a JSON string.
-  /// Dart layer parses the result into [ProductCountersResponse].
-  Future<String> getProductCounters(String item, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductCounters$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[item, shopId],
+  Future<void> trackSyncFavorites(List<String> itemIds, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSyncFavorites$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemIds, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1260,41 +6111,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns a category product listing as a JSON string.
-  /// [limit] and [page] paginate the result; both are optional.
-  /// [paramsJson] is a JSON object string with the optional filters: "brands" and
-  /// "locations" (comma-separated strings), "filters" (facet name → [values]),
-  /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
-  /// passes on only what its native SDK takes for a category.
-  /// Dart layer parses the result into [CategoryResponse].
-  Future<String> getCategory(
-    String category,
-    int? limit,
-    int? page,
-    String? paramsJson,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCategory$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[category, limit, page, paramsJson, shopId],
+  Future<void> trackRemoveFromFavorites(String itemId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackRemoveFromFavorites$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1305,30 +6134,19 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns a merchandised collection's products as a JSON string.
-  /// Dart layer parses the result into [CollectionResponse].
-  Future<String> getCollection(String collectionId, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCollection$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[collectionId, shopId],
+  Future<void> trackStoryView(String storyId, String slideId, String? code, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackStoryView$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[storyId, slideId, code, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1339,32 +6157,187 @@ class PersonalizationHostApi {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
-    } else if (pigeonVar_replyList[0] == null) {
-      throw PlatformException(
-        code: 'null-error',
-        message: 'Host platform returned null value for non-null return value.',
-      );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return;
     }
   }
 
-  /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
-  /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
-  /// over the same raw payload, so Dart parses one shape.
-  /// Dart layer parses the result into [StoriesBlock].
-  Future<String> getStories(String code, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStories$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[code, shopId],
+  Future<void> trackStoryClick(String storyId, String slideId, String? code, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackStoryClick$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[storyId, slideId, code, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// `tracking.bannerView`: a banner of a slider was shown.
+  Future<void> trackBannerView(String bannerId, String code, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackBannerView$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[bannerId, code, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// `tracking.bannerClick`: a banner of a slider was tapped.
+  Future<void> trackBannerClick(String bannerId, String code, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackBannerClick$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[bannerId, code, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// Stores the attribution source natively for the next event.
+  Future<void> trackSetSource(TrackingSourceWire source, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSetSource$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[source, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// `tracking.purchase`. [custom] and [recommendedSource] are free-form.
+  Future<void> trackPurchase(String orderId, double orderPrice, List<PurchaseLineItemWire> items, String? deliveryType, String? deliveryAddress, String? paymentType, bool isTaxFree, bool isGiftPackage, String? promocode, double? orderCash, double? orderBonuses, double? orderDelivery, double? orderDiscount, String? channel, Map<String, Object?>? custom, Map<String, Object?>? recommendedSource, String? stream, String? segment, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[orderId, orderPrice, items, deliveryType, deliveryAddress, paymentType, isTaxFree, isGiftPackage, promocode, orderCash, orderBonuses, orderDelivery, orderDiscount, channel, custom, recommendedSource, stream, segment, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`.
+  /// The native SDKs never show a popup themselves under the plugin, so they never
+  /// report one either: Dart does, once it is on screen.
+  Future<void> trackPopupShown(int popupId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPopupShown$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[popupId, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<ProductWire?> productsGetInfo(String itemId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetInfo$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return (pigeonVar_replyList[0] as ProductWire?);
+    }
+  }
+
+  Future<ProductsListResponseWire> productsGetList(ProductsListRequestWire request, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetList$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[request, shopId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1381,24 +6354,1296 @@ class PersonalizationHostApi {
         message: 'Host platform returned null value for non-null return value.',
       );
     } else {
-      return (pigeonVar_replyList[0] as String?)!;
+      return (pigeonVar_replyList[0] as ProductsListResponseWire?)!;
+    }
+  }
+
+  Future<ProductCountersResponseWire> productsGetCounters(String itemId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetCounters$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as ProductCountersResponseWire?)!;
+    }
+  }
+
+  /// `products.getCategory`: [request] without `categoryIds` and `merchants`.
+  Future<ProductsListResponseWire> productsGetCategory(String categoryId, ProductsListRequestWire request, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetCategory$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[categoryId, request, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as ProductsListResponseWire?)!;
+    }
+  }
+
+  Future<CollectionResponseWire> collectionsGet(String collectionId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.collectionsGet$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[collectionId, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as CollectionResponseWire?)!;
+    }
+  }
+
+  Future<RecommendationResponseWire> recommendationsGet(String code, RecommendationRequestWire request, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.recommendationsGet$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, request, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as RecommendationResponseWire?)!;
+    }
+  }
+
+  /// `search.agentEnabled`, read now from the last `/init` answer.
+  Future<bool> searchAgentEnabled(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgentEnabled$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as bool?)!;
+    }
+  }
+
+  Future<SearchBlankResponseWire> searchBlank(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as SearchBlankResponseWire?)!;
+    }
+  }
+
+  Future<SearchInstantResponseWire> searchInstant(String query, List<String>? locations, List<String>? excludedMerchants, List<String>? excludedBrands, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[query, locations, excludedMerchants, excludedBrands, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as SearchInstantResponseWire?)!;
+    }
+  }
+
+  Future<SearchFullResponseWire> searchFull(String query, SearchFullRequestWire request, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[query, request, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as SearchFullResponseWire?)!;
+    }
+  }
+
+  Future<AgentDialogResponseWire> searchAgentDialog(int? sessionId, List<String>? locations, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgentDialog$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[sessionId, locations, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as AgentDialogResponseWire?)!;
+    }
+  }
+
+  Future<AgentResponseWire> searchAgent(String message, int? sessionId, List<String>? locations, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgent$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[message, sessionId, locations, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as AgentResponseWire?)!;
+    }
+  }
+
+  Future<List<CartItemWire>> cartGet(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.cartGet$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<CartItemWire>();
+    }
+  }
+
+  /// A server method: [shopSecret] is passed by the caller and never kept.
+  Future<void> cartClear(String shopSecret, String? email, String? phone, String? loyaltyId, String? externalId, String? telegramId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.cartClear$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopSecret, email, phone, loyaltyId, externalId, telegramId, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<ProfileWire> profileGet(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGet$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as ProfileWire?)!;
+    }
+  }
+
+  Future<void> profileSet(ProfileUpdateRequestWire request, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileSet$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[request, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<List<ProductWire>> profileGetLastOrder(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGetLastOrder$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<ProductWire>();
+    }
+  }
+
+  /// A server method: [shopSecret] is passed by the caller and never kept.
+  Future<List<OrderWire>> profileGetOrders(String shopSecret, String? did, String? email, String? phone, String? loyaltyId, String? externalId, String? dateFrom, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGetOrders$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopSecret, did, email, phone, loyaltyId, externalId, dateFrom, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<OrderWire>();
+    }
+  }
+
+  Future<void> subscriptionsManage(SubscriptionsUpdateRequestWire request, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsManage$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[request, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<SubscriptionStatusWire> subscriptionsCheck(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsCheck$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as SubscriptionStatusWire?)!;
+    }
+  }
+
+  Future<void> subscriptionsSubscribeForPriceDrop(String itemId, double currentPrice, String? email, String? phone, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsSubscribeForPriceDrop$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, currentPrice, email, phone, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> subscriptionsUnsubscribeFromPriceDrop(List<String> itemIds, String? email, String? phone, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsUnsubscribeFromPriceDrop$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemIds, email, phone, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> subscriptionsSubscribeForBackInStock(String itemId, BackInStockPropertiesWire? properties, String? email, String? phone, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsSubscribeForBackInStock$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, properties, email, phone, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> subscriptionsUnsubscribeFromBackInStock(List<String> itemIds, String? email, String? phone, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsUnsubscribeFromBackInStock$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemIds, email, phone, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> segmentsAdd(int segmentId, String? email, String? phone, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsAdd$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[segmentId, email, phone, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> segmentsRemove(int segmentId, String? email, String? phone, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsRemove$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[segmentId, email, phone, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<List<SegmentWire>> segmentsGet(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsGet$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<SegmentWire>();
+    }
+  }
+
+  Future<void> notificationsTrackDelivered(String code, String type, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackDelivered$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, type, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> notificationsTrackOpened(String code, String type, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackOpened$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, type, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> notificationsTrackClicked(String code, String type, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackClicked$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, type, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> notificationsTrackClosed(String code, String type, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackClosed$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, type, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// The push token the native SDK keeps for the shop, read without the network;
+  /// [provider] is `apns`, `fcm` or `hms`.
+  Future<PushTokenWire?> notificationsGetPushToken(String? provider, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsGetPushToken$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[provider, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return (pigeonVar_replyList[0] as PushTokenWire?);
+    }
+  }
+
+  Future<void> notificationsSetPushToken(String token, String provider, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsSetPushToken$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[token, provider, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// A server method: [shopSecret] is passed by the caller and never kept.
+  Future<NotificationHistoryWire> notificationsGetHistory(String shopSecret, String type, String? phone, String? email, String? externalId, String? loyaltyId, String? channel, int? limit, int? page, String? dateFrom, String? did, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsGetHistory$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopSecret, type, phone, email, externalId, loyaltyId, channel, limit, page, dateFrom, did, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as NotificationHistoryWire?)!;
+    }
+  }
+
+  /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
+  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+  /// `PushEvent` enum: 0 = received (native `delivered`), 1 = delivered (native
+  /// `opened`: the notification is on screen), 2 = clicked.
+  Future<void> handlePush(Map<String, String> payload, int event) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[payload, event]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<StoriesBlockWire> storiesGet(String code, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.storiesGet$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as StoriesBlockWire?)!;
+    }
+  }
+
+  Future<PurchaseProbabilityWire> predictGetProbabilityToPurchase(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.predictGetProbabilityToPurchase$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as PurchaseProbabilityWire?)!;
+    }
+  }
+
+  /// [gender] is `m` or `f`.
+  Future<LoyaltyMemberWire> loyaltyJoin(String phone, String? firstName, String? lastName, String? gender, String? birthday, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyJoin$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[phone, firstName, lastName, gender, birthday, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as LoyaltyMemberWire?)!;
+    }
+  }
+
+  Future<LoyaltyStatusWire> loyaltyGetStatus(String phone, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyGetStatus$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[phone, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as LoyaltyStatusWire?)!;
+    }
+  }
+
+  Future<List<LoyaltyPromotionWire>> loyaltyGetPromotions(String? locationId, List<String>? promoCodes, bool? chargeBonuses, String? currentTime, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyGetPromotions$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[locationId, promoCodes, chargeBonuses, currentTime, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<LoyaltyPromotionWire>();
+    }
+  }
+
+  Future<SliderWire> slidersGet(String code, List<String>? tags, String? locationId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.slidersGet$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[code, tags, locationId, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as SliderWire?)!;
+    }
+  }
+
+  Future<PollReviewWire> reviewsCreateNps(int rate, String channel, String category, String? orderId, String? comment, String? label, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateNps$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[rate, channel, category, orderId, comment, label, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as PollReviewWire?)!;
+    }
+  }
+
+  Future<PollReviewWire> reviewsCreateCsat(int rate, String channel, String campaign, String? orderId, String? comment, String? label, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateCsat$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[rate, channel, campaign, orderId, comment, label, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as PollReviewWire?)!;
+    }
+  }
+
+  Future<PollReviewWire> reviewsCreateCes(int rate, String channel, String campaign, String? orderId, String? comment, String? label, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateCes$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[rate, channel, campaign, orderId, comment, label, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as PollReviewWire?)!;
+    }
+  }
+
+  Future<List<NpsCategoryWire>> reviewsGetNpsCategories(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetNpsCategories$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<NpsCategoryWire>();
+    }
+  }
+
+  Future<List<PollChannelWire>> reviewsGetNpsChannels(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetNpsChannels$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<PollChannelWire>();
+    }
+  }
+
+  Future<List<CsatCampaignWire>> reviewsGetCsatCampaigns(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetCsatCampaigns$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<CsatCampaignWire>();
+    }
+  }
+
+  Future<List<CesCampaignWire>> reviewsGetCesCampaigns(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetCesCampaigns$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<CesCampaignWire>();
+    }
+  }
+
+  Future<ProductReviewsResponseWire> reviewsGetProductReviews(String itemId, int? limit, int? offset, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetProductReviews$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[itemId, limit, offset, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as ProductReviewsResponseWire?)!;
+    }
+  }
+
+  Future<List<ClientReviewWire>> reviewsGetClientReviews(String orderId, String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetClientReviews$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[orderId, shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<ClientReviewWire>();
     }
   }
 
   /// Opens [url] with the system handler (browser or the app that claims the link).
   /// Returns false when nothing could open it.
   Future<bool> openUrl(String url) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[url],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[url]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1424,24 +7669,14 @@ class PersonalizationHostApi {
   /// `UIActivityViewController`; Android — the window got its focus back after the
   /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
   /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
-  Future<void> shareUrl(
-    String url,
-    double anchorX,
-    double anchorY,
-    double anchorWidth,
-    double anchorHeight,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[url, anchorX, anchorY, anchorWidth, anchorHeight],
+  Future<void> shareUrl(String url, double anchorX, double anchorY, double anchorWidth, double anchorHeight) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[url, anchorX, anchorY, anchorWidth, anchorHeight]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1463,17 +7698,13 @@ class PersonalizationHostApi {
   /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
   /// generates a lazy cast that throws on the first read.
   Future<Map<String, List<Object?>>> getStoriesSeen(String shop) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[shop],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shop]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1490,28 +7721,19 @@ class PersonalizationHostApi {
         message: 'Host platform returned null value for non-null return value.',
       );
     } else {
-      return (pigeonVar_replyList[0] as Map<Object?, Object?>?)!
-          .cast<String, List<Object?>>();
+      return (pigeonVar_replyList[0] as Map<Object?, Object?>?)!.cast<String, List<Object?>>();
     }
   }
 
   /// Records [slideId] of story [storyId] as seen for [shop].
-  Future<void> setStorySlideSeen(
-    String shop,
-    String storyId,
-    String slideId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setStorySlideSeen$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[shop, storyId, slideId],
+  Future<void> setStorySlideSeen(String shop, String storyId, String slideId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setStorySlideSeen$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shop, storyId, slideId]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1530,14 +7752,12 @@ class PersonalizationHostApi {
   /// The app's cache directory: Android `Context.cacheDir`, iOS `Library/Caches`. The
   /// stories viewer keeps its video cache under it.
   Future<String> getCacheDirectory() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCacheDirectory$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCacheDirectory$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -1563,14 +7783,12 @@ class PersonalizationHostApi {
   /// so [endStoriesAudio] can put it back. iOS only; a no-op on Android, where a muted
   /// video never takes the audio focus (`mixWithOthers`).
   Future<void> beginStoriesAudio() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.beginStoriesAudio$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.beginStoriesAudio$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -1592,17 +7810,13 @@ class PersonalizationHostApi {
   /// hardware volume (see [PersonalizationStoriesFlutterApi.onStoriesVolumeUp]). iOS
   /// only; a no-op on Android.
   Future<void> updateStoriesAudio(bool muted) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.updateStoriesAudio$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[muted],
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.updateStoriesAudio$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
     );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[muted]);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -1621,497 +7835,13 @@ class PersonalizationHostApi {
   /// The viewer closed: restores the session saved by [beginStoriesAudio] and stops
   /// watching the volume. iOS only; a no-op on Android.
   Future<void> endStoriesAudio() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.endStoriesAudio$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.endStoriesAudio$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-  /// via the native `REES46.handlePush`. [event] is the index of the Dart
-  /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
-  /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
-  Future<void> handlePush(Map<String, String> payload, int event) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[payload, event],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackProductView(
-    String itemId,
-    TrackingSourceWire? source,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackProductView$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[itemId, source, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackCategoryView(String categoryId, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackCategoryView$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[categoryId, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackSearch(
-    String query,
-    List<String>? results,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSearch$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[query, results, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackAddToCart(
-    TrackingItemWire item,
-    TrackingSourceWire? source,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackAddToCart$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[item, source, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackSyncCart(
-    List<TrackingItemWire> items,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSyncCart$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[items, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackRemoveFromCart(String itemId, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackRemoveFromCart$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[itemId, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackAddToFavorites(
-    String itemId,
-    TrackingSourceWire? source,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackAddToFavorites$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[itemId, source, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackSyncFavorites(List<String> itemIds, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSyncFavorites$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[itemIds, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackRemoveFromFavorites(String itemId, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackRemoveFromFavorites$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[itemId, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackStoryView(
-    String storyId,
-    String slideId,
-    String? code,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackStoryView$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[storyId, slideId, code, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> trackStoryClick(
-    String storyId,
-    String slideId,
-    String? code,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackStoryClick$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[storyId, slideId, code, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  /// Stores the attribution source natively for the next event.
-  Future<void> trackSetSource(TrackingSourceWire source, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSetSource$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[source, shopId],
-    );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
-  Future<void> trackPurchase(
-    String orderId,
-    double orderPrice,
-    List<PurchaseLineItemWire> items,
-    String? deliveryType,
-    String? deliveryAddress,
-    String? paymentType,
-    bool isTaxFree,
-    bool isGiftPackage,
-    String? promocode,
-    double? orderCash,
-    double? orderBonuses,
-    double? orderDelivery,
-    double? orderDiscount,
-    String? channel,
-    String? customJson,
-    String? recommendedSourceJson,
-    String? stream,
-    String? segment,
-    String? shopId,
-  ) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel
-        .send(<Object?>[
-          orderId,
-          orderPrice,
-          items,
-          deliveryType,
-          deliveryAddress,
-          paymentType,
-          isTaxFree,
-          isGiftPackage,
-          promocode,
-          orderCash,
-          orderBonuses,
-          orderDelivery,
-          orderDiscount,
-          channel,
-          customJson,
-          recommendedSourceJson,
-          stream,
-          segment,
-          shopId,
-        ]);
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`
-  /// (Android) / `trackPopupShown` (iOS). The native SDKs never show a popup themselves
-  /// under the plugin, so they never report one either: Dart does, once it is on screen.
-  Future<void> trackPopupShown(int popupId, String? shopId) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPopupShown$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[popupId, shopId],
-    );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -2131,14 +7861,12 @@ class PersonalizationHostApi {
   /// app's notification settings on Android, the app's page in Settings on iOS. What the
   /// native popups do for their push-subscription button.
   Future<void> openNotificationSettings() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openNotificationSettings$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel =
-        BasicMessageChannel<Object?>(
-          pigeonVar_channelName,
-          pigeonChannelCodec,
-          binaryMessenger: pigeonVar_binaryMessenger,
-        );
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openNotificationSettings$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
@@ -2156,6 +7884,108 @@ class PersonalizationHostApi {
   }
 }
 
+/// What the native instances tell Dart on their own: a shop's state, the push
+/// events and the push tokens the native SDK sees. Separate from
+/// [PersonalizationFlutterApi], which carries the legacy push callbacks.
+abstract class PersonalizationStateFlutterApi {
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  /// A shop's state, device id, session or A/B group changed.
+  void onSnapshot(SdkSnapshotWire snapshot);
+
+  /// A push event the native SDK handled for [shopId]: [event] is `delivered`,
+  /// `opened`, `clicked` or `closed`.
+  void onPushEvent(String shopId, String event, PushPayloadWire payload);
+
+  /// A new push token the native SDK got from APNs, FCM or HMS.
+  void onPushToken(PushTokenWire token);
+
+  static void setUp(PersonalizationStateFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onSnapshot$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onSnapshot was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final SdkSnapshotWire? arg_snapshot = (args[0] as SdkSnapshotWire?);
+          assert(arg_snapshot != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onSnapshot was null, expected non-null SdkSnapshotWire.');
+          try {
+            api.onSnapshot(arg_snapshot!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushEvent$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushEvent was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final String? arg_shopId = (args[0] as String?);
+          assert(arg_shopId != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushEvent was null, expected non-null String.');
+          final String? arg_event = (args[1] as String?);
+          assert(arg_event != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushEvent was null, expected non-null String.');
+          final PushPayloadWire? arg_payload = (args[2] as PushPayloadWire?);
+          assert(arg_payload != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushEvent was null, expected non-null PushPayloadWire.');
+          try {
+            api.onPushEvent(arg_shopId!, arg_event!, arg_payload!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushToken$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushToken was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final PushTokenWire? arg_token = (args[0] as PushTokenWire?);
+          assert(arg_token != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushToken was null, expected non-null PushTokenWire.');
+          try {
+            api.onPushToken(arg_token!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+  }
+}
+
 /// Server popups, handed over instead of being shown natively: the plugin sets the native
 /// presentation listener (Android) / delegate (iOS), which keeps every popup back and
 /// forwards it here. Separate from [PersonalizationFlutterApi], which the push dispatcher
@@ -2167,49 +7997,32 @@ abstract class PersonalizationPopupFlutterApi {
   /// `id`, `position`, `delay`, `components` and `popup_actions` (an object).
   void onPopup(String shopId, String popupJson);
 
-  static void setUp(
-    PersonalizationPopupFlutterApi? api, {
-    BinaryMessenger? binaryMessenger,
-    String messageChannelSuffix = '',
-  }) {
-    messageChannelSuffix = messageChannelSuffix.isNotEmpty
-        ? '.$messageChannelSuffix'
-        : '';
+  static void setUp(PersonalizationPopupFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
     {
-      final BasicMessageChannel<Object?>
-      pigeonVar_channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup$messageChannelSuffix',
-        pigeonChannelCodec,
-        binaryMessenger: binaryMessenger,
-      );
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
-          assert(
-            message != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup was null.',
-          );
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_shopId = (args[0] as String?);
-          assert(
-            arg_shopId != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup was null, expected non-null String.',
-          );
+          assert(arg_shopId != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup was null, expected non-null String.');
           final String? arg_popupJson = (args[1] as String?);
-          assert(
-            arg_popupJson != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup was null, expected non-null String.',
-          );
+          assert(arg_popupJson != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationPopupFlutterApi.onPopup was null, expected non-null String.');
           try {
             api.onPopup(arg_shopId!, arg_popupJson!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
-            return wrapResponse(
-              error: PlatformException(code: 'error', message: e.toString()),
-            );
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }
@@ -2226,118 +8039,82 @@ abstract class PersonalizationFlutterApi {
 
   void onPushClicked(String? shopId, Map<String, String?> payload);
 
-  static void setUp(
-    PersonalizationFlutterApi? api, {
-    BinaryMessenger? binaryMessenger,
-    String messageChannelSuffix = '',
-  }) {
-    messageChannelSuffix = messageChannelSuffix.isNotEmpty
-        ? '.$messageChannelSuffix'
-        : '';
+  static void setUp(PersonalizationFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
     {
-      final BasicMessageChannel<Object?>
-      pigeonVar_channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived$messageChannelSuffix',
-        pigeonChannelCodec,
-        binaryMessenger: binaryMessenger,
-      );
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
-          assert(
-            message != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived was null.',
-          );
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_shopId = (args[0] as String?);
-          final Map<String, String?>? arg_payload =
-              (args[1] as Map<Object?, Object?>?)?.cast<String, String?>();
-          assert(
-            arg_payload != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived was null, expected non-null Map<String, String?>.',
-          );
+          final Map<String, String?>? arg_payload = (args[1] as Map<Object?, Object?>?)?.cast<String, String?>();
+          assert(arg_payload != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived was null, expected non-null Map<String, String?>.');
           try {
             api.onPushReceived(arg_shopId, arg_payload!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
-            return wrapResponse(
-              error: PlatformException(code: 'error', message: e.toString()),
-            );
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }
     }
     {
-      final BasicMessageChannel<Object?>
-      pigeonVar_channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered$messageChannelSuffix',
-        pigeonChannelCodec,
-        binaryMessenger: binaryMessenger,
-      );
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
-          assert(
-            message != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered was null.',
-          );
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_shopId = (args[0] as String?);
-          final Map<String, String?>? arg_payload =
-              (args[1] as Map<Object?, Object?>?)?.cast<String, String?>();
-          assert(
-            arg_payload != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered was null, expected non-null Map<String, String?>.',
-          );
+          final Map<String, String?>? arg_payload = (args[1] as Map<Object?, Object?>?)?.cast<String, String?>();
+          assert(arg_payload != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushDelivered was null, expected non-null Map<String, String?>.');
           try {
             api.onPushDelivered(arg_shopId, arg_payload!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
-            return wrapResponse(
-              error: PlatformException(code: 'error', message: e.toString()),
-            );
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }
     }
     {
-      final BasicMessageChannel<Object?>
-      pigeonVar_channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked$messageChannelSuffix',
-        pigeonChannelCodec,
-        binaryMessenger: binaryMessenger,
-      );
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
-          assert(
-            message != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked was null.',
-          );
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_shopId = (args[0] as String?);
-          final Map<String, String?>? arg_payload =
-              (args[1] as Map<Object?, Object?>?)?.cast<String, String?>();
-          assert(
-            arg_payload != null,
-            'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked was null, expected non-null Map<String, String?>.',
-          );
+          final Map<String, String?>? arg_payload = (args[1] as Map<Object?, Object?>?)?.cast<String, String?>();
+          assert(arg_payload != null,
+              'Argument for dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushClicked was null, expected non-null Map<String, String?>.');
           try {
             api.onPushClicked(arg_shopId, arg_payload!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
-            return wrapResponse(
-              error: PlatformException(code: 'error', message: e.toString()),
-            );
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }
@@ -2354,21 +8131,12 @@ abstract class PersonalizationStoriesFlutterApi {
   /// `outputVolume` grew). Android delivers the volume key to Flutter itself.
   void onStoriesVolumeUp();
 
-  static void setUp(
-    PersonalizationStoriesFlutterApi? api, {
-    BinaryMessenger? binaryMessenger,
-    String messageChannelSuffix = '',
-  }) {
-    messageChannelSuffix = messageChannelSuffix.isNotEmpty
-        ? '.$messageChannelSuffix'
-        : '';
+  static void setUp(PersonalizationStoriesFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
     {
-      final BasicMessageChannel<Object?>
-      pigeonVar_channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStoriesFlutterApi.onStoriesVolumeUp$messageChannelSuffix',
-        pigeonChannelCodec,
-        binaryMessenger: binaryMessenger,
-      );
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStoriesFlutterApi.onStoriesVolumeUp$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         pigeonVar_channel.setMessageHandler(null);
       } else {
@@ -2378,10 +8146,8 @@ abstract class PersonalizationStoriesFlutterApi {
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          } catch (e) {
-            return wrapResponse(
-              error: PlatformException(code: 'error', message: e.toString()),
-            );
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }

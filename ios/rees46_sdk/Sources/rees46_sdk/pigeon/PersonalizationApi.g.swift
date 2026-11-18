@@ -231,245 +231,6 @@ struct PurchaseLineItemWire: Hashable {
   }
 }
 
-/// Wire format for profile fields sent to native SDK.
-/// All fields are optional — only non-null values are forwarded.
-/// [birthday] must be a "yyyy-MM-dd" string.
-/// [gender] must be "m" or "f".
-/// [customPropertiesJson] is a JSON object string or null.
-///
-/// Generated class from Pigeon that represents data sent in messages.
-struct ProfileParamsWire: Hashable {
-  var email: String? = nil
-  var phone: String? = nil
-  var loyaltyId: String? = nil
-  var firstName: String? = nil
-  var lastName: String? = nil
-  var birthday: String? = nil
-  var age: Int64? = nil
-  var gender: String? = nil
-  var location: String? = nil
-  var advertisingId: String? = nil
-  var fbId: String? = nil
-  var vkId: String? = nil
-  var telegramId: String? = nil
-  var loyaltyCardLocation: String? = nil
-  var loyaltyStatus: String? = nil
-  var loyaltyBonuses: Int64? = nil
-  var loyaltyBonusesToNextLevel: Int64? = nil
-  var boughtSomething: Bool? = nil
-  var userId: String? = nil
-  var customPropertiesJson: String? = nil
-
-
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> ProfileParamsWire? {
-    let email: String? = nilOrValue(pigeonVar_list[0])
-    let phone: String? = nilOrValue(pigeonVar_list[1])
-    let loyaltyId: String? = nilOrValue(pigeonVar_list[2])
-    let firstName: String? = nilOrValue(pigeonVar_list[3])
-    let lastName: String? = nilOrValue(pigeonVar_list[4])
-    let birthday: String? = nilOrValue(pigeonVar_list[5])
-    let age: Int64? = nilOrValue(pigeonVar_list[6])
-    let gender: String? = nilOrValue(pigeonVar_list[7])
-    let location: String? = nilOrValue(pigeonVar_list[8])
-    let advertisingId: String? = nilOrValue(pigeonVar_list[9])
-    let fbId: String? = nilOrValue(pigeonVar_list[10])
-    let vkId: String? = nilOrValue(pigeonVar_list[11])
-    let telegramId: String? = nilOrValue(pigeonVar_list[12])
-    let loyaltyCardLocation: String? = nilOrValue(pigeonVar_list[13])
-    let loyaltyStatus: String? = nilOrValue(pigeonVar_list[14])
-    let loyaltyBonuses: Int64? = nilOrValue(pigeonVar_list[15])
-    let loyaltyBonusesToNextLevel: Int64? = nilOrValue(pigeonVar_list[16])
-    let boughtSomething: Bool? = nilOrValue(pigeonVar_list[17])
-    let userId: String? = nilOrValue(pigeonVar_list[18])
-    let customPropertiesJson: String? = nilOrValue(pigeonVar_list[19])
-
-    return ProfileParamsWire(
-      email: email,
-      phone: phone,
-      loyaltyId: loyaltyId,
-      firstName: firstName,
-      lastName: lastName,
-      birthday: birthday,
-      age: age,
-      gender: gender,
-      location: location,
-      advertisingId: advertisingId,
-      fbId: fbId,
-      vkId: vkId,
-      telegramId: telegramId,
-      loyaltyCardLocation: loyaltyCardLocation,
-      loyaltyStatus: loyaltyStatus,
-      loyaltyBonuses: loyaltyBonuses,
-      loyaltyBonusesToNextLevel: loyaltyBonusesToNextLevel,
-      boughtSomething: boughtSomething,
-      userId: userId,
-      customPropertiesJson: customPropertiesJson
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      email,
-      phone,
-      loyaltyId,
-      firstName,
-      lastName,
-      birthday,
-      age,
-      gender,
-      location,
-      advertisingId,
-      fbId,
-      vkId,
-      telegramId,
-      loyaltyCardLocation,
-      loyaltyStatus,
-      loyaltyBonuses,
-      loyaltyBonusesToNextLevel,
-      boughtSomething,
-      userId,
-      customPropertiesJson,
-    ]
-  }
-  static func == (lhs: ProfileParamsWire, rhs: ProfileParamsWire) -> Bool {
-    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
-  func hash(into hasher: inout Hasher) {
-    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
-  }
-}
-
-/// Wire format for `subscriptions/manage`: contacts that identify the client and one flag per
-/// channel and mailing type. `true` subscribes, `false` unsubscribes, `null` leaves it unchanged.
-///
-/// Generated class from Pigeon that represents data sent in messages.
-struct ManageSubscriptionParamsWire: Hashable {
-  var email: String? = nil
-  var phone: String? = nil
-  var externalId: String? = nil
-  var loyaltyId: String? = nil
-  var telegramId: String? = nil
-  var emailBulk: Bool? = nil
-  var emailChain: Bool? = nil
-  var emailTransactional: Bool? = nil
-  var smsBulk: Bool? = nil
-  var smsChain: Bool? = nil
-  var smsTransactional: Bool? = nil
-  var webPushBulk: Bool? = nil
-  var webPushChain: Bool? = nil
-  var webPushTransactional: Bool? = nil
-  var mobilePushBulk: Bool? = nil
-  var mobilePushChain: Bool? = nil
-  var mobilePushTransactional: Bool? = nil
-  var telegramBulk: Bool? = nil
-  var telegramChain: Bool? = nil
-  var telegramTransactional: Bool? = nil
-  var whatsappBulk: Bool? = nil
-  var whatsappChain: Bool? = nil
-  var whatsappTransactional: Bool? = nil
-  var maxBulk: Bool? = nil
-  var maxChain: Bool? = nil
-  var maxTransactional: Bool? = nil
-  var walletBulk: Bool? = nil
-
-
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> ManageSubscriptionParamsWire? {
-    let email: String? = nilOrValue(pigeonVar_list[0])
-    let phone: String? = nilOrValue(pigeonVar_list[1])
-    let externalId: String? = nilOrValue(pigeonVar_list[2])
-    let loyaltyId: String? = nilOrValue(pigeonVar_list[3])
-    let telegramId: String? = nilOrValue(pigeonVar_list[4])
-    let emailBulk: Bool? = nilOrValue(pigeonVar_list[5])
-    let emailChain: Bool? = nilOrValue(pigeonVar_list[6])
-    let emailTransactional: Bool? = nilOrValue(pigeonVar_list[7])
-    let smsBulk: Bool? = nilOrValue(pigeonVar_list[8])
-    let smsChain: Bool? = nilOrValue(pigeonVar_list[9])
-    let smsTransactional: Bool? = nilOrValue(pigeonVar_list[10])
-    let webPushBulk: Bool? = nilOrValue(pigeonVar_list[11])
-    let webPushChain: Bool? = nilOrValue(pigeonVar_list[12])
-    let webPushTransactional: Bool? = nilOrValue(pigeonVar_list[13])
-    let mobilePushBulk: Bool? = nilOrValue(pigeonVar_list[14])
-    let mobilePushChain: Bool? = nilOrValue(pigeonVar_list[15])
-    let mobilePushTransactional: Bool? = nilOrValue(pigeonVar_list[16])
-    let telegramBulk: Bool? = nilOrValue(pigeonVar_list[17])
-    let telegramChain: Bool? = nilOrValue(pigeonVar_list[18])
-    let telegramTransactional: Bool? = nilOrValue(pigeonVar_list[19])
-    let whatsappBulk: Bool? = nilOrValue(pigeonVar_list[20])
-    let whatsappChain: Bool? = nilOrValue(pigeonVar_list[21])
-    let whatsappTransactional: Bool? = nilOrValue(pigeonVar_list[22])
-    let maxBulk: Bool? = nilOrValue(pigeonVar_list[23])
-    let maxChain: Bool? = nilOrValue(pigeonVar_list[24])
-    let maxTransactional: Bool? = nilOrValue(pigeonVar_list[25])
-    let walletBulk: Bool? = nilOrValue(pigeonVar_list[26])
-
-    return ManageSubscriptionParamsWire(
-      email: email,
-      phone: phone,
-      externalId: externalId,
-      loyaltyId: loyaltyId,
-      telegramId: telegramId,
-      emailBulk: emailBulk,
-      emailChain: emailChain,
-      emailTransactional: emailTransactional,
-      smsBulk: smsBulk,
-      smsChain: smsChain,
-      smsTransactional: smsTransactional,
-      webPushBulk: webPushBulk,
-      webPushChain: webPushChain,
-      webPushTransactional: webPushTransactional,
-      mobilePushBulk: mobilePushBulk,
-      mobilePushChain: mobilePushChain,
-      mobilePushTransactional: mobilePushTransactional,
-      telegramBulk: telegramBulk,
-      telegramChain: telegramChain,
-      telegramTransactional: telegramTransactional,
-      whatsappBulk: whatsappBulk,
-      whatsappChain: whatsappChain,
-      whatsappTransactional: whatsappTransactional,
-      maxBulk: maxBulk,
-      maxChain: maxChain,
-      maxTransactional: maxTransactional,
-      walletBulk: walletBulk
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      email,
-      phone,
-      externalId,
-      loyaltyId,
-      telegramId,
-      emailBulk,
-      emailChain,
-      emailTransactional,
-      smsBulk,
-      smsChain,
-      smsTransactional,
-      webPushBulk,
-      webPushChain,
-      webPushTransactional,
-      mobilePushBulk,
-      mobilePushChain,
-      mobilePushTransactional,
-      telegramBulk,
-      telegramChain,
-      telegramTransactional,
-      whatsappBulk,
-      whatsappChain,
-      whatsappTransactional,
-      maxBulk,
-      maxChain,
-      maxTransactional,
-      walletBulk,
-    ]
-  }
-  static func == (lhs: ManageSubscriptionParamsWire, rhs: ManageSubscriptionParamsWire) -> Bool {
-    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
-  func hash(into hasher: inout Hasher) {
-    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
-  }
-}
-
 /// Wire format for one product line in a tracking event (maps to native `TrackingItem`).
 ///
 /// [quantity] is the domain name for the line quantity; native sends it as `amount`.
@@ -546,6 +307,3591 @@ struct TrackingSourceWire: Hashable {
   }
 }
 
+/// The state of one shop's native instance, as the bridge mirrors it: on init and on each change.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SdkSnapshotWire: Hashable {
+  var shopId: String
+  var state: String
+  var deviceId: String? = nil
+  var sessionId: String? = nil
+  var segment: String? = nil
+  var agentEnabled: Bool
+  var pushToken: PushTokenWire? = nil
+  var pushTokens: [PushTokenWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SdkSnapshotWire? {
+    let shopId = pigeonVar_list[0] as! String
+    let state = pigeonVar_list[1] as! String
+    let deviceId: String? = nilOrValue(pigeonVar_list[2])
+    let sessionId: String? = nilOrValue(pigeonVar_list[3])
+    let segment: String? = nilOrValue(pigeonVar_list[4])
+    let agentEnabled = pigeonVar_list[5] as! Bool
+    let pushToken: PushTokenWire? = nilOrValue(pigeonVar_list[6])
+    let pushTokens = pigeonVar_list[7] as! [PushTokenWire]
+
+    return SdkSnapshotWire(
+      shopId: shopId,
+      state: state,
+      deviceId: deviceId,
+      sessionId: sessionId,
+      segment: segment,
+      agentEnabled: agentEnabled,
+      pushToken: pushToken,
+      pushTokens: pushTokens
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      shopId,
+      state,
+      deviceId,
+      sessionId,
+      segment,
+      agentEnabled,
+      pushToken,
+      pushTokens,
+    ]
+  }
+  static func == (lhs: SdkSnapshotWire, rhs: SdkSnapshotWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Product` of the contract (products.md).
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductWire: Hashable {
+  var id: String
+  var groupId: String? = nil
+  var name: String
+  var brand: String? = nil
+  var model: String? = nil
+  var description: String? = nil
+  var barcode: String? = nil
+  var url: String
+  var deeplinkAndroid: String? = nil
+  var deeplinkIos: String? = nil
+  var imageUrl: String? = nil
+  var picture: String? = nil
+  var resizedImages: [String: String]? = nil
+  var price: Double
+  var priceFormatted: String? = nil
+  var priceFull: Double? = nil
+  var priceFullFormatted: String? = nil
+  var oldPrice: Double? = nil
+  var oldPriceFormatted: String? = nil
+  var oldPriceFull: Double? = nil
+  var oldPriceFullFormatted: String? = nil
+  var currency: String
+  var discountPercent: Int64? = nil
+  var discountFormatted: String? = nil
+  var salesRate: Int64? = nil
+  var relativeSalesRate: Double? = nil
+  var rating: Int64? = nil
+  var isNew: Bool
+  var stockQuantity: Int64? = nil
+  var categoryIds: [String]? = nil
+  var categories: [ProductCategoryWire]? = nil
+  var params: [ProductParamWire]? = nil
+  var locationIds: [String]? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductWire? {
+    let id = pigeonVar_list[0] as! String
+    let groupId: String? = nilOrValue(pigeonVar_list[1])
+    let name = pigeonVar_list[2] as! String
+    let brand: String? = nilOrValue(pigeonVar_list[3])
+    let model: String? = nilOrValue(pigeonVar_list[4])
+    let description: String? = nilOrValue(pigeonVar_list[5])
+    let barcode: String? = nilOrValue(pigeonVar_list[6])
+    let url = pigeonVar_list[7] as! String
+    let deeplinkAndroid: String? = nilOrValue(pigeonVar_list[8])
+    let deeplinkIos: String? = nilOrValue(pigeonVar_list[9])
+    let imageUrl: String? = nilOrValue(pigeonVar_list[10])
+    let picture: String? = nilOrValue(pigeonVar_list[11])
+    let resizedImages: [String: String]? = nilOrValue(pigeonVar_list[12])
+    let price = pigeonVar_list[13] as! Double
+    let priceFormatted: String? = nilOrValue(pigeonVar_list[14])
+    let priceFull: Double? = nilOrValue(pigeonVar_list[15])
+    let priceFullFormatted: String? = nilOrValue(pigeonVar_list[16])
+    let oldPrice: Double? = nilOrValue(pigeonVar_list[17])
+    let oldPriceFormatted: String? = nilOrValue(pigeonVar_list[18])
+    let oldPriceFull: Double? = nilOrValue(pigeonVar_list[19])
+    let oldPriceFullFormatted: String? = nilOrValue(pigeonVar_list[20])
+    let currency = pigeonVar_list[21] as! String
+    let discountPercent: Int64? = nilOrValue(pigeonVar_list[22])
+    let discountFormatted: String? = nilOrValue(pigeonVar_list[23])
+    let salesRate: Int64? = nilOrValue(pigeonVar_list[24])
+    let relativeSalesRate: Double? = nilOrValue(pigeonVar_list[25])
+    let rating: Int64? = nilOrValue(pigeonVar_list[26])
+    let isNew = pigeonVar_list[27] as! Bool
+    let stockQuantity: Int64? = nilOrValue(pigeonVar_list[28])
+    let categoryIds: [String]? = nilOrValue(pigeonVar_list[29])
+    let categories: [ProductCategoryWire]? = nilOrValue(pigeonVar_list[30])
+    let params: [ProductParamWire]? = nilOrValue(pigeonVar_list[31])
+    let locationIds: [String]? = nilOrValue(pigeonVar_list[32])
+
+    return ProductWire(
+      id: id,
+      groupId: groupId,
+      name: name,
+      brand: brand,
+      model: model,
+      description: description,
+      barcode: barcode,
+      url: url,
+      deeplinkAndroid: deeplinkAndroid,
+      deeplinkIos: deeplinkIos,
+      imageUrl: imageUrl,
+      picture: picture,
+      resizedImages: resizedImages,
+      price: price,
+      priceFormatted: priceFormatted,
+      priceFull: priceFull,
+      priceFullFormatted: priceFullFormatted,
+      oldPrice: oldPrice,
+      oldPriceFormatted: oldPriceFormatted,
+      oldPriceFull: oldPriceFull,
+      oldPriceFullFormatted: oldPriceFullFormatted,
+      currency: currency,
+      discountPercent: discountPercent,
+      discountFormatted: discountFormatted,
+      salesRate: salesRate,
+      relativeSalesRate: relativeSalesRate,
+      rating: rating,
+      isNew: isNew,
+      stockQuantity: stockQuantity,
+      categoryIds: categoryIds,
+      categories: categories,
+      params: params,
+      locationIds: locationIds
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      groupId,
+      name,
+      brand,
+      model,
+      description,
+      barcode,
+      url,
+      deeplinkAndroid,
+      deeplinkIos,
+      imageUrl,
+      picture,
+      resizedImages,
+      price,
+      priceFormatted,
+      priceFull,
+      priceFullFormatted,
+      oldPrice,
+      oldPriceFormatted,
+      oldPriceFull,
+      oldPriceFullFormatted,
+      currency,
+      discountPercent,
+      discountFormatted,
+      salesRate,
+      relativeSalesRate,
+      rating,
+      isNew,
+      stockQuantity,
+      categoryIds,
+      categories,
+      params,
+      locationIds,
+    ]
+  }
+  static func == (lhs: ProductWire, rhs: ProductWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductCategory`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductCategoryWire: Hashable {
+  var id: String
+  var name: String? = nil
+  var url: String? = nil
+  var parentId: String? = nil
+  var level: Int64? = nil
+  var count: Int64? = nil
+  var alias: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductCategoryWire? {
+    let id = pigeonVar_list[0] as! String
+    let name: String? = nilOrValue(pigeonVar_list[1])
+    let url: String? = nilOrValue(pigeonVar_list[2])
+    let parentId: String? = nilOrValue(pigeonVar_list[3])
+    let level: Int64? = nilOrValue(pigeonVar_list[4])
+    let count: Int64? = nilOrValue(pigeonVar_list[5])
+    let alias: String? = nilOrValue(pigeonVar_list[6])
+
+    return ProductCategoryWire(
+      id: id,
+      name: name,
+      url: url,
+      parentId: parentId,
+      level: level,
+      count: count,
+      alias: alias
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      name,
+      url,
+      parentId,
+      level,
+      count,
+      alias,
+    ]
+  }
+  static func == (lhs: ProductCategoryWire, rhs: ProductCategoryWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductParam`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductParamWire: Hashable {
+  var key: String
+  var values: [String]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductParamWire? {
+    let key = pigeonVar_list[0] as! String
+    let values = pigeonVar_list[1] as! [String]
+
+    return ProductParamWire(
+      key: key,
+      values: values
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      key,
+      values,
+    ]
+  }
+  static func == (lhs: ProductParamWire, rhs: ProductParamWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Location`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct LocationWire: Hashable {
+  var id: String
+  var name: String
+  var type: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> LocationWire? {
+    let id = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+    let type: String? = nilOrValue(pigeonVar_list[2])
+
+    return LocationWire(
+      id: id,
+      name: name,
+      type: type
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      name,
+      type,
+    ]
+  }
+  static func == (lhs: LocationWire, rhs: LocationWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Brand`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BrandWire: Hashable {
+  var name: String
+  var count: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BrandWire? {
+    let name = pigeonVar_list[0] as! String
+    let count = pigeonVar_list[1] as! Int64
+
+    return BrandWire(
+      name: name,
+      count: count
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      name,
+      count,
+    ]
+  }
+  static func == (lhs: BrandWire, rhs: BrandWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SearchFilter`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SearchFilterWire: Hashable {
+  var count: Int64? = nil
+  var priority: Int64? = nil
+  var values: [String: Int64]? = nil
+  var min: Double? = nil
+  var max: Double? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SearchFilterWire? {
+    let count: Int64? = nilOrValue(pigeonVar_list[0])
+    let priority: Int64? = nilOrValue(pigeonVar_list[1])
+    let values: [String: Int64]? = nilOrValue(pigeonVar_list[2])
+    let min: Double? = nilOrValue(pigeonVar_list[3])
+    let max: Double? = nilOrValue(pigeonVar_list[4])
+
+    return SearchFilterWire(
+      count: count,
+      priority: priority,
+      values: values,
+      min: min,
+      max: max
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      count,
+      priority,
+      values,
+      min,
+      max,
+    ]
+  }
+  static func == (lhs: SearchFilterWire, rhs: SearchFilterWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ColorFilter`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ColorFilterWire: Hashable {
+  var color: String
+  var count: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ColorFilterWire? {
+    let color = pigeonVar_list[0] as! String
+    let count = pigeonVar_list[1] as! Int64
+
+    return ColorFilterWire(
+      color: color,
+      count: count
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      color,
+      count,
+    ]
+  }
+  static func == (lhs: ColorFilterWire, rhs: ColorFilterWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SizeFilter`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SizeFilterWire: Hashable {
+  var size: String
+  var count: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SizeFilterWire? {
+    let size = pigeonVar_list[0] as! String
+    let count = pigeonVar_list[1] as! Int64
+
+    return SizeFilterWire(
+      size: size,
+      count: count
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      size,
+      count,
+    ]
+  }
+  static func == (lhs: SizeFilterWire, rhs: SizeFilterWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `IndustrialFilters`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct IndustrialFiltersWire: Hashable {
+  var colors: [ColorFilterWire]? = nil
+  var fashionSizes: [SizeFilterWire]? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> IndustrialFiltersWire? {
+    let colors: [ColorFilterWire]? = nilOrValue(pigeonVar_list[0])
+    let fashionSizes: [SizeFilterWire]? = nilOrValue(pigeonVar_list[1])
+
+    return IndustrialFiltersWire(
+      colors: colors,
+      fashionSizes: fashionSizes
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      colors,
+      fashionSizes,
+    ]
+  }
+  static func == (lhs: IndustrialFiltersWire, rhs: IndustrialFiltersWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PriceRange`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PriceRangeWire: Hashable {
+  var min: Double
+  var max: Double
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PriceRangeWire? {
+    let min = pigeonVar_list[0] as! Double
+    let max = pigeonVar_list[1] as! Double
+
+    return PriceRangeWire(
+      min: min,
+      max: max
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      min,
+      max,
+    ]
+  }
+  static func == (lhs: PriceRangeWire, rhs: PriceRangeWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PriceInterval`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PriceIntervalWire: Hashable {
+  var from: Double
+  var to: Double? = nil
+  var count: Int64? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PriceIntervalWire? {
+    let from = pigeonVar_list[0] as! Double
+    let to: Double? = nilOrValue(pigeonVar_list[1])
+    let count: Int64? = nilOrValue(pigeonVar_list[2])
+
+    return PriceIntervalWire(
+      from: from,
+      to: to,
+      count: count
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      from,
+      to,
+      count,
+    ]
+  }
+  static func == (lhs: PriceIntervalWire, rhs: PriceIntervalWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductsListResponse`; `products.getCategory` answers with it too (`CategoryResponse` is its subset).
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductsListResponseWire: Hashable {
+  var productsTotal: Int64? = nil
+  var products: [ProductWire]
+  var categories: [ProductCategoryWire]? = nil
+  var brands: [BrandWire]? = nil
+  var locations: [LocationWire]? = nil
+  var filters: [String: SearchFilterWire]? = nil
+  var industrialFilters: IndustrialFiltersWire? = nil
+  var priceRange: PriceRangeWire? = nil
+  var priceRanges: [PriceIntervalWire]? = nil
+  var priceMedian: Double? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductsListResponseWire? {
+    let productsTotal: Int64? = nilOrValue(pigeonVar_list[0])
+    let products = pigeonVar_list[1] as! [ProductWire]
+    let categories: [ProductCategoryWire]? = nilOrValue(pigeonVar_list[2])
+    let brands: [BrandWire]? = nilOrValue(pigeonVar_list[3])
+    let locations: [LocationWire]? = nilOrValue(pigeonVar_list[4])
+    let filters: [String: SearchFilterWire]? = nilOrValue(pigeonVar_list[5])
+    let industrialFilters: IndustrialFiltersWire? = nilOrValue(pigeonVar_list[6])
+    let priceRange: PriceRangeWire? = nilOrValue(pigeonVar_list[7])
+    let priceRanges: [PriceIntervalWire]? = nilOrValue(pigeonVar_list[8])
+    let priceMedian: Double? = nilOrValue(pigeonVar_list[9])
+
+    return ProductsListResponseWire(
+      productsTotal: productsTotal,
+      products: products,
+      categories: categories,
+      brands: brands,
+      locations: locations,
+      filters: filters,
+      industrialFilters: industrialFilters,
+      priceRange: priceRange,
+      priceRanges: priceRanges,
+      priceMedian: priceMedian
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      productsTotal,
+      products,
+      categories,
+      brands,
+      locations,
+      filters,
+      industrialFilters,
+      priceRange,
+      priceRanges,
+      priceMedian,
+    ]
+  }
+  static func == (lhs: ProductsListResponseWire, rhs: ProductsListResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductsListRequest`; `products.getCategory` takes it as `CategoryRequest` and leaves out `categoryIds` and `merchants`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductsListRequestWire: Hashable {
+  var categoryIds: [String]? = nil
+  var brands: [String]? = nil
+  var merchants: [String]? = nil
+  var locations: [String]? = nil
+  var priceMin: Double? = nil
+  var priceMax: Double? = nil
+  var filters: [String: [String]]? = nil
+  var sortBy: String? = nil
+  var sortDir: String? = nil
+  var limit: Int64? = nil
+  var page: Int64? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductsListRequestWire? {
+    let categoryIds: [String]? = nilOrValue(pigeonVar_list[0])
+    let brands: [String]? = nilOrValue(pigeonVar_list[1])
+    let merchants: [String]? = nilOrValue(pigeonVar_list[2])
+    let locations: [String]? = nilOrValue(pigeonVar_list[3])
+    let priceMin: Double? = nilOrValue(pigeonVar_list[4])
+    let priceMax: Double? = nilOrValue(pigeonVar_list[5])
+    let filters: [String: [String]]? = nilOrValue(pigeonVar_list[6])
+    let sortBy: String? = nilOrValue(pigeonVar_list[7])
+    let sortDir: String? = nilOrValue(pigeonVar_list[8])
+    let limit: Int64? = nilOrValue(pigeonVar_list[9])
+    let page: Int64? = nilOrValue(pigeonVar_list[10])
+
+    return ProductsListRequestWire(
+      categoryIds: categoryIds,
+      brands: brands,
+      merchants: merchants,
+      locations: locations,
+      priceMin: priceMin,
+      priceMax: priceMax,
+      filters: filters,
+      sortBy: sortBy,
+      sortDir: sortDir,
+      limit: limit,
+      page: page
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      categoryIds,
+      brands,
+      merchants,
+      locations,
+      priceMin,
+      priceMax,
+      filters,
+      sortBy,
+      sortDir,
+      limit,
+      page,
+    ]
+  }
+  static func == (lhs: ProductsListRequestWire, rhs: ProductsListRequestWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductCounter`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductCounterWire: Hashable {
+  var view: Int64
+  var cart: Int64
+  var purchase: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductCounterWire? {
+    let view = pigeonVar_list[0] as! Int64
+    let cart = pigeonVar_list[1] as! Int64
+    let purchase = pigeonVar_list[2] as! Int64
+
+    return ProductCounterWire(
+      view: view,
+      cart: cart,
+      purchase: purchase
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      view,
+      cart,
+      purchase,
+    ]
+  }
+  static func == (lhs: ProductCounterWire, rhs: ProductCounterWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductCounterTriggers`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductCounterTriggersWire: Hashable {
+  var backInStock: Int64
+  var priceDrop: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductCounterTriggersWire? {
+    let backInStock = pigeonVar_list[0] as! Int64
+    let priceDrop = pigeonVar_list[1] as! Int64
+
+    return ProductCounterTriggersWire(
+      backInStock: backInStock,
+      priceDrop: priceDrop
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      backInStock,
+      priceDrop,
+    ]
+  }
+  static func == (lhs: ProductCounterTriggersWire, rhs: ProductCounterTriggersWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductCountersResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductCountersResponseWire: Hashable {
+  var daily: ProductCounterWire? = nil
+  var now: ProductCounterWire? = nil
+  var triggers: ProductCounterTriggersWire? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductCountersResponseWire? {
+    let daily: ProductCounterWire? = nilOrValue(pigeonVar_list[0])
+    let now: ProductCounterWire? = nilOrValue(pigeonVar_list[1])
+    let triggers: ProductCounterTriggersWire? = nilOrValue(pigeonVar_list[2])
+
+    return ProductCountersResponseWire(
+      daily: daily,
+      now: now,
+      triggers: triggers
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      daily,
+      now,
+      triggers,
+    ]
+  }
+  static func == (lhs: ProductCountersResponseWire, rhs: ProductCountersResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `CollectionResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct CollectionResponseWire: Hashable {
+  var products: [ProductWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> CollectionResponseWire? {
+    let products = pigeonVar_list[0] as! [ProductWire]
+
+    return CollectionResponseWire(
+      products: products
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      products
+    ]
+  }
+  static func == (lhs: CollectionResponseWire, rhs: CollectionResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `RecommendationRequest`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct RecommendationRequestWire: Hashable {
+  var itemId: String? = nil
+  var categoryId: String? = nil
+  var searchQuery: String? = nil
+  var excludedItemIds: [String]? = nil
+  var brands: [String]? = nil
+  var locations: [String]? = nil
+  var limit: Int64? = nil
+  var extended: Bool
+  var withLocations: Bool
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> RecommendationRequestWire? {
+    let itemId: String? = nilOrValue(pigeonVar_list[0])
+    let categoryId: String? = nilOrValue(pigeonVar_list[1])
+    let searchQuery: String? = nilOrValue(pigeonVar_list[2])
+    let excludedItemIds: [String]? = nilOrValue(pigeonVar_list[3])
+    let brands: [String]? = nilOrValue(pigeonVar_list[4])
+    let locations: [String]? = nilOrValue(pigeonVar_list[5])
+    let limit: Int64? = nilOrValue(pigeonVar_list[6])
+    let extended = pigeonVar_list[7] as! Bool
+    let withLocations = pigeonVar_list[8] as! Bool
+
+    return RecommendationRequestWire(
+      itemId: itemId,
+      categoryId: categoryId,
+      searchQuery: searchQuery,
+      excludedItemIds: excludedItemIds,
+      brands: brands,
+      locations: locations,
+      limit: limit,
+      extended: extended,
+      withLocations: withLocations
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      itemId,
+      categoryId,
+      searchQuery,
+      excludedItemIds,
+      brands,
+      locations,
+      limit,
+      extended,
+      withLocations,
+    ]
+  }
+  static func == (lhs: RecommendationRequestWire, rhs: RecommendationRequestWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `RecommendationResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct RecommendationResponseWire: Hashable {
+  var id: Int64? = nil
+  var title: String? = nil
+  var link: String? = nil
+  var products: [ProductWire]
+  var itemIds: [String]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> RecommendationResponseWire? {
+    let id: Int64? = nilOrValue(pigeonVar_list[0])
+    let title: String? = nilOrValue(pigeonVar_list[1])
+    let link: String? = nilOrValue(pigeonVar_list[2])
+    let products = pigeonVar_list[3] as! [ProductWire]
+    let itemIds = pigeonVar_list[4] as! [String]
+
+    return RecommendationResponseWire(
+      id: id,
+      title: title,
+      link: link,
+      products: products,
+      itemIds: itemIds
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      title,
+      link,
+      products,
+      itemIds,
+    ]
+  }
+  static func == (lhs: RecommendationResponseWire, rhs: RecommendationResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SearchFullRequest`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SearchFullRequestWire: Hashable {
+  var categoryIds: [String]? = nil
+  var brands: [String]? = nil
+  var excludedBrands: [String]? = nil
+  var merchants: [String]? = nil
+  var excludedMerchants: [String]? = nil
+  var locations: [String]? = nil
+  var priceMin: Double? = nil
+  var priceMax: Double? = nil
+  var colors: [String]? = nil
+  var fashionSizes: [String]? = nil
+  var excludedItemIds: [String]? = nil
+  var filters: [String: [String]]? = nil
+  var sortBy: String? = nil
+  var sortDir: String? = nil
+  var disableClarification: Bool
+  var categoryLimit: Int64? = nil
+  var brandLimit: Int64? = nil
+  var limit: Int64? = nil
+  var page: Int64? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SearchFullRequestWire? {
+    let categoryIds: [String]? = nilOrValue(pigeonVar_list[0])
+    let brands: [String]? = nilOrValue(pigeonVar_list[1])
+    let excludedBrands: [String]? = nilOrValue(pigeonVar_list[2])
+    let merchants: [String]? = nilOrValue(pigeonVar_list[3])
+    let excludedMerchants: [String]? = nilOrValue(pigeonVar_list[4])
+    let locations: [String]? = nilOrValue(pigeonVar_list[5])
+    let priceMin: Double? = nilOrValue(pigeonVar_list[6])
+    let priceMax: Double? = nilOrValue(pigeonVar_list[7])
+    let colors: [String]? = nilOrValue(pigeonVar_list[8])
+    let fashionSizes: [String]? = nilOrValue(pigeonVar_list[9])
+    let excludedItemIds: [String]? = nilOrValue(pigeonVar_list[10])
+    let filters: [String: [String]]? = nilOrValue(pigeonVar_list[11])
+    let sortBy: String? = nilOrValue(pigeonVar_list[12])
+    let sortDir: String? = nilOrValue(pigeonVar_list[13])
+    let disableClarification = pigeonVar_list[14] as! Bool
+    let categoryLimit: Int64? = nilOrValue(pigeonVar_list[15])
+    let brandLimit: Int64? = nilOrValue(pigeonVar_list[16])
+    let limit: Int64? = nilOrValue(pigeonVar_list[17])
+    let page: Int64? = nilOrValue(pigeonVar_list[18])
+
+    return SearchFullRequestWire(
+      categoryIds: categoryIds,
+      brands: brands,
+      excludedBrands: excludedBrands,
+      merchants: merchants,
+      excludedMerchants: excludedMerchants,
+      locations: locations,
+      priceMin: priceMin,
+      priceMax: priceMax,
+      colors: colors,
+      fashionSizes: fashionSizes,
+      excludedItemIds: excludedItemIds,
+      filters: filters,
+      sortBy: sortBy,
+      sortDir: sortDir,
+      disableClarification: disableClarification,
+      categoryLimit: categoryLimit,
+      brandLimit: brandLimit,
+      limit: limit,
+      page: page
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      categoryIds,
+      brands,
+      excludedBrands,
+      merchants,
+      excludedMerchants,
+      locations,
+      priceMin,
+      priceMax,
+      colors,
+      fashionSizes,
+      excludedItemIds,
+      filters,
+      sortBy,
+      sortDir,
+      disableClarification,
+      categoryLimit,
+      brandLimit,
+      limit,
+      page,
+    ]
+  }
+  static func == (lhs: SearchFullRequestWire, rhs: SearchFullRequestWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Query`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct QueryWire: Hashable {
+  var name: String
+  var url: String? = nil
+  var score: Double? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> QueryWire? {
+    let name = pigeonVar_list[0] as! String
+    let url: String? = nilOrValue(pigeonVar_list[1])
+    let score: Double? = nilOrValue(pigeonVar_list[2])
+
+    return QueryWire(
+      name: name,
+      url: url,
+      score: score
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      name,
+      url,
+      score,
+    ]
+  }
+  static func == (lhs: QueryWire, rhs: QueryWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PopularItem`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PopularItemWire: Hashable {
+  var name: String
+  var url: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PopularItemWire? {
+    let name = pigeonVar_list[0] as! String
+    let url = pigeonVar_list[1] as! String
+
+    return PopularItemWire(
+      name: name,
+      url: url
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      name,
+      url,
+    ]
+  }
+  static func == (lhs: PopularItemWire, rhs: PopularItemWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SearchRedirect`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SearchRedirectWire: Hashable {
+  var query: String? = nil
+  var url: String? = nil
+  var deeplink: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SearchRedirectWire? {
+    let query: String? = nilOrValue(pigeonVar_list[0])
+    let url: String? = nilOrValue(pigeonVar_list[1])
+    let deeplink: String? = nilOrValue(pigeonVar_list[2])
+
+    return SearchRedirectWire(
+      query: query,
+      url: url,
+      deeplink: deeplink
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      query,
+      url,
+      deeplink,
+    ]
+  }
+  static func == (lhs: SearchRedirectWire, rhs: SearchRedirectWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SearchBlankResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SearchBlankResponseWire: Hashable {
+  var products: [ProductWire]
+  var lastProducts: Bool
+  var lastQueries: [QueryWire]? = nil
+  var suggests: [QueryWire]? = nil
+  var popularCategories: [PopularItemWire]? = nil
+  var popularBrands: [PopularItemWire]? = nil
+  var popularLinks: [PopularItemWire]? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SearchBlankResponseWire? {
+    let products = pigeonVar_list[0] as! [ProductWire]
+    let lastProducts = pigeonVar_list[1] as! Bool
+    let lastQueries: [QueryWire]? = nilOrValue(pigeonVar_list[2])
+    let suggests: [QueryWire]? = nilOrValue(pigeonVar_list[3])
+    let popularCategories: [PopularItemWire]? = nilOrValue(pigeonVar_list[4])
+    let popularBrands: [PopularItemWire]? = nilOrValue(pigeonVar_list[5])
+    let popularLinks: [PopularItemWire]? = nilOrValue(pigeonVar_list[6])
+
+    return SearchBlankResponseWire(
+      products: products,
+      lastProducts: lastProducts,
+      lastQueries: lastQueries,
+      suggests: suggests,
+      popularCategories: popularCategories,
+      popularBrands: popularBrands,
+      popularLinks: popularLinks
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      products,
+      lastProducts,
+      lastQueries,
+      suggests,
+      popularCategories,
+      popularBrands,
+      popularLinks,
+    ]
+  }
+  static func == (lhs: SearchBlankResponseWire, rhs: SearchBlankResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SearchInstantResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SearchInstantResponseWire: Hashable {
+  var searchQuery: String? = nil
+  var searchQueryOriginal: String? = nil
+  var clarification: Bool? = nil
+  var productsTotal: Int64? = nil
+  var products: [ProductWire]
+  var categories: [ProductCategoryWire]? = nil
+  var queries: [QueryWire]? = nil
+  var locations: [LocationWire]? = nil
+  var redirect: SearchRedirectWire? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SearchInstantResponseWire? {
+    let searchQuery: String? = nilOrValue(pigeonVar_list[0])
+    let searchQueryOriginal: String? = nilOrValue(pigeonVar_list[1])
+    let clarification: Bool? = nilOrValue(pigeonVar_list[2])
+    let productsTotal: Int64? = nilOrValue(pigeonVar_list[3])
+    let products = pigeonVar_list[4] as! [ProductWire]
+    let categories: [ProductCategoryWire]? = nilOrValue(pigeonVar_list[5])
+    let queries: [QueryWire]? = nilOrValue(pigeonVar_list[6])
+    let locations: [LocationWire]? = nilOrValue(pigeonVar_list[7])
+    let redirect: SearchRedirectWire? = nilOrValue(pigeonVar_list[8])
+
+    return SearchInstantResponseWire(
+      searchQuery: searchQuery,
+      searchQueryOriginal: searchQueryOriginal,
+      clarification: clarification,
+      productsTotal: productsTotal,
+      products: products,
+      categories: categories,
+      queries: queries,
+      locations: locations,
+      redirect: redirect
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      searchQuery,
+      searchQueryOriginal,
+      clarification,
+      productsTotal,
+      products,
+      categories,
+      queries,
+      locations,
+      redirect,
+    ]
+  }
+  static func == (lhs: SearchInstantResponseWire, rhs: SearchInstantResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SearchFullResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SearchFullResponseWire: Hashable {
+  var searchQuery: String? = nil
+  var searchQueryOriginal: String? = nil
+  var clarification: Bool? = nil
+  var productsTotal: Int64? = nil
+  var products: [ProductWire]
+  var categories: [ProductCategoryWire]? = nil
+  var brands: [BrandWire]? = nil
+  var locations: [LocationWire]? = nil
+  var filters: [String: SearchFilterWire]? = nil
+  var industrialFilters: IndustrialFiltersWire? = nil
+  var priceRange: PriceRangeWire? = nil
+  var priceRanges: [PriceIntervalWire]? = nil
+  var priceMedian: Double? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SearchFullResponseWire? {
+    let searchQuery: String? = nilOrValue(pigeonVar_list[0])
+    let searchQueryOriginal: String? = nilOrValue(pigeonVar_list[1])
+    let clarification: Bool? = nilOrValue(pigeonVar_list[2])
+    let productsTotal: Int64? = nilOrValue(pigeonVar_list[3])
+    let products = pigeonVar_list[4] as! [ProductWire]
+    let categories: [ProductCategoryWire]? = nilOrValue(pigeonVar_list[5])
+    let brands: [BrandWire]? = nilOrValue(pigeonVar_list[6])
+    let locations: [LocationWire]? = nilOrValue(pigeonVar_list[7])
+    let filters: [String: SearchFilterWire]? = nilOrValue(pigeonVar_list[8])
+    let industrialFilters: IndustrialFiltersWire? = nilOrValue(pigeonVar_list[9])
+    let priceRange: PriceRangeWire? = nilOrValue(pigeonVar_list[10])
+    let priceRanges: [PriceIntervalWire]? = nilOrValue(pigeonVar_list[11])
+    let priceMedian: Double? = nilOrValue(pigeonVar_list[12])
+
+    return SearchFullResponseWire(
+      searchQuery: searchQuery,
+      searchQueryOriginal: searchQueryOriginal,
+      clarification: clarification,
+      productsTotal: productsTotal,
+      products: products,
+      categories: categories,
+      brands: brands,
+      locations: locations,
+      filters: filters,
+      industrialFilters: industrialFilters,
+      priceRange: priceRange,
+      priceRanges: priceRanges,
+      priceMedian: priceMedian
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      searchQuery,
+      searchQueryOriginal,
+      clarification,
+      productsTotal,
+      products,
+      categories,
+      brands,
+      locations,
+      filters,
+      industrialFilters,
+      priceRange,
+      priceRanges,
+      priceMedian,
+    ]
+  }
+  static func == (lhs: SearchFullResponseWire, rhs: SearchFullResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `AgentProduct`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct AgentProductWire: Hashable {
+  var id: String
+  var name: String? = nil
+  var price: Double? = nil
+  var oldPrice: Double? = nil
+  var priceFormatted: String? = nil
+  var oldPriceFormatted: String? = nil
+  var picture: String? = nil
+  var url: String? = nil
+  var reason: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> AgentProductWire? {
+    let id = pigeonVar_list[0] as! String
+    let name: String? = nilOrValue(pigeonVar_list[1])
+    let price: Double? = nilOrValue(pigeonVar_list[2])
+    let oldPrice: Double? = nilOrValue(pigeonVar_list[3])
+    let priceFormatted: String? = nilOrValue(pigeonVar_list[4])
+    let oldPriceFormatted: String? = nilOrValue(pigeonVar_list[5])
+    let picture: String? = nilOrValue(pigeonVar_list[6])
+    let url: String? = nilOrValue(pigeonVar_list[7])
+    let reason: String? = nilOrValue(pigeonVar_list[8])
+
+    return AgentProductWire(
+      id: id,
+      name: name,
+      price: price,
+      oldPrice: oldPrice,
+      priceFormatted: priceFormatted,
+      oldPriceFormatted: oldPriceFormatted,
+      picture: picture,
+      url: url,
+      reason: reason
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      name,
+      price,
+      oldPrice,
+      priceFormatted,
+      oldPriceFormatted,
+      picture,
+      url,
+      reason,
+    ]
+  }
+  static func == (lhs: AgentProductWire, rhs: AgentProductWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `AgentMessage`; [role] is the wire value (`user`, `assistant`).
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct AgentMessageWire: Hashable {
+  var id: Int64
+  var role: String? = nil
+  var content: String? = nil
+  var createdAt: String? = nil
+  var products: [AgentProductWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> AgentMessageWire? {
+    let id = pigeonVar_list[0] as! Int64
+    let role: String? = nilOrValue(pigeonVar_list[1])
+    let content: String? = nilOrValue(pigeonVar_list[2])
+    let createdAt: String? = nilOrValue(pigeonVar_list[3])
+    let products = pigeonVar_list[4] as! [AgentProductWire]
+
+    return AgentMessageWire(
+      id: id,
+      role: role,
+      content: content,
+      createdAt: createdAt,
+      products: products
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      role,
+      content,
+      createdAt,
+      products,
+    ]
+  }
+  static func == (lhs: AgentMessageWire, rhs: AgentMessageWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `AgentSession`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct AgentSessionWire: Hashable {
+  var id: Int64
+  var title: String? = nil
+  var updatedAt: String? = nil
+  var messages: [AgentMessageWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> AgentSessionWire? {
+    let id = pigeonVar_list[0] as! Int64
+    let title: String? = nilOrValue(pigeonVar_list[1])
+    let updatedAt: String? = nilOrValue(pigeonVar_list[2])
+    let messages = pigeonVar_list[3] as! [AgentMessageWire]
+
+    return AgentSessionWire(
+      id: id,
+      title: title,
+      updatedAt: updatedAt,
+      messages: messages
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      title,
+      updatedAt,
+      messages,
+    ]
+  }
+  static func == (lhs: AgentSessionWire, rhs: AgentSessionWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `AgentDialogResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct AgentDialogResponseWire: Hashable {
+  var sessions: [AgentSessionWire]
+  var session: AgentSessionWire? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> AgentDialogResponseWire? {
+    let sessions = pigeonVar_list[0] as! [AgentSessionWire]
+    let session: AgentSessionWire? = nilOrValue(pigeonVar_list[1])
+
+    return AgentDialogResponseWire(
+      sessions: sessions,
+      session: session
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      sessions,
+      session,
+    ]
+  }
+  static func == (lhs: AgentDialogResponseWire, rhs: AgentDialogResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `AgentResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct AgentResponseWire: Hashable {
+  var session: AgentSessionWire
+  var message: AgentMessageWire
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> AgentResponseWire? {
+    let session = pigeonVar_list[0] as! AgentSessionWire
+    let message = pigeonVar_list[1] as! AgentMessageWire
+
+    return AgentResponseWire(
+      session: session,
+      message: message
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      session,
+      message,
+    ]
+  }
+  static func == (lhs: AgentResponseWire, rhs: AgentResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `CartItem`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct CartItemWire: Hashable {
+  var id: String
+  var quantity: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> CartItemWire? {
+    let id = pigeonVar_list[0] as! String
+    let quantity = pigeonVar_list[1] as! Int64
+
+    return CartItemWire(
+      id: id,
+      quantity: quantity
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      quantity,
+    ]
+  }
+  static func == (lhs: CartItemWire, rhs: CartItemWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Profile`; genders are the wire values `m` / `f`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProfileWire: Hashable {
+  var id: String? = nil
+  var hasEmail: Bool? = nil
+  var emailRegisteredAt: String? = nil
+  var gender: String? = nil
+  var computedGender: String? = nil
+  var boughtSomething: Bool? = nil
+  var customProperties: [String: Any?]? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProfileWire? {
+    let id: String? = nilOrValue(pigeonVar_list[0])
+    let hasEmail: Bool? = nilOrValue(pigeonVar_list[1])
+    let emailRegisteredAt: String? = nilOrValue(pigeonVar_list[2])
+    let gender: String? = nilOrValue(pigeonVar_list[3])
+    let computedGender: String? = nilOrValue(pigeonVar_list[4])
+    let boughtSomething: Bool? = nilOrValue(pigeonVar_list[5])
+    let customProperties: [String: Any?]? = nilOrValue(pigeonVar_list[6])
+
+    return ProfileWire(
+      id: id,
+      hasEmail: hasEmail,
+      emailRegisteredAt: emailRegisteredAt,
+      gender: gender,
+      computedGender: computedGender,
+      boughtSomething: boughtSomething,
+      customProperties: customProperties
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      hasEmail,
+      emailRegisteredAt,
+      gender,
+      computedGender,
+      boughtSomething,
+      customProperties,
+    ]
+  }
+  static func == (lhs: ProfileWire, rhs: ProfileWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProfileKid`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProfileKidWire: Hashable {
+  var gender: String? = nil
+  var birthday: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProfileKidWire? {
+    let gender: String? = nilOrValue(pigeonVar_list[0])
+    let birthday: String? = nilOrValue(pigeonVar_list[1])
+
+    return ProfileKidWire(
+      gender: gender,
+      birthday: birthday
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      gender,
+      birthday,
+    ]
+  }
+  static func == (lhs: ProfileKidWire, rhs: ProfileKidWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProfileCar`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProfileCarWire: Hashable {
+  var brand: String? = nil
+  var model: String? = nil
+  var vds: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProfileCarWire? {
+    let brand: String? = nilOrValue(pigeonVar_list[0])
+    let model: String? = nilOrValue(pigeonVar_list[1])
+    let vds: String? = nilOrValue(pigeonVar_list[2])
+
+    return ProfileCarWire(
+      brand: brand,
+      model: model,
+      vds: vds
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      brand,
+      model,
+      vds,
+    ]
+  }
+  static func == (lhs: ProfileCarWire, rhs: ProfileCarWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProfileUpdateRequest`; [gender] is `m` or `f`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProfileUpdateRequestWire: Hashable {
+  var email: String? = nil
+  var phone: String? = nil
+  var externalId: String? = nil
+  var loyaltyId: String? = nil
+  var telegramId: String? = nil
+  var fbId: String? = nil
+  var vkId: String? = nil
+  var firstName: String? = nil
+  var lastName: String? = nil
+  var gender: String? = nil
+  var birthday: String? = nil
+  var age: Int64? = nil
+  var location: String? = nil
+  var kids: [ProfileKidWire]? = nil
+  var cars: [ProfileCarWire]? = nil
+  var customProperties: [String: Any?]? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProfileUpdateRequestWire? {
+    let email: String? = nilOrValue(pigeonVar_list[0])
+    let phone: String? = nilOrValue(pigeonVar_list[1])
+    let externalId: String? = nilOrValue(pigeonVar_list[2])
+    let loyaltyId: String? = nilOrValue(pigeonVar_list[3])
+    let telegramId: String? = nilOrValue(pigeonVar_list[4])
+    let fbId: String? = nilOrValue(pigeonVar_list[5])
+    let vkId: String? = nilOrValue(pigeonVar_list[6])
+    let firstName: String? = nilOrValue(pigeonVar_list[7])
+    let lastName: String? = nilOrValue(pigeonVar_list[8])
+    let gender: String? = nilOrValue(pigeonVar_list[9])
+    let birthday: String? = nilOrValue(pigeonVar_list[10])
+    let age: Int64? = nilOrValue(pigeonVar_list[11])
+    let location: String? = nilOrValue(pigeonVar_list[12])
+    let kids: [ProfileKidWire]? = nilOrValue(pigeonVar_list[13])
+    let cars: [ProfileCarWire]? = nilOrValue(pigeonVar_list[14])
+    let customProperties: [String: Any?]? = nilOrValue(pigeonVar_list[15])
+
+    return ProfileUpdateRequestWire(
+      email: email,
+      phone: phone,
+      externalId: externalId,
+      loyaltyId: loyaltyId,
+      telegramId: telegramId,
+      fbId: fbId,
+      vkId: vkId,
+      firstName: firstName,
+      lastName: lastName,
+      gender: gender,
+      birthday: birthday,
+      age: age,
+      location: location,
+      kids: kids,
+      cars: cars,
+      customProperties: customProperties
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      email,
+      phone,
+      externalId,
+      loyaltyId,
+      telegramId,
+      fbId,
+      vkId,
+      firstName,
+      lastName,
+      gender,
+      birthday,
+      age,
+      location,
+      kids,
+      cars,
+      customProperties,
+    ]
+  }
+  static func == (lhs: ProfileUpdateRequestWire, rhs: ProfileUpdateRequestWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// An item of `Order`, the native SDKs' released model: sums are strings.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct OrderItemWire: Hashable {
+  var amount: Int64? = nil
+  var price: String? = nil
+  var status: String? = nil
+  var originalPrice: String? = nil
+  var barcode: String? = nil
+  var lineId: String? = nil
+  var cancelReason: String? = nil
+  var item: ProductWire? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> OrderItemWire? {
+    let amount: Int64? = nilOrValue(pigeonVar_list[0])
+    let price: String? = nilOrValue(pigeonVar_list[1])
+    let status: String? = nilOrValue(pigeonVar_list[2])
+    let originalPrice: String? = nilOrValue(pigeonVar_list[3])
+    let barcode: String? = nilOrValue(pigeonVar_list[4])
+    let lineId: String? = nilOrValue(pigeonVar_list[5])
+    let cancelReason: String? = nilOrValue(pigeonVar_list[6])
+    let item: ProductWire? = nilOrValue(pigeonVar_list[7])
+
+    return OrderItemWire(
+      amount: amount,
+      price: price,
+      status: status,
+      originalPrice: originalPrice,
+      barcode: barcode,
+      lineId: lineId,
+      cancelReason: cancelReason,
+      item: item
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      amount,
+      price,
+      status,
+      originalPrice,
+      barcode,
+      lineId,
+      cancelReason,
+      item,
+    ]
+  }
+  static func == (lhs: OrderItemWire, rhs: OrderItemWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Order` of `profile.getOrders`, the native SDKs' released model: sums are strings.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct OrderWire: Hashable {
+  var internalId: Int64? = nil
+  var id: String? = nil
+  var date: String? = nil
+  var value: String? = nil
+  var cashValue: String? = nil
+  var bonusesValue: String? = nil
+  var deliveryValue: String? = nil
+  var promocode: String? = nil
+  var deliveryDate: String? = nil
+  var internalStatus: String? = nil
+  var stream: String? = nil
+  var channel: String? = nil
+  var taxFree: Bool? = nil
+  var deliveryType: String? = nil
+  var deliveryAddress: String? = nil
+  var orderStatus: String? = nil
+  var paymentType: String? = nil
+  var items: [OrderItemWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> OrderWire? {
+    let internalId: Int64? = nilOrValue(pigeonVar_list[0])
+    let id: String? = nilOrValue(pigeonVar_list[1])
+    let date: String? = nilOrValue(pigeonVar_list[2])
+    let value: String? = nilOrValue(pigeonVar_list[3])
+    let cashValue: String? = nilOrValue(pigeonVar_list[4])
+    let bonusesValue: String? = nilOrValue(pigeonVar_list[5])
+    let deliveryValue: String? = nilOrValue(pigeonVar_list[6])
+    let promocode: String? = nilOrValue(pigeonVar_list[7])
+    let deliveryDate: String? = nilOrValue(pigeonVar_list[8])
+    let internalStatus: String? = nilOrValue(pigeonVar_list[9])
+    let stream: String? = nilOrValue(pigeonVar_list[10])
+    let channel: String? = nilOrValue(pigeonVar_list[11])
+    let taxFree: Bool? = nilOrValue(pigeonVar_list[12])
+    let deliveryType: String? = nilOrValue(pigeonVar_list[13])
+    let deliveryAddress: String? = nilOrValue(pigeonVar_list[14])
+    let orderStatus: String? = nilOrValue(pigeonVar_list[15])
+    let paymentType: String? = nilOrValue(pigeonVar_list[16])
+    let items = pigeonVar_list[17] as! [OrderItemWire]
+
+    return OrderWire(
+      internalId: internalId,
+      id: id,
+      date: date,
+      value: value,
+      cashValue: cashValue,
+      bonusesValue: bonusesValue,
+      deliveryValue: deliveryValue,
+      promocode: promocode,
+      deliveryDate: deliveryDate,
+      internalStatus: internalStatus,
+      stream: stream,
+      channel: channel,
+      taxFree: taxFree,
+      deliveryType: deliveryType,
+      deliveryAddress: deliveryAddress,
+      orderStatus: orderStatus,
+      paymentType: paymentType,
+      items: items
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      internalId,
+      id,
+      date,
+      value,
+      cashValue,
+      bonusesValue,
+      deliveryValue,
+      promocode,
+      deliveryDate,
+      internalStatus,
+      stream,
+      channel,
+      taxFree,
+      deliveryType,
+      deliveryAddress,
+      orderStatus,
+      paymentType,
+      items,
+    ]
+  }
+  static func == (lhs: OrderWire, rhs: OrderWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SubscriptionsUpdateRequest`: `true` subscribes, `false` unsubscribes, `null` leaves it.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SubscriptionsUpdateRequestWire: Hashable {
+  var email: String? = nil
+  var phone: String? = nil
+  var externalId: String? = nil
+  var loyaltyId: String? = nil
+  var telegramId: String? = nil
+  var emailBulk: Bool? = nil
+  var emailChain: Bool? = nil
+  var emailTransactional: Bool? = nil
+  var smsBulk: Bool? = nil
+  var smsChain: Bool? = nil
+  var smsTransactional: Bool? = nil
+  var webPushBulk: Bool? = nil
+  var webPushChain: Bool? = nil
+  var webPushTransactional: Bool? = nil
+  var mobilePushBulk: Bool? = nil
+  var mobilePushChain: Bool? = nil
+  var mobilePushTransactional: Bool? = nil
+  var telegramBulk: Bool? = nil
+  var telegramChain: Bool? = nil
+  var telegramTransactional: Bool? = nil
+  var whatsappBulk: Bool? = nil
+  var whatsappChain: Bool? = nil
+  var whatsappTransactional: Bool? = nil
+  var maxBulk: Bool? = nil
+  var maxChain: Bool? = nil
+  var maxTransactional: Bool? = nil
+  var walletBulk: Bool? = nil
+  var walletChain: Bool? = nil
+  var walletTransactional: Bool? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SubscriptionsUpdateRequestWire? {
+    let email: String? = nilOrValue(pigeonVar_list[0])
+    let phone: String? = nilOrValue(pigeonVar_list[1])
+    let externalId: String? = nilOrValue(pigeonVar_list[2])
+    let loyaltyId: String? = nilOrValue(pigeonVar_list[3])
+    let telegramId: String? = nilOrValue(pigeonVar_list[4])
+    let emailBulk: Bool? = nilOrValue(pigeonVar_list[5])
+    let emailChain: Bool? = nilOrValue(pigeonVar_list[6])
+    let emailTransactional: Bool? = nilOrValue(pigeonVar_list[7])
+    let smsBulk: Bool? = nilOrValue(pigeonVar_list[8])
+    let smsChain: Bool? = nilOrValue(pigeonVar_list[9])
+    let smsTransactional: Bool? = nilOrValue(pigeonVar_list[10])
+    let webPushBulk: Bool? = nilOrValue(pigeonVar_list[11])
+    let webPushChain: Bool? = nilOrValue(pigeonVar_list[12])
+    let webPushTransactional: Bool? = nilOrValue(pigeonVar_list[13])
+    let mobilePushBulk: Bool? = nilOrValue(pigeonVar_list[14])
+    let mobilePushChain: Bool? = nilOrValue(pigeonVar_list[15])
+    let mobilePushTransactional: Bool? = nilOrValue(pigeonVar_list[16])
+    let telegramBulk: Bool? = nilOrValue(pigeonVar_list[17])
+    let telegramChain: Bool? = nilOrValue(pigeonVar_list[18])
+    let telegramTransactional: Bool? = nilOrValue(pigeonVar_list[19])
+    let whatsappBulk: Bool? = nilOrValue(pigeonVar_list[20])
+    let whatsappChain: Bool? = nilOrValue(pigeonVar_list[21])
+    let whatsappTransactional: Bool? = nilOrValue(pigeonVar_list[22])
+    let maxBulk: Bool? = nilOrValue(pigeonVar_list[23])
+    let maxChain: Bool? = nilOrValue(pigeonVar_list[24])
+    let maxTransactional: Bool? = nilOrValue(pigeonVar_list[25])
+    let walletBulk: Bool? = nilOrValue(pigeonVar_list[26])
+    let walletChain: Bool? = nilOrValue(pigeonVar_list[27])
+    let walletTransactional: Bool? = nilOrValue(pigeonVar_list[28])
+
+    return SubscriptionsUpdateRequestWire(
+      email: email,
+      phone: phone,
+      externalId: externalId,
+      loyaltyId: loyaltyId,
+      telegramId: telegramId,
+      emailBulk: emailBulk,
+      emailChain: emailChain,
+      emailTransactional: emailTransactional,
+      smsBulk: smsBulk,
+      smsChain: smsChain,
+      smsTransactional: smsTransactional,
+      webPushBulk: webPushBulk,
+      webPushChain: webPushChain,
+      webPushTransactional: webPushTransactional,
+      mobilePushBulk: mobilePushBulk,
+      mobilePushChain: mobilePushChain,
+      mobilePushTransactional: mobilePushTransactional,
+      telegramBulk: telegramBulk,
+      telegramChain: telegramChain,
+      telegramTransactional: telegramTransactional,
+      whatsappBulk: whatsappBulk,
+      whatsappChain: whatsappChain,
+      whatsappTransactional: whatsappTransactional,
+      maxBulk: maxBulk,
+      maxChain: maxChain,
+      maxTransactional: maxTransactional,
+      walletBulk: walletBulk,
+      walletChain: walletChain,
+      walletTransactional: walletTransactional
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      email,
+      phone,
+      externalId,
+      loyaltyId,
+      telegramId,
+      emailBulk,
+      emailChain,
+      emailTransactional,
+      smsBulk,
+      smsChain,
+      smsTransactional,
+      webPushBulk,
+      webPushChain,
+      webPushTransactional,
+      mobilePushBulk,
+      mobilePushChain,
+      mobilePushTransactional,
+      telegramBulk,
+      telegramChain,
+      telegramTransactional,
+      whatsappBulk,
+      whatsappChain,
+      whatsappTransactional,
+      maxBulk,
+      maxChain,
+      maxTransactional,
+      walletBulk,
+      walletChain,
+      walletTransactional,
+    ]
+  }
+  static func == (lhs: SubscriptionsUpdateRequestWire, rhs: SubscriptionsUpdateRequestWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SubscriptionStatus`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SubscriptionStatusWire: Hashable {
+  var exists: Bool
+  var emailBulk: Bool
+  var emailChain: Bool
+  var emailTransactional: Bool
+  var smsBulk: Bool
+  var smsChain: Bool
+  var smsTransactional: Bool
+  var webPushBulk: Bool
+  var webPushChain: Bool
+  var webPushTransactional: Bool
+  var mobilePushBulk: Bool
+  var mobilePushChain: Bool
+  var mobilePushTransactional: Bool
+  var telegramBulk: Bool
+  var telegramChain: Bool
+  var telegramTransactional: Bool
+  var whatsappBulk: Bool
+  var whatsappChain: Bool
+  var whatsappTransactional: Bool
+  var maxBulk: Bool
+  var maxChain: Bool
+  var maxTransactional: Bool
+  var walletBulk: Bool
+  var walletChain: Bool
+  var walletTransactional: Bool
+  var hasWebPush: Bool
+  var hasMobilePush: Bool
+  var emailInvalid: Bool
+  var emailBlacklisted: Bool
+  var emailBounced: Bool
+  var emailSuppressed: Bool
+  var emailConfirmed: Bool
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SubscriptionStatusWire? {
+    let exists = pigeonVar_list[0] as! Bool
+    let emailBulk = pigeonVar_list[1] as! Bool
+    let emailChain = pigeonVar_list[2] as! Bool
+    let emailTransactional = pigeonVar_list[3] as! Bool
+    let smsBulk = pigeonVar_list[4] as! Bool
+    let smsChain = pigeonVar_list[5] as! Bool
+    let smsTransactional = pigeonVar_list[6] as! Bool
+    let webPushBulk = pigeonVar_list[7] as! Bool
+    let webPushChain = pigeonVar_list[8] as! Bool
+    let webPushTransactional = pigeonVar_list[9] as! Bool
+    let mobilePushBulk = pigeonVar_list[10] as! Bool
+    let mobilePushChain = pigeonVar_list[11] as! Bool
+    let mobilePushTransactional = pigeonVar_list[12] as! Bool
+    let telegramBulk = pigeonVar_list[13] as! Bool
+    let telegramChain = pigeonVar_list[14] as! Bool
+    let telegramTransactional = pigeonVar_list[15] as! Bool
+    let whatsappBulk = pigeonVar_list[16] as! Bool
+    let whatsappChain = pigeonVar_list[17] as! Bool
+    let whatsappTransactional = pigeonVar_list[18] as! Bool
+    let maxBulk = pigeonVar_list[19] as! Bool
+    let maxChain = pigeonVar_list[20] as! Bool
+    let maxTransactional = pigeonVar_list[21] as! Bool
+    let walletBulk = pigeonVar_list[22] as! Bool
+    let walletChain = pigeonVar_list[23] as! Bool
+    let walletTransactional = pigeonVar_list[24] as! Bool
+    let hasWebPush = pigeonVar_list[25] as! Bool
+    let hasMobilePush = pigeonVar_list[26] as! Bool
+    let emailInvalid = pigeonVar_list[27] as! Bool
+    let emailBlacklisted = pigeonVar_list[28] as! Bool
+    let emailBounced = pigeonVar_list[29] as! Bool
+    let emailSuppressed = pigeonVar_list[30] as! Bool
+    let emailConfirmed = pigeonVar_list[31] as! Bool
+
+    return SubscriptionStatusWire(
+      exists: exists,
+      emailBulk: emailBulk,
+      emailChain: emailChain,
+      emailTransactional: emailTransactional,
+      smsBulk: smsBulk,
+      smsChain: smsChain,
+      smsTransactional: smsTransactional,
+      webPushBulk: webPushBulk,
+      webPushChain: webPushChain,
+      webPushTransactional: webPushTransactional,
+      mobilePushBulk: mobilePushBulk,
+      mobilePushChain: mobilePushChain,
+      mobilePushTransactional: mobilePushTransactional,
+      telegramBulk: telegramBulk,
+      telegramChain: telegramChain,
+      telegramTransactional: telegramTransactional,
+      whatsappBulk: whatsappBulk,
+      whatsappChain: whatsappChain,
+      whatsappTransactional: whatsappTransactional,
+      maxBulk: maxBulk,
+      maxChain: maxChain,
+      maxTransactional: maxTransactional,
+      walletBulk: walletBulk,
+      walletChain: walletChain,
+      walletTransactional: walletTransactional,
+      hasWebPush: hasWebPush,
+      hasMobilePush: hasMobilePush,
+      emailInvalid: emailInvalid,
+      emailBlacklisted: emailBlacklisted,
+      emailBounced: emailBounced,
+      emailSuppressed: emailSuppressed,
+      emailConfirmed: emailConfirmed
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      exists,
+      emailBulk,
+      emailChain,
+      emailTransactional,
+      smsBulk,
+      smsChain,
+      smsTransactional,
+      webPushBulk,
+      webPushChain,
+      webPushTransactional,
+      mobilePushBulk,
+      mobilePushChain,
+      mobilePushTransactional,
+      telegramBulk,
+      telegramChain,
+      telegramTransactional,
+      whatsappBulk,
+      whatsappChain,
+      whatsappTransactional,
+      maxBulk,
+      maxChain,
+      maxTransactional,
+      walletBulk,
+      walletChain,
+      walletTransactional,
+      hasWebPush,
+      hasMobilePush,
+      emailInvalid,
+      emailBlacklisted,
+      emailBounced,
+      emailSuppressed,
+      emailConfirmed,
+    ]
+  }
+  static func == (lhs: SubscriptionStatusWire, rhs: SubscriptionStatusWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `BackInStockProperties`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BackInStockPropertiesWire: Hashable {
+  var fashionSize: String? = nil
+  var fashionColor: String? = nil
+  var barcode: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BackInStockPropertiesWire? {
+    let fashionSize: String? = nilOrValue(pigeonVar_list[0])
+    let fashionColor: String? = nilOrValue(pigeonVar_list[1])
+    let barcode: String? = nilOrValue(pigeonVar_list[2])
+
+    return BackInStockPropertiesWire(
+      fashionSize: fashionSize,
+      fashionColor: fashionColor,
+      barcode: barcode
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      fashionSize,
+      fashionColor,
+      barcode,
+    ]
+  }
+  static func == (lhs: BackInStockPropertiesWire, rhs: BackInStockPropertiesWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Segment`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SegmentWire: Hashable {
+  var id: Int64
+  var type: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SegmentWire? {
+    let id = pigeonVar_list[0] as! Int64
+    let type: String? = nilOrValue(pigeonVar_list[1])
+
+    return SegmentWire(
+      id: id,
+      type: type
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      type,
+    ]
+  }
+  static func == (lhs: SegmentWire, rhs: SegmentWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PushToken`; [provider] is `apns`, `fcm` or `hms`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PushTokenWire: Hashable {
+  var token: String
+  var provider: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PushTokenWire? {
+    let token = pigeonVar_list[0] as! String
+    let provider = pigeonVar_list[1] as! String
+
+    return PushTokenWire(
+      token: token,
+      provider: provider
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      token,
+      provider,
+    ]
+  }
+  static func == (lhs: PushTokenWire, rhs: PushTokenWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PushAction`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PushActionWire: Hashable {
+  var id: String
+  var title: String
+  var url: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PushActionWire? {
+    let id = pigeonVar_list[0] as! String
+    let title = pigeonVar_list[1] as! String
+    let url: String? = nilOrValue(pigeonVar_list[2])
+
+    return PushActionWire(
+      id: id,
+      title: title,
+      url: url
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      title,
+      url,
+    ]
+  }
+  static func == (lhs: PushActionWire, rhs: PushActionWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PushTarget`; [type] is the wire value of `PushTargetType`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PushTargetWire: Hashable {
+  var type: String
+  var uri: String
+  var payload: [String: Any?]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PushTargetWire? {
+    let type = pigeonVar_list[0] as! String
+    let uri = pigeonVar_list[1] as! String
+    let payload = pigeonVar_list[2] as! [String: Any?]
+
+    return PushTargetWire(
+      type: type,
+      uri: uri,
+      payload: payload
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      type,
+      uri,
+      payload,
+    ]
+  }
+  static func == (lhs: PushTargetWire, rhs: PushTargetWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PushPayload`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PushPayloadWire: Hashable {
+  var shopId: String? = nil
+  var code: String
+  var type: String
+  var title: String? = nil
+  var body: String? = nil
+  var icon: String? = nil
+  var image: String? = nil
+  var actions: [PushActionWire]
+  var target: PushTargetWire? = nil
+  var source: String? = nil
+  var sound: String? = nil
+  var data: [String: Any?]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PushPayloadWire? {
+    let shopId: String? = nilOrValue(pigeonVar_list[0])
+    let code = pigeonVar_list[1] as! String
+    let type = pigeonVar_list[2] as! String
+    let title: String? = nilOrValue(pigeonVar_list[3])
+    let body: String? = nilOrValue(pigeonVar_list[4])
+    let icon: String? = nilOrValue(pigeonVar_list[5])
+    let image: String? = nilOrValue(pigeonVar_list[6])
+    let actions = pigeonVar_list[7] as! [PushActionWire]
+    let target: PushTargetWire? = nilOrValue(pigeonVar_list[8])
+    let source: String? = nilOrValue(pigeonVar_list[9])
+    let sound: String? = nilOrValue(pigeonVar_list[10])
+    let data = pigeonVar_list[11] as! [String: Any?]
+
+    return PushPayloadWire(
+      shopId: shopId,
+      code: code,
+      type: type,
+      title: title,
+      body: body,
+      icon: icon,
+      image: image,
+      actions: actions,
+      target: target,
+      source: source,
+      sound: sound,
+      data: data
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      shopId,
+      code,
+      type,
+      title,
+      body,
+      icon,
+      image,
+      actions,
+      target,
+      source,
+      sound,
+      data,
+    ]
+  }
+  static func == (lhs: PushPayloadWire, rhs: PushPayloadWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// The statistics of a message in `notifications.getHistory`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct NotificationStatisticsWire: Hashable {
+  var clicked: Bool
+  var complained: Bool
+  var hardBounced: Bool
+  var opened: Bool
+  var purchased: Bool
+  var softBounced: Bool
+  var unsubscribed: Bool
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> NotificationStatisticsWire? {
+    let clicked = pigeonVar_list[0] as! Bool
+    let complained = pigeonVar_list[1] as! Bool
+    let hardBounced = pigeonVar_list[2] as! Bool
+    let opened = pigeonVar_list[3] as! Bool
+    let purchased = pigeonVar_list[4] as! Bool
+    let softBounced = pigeonVar_list[5] as! Bool
+    let unsubscribed = pigeonVar_list[6] as! Bool
+
+    return NotificationStatisticsWire(
+      clicked: clicked,
+      complained: complained,
+      hardBounced: hardBounced,
+      opened: opened,
+      purchased: purchased,
+      softBounced: softBounced,
+      unsubscribed: unsubscribed
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      clicked,
+      complained,
+      hardBounced,
+      opened,
+      purchased,
+      softBounced,
+      unsubscribed,
+    ]
+  }
+  static func == (lhs: NotificationStatisticsWire, rhs: NotificationStatisticsWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// A message in `notifications.getHistory`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct NotificationMessageWire: Hashable {
+  var body: String? = nil
+  var campaignId: Int64? = nil
+  var channel: String? = nil
+  var code: String? = nil
+  var date: String? = nil
+  var icon: String? = nil
+  var picture: String? = nil
+  var sentAt: String? = nil
+  var statistics: NotificationStatisticsWire? = nil
+  var subject: String? = nil
+  var type: String? = nil
+  var url: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> NotificationMessageWire? {
+    let body: String? = nilOrValue(pigeonVar_list[0])
+    let campaignId: Int64? = nilOrValue(pigeonVar_list[1])
+    let channel: String? = nilOrValue(pigeonVar_list[2])
+    let code: String? = nilOrValue(pigeonVar_list[3])
+    let date: String? = nilOrValue(pigeonVar_list[4])
+    let icon: String? = nilOrValue(pigeonVar_list[5])
+    let picture: String? = nilOrValue(pigeonVar_list[6])
+    let sentAt: String? = nilOrValue(pigeonVar_list[7])
+    let statistics: NotificationStatisticsWire? = nilOrValue(pigeonVar_list[8])
+    let subject: String? = nilOrValue(pigeonVar_list[9])
+    let type: String? = nilOrValue(pigeonVar_list[10])
+    let url: String? = nilOrValue(pigeonVar_list[11])
+
+    return NotificationMessageWire(
+      body: body,
+      campaignId: campaignId,
+      channel: channel,
+      code: code,
+      date: date,
+      icon: icon,
+      picture: picture,
+      sentAt: sentAt,
+      statistics: statistics,
+      subject: subject,
+      type: type,
+      url: url
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      body,
+      campaignId,
+      channel,
+      code,
+      date,
+      icon,
+      picture,
+      sentAt,
+      statistics,
+      subject,
+      type,
+      url,
+    ]
+  }
+  static func == (lhs: NotificationMessageWire, rhs: NotificationMessageWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// The answer of `notifications.getHistory`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct NotificationHistoryWire: Hashable {
+  var status: String? = nil
+  var messages: [NotificationMessageWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> NotificationHistoryWire? {
+    let status: String? = nilOrValue(pigeonVar_list[0])
+    let messages = pigeonVar_list[1] as! [NotificationMessageWire]
+
+    return NotificationHistoryWire(
+      status: status,
+      messages: messages
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      status,
+      messages,
+    ]
+  }
+  static func == (lhs: NotificationHistoryWire, rhs: NotificationHistoryWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `StoriesBlock`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct StoriesBlockWire: Hashable {
+  var id: String
+  var stories: [StoryWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> StoriesBlockWire? {
+    let id = pigeonVar_list[0] as! String
+    let stories = pigeonVar_list[1] as! [StoryWire]
+
+    return StoriesBlockWire(
+      id: id,
+      stories: stories
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      stories,
+    ]
+  }
+  static func == (lhs: StoriesBlockWire, rhs: StoriesBlockWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Story`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct StoryWire: Hashable {
+  var id: String
+  var name: String
+  var avatar: String
+  var viewed: Bool
+  var pinned: Bool
+  var startPosition: Int64
+  var slides: [StorySlideWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> StoryWire? {
+    let id = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+    let avatar = pigeonVar_list[2] as! String
+    let viewed = pigeonVar_list[3] as! Bool
+    let pinned = pigeonVar_list[4] as! Bool
+    let startPosition = pigeonVar_list[5] as! Int64
+    let slides = pigeonVar_list[6] as! [StorySlideWire]
+
+    return StoryWire(
+      id: id,
+      name: name,
+      avatar: avatar,
+      viewed: viewed,
+      pinned: pinned,
+      startPosition: startPosition,
+      slides: slides
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      name,
+      avatar,
+      viewed,
+      pinned,
+      startPosition,
+      slides,
+    ]
+  }
+  static func == (lhs: StoryWire, rhs: StoryWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `StorySlide`; [type] is `image`, `video` or `product`, [duration] whole seconds.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct StorySlideWire: Hashable {
+  var id: String
+  var type: String
+  var background: String
+  var backgroundColor: String
+  var preview: String
+  var duration: Int64
+  var elements: [StoryElementWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> StorySlideWire? {
+    let id = pigeonVar_list[0] as! String
+    let type = pigeonVar_list[1] as! String
+    let background = pigeonVar_list[2] as! String
+    let backgroundColor = pigeonVar_list[3] as! String
+    let preview = pigeonVar_list[4] as! String
+    let duration = pigeonVar_list[5] as! Int64
+    let elements = pigeonVar_list[6] as! [StoryElementWire]
+
+    return StorySlideWire(
+      id: id,
+      type: type,
+      background: background,
+      backgroundColor: backgroundColor,
+      preview: preview,
+      duration: duration,
+      elements: elements
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      type,
+      background,
+      backgroundColor,
+      preview,
+      duration,
+      elements,
+    ]
+  }
+  static func == (lhs: StorySlideWire, rhs: StorySlideWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// One element of a slide: [type] is `button`, `product`, `products` or `text_block`, and the fields of that kind are set.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct StoryElementWire: Hashable {
+  var type: String
+  var title: String? = nil
+  var link: String? = nil
+  var linkAndroid: String? = nil
+  var linkIos: String? = nil
+  var background: String? = nil
+  var color: String? = nil
+  var textBold: Bool? = nil
+  var item: StoryProductWire? = nil
+  var showLabel: String? = nil
+  var hideLabel: String? = nil
+  var products: [StoryProductWire]? = nil
+  var text: String? = nil
+  var fontSize: Double? = nil
+  var fontType: String? = nil
+  var bold: Bool? = nil
+  var italic: Bool? = nil
+  var textAlign: String? = nil
+  var textColor: String? = nil
+  var backgroundColor: String? = nil
+  var backgroundOpacity: Double? = nil
+  var lineSpacing: Double? = nil
+  var yOffset: Double? = nil
+  var promocode: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> StoryElementWire? {
+    let type = pigeonVar_list[0] as! String
+    let title: String? = nilOrValue(pigeonVar_list[1])
+    let link: String? = nilOrValue(pigeonVar_list[2])
+    let linkAndroid: String? = nilOrValue(pigeonVar_list[3])
+    let linkIos: String? = nilOrValue(pigeonVar_list[4])
+    let background: String? = nilOrValue(pigeonVar_list[5])
+    let color: String? = nilOrValue(pigeonVar_list[6])
+    let textBold: Bool? = nilOrValue(pigeonVar_list[7])
+    let item: StoryProductWire? = nilOrValue(pigeonVar_list[8])
+    let showLabel: String? = nilOrValue(pigeonVar_list[9])
+    let hideLabel: String? = nilOrValue(pigeonVar_list[10])
+    let products: [StoryProductWire]? = nilOrValue(pigeonVar_list[11])
+    let text: String? = nilOrValue(pigeonVar_list[12])
+    let fontSize: Double? = nilOrValue(pigeonVar_list[13])
+    let fontType: String? = nilOrValue(pigeonVar_list[14])
+    let bold: Bool? = nilOrValue(pigeonVar_list[15])
+    let italic: Bool? = nilOrValue(pigeonVar_list[16])
+    let textAlign: String? = nilOrValue(pigeonVar_list[17])
+    let textColor: String? = nilOrValue(pigeonVar_list[18])
+    let backgroundColor: String? = nilOrValue(pigeonVar_list[19])
+    let backgroundOpacity: Double? = nilOrValue(pigeonVar_list[20])
+    let lineSpacing: Double? = nilOrValue(pigeonVar_list[21])
+    let yOffset: Double? = nilOrValue(pigeonVar_list[22])
+    let promocode: String? = nilOrValue(pigeonVar_list[23])
+
+    return StoryElementWire(
+      type: type,
+      title: title,
+      link: link,
+      linkAndroid: linkAndroid,
+      linkIos: linkIos,
+      background: background,
+      color: color,
+      textBold: textBold,
+      item: item,
+      showLabel: showLabel,
+      hideLabel: hideLabel,
+      products: products,
+      text: text,
+      fontSize: fontSize,
+      fontType: fontType,
+      bold: bold,
+      italic: italic,
+      textAlign: textAlign,
+      textColor: textColor,
+      backgroundColor: backgroundColor,
+      backgroundOpacity: backgroundOpacity,
+      lineSpacing: lineSpacing,
+      yOffset: yOffset,
+      promocode: promocode
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      type,
+      title,
+      link,
+      linkAndroid,
+      linkIos,
+      background,
+      color,
+      textBold,
+      item,
+      showLabel,
+      hideLabel,
+      products,
+      text,
+      fontSize,
+      fontType,
+      bold,
+      italic,
+      textAlign,
+      textColor,
+      backgroundColor,
+      backgroundOpacity,
+      lineSpacing,
+      yOffset,
+      promocode,
+    ]
+  }
+  static func == (lhs: StoryElementWire, rhs: StoryElementWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `StoryProduct`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct StoryProductWire: Hashable {
+  var id: String
+  var name: String
+  var brand: String
+  var picture: String
+  var imageUrl: String
+  var price: Double
+  var priceFormatted: String
+  var oldPrice: Double? = nil
+  var oldPriceFormatted: String
+  var discountPercent: Double
+  var promocode: String
+  var priceWithPromocode: Double
+  var priceWithPromocodeFormatted: String
+  var currency: String
+  var url: String
+  var deeplinkAndroid: String
+  var deeplinkIos: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> StoryProductWire? {
+    let id = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+    let brand = pigeonVar_list[2] as! String
+    let picture = pigeonVar_list[3] as! String
+    let imageUrl = pigeonVar_list[4] as! String
+    let price = pigeonVar_list[5] as! Double
+    let priceFormatted = pigeonVar_list[6] as! String
+    let oldPrice: Double? = nilOrValue(pigeonVar_list[7])
+    let oldPriceFormatted = pigeonVar_list[8] as! String
+    let discountPercent = pigeonVar_list[9] as! Double
+    let promocode = pigeonVar_list[10] as! String
+    let priceWithPromocode = pigeonVar_list[11] as! Double
+    let priceWithPromocodeFormatted = pigeonVar_list[12] as! String
+    let currency = pigeonVar_list[13] as! String
+    let url = pigeonVar_list[14] as! String
+    let deeplinkAndroid = pigeonVar_list[15] as! String
+    let deeplinkIos = pigeonVar_list[16] as! String
+
+    return StoryProductWire(
+      id: id,
+      name: name,
+      brand: brand,
+      picture: picture,
+      imageUrl: imageUrl,
+      price: price,
+      priceFormatted: priceFormatted,
+      oldPrice: oldPrice,
+      oldPriceFormatted: oldPriceFormatted,
+      discountPercent: discountPercent,
+      promocode: promocode,
+      priceWithPromocode: priceWithPromocode,
+      priceWithPromocodeFormatted: priceWithPromocodeFormatted,
+      currency: currency,
+      url: url,
+      deeplinkAndroid: deeplinkAndroid,
+      deeplinkIos: deeplinkIos
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      name,
+      brand,
+      picture,
+      imageUrl,
+      price,
+      priceFormatted,
+      oldPrice,
+      oldPriceFormatted,
+      discountPercent,
+      promocode,
+      priceWithPromocode,
+      priceWithPromocodeFormatted,
+      currency,
+      url,
+      deeplinkAndroid,
+      deeplinkIos,
+    ]
+  }
+  static func == (lhs: StoryProductWire, rhs: StoryProductWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PurchaseProbability`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PurchaseProbabilityWire: Hashable {
+  var probability: Double
+  var clientId: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PurchaseProbabilityWire? {
+    let probability = pigeonVar_list[0] as! Double
+    let clientId: String? = nilOrValue(pigeonVar_list[1])
+
+    return PurchaseProbabilityWire(
+      probability: probability,
+      clientId: clientId
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      probability,
+      clientId,
+    ]
+  }
+  static func == (lhs: PurchaseProbabilityWire, rhs: PurchaseProbabilityWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `LoyaltyMember`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct LoyaltyMemberWire: Hashable {
+  var identifier: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> LoyaltyMemberWire? {
+    let identifier = pigeonVar_list[0] as! String
+
+    return LoyaltyMemberWire(
+      identifier: identifier
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      identifier
+    ]
+  }
+  static func == (lhs: LoyaltyMemberWire, rhs: LoyaltyMemberWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `LoyaltyLevel`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct LoyaltyLevelWire: Hashable {
+  var code: String
+  var name: String? = nil
+  var expirationDate: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> LoyaltyLevelWire? {
+    let code = pigeonVar_list[0] as! String
+    let name: String? = nilOrValue(pigeonVar_list[1])
+    let expirationDate: String? = nilOrValue(pigeonVar_list[2])
+
+    return LoyaltyLevelWire(
+      code: code,
+      name: name,
+      expirationDate: expirationDate
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      code,
+      name,
+      expirationDate,
+    ]
+  }
+  static func == (lhs: LoyaltyLevelWire, rhs: LoyaltyLevelWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `LoyaltyStatus`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct LoyaltyStatusWire: Hashable {
+  var isMember: Bool
+  var level: LoyaltyLevelWire? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> LoyaltyStatusWire? {
+    let isMember = pigeonVar_list[0] as! Bool
+    let level: LoyaltyLevelWire? = nilOrValue(pigeonVar_list[1])
+
+    return LoyaltyStatusWire(
+      isMember: isMember,
+      level: level
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      isMember,
+      level,
+    ]
+  }
+  static func == (lhs: LoyaltyStatusWire, rhs: LoyaltyStatusWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `LoyaltyPromotion`; [rewardType] is the wire value.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct LoyaltyPromotionWire: Hashable {
+  var id: Int64
+  var name: String
+  var description: String? = nil
+  var startDate: String? = nil
+  var finishDate: String? = nil
+  var stream: String? = nil
+  var badgeLabel: String? = nil
+  var badgeColor: String? = nil
+  var rewardType: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> LoyaltyPromotionWire? {
+    let id = pigeonVar_list[0] as! Int64
+    let name = pigeonVar_list[1] as! String
+    let description: String? = nilOrValue(pigeonVar_list[2])
+    let startDate: String? = nilOrValue(pigeonVar_list[3])
+    let finishDate: String? = nilOrValue(pigeonVar_list[4])
+    let stream: String? = nilOrValue(pigeonVar_list[5])
+    let badgeLabel: String? = nilOrValue(pigeonVar_list[6])
+    let badgeColor: String? = nilOrValue(pigeonVar_list[7])
+    let rewardType: String? = nilOrValue(pigeonVar_list[8])
+
+    return LoyaltyPromotionWire(
+      id: id,
+      name: name,
+      description: description,
+      startDate: startDate,
+      finishDate: finishDate,
+      stream: stream,
+      badgeLabel: badgeLabel,
+      badgeColor: badgeColor,
+      rewardType: rewardType
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      name,
+      description,
+      startDate,
+      finishDate,
+      stream,
+      badgeLabel,
+      badgeColor,
+      rewardType,
+    ]
+  }
+  static func == (lhs: LoyaltyPromotionWire, rhs: LoyaltyPromotionWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `Slider` of the contract.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SliderWire: Hashable {
+  var code: String
+  var width: Int64
+  var height: Int64
+  var banners: [SliderBannerWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SliderWire? {
+    let code = pigeonVar_list[0] as! String
+    let width = pigeonVar_list[1] as! Int64
+    let height = pigeonVar_list[2] as! Int64
+    let banners = pigeonVar_list[3] as! [SliderBannerWire]
+
+    return SliderWire(
+      code: code,
+      width: width,
+      height: height,
+      banners: banners
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      code,
+      width,
+      height,
+      banners,
+    ]
+  }
+  static func == (lhs: SliderWire, rhs: SliderWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `SliderBanner`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct SliderBannerWire: Hashable {
+  var id: String
+  var code: String
+  var imageUrl: String? = nil
+  var url: String? = nil
+  var deeplinkIos: String? = nil
+  var deeplinkAndroid: String? = nil
+  var html: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> SliderBannerWire? {
+    let id = pigeonVar_list[0] as! String
+    let code = pigeonVar_list[1] as! String
+    let imageUrl: String? = nilOrValue(pigeonVar_list[2])
+    let url: String? = nilOrValue(pigeonVar_list[3])
+    let deeplinkIos: String? = nilOrValue(pigeonVar_list[4])
+    let deeplinkAndroid: String? = nilOrValue(pigeonVar_list[5])
+    let html: String? = nilOrValue(pigeonVar_list[6])
+
+    return SliderBannerWire(
+      id: id,
+      code: code,
+      imageUrl: imageUrl,
+      url: url,
+      deeplinkIos: deeplinkIos,
+      deeplinkAndroid: deeplinkAndroid,
+      html: html
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      code,
+      imageUrl,
+      url,
+      deeplinkIos,
+      deeplinkAndroid,
+      html,
+    ]
+  }
+  static func == (lhs: SliderBannerWire, rhs: SliderBannerWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PollReview`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PollReviewWire: Hashable {
+  var id: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PollReviewWire? {
+    let id = pigeonVar_list[0] as! Int64
+
+    return PollReviewWire(
+      id: id
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id
+    ]
+  }
+  static func == (lhs: PollReviewWire, rhs: PollReviewWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `NpsCategory`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct NpsCategoryWire: Hashable {
+  var code: String
+  var name: String
+  var detractorQuestion: String? = nil
+  var passiveQuestion: String? = nil
+  var promoterQuestion: String? = nil
+  var detractorSuccess: String? = nil
+  var passiveSuccess: String? = nil
+  var promoterSuccess: String? = nil
+  var buttonLabel: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> NpsCategoryWire? {
+    let code = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+    let detractorQuestion: String? = nilOrValue(pigeonVar_list[2])
+    let passiveQuestion: String? = nilOrValue(pigeonVar_list[3])
+    let promoterQuestion: String? = nilOrValue(pigeonVar_list[4])
+    let detractorSuccess: String? = nilOrValue(pigeonVar_list[5])
+    let passiveSuccess: String? = nilOrValue(pigeonVar_list[6])
+    let promoterSuccess: String? = nilOrValue(pigeonVar_list[7])
+    let buttonLabel: String? = nilOrValue(pigeonVar_list[8])
+
+    return NpsCategoryWire(
+      code: code,
+      name: name,
+      detractorQuestion: detractorQuestion,
+      passiveQuestion: passiveQuestion,
+      promoterQuestion: promoterQuestion,
+      detractorSuccess: detractorSuccess,
+      passiveSuccess: passiveSuccess,
+      promoterSuccess: promoterSuccess,
+      buttonLabel: buttonLabel
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      code,
+      name,
+      detractorQuestion,
+      passiveQuestion,
+      promoterQuestion,
+      detractorSuccess,
+      passiveSuccess,
+      promoterSuccess,
+      buttonLabel,
+    ]
+  }
+  static func == (lhs: NpsCategoryWire, rhs: NpsCategoryWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `CsatCampaign`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct CsatCampaignWire: Hashable {
+  var code: String
+  var name: String
+  var dissatisfiedQuestion: String? = nil
+  var neutralQuestion: String? = nil
+  var satisfiedQuestion: String? = nil
+  var dissatisfiedSuccess: String? = nil
+  var neutralSuccess: String? = nil
+  var satisfiedSuccess: String? = nil
+  var buttonLabel: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> CsatCampaignWire? {
+    let code = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+    let dissatisfiedQuestion: String? = nilOrValue(pigeonVar_list[2])
+    let neutralQuestion: String? = nilOrValue(pigeonVar_list[3])
+    let satisfiedQuestion: String? = nilOrValue(pigeonVar_list[4])
+    let dissatisfiedSuccess: String? = nilOrValue(pigeonVar_list[5])
+    let neutralSuccess: String? = nilOrValue(pigeonVar_list[6])
+    let satisfiedSuccess: String? = nilOrValue(pigeonVar_list[7])
+    let buttonLabel: String? = nilOrValue(pigeonVar_list[8])
+
+    return CsatCampaignWire(
+      code: code,
+      name: name,
+      dissatisfiedQuestion: dissatisfiedQuestion,
+      neutralQuestion: neutralQuestion,
+      satisfiedQuestion: satisfiedQuestion,
+      dissatisfiedSuccess: dissatisfiedSuccess,
+      neutralSuccess: neutralSuccess,
+      satisfiedSuccess: satisfiedSuccess,
+      buttonLabel: buttonLabel
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      code,
+      name,
+      dissatisfiedQuestion,
+      neutralQuestion,
+      satisfiedQuestion,
+      dissatisfiedSuccess,
+      neutralSuccess,
+      satisfiedSuccess,
+      buttonLabel,
+    ]
+  }
+  static func == (lhs: CsatCampaignWire, rhs: CsatCampaignWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `CesCampaign`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct CesCampaignWire: Hashable {
+  var code: String
+  var name: String
+  var difficultQuestion: String? = nil
+  var neutralQuestion: String? = nil
+  var easyQuestion: String? = nil
+  var difficultSuccess: String? = nil
+  var neutralSuccess: String? = nil
+  var easySuccess: String? = nil
+  var buttonLabel: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> CesCampaignWire? {
+    let code = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+    let difficultQuestion: String? = nilOrValue(pigeonVar_list[2])
+    let neutralQuestion: String? = nilOrValue(pigeonVar_list[3])
+    let easyQuestion: String? = nilOrValue(pigeonVar_list[4])
+    let difficultSuccess: String? = nilOrValue(pigeonVar_list[5])
+    let neutralSuccess: String? = nilOrValue(pigeonVar_list[6])
+    let easySuccess: String? = nilOrValue(pigeonVar_list[7])
+    let buttonLabel: String? = nilOrValue(pigeonVar_list[8])
+
+    return CesCampaignWire(
+      code: code,
+      name: name,
+      difficultQuestion: difficultQuestion,
+      neutralQuestion: neutralQuestion,
+      easyQuestion: easyQuestion,
+      difficultSuccess: difficultSuccess,
+      neutralSuccess: neutralSuccess,
+      easySuccess: easySuccess,
+      buttonLabel: buttonLabel
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      code,
+      name,
+      difficultQuestion,
+      neutralQuestion,
+      easyQuestion,
+      difficultSuccess,
+      neutralSuccess,
+      easySuccess,
+      buttonLabel,
+    ]
+  }
+  static func == (lhs: CesCampaignWire, rhs: CesCampaignWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `PollChannel`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PollChannelWire: Hashable {
+  var code: String
+  var name: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PollChannelWire? {
+    let code = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+
+    return PollChannelWire(
+      code: code,
+      name: name
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      code,
+      name,
+    ]
+  }
+  static func == (lhs: PollChannelWire, rhs: PollChannelWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductRatingSummary`; [ratings] is the count per star.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductRatingSummaryWire: Hashable {
+  var count: Int64
+  var averageRating: Double? = nil
+  var ratings: [Int64: Int64]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductRatingSummaryWire? {
+    let count = pigeonVar_list[0] as! Int64
+    let averageRating: Double? = nilOrValue(pigeonVar_list[1])
+    let ratings = pigeonVar_list[2] as! [Int64: Int64]
+
+    return ProductRatingSummaryWire(
+      count: count,
+      averageRating: averageRating,
+      ratings: ratings
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      count,
+      averageRating,
+      ratings,
+    ]
+  }
+  static func == (lhs: ProductRatingSummaryWire, rhs: ProductRatingSummaryWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductReview`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductReviewWire: Hashable {
+  var id: Int64
+  var rating: Int64
+  var comment: String? = nil
+  var author: String? = nil
+  var createdAt: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductReviewWire? {
+    let id = pigeonVar_list[0] as! Int64
+    let rating = pigeonVar_list[1] as! Int64
+    let comment: String? = nilOrValue(pigeonVar_list[2])
+    let author: String? = nilOrValue(pigeonVar_list[3])
+    let createdAt = pigeonVar_list[4] as! String
+
+    return ProductReviewWire(
+      id: id,
+      rating: rating,
+      comment: comment,
+      author: author,
+      createdAt: createdAt
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      rating,
+      comment,
+      author,
+      createdAt,
+    ]
+  }
+  static func == (lhs: ProductReviewWire, rhs: ProductReviewWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ProductReviewsResponse`.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProductReviewsResponseWire: Hashable {
+  var summary: ProductRatingSummaryWire
+  var reviews: [ProductReviewWire]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProductReviewsResponseWire? {
+    let summary = pigeonVar_list[0] as! ProductRatingSummaryWire
+    let reviews = pigeonVar_list[1] as! [ProductReviewWire]
+
+    return ProductReviewsResponseWire(
+      summary: summary,
+      reviews: reviews
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      summary,
+      reviews,
+    ]
+  }
+  static func == (lhs: ProductReviewsResponseWire, rhs: ProductReviewsResponseWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
+/// `ClientReview`; [state] is the wire value (`moderation`, `published`, `rejected`).
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ClientReviewWire: Hashable {
+  var id: Int64
+  var itemId: String
+  var orderId: String
+  var rating: Int64
+  var comment: String? = nil
+  var state: String? = nil
+  var createdAt: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ClientReviewWire? {
+    let id = pigeonVar_list[0] as! Int64
+    let itemId = pigeonVar_list[1] as! String
+    let orderId = pigeonVar_list[2] as! String
+    let rating = pigeonVar_list[3] as! Int64
+    let comment: String? = nilOrValue(pigeonVar_list[4])
+    let state: String? = nilOrValue(pigeonVar_list[5])
+    let createdAt = pigeonVar_list[6] as! String
+
+    return ClientReviewWire(
+      id: id,
+      itemId: itemId,
+      orderId: orderId,
+      rating: rating,
+      comment: comment,
+      state: state,
+      createdAt: createdAt
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      itemId,
+      orderId,
+      rating,
+      comment,
+      state,
+      createdAt,
+    ]
+  }
+  static func == (lhs: ClientReviewWire, rhs: ClientReviewWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
 private class PersonalizationApiPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
@@ -554,13 +3900,151 @@ private class PersonalizationApiPigeonCodecReader: FlutterStandardReader {
     case 130:
       return PurchaseLineItemWire.fromList(self.readValue() as! [Any?])
     case 131:
-      return ProfileParamsWire.fromList(self.readValue() as! [Any?])
-    case 132:
-      return ManageSubscriptionParamsWire.fromList(self.readValue() as! [Any?])
-    case 133:
       return TrackingItemWire.fromList(self.readValue() as! [Any?])
-    case 134:
+    case 132:
       return TrackingSourceWire.fromList(self.readValue() as! [Any?])
+    case 133:
+      return SdkSnapshotWire.fromList(self.readValue() as! [Any?])
+    case 134:
+      return ProductWire.fromList(self.readValue() as! [Any?])
+    case 135:
+      return ProductCategoryWire.fromList(self.readValue() as! [Any?])
+    case 136:
+      return ProductParamWire.fromList(self.readValue() as! [Any?])
+    case 137:
+      return LocationWire.fromList(self.readValue() as! [Any?])
+    case 138:
+      return BrandWire.fromList(self.readValue() as! [Any?])
+    case 139:
+      return SearchFilterWire.fromList(self.readValue() as! [Any?])
+    case 140:
+      return ColorFilterWire.fromList(self.readValue() as! [Any?])
+    case 141:
+      return SizeFilterWire.fromList(self.readValue() as! [Any?])
+    case 142:
+      return IndustrialFiltersWire.fromList(self.readValue() as! [Any?])
+    case 143:
+      return PriceRangeWire.fromList(self.readValue() as! [Any?])
+    case 144:
+      return PriceIntervalWire.fromList(self.readValue() as! [Any?])
+    case 145:
+      return ProductsListResponseWire.fromList(self.readValue() as! [Any?])
+    case 146:
+      return ProductsListRequestWire.fromList(self.readValue() as! [Any?])
+    case 147:
+      return ProductCounterWire.fromList(self.readValue() as! [Any?])
+    case 148:
+      return ProductCounterTriggersWire.fromList(self.readValue() as! [Any?])
+    case 149:
+      return ProductCountersResponseWire.fromList(self.readValue() as! [Any?])
+    case 150:
+      return CollectionResponseWire.fromList(self.readValue() as! [Any?])
+    case 151:
+      return RecommendationRequestWire.fromList(self.readValue() as! [Any?])
+    case 152:
+      return RecommendationResponseWire.fromList(self.readValue() as! [Any?])
+    case 153:
+      return SearchFullRequestWire.fromList(self.readValue() as! [Any?])
+    case 154:
+      return QueryWire.fromList(self.readValue() as! [Any?])
+    case 155:
+      return PopularItemWire.fromList(self.readValue() as! [Any?])
+    case 156:
+      return SearchRedirectWire.fromList(self.readValue() as! [Any?])
+    case 157:
+      return SearchBlankResponseWire.fromList(self.readValue() as! [Any?])
+    case 158:
+      return SearchInstantResponseWire.fromList(self.readValue() as! [Any?])
+    case 159:
+      return SearchFullResponseWire.fromList(self.readValue() as! [Any?])
+    case 160:
+      return AgentProductWire.fromList(self.readValue() as! [Any?])
+    case 161:
+      return AgentMessageWire.fromList(self.readValue() as! [Any?])
+    case 162:
+      return AgentSessionWire.fromList(self.readValue() as! [Any?])
+    case 163:
+      return AgentDialogResponseWire.fromList(self.readValue() as! [Any?])
+    case 164:
+      return AgentResponseWire.fromList(self.readValue() as! [Any?])
+    case 165:
+      return CartItemWire.fromList(self.readValue() as! [Any?])
+    case 166:
+      return ProfileWire.fromList(self.readValue() as! [Any?])
+    case 167:
+      return ProfileKidWire.fromList(self.readValue() as! [Any?])
+    case 168:
+      return ProfileCarWire.fromList(self.readValue() as! [Any?])
+    case 169:
+      return ProfileUpdateRequestWire.fromList(self.readValue() as! [Any?])
+    case 170:
+      return OrderItemWire.fromList(self.readValue() as! [Any?])
+    case 171:
+      return OrderWire.fromList(self.readValue() as! [Any?])
+    case 172:
+      return SubscriptionsUpdateRequestWire.fromList(self.readValue() as! [Any?])
+    case 173:
+      return SubscriptionStatusWire.fromList(self.readValue() as! [Any?])
+    case 174:
+      return BackInStockPropertiesWire.fromList(self.readValue() as! [Any?])
+    case 175:
+      return SegmentWire.fromList(self.readValue() as! [Any?])
+    case 176:
+      return PushTokenWire.fromList(self.readValue() as! [Any?])
+    case 177:
+      return PushActionWire.fromList(self.readValue() as! [Any?])
+    case 178:
+      return PushTargetWire.fromList(self.readValue() as! [Any?])
+    case 179:
+      return PushPayloadWire.fromList(self.readValue() as! [Any?])
+    case 180:
+      return NotificationStatisticsWire.fromList(self.readValue() as! [Any?])
+    case 181:
+      return NotificationMessageWire.fromList(self.readValue() as! [Any?])
+    case 182:
+      return NotificationHistoryWire.fromList(self.readValue() as! [Any?])
+    case 183:
+      return StoriesBlockWire.fromList(self.readValue() as! [Any?])
+    case 184:
+      return StoryWire.fromList(self.readValue() as! [Any?])
+    case 185:
+      return StorySlideWire.fromList(self.readValue() as! [Any?])
+    case 186:
+      return StoryElementWire.fromList(self.readValue() as! [Any?])
+    case 187:
+      return StoryProductWire.fromList(self.readValue() as! [Any?])
+    case 188:
+      return PurchaseProbabilityWire.fromList(self.readValue() as! [Any?])
+    case 189:
+      return LoyaltyMemberWire.fromList(self.readValue() as! [Any?])
+    case 190:
+      return LoyaltyLevelWire.fromList(self.readValue() as! [Any?])
+    case 191:
+      return LoyaltyStatusWire.fromList(self.readValue() as! [Any?])
+    case 192:
+      return LoyaltyPromotionWire.fromList(self.readValue() as! [Any?])
+    case 193:
+      return SliderWire.fromList(self.readValue() as! [Any?])
+    case 194:
+      return SliderBannerWire.fromList(self.readValue() as! [Any?])
+    case 195:
+      return PollReviewWire.fromList(self.readValue() as! [Any?])
+    case 196:
+      return NpsCategoryWire.fromList(self.readValue() as! [Any?])
+    case 197:
+      return CsatCampaignWire.fromList(self.readValue() as! [Any?])
+    case 198:
+      return CesCampaignWire.fromList(self.readValue() as! [Any?])
+    case 199:
+      return PollChannelWire.fromList(self.readValue() as! [Any?])
+    case 200:
+      return ProductRatingSummaryWire.fromList(self.readValue() as! [Any?])
+    case 201:
+      return ProductReviewWire.fromList(self.readValue() as! [Any?])
+    case 202:
+      return ProductReviewsResponseWire.fromList(self.readValue() as! [Any?])
+    case 203:
+      return ClientReviewWire.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -575,17 +4059,224 @@ private class PersonalizationApiPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? PurchaseLineItemWire {
       super.writeByte(130)
       super.writeValue(value.toList())
-    } else if let value = value as? ProfileParamsWire {
+    } else if let value = value as? TrackingItemWire {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? ManageSubscriptionParamsWire {
+    } else if let value = value as? TrackingSourceWire {
       super.writeByte(132)
       super.writeValue(value.toList())
-    } else if let value = value as? TrackingItemWire {
+    } else if let value = value as? SdkSnapshotWire {
       super.writeByte(133)
       super.writeValue(value.toList())
-    } else if let value = value as? TrackingSourceWire {
+    } else if let value = value as? ProductWire {
       super.writeByte(134)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductCategoryWire {
+      super.writeByte(135)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductParamWire {
+      super.writeByte(136)
+      super.writeValue(value.toList())
+    } else if let value = value as? LocationWire {
+      super.writeByte(137)
+      super.writeValue(value.toList())
+    } else if let value = value as? BrandWire {
+      super.writeByte(138)
+      super.writeValue(value.toList())
+    } else if let value = value as? SearchFilterWire {
+      super.writeByte(139)
+      super.writeValue(value.toList())
+    } else if let value = value as? ColorFilterWire {
+      super.writeByte(140)
+      super.writeValue(value.toList())
+    } else if let value = value as? SizeFilterWire {
+      super.writeByte(141)
+      super.writeValue(value.toList())
+    } else if let value = value as? IndustrialFiltersWire {
+      super.writeByte(142)
+      super.writeValue(value.toList())
+    } else if let value = value as? PriceRangeWire {
+      super.writeByte(143)
+      super.writeValue(value.toList())
+    } else if let value = value as? PriceIntervalWire {
+      super.writeByte(144)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductsListResponseWire {
+      super.writeByte(145)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductsListRequestWire {
+      super.writeByte(146)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductCounterWire {
+      super.writeByte(147)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductCounterTriggersWire {
+      super.writeByte(148)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductCountersResponseWire {
+      super.writeByte(149)
+      super.writeValue(value.toList())
+    } else if let value = value as? CollectionResponseWire {
+      super.writeByte(150)
+      super.writeValue(value.toList())
+    } else if let value = value as? RecommendationRequestWire {
+      super.writeByte(151)
+      super.writeValue(value.toList())
+    } else if let value = value as? RecommendationResponseWire {
+      super.writeByte(152)
+      super.writeValue(value.toList())
+    } else if let value = value as? SearchFullRequestWire {
+      super.writeByte(153)
+      super.writeValue(value.toList())
+    } else if let value = value as? QueryWire {
+      super.writeByte(154)
+      super.writeValue(value.toList())
+    } else if let value = value as? PopularItemWire {
+      super.writeByte(155)
+      super.writeValue(value.toList())
+    } else if let value = value as? SearchRedirectWire {
+      super.writeByte(156)
+      super.writeValue(value.toList())
+    } else if let value = value as? SearchBlankResponseWire {
+      super.writeByte(157)
+      super.writeValue(value.toList())
+    } else if let value = value as? SearchInstantResponseWire {
+      super.writeByte(158)
+      super.writeValue(value.toList())
+    } else if let value = value as? SearchFullResponseWire {
+      super.writeByte(159)
+      super.writeValue(value.toList())
+    } else if let value = value as? AgentProductWire {
+      super.writeByte(160)
+      super.writeValue(value.toList())
+    } else if let value = value as? AgentMessageWire {
+      super.writeByte(161)
+      super.writeValue(value.toList())
+    } else if let value = value as? AgentSessionWire {
+      super.writeByte(162)
+      super.writeValue(value.toList())
+    } else if let value = value as? AgentDialogResponseWire {
+      super.writeByte(163)
+      super.writeValue(value.toList())
+    } else if let value = value as? AgentResponseWire {
+      super.writeByte(164)
+      super.writeValue(value.toList())
+    } else if let value = value as? CartItemWire {
+      super.writeByte(165)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProfileWire {
+      super.writeByte(166)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProfileKidWire {
+      super.writeByte(167)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProfileCarWire {
+      super.writeByte(168)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProfileUpdateRequestWire {
+      super.writeByte(169)
+      super.writeValue(value.toList())
+    } else if let value = value as? OrderItemWire {
+      super.writeByte(170)
+      super.writeValue(value.toList())
+    } else if let value = value as? OrderWire {
+      super.writeByte(171)
+      super.writeValue(value.toList())
+    } else if let value = value as? SubscriptionsUpdateRequestWire {
+      super.writeByte(172)
+      super.writeValue(value.toList())
+    } else if let value = value as? SubscriptionStatusWire {
+      super.writeByte(173)
+      super.writeValue(value.toList())
+    } else if let value = value as? BackInStockPropertiesWire {
+      super.writeByte(174)
+      super.writeValue(value.toList())
+    } else if let value = value as? SegmentWire {
+      super.writeByte(175)
+      super.writeValue(value.toList())
+    } else if let value = value as? PushTokenWire {
+      super.writeByte(176)
+      super.writeValue(value.toList())
+    } else if let value = value as? PushActionWire {
+      super.writeByte(177)
+      super.writeValue(value.toList())
+    } else if let value = value as? PushTargetWire {
+      super.writeByte(178)
+      super.writeValue(value.toList())
+    } else if let value = value as? PushPayloadWire {
+      super.writeByte(179)
+      super.writeValue(value.toList())
+    } else if let value = value as? NotificationStatisticsWire {
+      super.writeByte(180)
+      super.writeValue(value.toList())
+    } else if let value = value as? NotificationMessageWire {
+      super.writeByte(181)
+      super.writeValue(value.toList())
+    } else if let value = value as? NotificationHistoryWire {
+      super.writeByte(182)
+      super.writeValue(value.toList())
+    } else if let value = value as? StoriesBlockWire {
+      super.writeByte(183)
+      super.writeValue(value.toList())
+    } else if let value = value as? StoryWire {
+      super.writeByte(184)
+      super.writeValue(value.toList())
+    } else if let value = value as? StorySlideWire {
+      super.writeByte(185)
+      super.writeValue(value.toList())
+    } else if let value = value as? StoryElementWire {
+      super.writeByte(186)
+      super.writeValue(value.toList())
+    } else if let value = value as? StoryProductWire {
+      super.writeByte(187)
+      super.writeValue(value.toList())
+    } else if let value = value as? PurchaseProbabilityWire {
+      super.writeByte(188)
+      super.writeValue(value.toList())
+    } else if let value = value as? LoyaltyMemberWire {
+      super.writeByte(189)
+      super.writeValue(value.toList())
+    } else if let value = value as? LoyaltyLevelWire {
+      super.writeByte(190)
+      super.writeValue(value.toList())
+    } else if let value = value as? LoyaltyStatusWire {
+      super.writeByte(191)
+      super.writeValue(value.toList())
+    } else if let value = value as? LoyaltyPromotionWire {
+      super.writeByte(192)
+      super.writeValue(value.toList())
+    } else if let value = value as? SliderWire {
+      super.writeByte(193)
+      super.writeValue(value.toList())
+    } else if let value = value as? SliderBannerWire {
+      super.writeByte(194)
+      super.writeValue(value.toList())
+    } else if let value = value as? PollReviewWire {
+      super.writeByte(195)
+      super.writeValue(value.toList())
+    } else if let value = value as? NpsCategoryWire {
+      super.writeByte(196)
+      super.writeValue(value.toList())
+    } else if let value = value as? CsatCampaignWire {
+      super.writeByte(197)
+      super.writeValue(value.toList())
+    } else if let value = value as? CesCampaignWire {
+      super.writeByte(198)
+      super.writeValue(value.toList())
+    } else if let value = value as? PollChannelWire {
+      super.writeByte(199)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductRatingSummaryWire {
+      super.writeByte(200)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductReviewWire {
+      super.writeByte(201)
+      super.writeValue(value.toList())
+    } else if let value = value as? ProductReviewsResponseWire {
+      super.writeByte(202)
+      super.writeValue(value.toList())
+    } else if let value = value as? ClientReviewWire {
+      super.writeByte(203)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -610,73 +4301,104 @@ class PersonalizationApiPigeonCodec: FlutterStandardMessageCodec, @unchecked Sen
 
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol PersonalizationHostApi {
-  func initialize(config: InitConfig, completion: @escaping (Result<Void, Error>) -> Void)
+  /// Starts the shop on the native SDK's new core (`Rees46.initializeBridge`)
+  /// and answers with its state at once; [PersonalizationStateFlutterApi] tells
+  /// every change after that.
+  func initialize(config: InitConfig, completion: @escaping (Result<SdkSnapshotWire, Error>) -> Void)
   func getPlatformVersion() throws -> String
-  /// Returns the push token stored by the native SDK (if any).
-  func getStoredPushToken(shopId: String?) throws -> String?
-  /// [customFieldsJson] is JSON object string or null (maps to native custom fields map).
-  func trackEvent(event: String, time: Int64?, category: String?, label: String?, value: Int64?, customFieldsJson: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func setProfile(params: ProfileParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func manageSubscription(params: ManageSubscriptionParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  /// Returns the recommendation block as a JSON string.
-  /// [paramsJson] is a JSON object string with optional filter parameters.
-  /// Dart layer parses the result into [RecommendationResponse].
-  func getRecommendation(code: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// The shop's state as the native instance has it now.
+  func getSnapshot(shopId: String?) throws -> SdkSnapshotWire
   /// Returns the current session ID from the native SDK.
   func getSid(shopId: String?) throws -> String
   /// Returns the device ID assigned by the native SDK, or null before first sync.
   func getDid(shopId: String?) throws -> String?
-  /// Returns a single product's details as a JSON string.
-  /// Dart layer parses the result into [Product].
-  func getProductInfo(itemId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns a paginated product catalog list as a JSON string.
-  /// [paramsJson] is a JSON object with optional filter fields.
-  /// Dart layer parses the result into [ProductsListResponse].
-  func getProductsList(paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns blank search results (trending/popular) as a JSON string.
-  /// No parameters — the native SDK decides what to return based on shop config.
-  /// Dart layer parses the result into [SearchBlankResponse].
-  func searchBlank(shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns instant (typeahead) search results as a JSON string.
-  /// [paramsJson] may contain optional "locations" (String) and "excluded_brands" ([String]).
-  /// Dart layer parses the result into [SearchInstantResponse].
-  func searchInstant(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns full search results as a JSON string.
-  /// [paramsJson] is a JSON object string with optional search parameters.
-  /// Dart layer parses the result into [SearchFullResponse].
-  func searchFull(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Joins the loyalty program (`loyalty/members/join`) and returns the
-  /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
-  /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
-  /// Dart layer parses the result into [LoyaltyJoinResponse].
-  func joinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
-  /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
-  /// [identifier] is the member identifier (phone).
-  /// Dart layer parses the result into [LoyaltyStatusResponse].
-  func getLoyaltyStatus(identifier: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns the current user's profile as a JSON string.
-  /// Dart layer parses the result into [ProfileResponse].
-  func getProfile(shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns view / cart / purchase counters for [item] as a JSON string.
-  /// Dart layer parses the result into [ProductCountersResponse].
-  func getProductCounters(item: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns a category product listing as a JSON string.
-  /// [limit] and [page] paginate the result; both are optional.
-  /// [paramsJson] is a JSON object string with the optional filters: "brands" and
-  /// "locations" (comma-separated strings), "filters" (facet name → [values]),
-  /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
-  /// passes on only what its native SDK takes for a category.
-  /// Dart layer parses the result into [CategoryResponse].
-  func getCategory(category: String, limit: Int64?, page: Int64?, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns a merchandised collection's products as a JSON string.
-  /// Dart layer parses the result into [CollectionResponse].
-  func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
-  /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
-  /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
-  /// over the same raw payload, so Dart parses one shape.
-  /// Dart layer parses the result into [StoriesBlock].
-  func getStories(code: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  /// `tracking.custom`. [customFields] are the event's free-form fields.
+  func trackEvent(event: String, time: Int64?, category: String?, label: String?, value: Int64?, customFields: [String: Any?]?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackCategoryView(categoryId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackSearch(query: String, results: [String]?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackAddToCart(item: TrackingItemWire, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackSyncCart(items: [TrackingItemWire], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackRemoveFromCart(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackAddToFavorites(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackSyncFavorites(itemIds: [String], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackRemoveFromFavorites(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackStoryView(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func trackStoryClick(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// `tracking.bannerView`: a banner of a slider was shown.
+  func trackBannerView(bannerId: String, code: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// `tracking.bannerClick`: a banner of a slider was tapped.
+  func trackBannerClick(bannerId: String, code: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// Stores the attribution source natively for the next event.
+  func trackSetSource(source: TrackingSourceWire, shopId: String?) throws
+  /// `tracking.purchase`. [custom] and [recommendedSource] are free-form.
+  func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, isGiftPackage: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, custom: [String: Any?]?, recommendedSource: [String: Any?]?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`.
+  /// The native SDKs never show a popup themselves under the plugin, so they never
+  /// report one either: Dart does, once it is on screen.
+  func trackPopupShown(popupId: Int64, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func productsGetInfo(itemId: String, shopId: String?, completion: @escaping (Result<ProductWire?, Error>) -> Void)
+  func productsGetList(request: ProductsListRequestWire, shopId: String?, completion: @escaping (Result<ProductsListResponseWire, Error>) -> Void)
+  func productsGetCounters(itemId: String, shopId: String?, completion: @escaping (Result<ProductCountersResponseWire, Error>) -> Void)
+  /// `products.getCategory`: [request] without `categoryIds` and `merchants`.
+  func productsGetCategory(categoryId: String, request: ProductsListRequestWire, shopId: String?, completion: @escaping (Result<ProductsListResponseWire, Error>) -> Void)
+  func collectionsGet(collectionId: String, shopId: String?, completion: @escaping (Result<CollectionResponseWire, Error>) -> Void)
+  func recommendationsGet(code: String, request: RecommendationRequestWire, shopId: String?, completion: @escaping (Result<RecommendationResponseWire, Error>) -> Void)
+  /// `search.agentEnabled`, read now from the last `/init` answer.
+  func searchAgentEnabled(shopId: String?) throws -> Bool
+  func searchBlank(shopId: String?, completion: @escaping (Result<SearchBlankResponseWire, Error>) -> Void)
+  func searchInstant(query: String, locations: [String]?, excludedMerchants: [String]?, excludedBrands: [String]?, shopId: String?, completion: @escaping (Result<SearchInstantResponseWire, Error>) -> Void)
+  func searchFull(query: String, request: SearchFullRequestWire, shopId: String?, completion: @escaping (Result<SearchFullResponseWire, Error>) -> Void)
+  func searchAgentDialog(sessionId: Int64?, locations: [String]?, shopId: String?, completion: @escaping (Result<AgentDialogResponseWire, Error>) -> Void)
+  func searchAgent(message: String, sessionId: Int64?, locations: [String]?, shopId: String?, completion: @escaping (Result<AgentResponseWire, Error>) -> Void)
+  func cartGet(shopId: String?, completion: @escaping (Result<[CartItemWire], Error>) -> Void)
+  /// A server method: [shopSecret] is passed by the caller and never kept.
+  func cartClear(shopSecret: String, email: String?, phone: String?, loyaltyId: String?, externalId: String?, telegramId: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func profileGet(shopId: String?, completion: @escaping (Result<ProfileWire, Error>) -> Void)
+  func profileSet(request: ProfileUpdateRequestWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func profileGetLastOrder(shopId: String?, completion: @escaping (Result<[ProductWire], Error>) -> Void)
+  /// A server method: [shopSecret] is passed by the caller and never kept.
+  func profileGetOrders(shopSecret: String, did: String?, email: String?, phone: String?, loyaltyId: String?, externalId: String?, dateFrom: String?, shopId: String?, completion: @escaping (Result<[OrderWire], Error>) -> Void)
+  func subscriptionsManage(request: SubscriptionsUpdateRequestWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func subscriptionsCheck(shopId: String?, completion: @escaping (Result<SubscriptionStatusWire, Error>) -> Void)
+  func subscriptionsSubscribeForPriceDrop(itemId: String, currentPrice: Double, email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func subscriptionsUnsubscribeFromPriceDrop(itemIds: [String], email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func subscriptionsSubscribeForBackInStock(itemId: String, properties: BackInStockPropertiesWire?, email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func subscriptionsUnsubscribeFromBackInStock(itemIds: [String], email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func segmentsAdd(segmentId: Int64, email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func segmentsRemove(segmentId: Int64, email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func segmentsGet(shopId: String?, completion: @escaping (Result<[SegmentWire], Error>) -> Void)
+  func notificationsTrackDelivered(code: String, type: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func notificationsTrackOpened(code: String, type: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func notificationsTrackClicked(code: String, type: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func notificationsTrackClosed(code: String, type: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// The push token the native SDK keeps for the shop, read without the network;
+  /// [provider] is `apns`, `fcm` or `hms`.
+  func notificationsGetPushToken(provider: String?, shopId: String?) throws -> PushTokenWire?
+  func notificationsSetPushToken(token: String, provider: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// A server method: [shopSecret] is passed by the caller and never kept.
+  func notificationsGetHistory(shopSecret: String, type: String, phone: String?, email: String?, externalId: String?, loyaltyId: String?, channel: String?, limit: Int64?, page: Int64?, dateFrom: String?, did: String?, shopId: String?, completion: @escaping (Result<NotificationHistoryWire, Error>) -> Void)
+  /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
+  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+  /// `PushEvent` enum: 0 = received (native `delivered`), 1 = delivered (native
+  /// `opened`: the notification is on screen), 2 = clicked.
+  func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void)
+  func storiesGet(code: String, shopId: String?, completion: @escaping (Result<StoriesBlockWire, Error>) -> Void)
+  func predictGetProbabilityToPurchase(shopId: String?, completion: @escaping (Result<PurchaseProbabilityWire, Error>) -> Void)
+  /// [gender] is `m` or `f`.
+  func loyaltyJoin(phone: String, firstName: String?, lastName: String?, gender: String?, birthday: String?, shopId: String?, completion: @escaping (Result<LoyaltyMemberWire, Error>) -> Void)
+  func loyaltyGetStatus(phone: String, shopId: String?, completion: @escaping (Result<LoyaltyStatusWire, Error>) -> Void)
+  func loyaltyGetPromotions(locationId: String?, promoCodes: [String]?, chargeBonuses: Bool?, currentTime: String?, shopId: String?, completion: @escaping (Result<[LoyaltyPromotionWire], Error>) -> Void)
+  func slidersGet(code: String, tags: [String]?, locationId: String?, shopId: String?, completion: @escaping (Result<SliderWire, Error>) -> Void)
+  func reviewsCreateNps(rate: Int64, channel: String, category: String, orderId: String?, comment: String?, label: String?, shopId: String?, completion: @escaping (Result<PollReviewWire, Error>) -> Void)
+  func reviewsCreateCsat(rate: Int64, channel: String, campaign: String, orderId: String?, comment: String?, label: String?, shopId: String?, completion: @escaping (Result<PollReviewWire, Error>) -> Void)
+  func reviewsCreateCes(rate: Int64, channel: String, campaign: String, orderId: String?, comment: String?, label: String?, shopId: String?, completion: @escaping (Result<PollReviewWire, Error>) -> Void)
+  func reviewsGetNpsCategories(shopId: String?, completion: @escaping (Result<[NpsCategoryWire], Error>) -> Void)
+  func reviewsGetNpsChannels(shopId: String?, completion: @escaping (Result<[PollChannelWire], Error>) -> Void)
+  func reviewsGetCsatCampaigns(shopId: String?, completion: @escaping (Result<[CsatCampaignWire], Error>) -> Void)
+  func reviewsGetCesCampaigns(shopId: String?, completion: @escaping (Result<[CesCampaignWire], Error>) -> Void)
+  func reviewsGetProductReviews(itemId: String, limit: Int64?, offset: Int64?, shopId: String?, completion: @escaping (Result<ProductReviewsResponseWire, Error>) -> Void)
+  func reviewsGetClientReviews(orderId: String, shopId: String?, completion: @escaping (Result<[ClientReviewWire], Error>) -> Void)
   /// Opens [url] with the system handler (browser or the app that claims the link).
   /// Returns false when nothing could open it.
   func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void)
@@ -709,30 +4431,6 @@ protocol PersonalizationHostApi {
   /// The viewer closed: restores the session saved by [beginStoriesAudio] and stops
   /// watching the volume. iOS only; a no-op on Android.
   func endStoriesAudio() throws
-  /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-  /// via the native `REES46.handlePush`. [event] is the index of the Dart
-  /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
-  /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
-  func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackCategoryView(categoryId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackSearch(query: String, results: [String]?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackAddToCart(item: TrackingItemWire, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackSyncCart(items: [TrackingItemWire], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackRemoveFromCart(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackAddToFavorites(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackSyncFavorites(itemIds: [String], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackRemoveFromFavorites(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackStoryView(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  func trackStoryClick(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  /// Stores the attribution source natively for the next event.
-  func trackSetSource(source: TrackingSourceWire, shopId: String?) throws
-  /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
-  func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, isGiftPackage: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
-  /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`
-  /// (Android) / `trackPopupShown` (iOS). The native SDKs never show a popup themselves
-  /// under the plugin, so they never report one either: Dart does, once it is on screen.
-  func trackPopupShown(popupId: Int64, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
   /// Opens the system settings where the user turns notifications on for the app: the
   /// app's notification settings on Android, the app's page in Settings on iOS. What the
   /// native popups do for their push-subscription button.
@@ -745,6 +4443,9 @@ class PersonalizationHostApiSetup {
   /// Sets up an instance of `PersonalizationHostApi` to handle messages through the `binaryMessenger`.
   static func setUp(binaryMessenger: FlutterBinaryMessenger, api: PersonalizationHostApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+    /// Starts the shop on the native SDK's new core (`Rees46.initializeBridge`)
+    /// and answers with its state at once; [PersonalizationStateFlutterApi] tells
+    /// every change after that.
     let initializeChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.initialize\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       initializeChannel.setMessageHandler { message, reply in
@@ -752,8 +4453,8 @@ class PersonalizationHostApiSetup {
         let configArg = args[0] as! InitConfig
         api.initialize(config: configArg) { result in
           switch result {
-          case .success:
-            reply(wrapResult(nil))
+          case .success(let res):
+            reply(wrapResult(res))
           case .failure(let error):
             reply(wrapError(error))
           }
@@ -775,103 +4476,21 @@ class PersonalizationHostApiSetup {
     } else {
       getPlatformVersionChannel.setMessageHandler(nil)
     }
-    /// Returns the push token stored by the native SDK (if any).
-    let getStoredPushTokenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoredPushToken\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    /// The shop's state as the native instance has it now.
+    let getSnapshotChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSnapshot\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      getStoredPushTokenChannel.setMessageHandler { message, reply in
+      getSnapshotChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let shopIdArg: String? = nilOrValue(args[0])
         do {
-          let result = try api.getStoredPushToken(shopId: shopIdArg)
+          let result = try api.getSnapshot(shopId: shopIdArg)
           reply(wrapResult(result))
         } catch {
           reply(wrapError(error))
         }
       }
     } else {
-      getStoredPushTokenChannel.setMessageHandler(nil)
-    }
-    /// [customFieldsJson] is JSON object string or null (maps to native custom fields map).
-    let trackEventChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      trackEventChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let eventArg = args[0] as! String
-        let timeArg: Int64? = nilOrValue(args[1])
-        let categoryArg: String? = nilOrValue(args[2])
-        let labelArg: String? = nilOrValue(args[3])
-        let valueArg: Int64? = nilOrValue(args[4])
-        let customFieldsJsonArg: String? = nilOrValue(args[5])
-        let shopIdArg: String? = nilOrValue(args[6])
-        api.trackEvent(event: eventArg, time: timeArg, category: categoryArg, label: labelArg, value: valueArg, customFieldsJson: customFieldsJsonArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success:
-            reply(wrapResult(nil))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      trackEventChannel.setMessageHandler(nil)
-    }
-    let setProfileChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setProfile\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      setProfileChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let paramsArg = args[0] as! ProfileParamsWire
-        let shopIdArg: String? = nilOrValue(args[1])
-        api.setProfile(params: paramsArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success:
-            reply(wrapResult(nil))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      setProfileChannel.setMessageHandler(nil)
-    }
-    let manageSubscriptionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.manageSubscription\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      manageSubscriptionChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let paramsArg = args[0] as! ManageSubscriptionParamsWire
-        let shopIdArg: String? = nilOrValue(args[1])
-        api.manageSubscription(params: paramsArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success:
-            reply(wrapResult(nil))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      manageSubscriptionChannel.setMessageHandler(nil)
-    }
-    /// Returns the recommendation block as a JSON string.
-    /// [paramsJson] is a JSON object string with optional filter parameters.
-    /// Dart layer parses the result into [RecommendationResponse].
-    let getRecommendationChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getRecommendation\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getRecommendationChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let codeArg = args[0] as! String
-        let paramsJsonArg: String? = nilOrValue(args[1])
-        let shopIdArg: String? = nilOrValue(args[2])
-        api.getRecommendation(code: codeArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getRecommendationChannel.setMessageHandler(nil)
+      getSnapshotChannel.setMessageHandler(nil)
     }
     /// Returns the current session ID from the native SDK.
     let getSidChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
@@ -905,301 +4524,19 @@ class PersonalizationHostApiSetup {
     } else {
       getDidChannel.setMessageHandler(nil)
     }
-    /// Returns a single product's details as a JSON string.
-    /// Dart layer parses the result into [Product].
-    let getProductInfoChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductInfo\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    /// `tracking.custom`. [customFields] are the event's free-form fields.
+    let trackEventChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      getProductInfoChannel.setMessageHandler { message, reply in
+      trackEventChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
-        let itemIdArg = args[0] as! String
-        let shopIdArg: String? = nilOrValue(args[1])
-        api.getProductInfo(itemId: itemIdArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getProductInfoChannel.setMessageHandler(nil)
-    }
-    /// Returns a paginated product catalog list as a JSON string.
-    /// [paramsJson] is a JSON object with optional filter fields.
-    /// Dart layer parses the result into [ProductsListResponse].
-    let getProductsListChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductsList\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getProductsListChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let paramsJsonArg: String? = nilOrValue(args[0])
-        let shopIdArg: String? = nilOrValue(args[1])
-        api.getProductsList(paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getProductsListChannel.setMessageHandler(nil)
-    }
-    /// Returns blank search results (trending/popular) as a JSON string.
-    /// No parameters — the native SDK decides what to return based on shop config.
-    /// Dart layer parses the result into [SearchBlankResponse].
-    let searchBlankChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      searchBlankChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let shopIdArg: String? = nilOrValue(args[0])
-        api.searchBlank(shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      searchBlankChannel.setMessageHandler(nil)
-    }
-    /// Returns instant (typeahead) search results as a JSON string.
-    /// [paramsJson] may contain optional "locations" (String) and "excluded_brands" ([String]).
-    /// Dart layer parses the result into [SearchInstantResponse].
-    let searchInstantChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      searchInstantChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let queryArg = args[0] as! String
-        let paramsJsonArg: String? = nilOrValue(args[1])
-        let shopIdArg: String? = nilOrValue(args[2])
-        api.searchInstant(query: queryArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      searchInstantChannel.setMessageHandler(nil)
-    }
-    /// Returns full search results as a JSON string.
-    /// [paramsJson] is a JSON object string with optional search parameters.
-    /// Dart layer parses the result into [SearchFullResponse].
-    let searchFullChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      searchFullChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let queryArg = args[0] as! String
-        let paramsJsonArg: String? = nilOrValue(args[1])
-        let shopIdArg: String? = nilOrValue(args[2])
-        api.searchFull(query: queryArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      searchFullChannel.setMessageHandler(nil)
-    }
-    /// Joins the loyalty program (`loyalty/members/join`) and returns the
-    /// response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
-    /// The shop is identified by the SDK's configured `shop_id`; [phone] is required.
-    /// Dart layer parses the result into [LoyaltyJoinResponse].
-    let joinLoyaltyChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.joinLoyalty\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      joinLoyaltyChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let phoneArg = args[0] as! String
-        let emailArg: String? = nilOrValue(args[1])
-        let firstNameArg: String? = nilOrValue(args[2])
-        let lastNameArg: String? = nilOrValue(args[3])
-        let shopIdArg: String? = nilOrValue(args[4])
-        api.joinLoyalty(phone: phoneArg, email: emailArg, firstName: firstNameArg, lastName: lastNameArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      joinLoyaltyChannel.setMessageHandler(nil)
-    }
-    /// Returns the loyalty membership status (`loyalty/members/status`) as a JSON
-    /// string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
-    /// [identifier] is the member identifier (phone).
-    /// Dart layer parses the result into [LoyaltyStatusResponse].
-    let getLoyaltyStatusChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getLoyaltyStatus\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getLoyaltyStatusChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let identifierArg = args[0] as! String
-        let shopIdArg: String? = nilOrValue(args[1])
-        api.getLoyaltyStatus(identifier: identifierArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getLoyaltyStatusChannel.setMessageHandler(nil)
-    }
-    /// Returns the current user's profile as a JSON string.
-    /// Dart layer parses the result into [ProfileResponse].
-    let getProfileChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProfile\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getProfileChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let shopIdArg: String? = nilOrValue(args[0])
-        api.getProfile(shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getProfileChannel.setMessageHandler(nil)
-    }
-    /// Returns view / cart / purchase counters for [item] as a JSON string.
-    /// Dart layer parses the result into [ProductCountersResponse].
-    let getProductCountersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductCounters\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getProductCountersChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let itemArg = args[0] as! String
-        let shopIdArg: String? = nilOrValue(args[1])
-        api.getProductCounters(item: itemArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getProductCountersChannel.setMessageHandler(nil)
-    }
-    /// Returns a category product listing as a JSON string.
-    /// [limit] and [page] paginate the result; both are optional.
-    /// [paramsJson] is a JSON object string with the optional filters: "brands" and
-    /// "locations" (comma-separated strings), "filters" (facet name → [values]),
-    /// "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
-    /// passes on only what its native SDK takes for a category.
-    /// Dart layer parses the result into [CategoryResponse].
-    let getCategoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCategory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getCategoryChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let categoryArg = args[0] as! String
-        let limitArg: Int64? = nilOrValue(args[1])
-        let pageArg: Int64? = nilOrValue(args[2])
-        let paramsJsonArg: String? = nilOrValue(args[3])
-        let shopIdArg: String? = nilOrValue(args[4])
-        api.getCategory(category: categoryArg, limit: limitArg, page: pageArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getCategoryChannel.setMessageHandler(nil)
-    }
-    /// Returns a merchandised collection's products as a JSON string.
-    /// Dart layer parses the result into [CollectionResponse].
-    let getCollectionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCollection\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getCollectionChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let collectionIdArg = args[0] as! String
-        let shopIdArg: String? = nilOrValue(args[1])
-        api.getCollection(collectionId: collectionIdArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getCollectionChannel.setMessageHandler(nil)
-    }
-    /// Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
-    /// untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
-    /// over the same raw payload, so Dart parses one shape.
-    /// Dart layer parses the result into [StoriesBlock].
-    let getStoriesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStories\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getStoriesChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let codeArg = args[0] as! String
-        let shopIdArg: String? = nilOrValue(args[1])
-        api.getStories(code: codeArg, shopId: shopIdArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      getStoriesChannel.setMessageHandler(nil)
-    }
-    /// Opens [url] with the system handler (browser or the app that claims the link).
-    /// Returns false when nothing could open it.
-    let openUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      openUrlChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let urlArg = args[0] as! String
-        api.openUrl(url: urlArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      openUrlChannel.setMessageHandler(nil)
-    }
-    /// Shows the system share sheet with one link [url] — the "Share" button of the stories
-    /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
-    /// `UIActivityViewController`; Android — the window got its focus back after the
-    /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
-    /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
-    let shareUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      shareUrlChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let urlArg = args[0] as! String
-        let anchorXArg = args[1] as! Double
-        let anchorYArg = args[2] as! Double
-        let anchorWidthArg = args[3] as! Double
-        let anchorHeightArg = args[4] as! Double
-        api.shareUrl(url: urlArg, anchorX: anchorXArg, anchorY: anchorYArg, anchorWidth: anchorWidthArg, anchorHeight: anchorHeightArg) { result in
+        let eventArg = args[0] as! String
+        let timeArg: Int64? = nilOrValue(args[1])
+        let categoryArg: String? = nilOrValue(args[2])
+        let labelArg: String? = nilOrValue(args[3])
+        let valueArg: Int64? = nilOrValue(args[4])
+        let customFieldsArg: [String: Any?]? = nilOrValue(args[5])
+        let shopIdArg: String? = nilOrValue(args[6])
+        api.trackEvent(event: eventArg, time: timeArg, category: categoryArg, label: labelArg, value: valueArg, customFields: customFieldsArg, shopId: shopIdArg) { result in
           switch result {
           case .success:
             reply(wrapResult(nil))
@@ -1209,132 +4546,7 @@ class PersonalizationHostApiSetup {
         }
       }
     } else {
-      shareUrlChannel.setMessageHandler(nil)
-    }
-    /// The slide ids seen per story id for [shop] — the plugin's own store
-    /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
-    /// survives app restarts. The inner lists are untyped on purpose: the channel
-    /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
-    /// generates a lazy cast that throws on the first read.
-    let getStoriesSeenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getStoriesSeenChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let shopArg = args[0] as! String
-        do {
-          let result = try api.getStoriesSeen(shop: shopArg)
-          reply(wrapResult(result))
-        } catch {
-          reply(wrapError(error))
-        }
-      }
-    } else {
-      getStoriesSeenChannel.setMessageHandler(nil)
-    }
-    /// Records [slideId] of story [storyId] as seen for [shop].
-    let setStorySlideSeenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setStorySlideSeen\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      setStorySlideSeenChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let shopArg = args[0] as! String
-        let storyIdArg = args[1] as! String
-        let slideIdArg = args[2] as! String
-        do {
-          try api.setStorySlideSeen(shop: shopArg, storyId: storyIdArg, slideId: slideIdArg)
-          reply(wrapResult(nil))
-        } catch {
-          reply(wrapError(error))
-        }
-      }
-    } else {
-      setStorySlideSeenChannel.setMessageHandler(nil)
-    }
-    /// The app's cache directory: Android `Context.cacheDir`, iOS `Library/Caches`. The
-    /// stories viewer keeps its video cache under it.
-    let getCacheDirectoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCacheDirectory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      getCacheDirectoryChannel.setMessageHandler { _, reply in
-        do {
-          let result = try api.getCacheDirectory()
-          reply(wrapResult(result))
-        } catch {
-          reply(wrapError(error))
-        }
-      }
-    } else {
-      getCacheDirectoryChannel.setMessageHandler(nil)
-    }
-    /// Remembers the app's audio session before the stories viewer plays its first video,
-    /// so [endStoriesAudio] can put it back. iOS only; a no-op on Android, where a muted
-    /// video never takes the audio focus (`mixWithOthers`).
-    let beginStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.beginStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      beginStoriesAudioChannel.setMessageHandler { _, reply in
-        do {
-          try api.beginStoriesAudio()
-          reply(wrapResult(nil))
-        } catch {
-          reply(wrapError(error))
-        }
-      }
-    } else {
-      beginStoriesAudioChannel.setMessageHandler(nil)
-    }
-    /// While the viewer plays video: muted — the `ambient` category, which never
-    /// interrupts other apps' audio; unmuted — `playback`. Also starts watching the
-    /// hardware volume (see [PersonalizationStoriesFlutterApi.onStoriesVolumeUp]). iOS
-    /// only; a no-op on Android.
-    let updateStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.updateStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      updateStoriesAudioChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let mutedArg = args[0] as! Bool
-        do {
-          try api.updateStoriesAudio(muted: mutedArg)
-          reply(wrapResult(nil))
-        } catch {
-          reply(wrapError(error))
-        }
-      }
-    } else {
-      updateStoriesAudioChannel.setMessageHandler(nil)
-    }
-    /// The viewer closed: restores the session saved by [beginStoriesAudio] and stops
-    /// watching the volume. iOS only; a no-op on Android.
-    let endStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.endStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      endStoriesAudioChannel.setMessageHandler { _, reply in
-        do {
-          try api.endStoriesAudio()
-          reply(wrapResult(nil))
-        } catch {
-          reply(wrapError(error))
-        }
-      }
-    } else {
-      endStoriesAudioChannel.setMessageHandler(nil)
-    }
-    /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-    /// via the native `REES46.handlePush`. [event] is the index of the Dart
-    /// `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
-    /// maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
-    let handlePushChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      handlePushChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let payloadArg = args[0] as! [String: String]
-        let eventArg = args[1] as! Int64
-        api.handlePush(payload: payloadArg, event: eventArg) { result in
-          switch result {
-          case .success:
-            reply(wrapResult(nil))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      handlePushChannel.setMessageHandler(nil)
+      trackEventChannel.setMessageHandler(nil)
     }
     let trackProductViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackProductView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
@@ -1542,6 +4754,46 @@ class PersonalizationHostApiSetup {
     } else {
       trackStoryClickChannel.setMessageHandler(nil)
     }
+    /// `tracking.bannerView`: a banner of a slider was shown.
+    let trackBannerViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackBannerView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackBannerViewChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let bannerIdArg = args[0] as! String
+        let codeArg = args[1] as! String
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.trackBannerView(bannerId: bannerIdArg, code: codeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackBannerViewChannel.setMessageHandler(nil)
+    }
+    /// `tracking.bannerClick`: a banner of a slider was tapped.
+    let trackBannerClickChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackBannerClick\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      trackBannerClickChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let bannerIdArg = args[0] as! String
+        let codeArg = args[1] as! String
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.trackBannerClick(bannerId: bannerIdArg, code: codeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      trackBannerClickChannel.setMessageHandler(nil)
+    }
     /// Stores the attribution source natively for the next event.
     let trackSetSourceChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSetSource\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
@@ -1559,7 +4811,7 @@ class PersonalizationHostApiSetup {
     } else {
       trackSetSourceChannel.setMessageHandler(nil)
     }
-    /// [customJson] and [recommendedSourceJson] are JSON object strings or null.
+    /// `tracking.purchase`. [custom] and [recommendedSource] are free-form.
     let trackPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       trackPurchaseChannel.setMessageHandler { message, reply in
@@ -1578,12 +4830,12 @@ class PersonalizationHostApiSetup {
         let orderDeliveryArg: Double? = nilOrValue(args[11])
         let orderDiscountArg: Double? = nilOrValue(args[12])
         let channelArg: String? = nilOrValue(args[13])
-        let customJsonArg: String? = nilOrValue(args[14])
-        let recommendedSourceJsonArg: String? = nilOrValue(args[15])
+        let customArg: [String: Any?]? = nilOrValue(args[14])
+        let recommendedSourceArg: [String: Any?]? = nilOrValue(args[15])
         let streamArg: String? = nilOrValue(args[16])
         let segmentArg: String? = nilOrValue(args[17])
         let shopIdArg: String? = nilOrValue(args[18])
-        api.trackPurchase(orderId: orderIdArg, orderPrice: orderPriceArg, items: itemsArg, deliveryType: deliveryTypeArg, deliveryAddress: deliveryAddressArg, paymentType: paymentTypeArg, isTaxFree: isTaxFreeArg, isGiftPackage: isGiftPackageArg, promocode: promocodeArg, orderCash: orderCashArg, orderBonuses: orderBonusesArg, orderDelivery: orderDeliveryArg, orderDiscount: orderDiscountArg, channel: channelArg, customJson: customJsonArg, recommendedSourceJson: recommendedSourceJsonArg, stream: streamArg, segment: segmentArg, shopId: shopIdArg) { result in
+        api.trackPurchase(orderId: orderIdArg, orderPrice: orderPriceArg, items: itemsArg, deliveryType: deliveryTypeArg, deliveryAddress: deliveryAddressArg, paymentType: paymentTypeArg, isTaxFree: isTaxFreeArg, isGiftPackage: isGiftPackageArg, promocode: promocodeArg, orderCash: orderCashArg, orderBonuses: orderBonusesArg, orderDelivery: orderDeliveryArg, orderDiscount: orderDiscountArg, channel: channelArg, custom: customArg, recommendedSource: recommendedSourceArg, stream: streamArg, segment: segmentArg, shopId: shopIdArg) { result in
           switch result {
           case .success:
             reply(wrapResult(nil))
@@ -1595,9 +4847,9 @@ class PersonalizationHostApiSetup {
     } else {
       trackPurchaseChannel.setMessageHandler(nil)
     }
-    /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`
-    /// (Android) / `trackPopupShown` (iOS). The native SDKs never show a popup themselves
-    /// under the plugin, so they never report one either: Dart does, once it is on screen.
+    /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`.
+    /// The native SDKs never show a popup themselves under the plugin, so they never
+    /// report one either: Dart does, once it is on screen.
     let trackPopupShownChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPopupShown\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       trackPopupShownChannel.setMessageHandler { message, reply in
@@ -1616,6 +4868,1125 @@ class PersonalizationHostApiSetup {
     } else {
       trackPopupShownChannel.setMessageHandler(nil)
     }
+    let productsGetInfoChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetInfo\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      productsGetInfoChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.productsGetInfo(itemId: itemIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      productsGetInfoChannel.setMessageHandler(nil)
+    }
+    let productsGetListChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetList\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      productsGetListChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let requestArg = args[0] as! ProductsListRequestWire
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.productsGetList(request: requestArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      productsGetListChannel.setMessageHandler(nil)
+    }
+    let productsGetCountersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetCounters\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      productsGetCountersChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.productsGetCounters(itemId: itemIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      productsGetCountersChannel.setMessageHandler(nil)
+    }
+    /// `products.getCategory`: [request] without `categoryIds` and `merchants`.
+    let productsGetCategoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetCategory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      productsGetCategoryChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let categoryIdArg = args[0] as! String
+        let requestArg = args[1] as! ProductsListRequestWire
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.productsGetCategory(categoryId: categoryIdArg, request: requestArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      productsGetCategoryChannel.setMessageHandler(nil)
+    }
+    let collectionsGetChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.collectionsGet\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      collectionsGetChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let collectionIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.collectionsGet(collectionId: collectionIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      collectionsGetChannel.setMessageHandler(nil)
+    }
+    let recommendationsGetChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.recommendationsGet\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      recommendationsGetChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let requestArg = args[1] as! RecommendationRequestWire
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.recommendationsGet(code: codeArg, request: requestArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      recommendationsGetChannel.setMessageHandler(nil)
+    }
+    /// `search.agentEnabled`, read now from the last `/init` answer.
+    let searchAgentEnabledChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgentEnabled\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      searchAgentEnabledChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        do {
+          let result = try api.searchAgentEnabled(shopId: shopIdArg)
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      searchAgentEnabledChannel.setMessageHandler(nil)
+    }
+    let searchBlankChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      searchBlankChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.searchBlank(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      searchBlankChannel.setMessageHandler(nil)
+    }
+    let searchInstantChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      searchInstantChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let queryArg = args[0] as! String
+        let locationsArg: [String]? = nilOrValue(args[1])
+        let excludedMerchantsArg: [String]? = nilOrValue(args[2])
+        let excludedBrandsArg: [String]? = nilOrValue(args[3])
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.searchInstant(query: queryArg, locations: locationsArg, excludedMerchants: excludedMerchantsArg, excludedBrands: excludedBrandsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      searchInstantChannel.setMessageHandler(nil)
+    }
+    let searchFullChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      searchFullChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let queryArg = args[0] as! String
+        let requestArg = args[1] as! SearchFullRequestWire
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.searchFull(query: queryArg, request: requestArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      searchFullChannel.setMessageHandler(nil)
+    }
+    let searchAgentDialogChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgentDialog\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      searchAgentDialogChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let sessionIdArg: Int64? = nilOrValue(args[0])
+        let locationsArg: [String]? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.searchAgentDialog(sessionId: sessionIdArg, locations: locationsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      searchAgentDialogChannel.setMessageHandler(nil)
+    }
+    let searchAgentChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgent\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      searchAgentChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let messageArg = args[0] as! String
+        let sessionIdArg: Int64? = nilOrValue(args[1])
+        let locationsArg: [String]? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.searchAgent(message: messageArg, sessionId: sessionIdArg, locations: locationsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      searchAgentChannel.setMessageHandler(nil)
+    }
+    let cartGetChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.cartGet\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      cartGetChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.cartGet(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      cartGetChannel.setMessageHandler(nil)
+    }
+    /// A server method: [shopSecret] is passed by the caller and never kept.
+    let cartClearChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.cartClear\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      cartClearChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopSecretArg = args[0] as! String
+        let emailArg: String? = nilOrValue(args[1])
+        let phoneArg: String? = nilOrValue(args[2])
+        let loyaltyIdArg: String? = nilOrValue(args[3])
+        let externalIdArg: String? = nilOrValue(args[4])
+        let telegramIdArg: String? = nilOrValue(args[5])
+        let shopIdArg: String? = nilOrValue(args[6])
+        api.cartClear(shopSecret: shopSecretArg, email: emailArg, phone: phoneArg, loyaltyId: loyaltyIdArg, externalId: externalIdArg, telegramId: telegramIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      cartClearChannel.setMessageHandler(nil)
+    }
+    let profileGetChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGet\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      profileGetChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.profileGet(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      profileGetChannel.setMessageHandler(nil)
+    }
+    let profileSetChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileSet\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      profileSetChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let requestArg = args[0] as! ProfileUpdateRequestWire
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.profileSet(request: requestArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      profileSetChannel.setMessageHandler(nil)
+    }
+    let profileGetLastOrderChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGetLastOrder\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      profileGetLastOrderChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.profileGetLastOrder(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      profileGetLastOrderChannel.setMessageHandler(nil)
+    }
+    /// A server method: [shopSecret] is passed by the caller and never kept.
+    let profileGetOrdersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGetOrders\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      profileGetOrdersChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopSecretArg = args[0] as! String
+        let didArg: String? = nilOrValue(args[1])
+        let emailArg: String? = nilOrValue(args[2])
+        let phoneArg: String? = nilOrValue(args[3])
+        let loyaltyIdArg: String? = nilOrValue(args[4])
+        let externalIdArg: String? = nilOrValue(args[5])
+        let dateFromArg: String? = nilOrValue(args[6])
+        let shopIdArg: String? = nilOrValue(args[7])
+        api.profileGetOrders(shopSecret: shopSecretArg, did: didArg, email: emailArg, phone: phoneArg, loyaltyId: loyaltyIdArg, externalId: externalIdArg, dateFrom: dateFromArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      profileGetOrdersChannel.setMessageHandler(nil)
+    }
+    let subscriptionsManageChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsManage\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      subscriptionsManageChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let requestArg = args[0] as! SubscriptionsUpdateRequestWire
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.subscriptionsManage(request: requestArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      subscriptionsManageChannel.setMessageHandler(nil)
+    }
+    let subscriptionsCheckChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsCheck\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      subscriptionsCheckChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.subscriptionsCheck(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      subscriptionsCheckChannel.setMessageHandler(nil)
+    }
+    let subscriptionsSubscribeForPriceDropChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsSubscribeForPriceDrop\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      subscriptionsSubscribeForPriceDropChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let currentPriceArg = args[1] as! Double
+        let emailArg: String? = nilOrValue(args[2])
+        let phoneArg: String? = nilOrValue(args[3])
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.subscriptionsSubscribeForPriceDrop(itemId: itemIdArg, currentPrice: currentPriceArg, email: emailArg, phone: phoneArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      subscriptionsSubscribeForPriceDropChannel.setMessageHandler(nil)
+    }
+    let subscriptionsUnsubscribeFromPriceDropChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsUnsubscribeFromPriceDrop\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      subscriptionsUnsubscribeFromPriceDropChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdsArg = args[0] as! [String]
+        let emailArg: String? = nilOrValue(args[1])
+        let phoneArg: String? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.subscriptionsUnsubscribeFromPriceDrop(itemIds: itemIdsArg, email: emailArg, phone: phoneArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      subscriptionsUnsubscribeFromPriceDropChannel.setMessageHandler(nil)
+    }
+    let subscriptionsSubscribeForBackInStockChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsSubscribeForBackInStock\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      subscriptionsSubscribeForBackInStockChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let propertiesArg: BackInStockPropertiesWire? = nilOrValue(args[1])
+        let emailArg: String? = nilOrValue(args[2])
+        let phoneArg: String? = nilOrValue(args[3])
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.subscriptionsSubscribeForBackInStock(itemId: itemIdArg, properties: propertiesArg, email: emailArg, phone: phoneArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      subscriptionsSubscribeForBackInStockChannel.setMessageHandler(nil)
+    }
+    let subscriptionsUnsubscribeFromBackInStockChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsUnsubscribeFromBackInStock\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      subscriptionsUnsubscribeFromBackInStockChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdsArg = args[0] as! [String]
+        let emailArg: String? = nilOrValue(args[1])
+        let phoneArg: String? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.subscriptionsUnsubscribeFromBackInStock(itemIds: itemIdsArg, email: emailArg, phone: phoneArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      subscriptionsUnsubscribeFromBackInStockChannel.setMessageHandler(nil)
+    }
+    let segmentsAddChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsAdd\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      segmentsAddChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let segmentIdArg = args[0] as! Int64
+        let emailArg: String? = nilOrValue(args[1])
+        let phoneArg: String? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.segmentsAdd(segmentId: segmentIdArg, email: emailArg, phone: phoneArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      segmentsAddChannel.setMessageHandler(nil)
+    }
+    let segmentsRemoveChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsRemove\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      segmentsRemoveChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let segmentIdArg = args[0] as! Int64
+        let emailArg: String? = nilOrValue(args[1])
+        let phoneArg: String? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.segmentsRemove(segmentId: segmentIdArg, email: emailArg, phone: phoneArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      segmentsRemoveChannel.setMessageHandler(nil)
+    }
+    let segmentsGetChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsGet\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      segmentsGetChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.segmentsGet(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      segmentsGetChannel.setMessageHandler(nil)
+    }
+    let notificationsTrackDeliveredChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackDelivered\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      notificationsTrackDeliveredChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let typeArg = args[1] as! String
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.notificationsTrackDelivered(code: codeArg, type: typeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      notificationsTrackDeliveredChannel.setMessageHandler(nil)
+    }
+    let notificationsTrackOpenedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackOpened\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      notificationsTrackOpenedChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let typeArg = args[1] as! String
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.notificationsTrackOpened(code: codeArg, type: typeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      notificationsTrackOpenedChannel.setMessageHandler(nil)
+    }
+    let notificationsTrackClickedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackClicked\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      notificationsTrackClickedChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let typeArg = args[1] as! String
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.notificationsTrackClicked(code: codeArg, type: typeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      notificationsTrackClickedChannel.setMessageHandler(nil)
+    }
+    let notificationsTrackClosedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackClosed\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      notificationsTrackClosedChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let typeArg = args[1] as! String
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.notificationsTrackClosed(code: codeArg, type: typeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      notificationsTrackClosedChannel.setMessageHandler(nil)
+    }
+    /// The push token the native SDK keeps for the shop, read without the network;
+    /// [provider] is `apns`, `fcm` or `hms`.
+    let notificationsGetPushTokenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsGetPushToken\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      notificationsGetPushTokenChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let providerArg: String? = nilOrValue(args[0])
+        let shopIdArg: String? = nilOrValue(args[1])
+        do {
+          let result = try api.notificationsGetPushToken(provider: providerArg, shopId: shopIdArg)
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      notificationsGetPushTokenChannel.setMessageHandler(nil)
+    }
+    let notificationsSetPushTokenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsSetPushToken\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      notificationsSetPushTokenChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let tokenArg = args[0] as! String
+        let providerArg = args[1] as! String
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.notificationsSetPushToken(token: tokenArg, provider: providerArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      notificationsSetPushTokenChannel.setMessageHandler(nil)
+    }
+    /// A server method: [shopSecret] is passed by the caller and never kept.
+    let notificationsGetHistoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsGetHistory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      notificationsGetHistoryChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopSecretArg = args[0] as! String
+        let typeArg = args[1] as! String
+        let phoneArg: String? = nilOrValue(args[2])
+        let emailArg: String? = nilOrValue(args[3])
+        let externalIdArg: String? = nilOrValue(args[4])
+        let loyaltyIdArg: String? = nilOrValue(args[5])
+        let channelArg: String? = nilOrValue(args[6])
+        let limitArg: Int64? = nilOrValue(args[7])
+        let pageArg: Int64? = nilOrValue(args[8])
+        let dateFromArg: String? = nilOrValue(args[9])
+        let didArg: String? = nilOrValue(args[10])
+        let shopIdArg: String? = nilOrValue(args[11])
+        api.notificationsGetHistory(shopSecret: shopSecretArg, type: typeArg, phone: phoneArg, email: emailArg, externalId: externalIdArg, loyaltyId: loyaltyIdArg, channel: channelArg, limit: limitArg, page: pageArg, dateFrom: dateFromArg, did: didArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      notificationsGetHistoryChannel.setMessageHandler(nil)
+    }
+    /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
+    /// via the native `Rees46.handlePush`. [event] is the index of the Dart
+    /// `PushEvent` enum: 0 = received (native `delivered`), 1 = delivered (native
+    /// `opened`: the notification is on screen), 2 = clicked.
+    let handlePushChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      handlePushChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let payloadArg = args[0] as! [String: String]
+        let eventArg = args[1] as! Int64
+        api.handlePush(payload: payloadArg, event: eventArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      handlePushChannel.setMessageHandler(nil)
+    }
+    let storiesGetChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.storiesGet\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      storiesGetChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.storiesGet(code: codeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      storiesGetChannel.setMessageHandler(nil)
+    }
+    let predictGetProbabilityToPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.predictGetProbabilityToPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      predictGetProbabilityToPurchaseChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.predictGetProbabilityToPurchase(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      predictGetProbabilityToPurchaseChannel.setMessageHandler(nil)
+    }
+    /// [gender] is `m` or `f`.
+    let loyaltyJoinChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyJoin\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      loyaltyJoinChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let phoneArg = args[0] as! String
+        let firstNameArg: String? = nilOrValue(args[1])
+        let lastNameArg: String? = nilOrValue(args[2])
+        let genderArg: String? = nilOrValue(args[3])
+        let birthdayArg: String? = nilOrValue(args[4])
+        let shopIdArg: String? = nilOrValue(args[5])
+        api.loyaltyJoin(phone: phoneArg, firstName: firstNameArg, lastName: lastNameArg, gender: genderArg, birthday: birthdayArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      loyaltyJoinChannel.setMessageHandler(nil)
+    }
+    let loyaltyGetStatusChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyGetStatus\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      loyaltyGetStatusChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let phoneArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.loyaltyGetStatus(phone: phoneArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      loyaltyGetStatusChannel.setMessageHandler(nil)
+    }
+    let loyaltyGetPromotionsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyGetPromotions\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      loyaltyGetPromotionsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let locationIdArg: String? = nilOrValue(args[0])
+        let promoCodesArg: [String]? = nilOrValue(args[1])
+        let chargeBonusesArg: Bool? = nilOrValue(args[2])
+        let currentTimeArg: String? = nilOrValue(args[3])
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.loyaltyGetPromotions(locationId: locationIdArg, promoCodes: promoCodesArg, chargeBonuses: chargeBonusesArg, currentTime: currentTimeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      loyaltyGetPromotionsChannel.setMessageHandler(nil)
+    }
+    let slidersGetChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.slidersGet\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      slidersGetChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let tagsArg: [String]? = nilOrValue(args[1])
+        let locationIdArg: String? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.slidersGet(code: codeArg, tags: tagsArg, locationId: locationIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      slidersGetChannel.setMessageHandler(nil)
+    }
+    let reviewsCreateNpsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateNps\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsCreateNpsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let rateArg = args[0] as! Int64
+        let channelArg = args[1] as! String
+        let categoryArg = args[2] as! String
+        let orderIdArg: String? = nilOrValue(args[3])
+        let commentArg: String? = nilOrValue(args[4])
+        let labelArg: String? = nilOrValue(args[5])
+        let shopIdArg: String? = nilOrValue(args[6])
+        api.reviewsCreateNps(rate: rateArg, channel: channelArg, category: categoryArg, orderId: orderIdArg, comment: commentArg, label: labelArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsCreateNpsChannel.setMessageHandler(nil)
+    }
+    let reviewsCreateCsatChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateCsat\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsCreateCsatChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let rateArg = args[0] as! Int64
+        let channelArg = args[1] as! String
+        let campaignArg = args[2] as! String
+        let orderIdArg: String? = nilOrValue(args[3])
+        let commentArg: String? = nilOrValue(args[4])
+        let labelArg: String? = nilOrValue(args[5])
+        let shopIdArg: String? = nilOrValue(args[6])
+        api.reviewsCreateCsat(rate: rateArg, channel: channelArg, campaign: campaignArg, orderId: orderIdArg, comment: commentArg, label: labelArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsCreateCsatChannel.setMessageHandler(nil)
+    }
+    let reviewsCreateCesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateCes\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsCreateCesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let rateArg = args[0] as! Int64
+        let channelArg = args[1] as! String
+        let campaignArg = args[2] as! String
+        let orderIdArg: String? = nilOrValue(args[3])
+        let commentArg: String? = nilOrValue(args[4])
+        let labelArg: String? = nilOrValue(args[5])
+        let shopIdArg: String? = nilOrValue(args[6])
+        api.reviewsCreateCes(rate: rateArg, channel: channelArg, campaign: campaignArg, orderId: orderIdArg, comment: commentArg, label: labelArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsCreateCesChannel.setMessageHandler(nil)
+    }
+    let reviewsGetNpsCategoriesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetNpsCategories\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsGetNpsCategoriesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.reviewsGetNpsCategories(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsGetNpsCategoriesChannel.setMessageHandler(nil)
+    }
+    let reviewsGetNpsChannelsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetNpsChannels\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsGetNpsChannelsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.reviewsGetNpsChannels(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsGetNpsChannelsChannel.setMessageHandler(nil)
+    }
+    let reviewsGetCsatCampaignsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetCsatCampaigns\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsGetCsatCampaignsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.reviewsGetCsatCampaigns(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsGetCsatCampaignsChannel.setMessageHandler(nil)
+    }
+    let reviewsGetCesCampaignsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetCesCampaigns\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsGetCesCampaignsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.reviewsGetCesCampaigns(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsGetCesCampaignsChannel.setMessageHandler(nil)
+    }
+    let reviewsGetProductReviewsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetProductReviews\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsGetProductReviewsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let limitArg: Int64? = nilOrValue(args[1])
+        let offsetArg: Int64? = nilOrValue(args[2])
+        let shopIdArg: String? = nilOrValue(args[3])
+        api.reviewsGetProductReviews(itemId: itemIdArg, limit: limitArg, offset: offsetArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsGetProductReviewsChannel.setMessageHandler(nil)
+    }
+    let reviewsGetClientReviewsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetClientReviews\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reviewsGetClientReviewsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let orderIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.reviewsGetClientReviews(orderId: orderIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reviewsGetClientReviewsChannel.setMessageHandler(nil)
+    }
+    /// Opens [url] with the system handler (browser or the app that claims the link).
+    /// Returns false when nothing could open it.
+    let openUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      openUrlChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let urlArg = args[0] as! String
+        api.openUrl(url: urlArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      openUrlChannel.setMessageHandler(nil)
+    }
+    /// Shows the system share sheet with one link [url] — the "Share" button of the stories
+    /// viewer. Completes when the sheet is gone: iOS — `completionWithItemsHandler` of
+    /// `UIActivityViewController`; Android — the window got its focus back after the
+    /// chooser (`Intent.createChooser` of `ACTION_SEND`). The anchor is the button in
+    /// logical pixels of the Flutter view: the popover of the sheet points at it on iPad.
+    let shareUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      shareUrlChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let urlArg = args[0] as! String
+        let anchorXArg = args[1] as! Double
+        let anchorYArg = args[2] as! Double
+        let anchorWidthArg = args[3] as! Double
+        let anchorHeightArg = args[4] as! Double
+        api.shareUrl(url: urlArg, anchorX: anchorXArg, anchorY: anchorYArg, anchorWidth: anchorWidthArg, anchorHeight: anchorHeightArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      shareUrlChannel.setMessageHandler(nil)
+    }
+    /// The slide ids seen per story id for [shop] — the plugin's own store
+    /// (SharedPreferences on Android, UserDefaults on iOS), not the native SDK's. It
+    /// survives app restarts. The inner lists are untyped on purpose: the channel
+    /// hands nested lists over as `List<Object?>`, and a typed `List<String>` here
+    /// generates a lazy cast that throws on the first read.
+    let getStoriesSeenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getStoriesSeenChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopArg = args[0] as! String
+        do {
+          let result = try api.getStoriesSeen(shop: shopArg)
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      getStoriesSeenChannel.setMessageHandler(nil)
+    }
+    /// Records [slideId] of story [storyId] as seen for [shop].
+    let setStorySlideSeenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setStorySlideSeen\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      setStorySlideSeenChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopArg = args[0] as! String
+        let storyIdArg = args[1] as! String
+        let slideIdArg = args[2] as! String
+        do {
+          try api.setStorySlideSeen(shop: shopArg, storyId: storyIdArg, slideId: slideIdArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      setStorySlideSeenChannel.setMessageHandler(nil)
+    }
+    /// The app's cache directory: Android `Context.cacheDir`, iOS `Library/Caches`. The
+    /// stories viewer keeps its video cache under it.
+    let getCacheDirectoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCacheDirectory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getCacheDirectoryChannel.setMessageHandler { _, reply in
+        do {
+          let result = try api.getCacheDirectory()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      getCacheDirectoryChannel.setMessageHandler(nil)
+    }
+    /// Remembers the app's audio session before the stories viewer plays its first video,
+    /// so [endStoriesAudio] can put it back. iOS only; a no-op on Android, where a muted
+    /// video never takes the audio focus (`mixWithOthers`).
+    let beginStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.beginStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      beginStoriesAudioChannel.setMessageHandler { _, reply in
+        do {
+          try api.beginStoriesAudio()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      beginStoriesAudioChannel.setMessageHandler(nil)
+    }
+    /// While the viewer plays video: muted — the `ambient` category, which never
+    /// interrupts other apps' audio; unmuted — `playback`. Also starts watching the
+    /// hardware volume (see [PersonalizationStoriesFlutterApi.onStoriesVolumeUp]). iOS
+    /// only; a no-op on Android.
+    let updateStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.updateStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      updateStoriesAudioChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let mutedArg = args[0] as! Bool
+        do {
+          try api.updateStoriesAudio(muted: mutedArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      updateStoriesAudioChannel.setMessageHandler(nil)
+    }
+    /// The viewer closed: restores the session saved by [beginStoriesAudio] and stops
+    /// watching the volume. iOS only; a no-op on Android.
+    let endStoriesAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.endStoriesAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      endStoriesAudioChannel.setMessageHandler { _, reply in
+        do {
+          try api.endStoriesAudio()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      endStoriesAudioChannel.setMessageHandler(nil)
+    }
     /// Opens the system settings where the user turns notifications on for the app: the
     /// app's notification settings on Android, the app's page in Settings on iOS. What the
     /// native popups do for their push-subscription button.
@@ -1631,6 +6002,89 @@ class PersonalizationHostApiSetup {
       }
     } else {
       openNotificationSettingsChannel.setMessageHandler(nil)
+    }
+  }
+}
+/// What the native instances tell Dart on their own: a shop's state, the push
+/// events and the push tokens the native SDK sees. Separate from
+/// [PersonalizationFlutterApi], which carries the legacy push callbacks.
+///
+/// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
+protocol PersonalizationStateFlutterApiProtocol {
+  /// A shop's state, device id, session or A/B group changed.
+  func onSnapshot(snapshot snapshotArg: SdkSnapshotWire, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  /// A push event the native SDK handled for [shopId]: [event] is `delivered`,
+  /// `opened`, `clicked` or `closed`.
+  func onPushEvent(shopId shopIdArg: String, event eventArg: String, payload payloadArg: PushPayloadWire, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  /// A new push token the native SDK got from APNs, FCM or HMS.
+  func onPushToken(token tokenArg: PushTokenWire, completion: @escaping (Result<Void, PigeonError>) -> Void)
+}
+class PersonalizationStateFlutterApi: PersonalizationStateFlutterApiProtocol {
+  private let binaryMessenger: FlutterBinaryMessenger
+  private let messageChannelSuffix: String
+  init(binaryMessenger: FlutterBinaryMessenger, messageChannelSuffix: String = "") {
+    self.binaryMessenger = binaryMessenger
+    self.messageChannelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+  }
+  var codec: PersonalizationApiPigeonCodec {
+    return PersonalizationApiPigeonCodec.shared
+  }
+  /// A shop's state, device id, session or A/B group changed.
+  func onSnapshot(snapshot snapshotArg: SdkSnapshotWire, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onSnapshot\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([snapshotArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(()))
+      }
+    }
+  }
+  /// A push event the native SDK handled for [shopId]: [event] is `delivered`,
+  /// `opened`, `clicked` or `closed`.
+  func onPushEvent(shopId shopIdArg: String, event eventArg: String, payload payloadArg: PushPayloadWire, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushEvent\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([shopIdArg, eventArg, payloadArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(()))
+      }
+    }
+  }
+  /// A new push token the native SDK got from APNs, FCM or HMS.
+  func onPushToken(token tokenArg: PushTokenWire, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushToken\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([tokenArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(()))
+      }
     }
   }
 }
