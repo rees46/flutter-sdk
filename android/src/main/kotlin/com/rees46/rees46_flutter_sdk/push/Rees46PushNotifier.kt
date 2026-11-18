@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.personalization.Rees46
+import com.personalization.core.PushEvent
 import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.R
 import java.net.URL
@@ -122,17 +123,22 @@ object Rees46PushNotifier {
 
     /**
      * The notification of [data] is on screen: the bridge draws it, so the bridge reports it — the native
-     * `notifications.trackOpened` of the shop, through its queue, once per message. A push without its id or
-     * type is not the SDK's and reports nothing.
+     * `handlePush` with `OPENED`, through the shop's queue, once per message. A push without its id or type
+     * is not the SDK's and reports nothing.
      */
     fun reportShown(shopId: String, data: NotificationData) {
-        val code = data.id?.takeIf { it.isNotBlank() } ?: return
-        val type = data.type?.takeIf { it.isNotBlank() } ?: return
-        try {
-            Rees46.instance(shopId).notifications.trackOpened(code, type)
-        } catch (t: Throwable) {
-            Log.w(TAG, "The shown push was not reported: ${t.javaClass.simpleName}")
-        }
+        val payload = shownPayload(shopId, data) ?: return
+        // Through the SDK's routing, not Rees46.instance: in a process a push started the shop is only
+        // registered, and a lookup would make its full instance and send /init. The routing sends the
+        // event through the instance the push brought up, by the stored did; it never throws.
+        Rees46.handlePush(payload, PushEvent.OPENED)
+    }
+
+    /** The push [data] of [shopId] as the SDK's routing reads it; null without its code or type. */
+    internal fun shownPayload(shopId: String, data: NotificationData): Map<String, String>? {
+        val code = data.id?.takeIf { it.isNotBlank() } ?: return null
+        val type = data.type?.takeIf { it.isNotBlank() } ?: return null
+        return mapOf("id" to code, "type" to type, "shop_id" to shopId)
     }
 
     /**

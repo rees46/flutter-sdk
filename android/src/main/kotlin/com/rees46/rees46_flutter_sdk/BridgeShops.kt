@@ -13,12 +13,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The shops the plugin runs, on the native SDK's new core. The native registry holds the instances; this
- * keeps only what the plugin started each with, in this process, so that a shop the cold-start provider
- * ([com.rees46.rees46_flutter_sdk.push.Rees46PushInitProvider]) started before Dart ran is reused, or
- * started again when Dart's configuration differs.
+ * keeps only what the plugin started each with, in this process, so that a shop Dart starts again is
+ * reused, or started again when Dart's configuration differs.
  *
- * A bridge never registers shops: `Rees46.register` asks for the legacy core, and the first start of a
- * process decides its core for every shop. Every shop starts with `Rees46.initializeBridge`.
+ * Every shop starts with `Rees46.initializeBridge`. The cold-start provider
+ * ([com.rees46.rees46_flutter_sdk.push.Rees46PushInitProvider]) only registers the stored shops with
+ * `Rees46.registerBridge`, on the same core and with no `/init`; the start here makes the full instance in
+ * place of the registration, or of the instance a push brought up for itself. Never `Rees46.register`:
+ * it asks for the legacy core, and the first start of a process decides its core for every shop.
  */
 internal object BridgeShops {
 
@@ -26,8 +28,8 @@ internal object BridgeShops {
 
     /**
      * The live instance of [config]'s shop on the new core. One the plugin started with the same
-     * configuration is reused; one started with another (the provider's, at process start, never resets
-     * the device; Dart's may) is released and started again with [config], its queue resuming from disk.
+     * configuration is reused; one started with another is released and started again with [config], its
+     * queue resuming from disk.
      */
     @Synchronized
     fun start(context: Context, config: Rees46Config): SDK {

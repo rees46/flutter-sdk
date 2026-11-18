@@ -16,11 +16,13 @@ import com.rees46.rees46_flutter_sdk.BridgeShops
  * services, the same auto-initialization trick `FirebaseInitProvider` uses. On a cold start Dart
  * never runs, so nothing has started the shops — and `Rees46.handlePush` (called by the SDK's
  * `MessagingService`) would resolve no shop and drop the push. So here we:
- *   1. start every shop initialized in a previous run (persisted in [Rees46ShopStore]) on the native
- *      SDK's new core, `Rees46.initializeBridge`, as the plugin does — never `Rees46.register`, which asks
- *      for the legacy core and would decide the whole process's core before Dart runs, leaving every
- *      namespace `notInitialized`. A process start never resets the device: `needReInitialization` is off
- *      here; when Dart asks for it, or for another configuration, the plugin starts the shop again;
+ *   1. register every shop initialized in a previous run (persisted in [Rees46ShopStore]) on the
+ *      native SDK's new core with `Rees46.registerBridge` — never `Rees46.register`, which asks for the
+ *      legacy core and would decide the whole process's core before Dart runs, leaving every namespace
+ *      `notInitialized`. A registration sends nothing: a push for a shop goes with its stored did and no
+ *      `/init`, so a process the app was never opened in costs no `/init`. Dart's `initialize()` makes
+ *      the full instance, with its `/init`, from Dart's configuration. A process start never resets the
+ *      device: `needReInitialization` is off here;
  *   2. attach the shop-aware [com.personalization.OnShopMessageListener] via the facade, so a
  *      routed push posts the heads-up BigPicture and is reported shown.
  *
@@ -34,12 +36,12 @@ class Rees46PushInitProvider : ContentProvider() {
         try {
             Rees46PushNotifier.ensureChannel(context)
 
-            // Start the shops of a previous run so the cold-start registry is non-empty and
-            // Rees46.handlePush can resolve the push instead of dropping it.
+            // Register the shops of a previous run so Rees46.handlePush can resolve the push instead
+            // of dropping it; no instance is made and nothing goes to the network.
             val shops = Rees46ShopStore.read(context)
-            shops.forEach { config ->
-                runCatching { BridgeShops.start(context, config.copy(needReInitialization = false)) }
-                    .onFailure { Log.e(Rees46PushNotifier.TAG, "provider could not start a stored shop", it) }
+            if (shops.isNotEmpty()) {
+                runCatching { Rees46.registerBridge(context, shops.map { it.copy(needReInitialization = false) }) }
+                    .onFailure { Log.e(Rees46PushNotifier.TAG, "provider could not register the stored shops", it) }
             }
 
             // Shop-aware display listener via the facade, matching the running-app path: the SDK
@@ -53,7 +55,7 @@ class Rees46PushInitProvider : ContentProvider() {
             }
             Log.d(
                 Rees46PushNotifier.TAG,
-                "provider installed cold-start push listener (${shops.size} shop(s) started)",
+                "provider installed cold-start push listener (${shops.size} shop(s) registered)",
             )
         } catch (t: Throwable) {
             // Never let push bootstrap crash the host process at startup.
