@@ -657,10 +657,17 @@ A contact (`email`, `phone`) tells which address or number a subscription is for
 and the server applies the call to the contact's owner: pass one only when it is
 the customer's own.
 
+A price-drop or back-in-stock subscription needs the customer's email: one passed
+in the call, or one the server already knows for this device. Without it, or with
+a phone alone, the call fails with `SdkException` of type `http` and code 400.
+
 ### Notifications
 
 The plugin handles the SDK's pushes itself (it draws data pushes on Android and
 handles the notification centre on iOS) and the native SDK reports their events.
+On Android a process started only to deliver a push does not start the shop: the
+push's events go with the device id kept from the last launch, and the shop starts,
+with its `/init`, when the app calls `initialize()`.
 
 | Member | What it does |
 |---|---|
