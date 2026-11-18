@@ -87,6 +87,53 @@ Future<void> sendStateEvent(String method, List<Object?> args) async {
       .handlePlatformMessage(channel, codec.encodeMessage(args), (_) {});
 }
 
+/// A product with every field of the contract set.
+pigeon.ProductWire fullProduct({String id = 'p1'}) => pigeon.ProductWire(
+  id: id,
+  groupId: 'g1',
+  name: 'Kettle',
+  brand: 'Bosch',
+  model: 'TWK',
+  description: 'A kettle',
+  barcode: '4600000000000',
+  url: 'https://shop.test/p1',
+  deeplinkAndroid: 'shop://p1',
+  deeplinkIos: 'shop-ios://p1',
+  imageUrl: 'https://img.test/p1.jpg',
+  picture: 'https://img.test/p1-180.jpg',
+  resizedImages: const {'120': 'https://img.test/p1-120.jpg'},
+  price: 1990,
+  priceFormatted: '1 990 ₽',
+  priceFull: 1990.5,
+  priceFullFormatted: '1 990,50 ₽',
+  oldPrice: 2490,
+  oldPriceFormatted: '2 490 ₽',
+  oldPriceFull: 2490.9,
+  oldPriceFullFormatted: '2 490,90 ₽',
+  currency: '₽',
+  discountPercent: 20,
+  discountFormatted: '20%',
+  salesRate: 70,
+  relativeSalesRate: 0.7,
+  rating: 4,
+  isNew: true,
+  stockQuantity: 12,
+  categoryIds: const ['c1', 'c2'],
+  categories: [
+    pigeon.ProductCategoryWire(
+      id: 'c1',
+      name: 'Kitchen',
+      url: '/kitchen',
+      parentId: 'c0',
+      level: 2,
+    ),
+  ],
+  params: [
+    pigeon.ProductParamWire(key: 'Power', values: const ['2200']),
+  ],
+  locationIds: const ['msk'],
+);
+
 pigeon.ProductCategoryWire _category(ProductCategory c) =>
     pigeon.ProductCategoryWire(
       id: c.id,
