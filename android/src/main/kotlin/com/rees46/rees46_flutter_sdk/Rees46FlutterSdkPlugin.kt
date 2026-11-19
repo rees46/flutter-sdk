@@ -944,7 +944,8 @@ class Rees46FlutterSdkPlugin :
     private fun installMessageListener() {
         Rees46.setOnMessageListener { messageShopId, data ->
             android.util.Log.d(Rees46PushNotifier.TAG, "onMessage (plugin listener) shop=$messageShopId id=${data.id}")
-            val payload = data.toPayload()
+            // The shop rides in the payload too, as on a tap.
+            val payload = data.toPayload() + (SHOP_ID_KEY to messageShopId)
             // The listener fires on an FCM background thread, but the Pigeon channels are @UiThread: every
             // call to Dart goes from the main thread, and the notification is drawn off it.
             coroutineScope.launch {

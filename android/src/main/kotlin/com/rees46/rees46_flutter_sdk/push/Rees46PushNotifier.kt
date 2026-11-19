@@ -17,6 +17,8 @@ import com.personalization.core.PushEvent
 import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.R
 import java.net.URL
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Posts a heads-up BigPicture notification from REES46 push data — the native equivalent of the
@@ -123,8 +125,9 @@ object Rees46PushNotifier {
 
     /**
      * The notification of [data] is on screen: the bridge draws it, so the bridge reports it — the native
-     * `handlePush` with `OPENED`, through the shop's queue, once per message. A push without its id or type
-     * is not the SDK's and reports nothing.
+     * `handlePush` with `OPENED`, through the shop's queue, once per message, with the whole push, so the
+     * `onOpened` callbacks get its texts, buttons and target. A push without its id or type is not the SDK's
+     * and reports nothing.
      */
     fun reportShown(shopId: String, data: NotificationData) {
         val payload = shownPayload(shopId, data) ?: return
@@ -134,22 +137,50 @@ object Rees46PushNotifier {
         Rees46.handlePush(payload, PushEvent.OPENED)
     }
 
-    /** The push [data] of [shopId] as the SDK's routing reads it; null without its code or type. */
-    internal fun shownPayload(shopId: String, data: NotificationData): Map<String, String>? {
+    /** The push [data] of [shopId] as the SDK's routing reads it ([pushData]); null without its code or type. */
+    internal fun shownPayload(shopId: String, data: NotificationData): Map<String, String>? = pushData(shopId, data)
+
+    /**
+     * The push [data] under the keys of a push's data — `id`, `type`, `shop_id`, `title`, `body`, `icon`, `image`,
+     * and `actions`, `action_urls` and `event` as JSON — as the SDK's routing and its callbacks read a push. Null
+     * without its code or type: not the SDK's push.
+     */
+    internal fun pushData(shopId: String?, data: NotificationData): Map<String, String>? {
         val code = data.id?.takeIf { it.isNotBlank() } ?: return null
         val type = data.type?.takeIf { it.isNotBlank() } ?: return null
-        return mapOf("id" to code, "type" to type, "shop_id" to shopId)
+        return buildMap {
+            put("id", code)
+            put("type", type)
+            shopId?.let { put("shop_id", it) }
+            data.title?.let { put("title", it) }
+            data.body?.let { put("body", it) }
+            data.icon?.let { put("icon", it) }
+            data.image?.let { put("image", it) }
+            data.actions?.takeIf { it.isNotEmpty() }?.let { actions ->
+                put("actions", JSONArray(actions.map { JSONObject().put("action", it.action).put("title", it.title) }).toString())
+            }
+            data.actionUrls?.takeIf { it.isNotEmpty() }?.let { put("action_urls", JSONArray(it).toString()) }
+            data.event?.let { event ->
+                val json = JSONObject()
+                event.type?.let { json.put("type", it) }
+                event.uri?.let { json.put("uri", it) }
+                event.payload?.let { json.put("payload", JSONObject(it)) }
+                put("event", json.toString())
+            }
+        }
     }
 
     /**
      * Tapping opens the host launcher activity, carrying the push type/id as extras so the plugin's
      * launch-intent handler reports the click to the SDK (and to Dart via onPushClicked). The keys
-     * match the SDK's NotificationConstants (NOTIFICATION_TYPE / NOTIFICATION_ID).
+     * match the SDK's NotificationConstants (NOTIFICATION_TYPE / NOTIFICATION_ID). The whole push rides
+     * along ([pushData]), so the click's callbacks get its target, the screen the app opens.
      */
     private fun buildContentIntent(context: Context, data: NotificationData, shopId: String?): PendingIntent {
         val intent = context.packageManager
             .getLaunchIntentForPackage(context.packageName)
             ?.apply {
+                pushData(shopId, data)?.forEach { (key, value) -> putExtra(key, value) }
                 putExtra("NOTIFICATION_TYPE", data.type)
                 putExtra("NOTIFICATION_ID", data.id)
                 shopId?.let { putExtra("shop_id", it) }
