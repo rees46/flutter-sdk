@@ -61,7 +61,7 @@ public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplication
     guard let notificationService = Rees46FlutterSdkPlugin.notificationService else {
       // No notification service (the app sends the push token itself): the delivery is still
       // tracked, and the system is told the push is handled.
-      Rees46.handlePush(userInfo, event: Rees46.PushEvent.delivered)
+      PendingPushes.shared.handle(userInfo, event: Rees46.PushEvent.delivered)
       completionHandler(.newData)
       return true
     }
@@ -85,7 +85,8 @@ extension Rees46FlutterSdkPlugin: UNUserNotificationCenterDelegate {
     var payload = Self._stringPayload(userInfo)
     payload["actionIdentifier"] = response.actionIdentifier
     flutterApi?.onPushClicked(shopId: Self._shopId(userInfo), payload: payload) { _ in }
-    Rees46.handlePush(userInfo, event: Self.responseEvent(response.actionIdentifier))
+    // A tap that launched the app comes before Dart initialized the shop: kept until it does.
+    PendingPushes.shared.handle(userInfo, event: Self.responseEvent(response.actionIdentifier))
     completionHandler()
   }
 
@@ -100,7 +101,7 @@ extension Rees46FlutterSdkPlugin: UNUserNotificationCenterDelegate {
       shopId: Self._shopId(userInfo),
       payload: Self._stringPayload(userInfo)
     ) { _ in }
-    Rees46.handlePush(userInfo, event: Rees46.PushEvent.opened)
+    PendingPushes.shared.handle(userInfo, event: Rees46.PushEvent.opened)
     completionHandler([.badge, .sound, .banner, .list])
   }
 
@@ -172,16 +173,24 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  /// Tells Dart every push event and push token the native SDK sees, of every shop.
+  /// Tells Dart every push event and push token the native SDK sees, of every shop. Dart's `onToken`
+  /// hears a token the SDK got from APNs or FCM, as the contract has it: the tokens the SDK already
+  /// had, which it tells a new subscriber at once (a token the app handed over among them), are not
+  /// new — Dart's copy of the shop's tokens follows them through the snapshot all the same.
   func startPushSinks() {
     let events = Rees46.onPushEvent { [weak self] event, payload in
       self?.stateApi.onPushEvent(shopId: payload.shopId, event: event.rawValue, payload: payload.toWire()) { _ in }
     }
+    let replay = ReplayFlag()
     let tokens = Rees46.onPushToken { [weak self] token in
-      self?.stateApi.onPushToken(token: token.toWire()) { _ in }
+      if !replay.isOn {
+        self?.stateApi.onPushToken(token: token.toWire()) { _ in }
+      }
       // Each initialized shop's own token may have changed with it.
       self?.emitAll()
     }
+    // The SDK tells the tokens it had on the main queue, before this.
+    DispatchQueue.main.async { replay.isOn = false }
     lock.lock()
     pushSinks = [events, tokens]
     lock.unlock()
@@ -378,6 +387,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
 
     subscribe(sdk)
     completion(.success(Self.snapshot(sdk)))
+    // The push events that came before the shop was: a tap that launched the app, say.
+    PendingPushes.shared.release(shopId)
   }
 
   func getPlatformVersion() throws -> String {
@@ -872,8 +883,16 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     return hex.isEmpty ? nil : PushTokenWire(token: hex, provider: Rees46.PushProvider.apns.rawValue)
   }
 
+  /// The SDK tells no listener about a token the app hands over: Dart's copy of the shop's tokens is
+  /// refreshed here, before the call completes.
   func notificationsSetPushToken(token: String, provider: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    run(shopId, completion) { sdk, done in
+    let refreshed: (Result<Void, Error>) -> Void = { [weak self] result in
+      if let self = self, let sdk = try? self.instance(shopId) {
+        self.emit(sdk)
+      }
+      completion(result)
+    }
+    run(shopId, refreshed) { sdk, done in
       sdk.notifications.setPushToken(token, provider: try nativePushProvider(provider), completion: done)
     }
   }
@@ -1209,4 +1228,9 @@ final class TrackingLine {
       await event()
     }
   }
+}
+
+/// Whether the SDK is still telling a new token subscriber the tokens it had.
+final class ReplayFlag {
+  var isOn = true
 }
