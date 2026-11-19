@@ -57,6 +57,9 @@ class REES46 {
   /// [getInstance] for the shop.
   final Map<String, REES46Config> _pending = <String, REES46Config>{};
 
+  /// The configuration each live shop was initialized with.
+  final Map<String, REES46Config> _configs = <String, REES46Config>{};
+
   REES46SdkFactory _factory = _defaultFactory;
 
   static PersonalizationSdk _defaultFactory(REES46Config config) {
@@ -77,7 +80,9 @@ class REES46 {
   /// Initializes an SDK instance for [config] immediately and returns it. The
   /// instance is registered, so it is also reachable via [getInstance] until it is
   /// [PersonalizationSdk.release]d. Any pending registration for the same shop is
-  /// cleared. The native init goes on after the handle is back; its outcome is
+  /// cleared. A shop that is initialized already keeps its instance: the call
+  /// returns that handle, as the native SDKs do, and a [config] that differs from
+  /// the one it was made with is logged (`already_initialized`) and not applied. The native init goes on after the handle is back; its outcome is
   /// [PersonalizationSdk.ready].
   static PersonalizationSdk initialize(REES46Config config) =>
       _instance._initialize(config);
@@ -154,15 +159,43 @@ class REES46 {
   // ---------------------------------------------------------------------------
 
   PersonalizationSdk _initialize(REES46Config config) {
+    final shopId = config.shopId;
+    _pending.remove(shopId);
+    // One instance per shop, as natively: a second handle would share the native
+    // instance, and releasing either would stop it under the other.
+    final live = _live[shopId];
+    if (live != null) {
+      if (!_sameConfig(_configs[shopId], config)) {
+        debugPrint(
+          'REES46: invalid_config (already_initialized): shop $shopId is '
+          'initialized already with another configuration; the instance is kept',
+        );
+      }
+      return live;
+    }
     final sdk = _factory(config);
-    _live[config.shopId] = sdk;
-    _pending.remove(config.shopId);
+    _live[shopId] = sdk;
+    _configs[shopId] = config;
     // A released handle leaves the registry; the shop can be initialized again.
     HandleReleases.listen(sdk, () {
-      if (identical(_live[config.shopId], sdk)) _live.remove(config.shopId);
+      if (identical(_live[shopId], sdk)) {
+        _live.remove(shopId);
+        _configs.remove(shopId);
+      }
     });
     return sdk;
   }
+
+  static bool _sameConfig(REES46Config? a, REES46Config b) =>
+      a != null &&
+      a.apiDomain == b.apiDomain &&
+      a.stream == b.stream &&
+      a.enableLogs == b.enableLogs &&
+      a.autoSendPushToken == b.autoSendPushToken &&
+      a.sendAdvertisingId == b.sendAdvertisingId &&
+      a.enableAutoPopupPresentation == b.enableAutoPopupPresentation &&
+      a.needReInitialization == b.needReInitialization &&
+      a.storageKey == b.storageKey;
 
   void _registerShops(List<REES46Config> configs, {required bool eagerInit}) {
     for (final config in configs) {
@@ -250,6 +283,7 @@ class REES46 {
   static void reset() {
     _instance._live.clear();
     _instance._pending.clear();
+    _instance._configs.clear();
     _instance._factory = _defaultFactory;
     PopupPresenter.sharedOnPopup = null;
     NativeEvents.instance.reset();
