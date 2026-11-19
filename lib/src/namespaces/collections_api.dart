@@ -1,4 +1,4 @@
-import '../collection/collection_response.dart';
+import '../models/catalog.dart';
 import '../errors/sdk_error.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
 import 'from_wire.dart';

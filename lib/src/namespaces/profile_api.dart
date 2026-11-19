@@ -1,8 +1,8 @@
+import '../models/catalog.dart';
 import '../errors/sdk_error.dart';
 import '../models/profile_models.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
 import '../popups_v3/popups_v3_hooks.dart';
-import '../products/products_list_response.dart';
 import 'from_wire.dart';
 import 'to_wire.dart';
 

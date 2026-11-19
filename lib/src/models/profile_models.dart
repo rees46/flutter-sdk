@@ -1,6 +1,6 @@
 // Models of the SDK contract, as the native SDKs hand them over.
 
-import '../products/products_list_response.dart';
+import 'catalog.dart';
 import 'values.dart';
 
 /// The customer's profile as the API gives it without the shop's secret: no name, email or phone.

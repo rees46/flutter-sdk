@@ -563,7 +563,7 @@ class _InitPageState extends State<InitPage> {
       final response = await _sdk.search.blank();
       setState(() {
         _searchBlankProductCount = response.products.length;
-        _searchBlankSuggestCount = response.suggests.length;
+        _searchBlankSuggestCount = response.suggests?.length ?? 0;
         _searchBlankLoading = false;
       });
     } catch (e) {

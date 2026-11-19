@@ -51,7 +51,6 @@ void main() {
       expect(p.oldPriceFullFormatted, '2 490,90 ₽');
       expect(p.currency, '₽');
       expect(p.discountPercent, 20);
-      expect(p.discount, 20, reason: 'the released field keeps its value');
       expect(p.discountFormatted, '20%');
       expect(p.salesRate, 70);
       expect(p.relativeSalesRate, 0.7);
@@ -59,12 +58,12 @@ void main() {
       expect(p.isNew, isTrue);
       expect(p.stockQuantity, 12);
       expect(p.categoryIds, ['c1', 'c2']);
-      expect(p.categories.single.id, 'c1');
-      expect(p.categories.single.name, 'Kitchen');
-      expect(p.categories.single.parentId, 'c0');
-      expect(p.categories.single.level, 2);
-      expect(p.params.single.key, 'Power');
-      expect(p.params.single.values, ['2200']);
+      expect(p.categories!.single.id, 'c1');
+      expect(p.categories!.single.name, 'Kitchen');
+      expect(p.categories!.single.parentId, 'c0');
+      expect(p.categories!.single.level, 2);
+      expect(p.params!.single.key, 'Power');
+      expect(p.params!.single.values, ['2200']);
       expect(p.locationIds, ['msk']);
     });
 
@@ -73,7 +72,7 @@ void main() {
       expect(await PersonalizationSdk().products.getInfo('nope'), isNull);
     });
 
-    test('the optional released fields keep their released defaults', () async {
+    test('a field the answer does not have is null', () async {
       stubValue(
         'productsGetInfo',
         pigeon.ProductWire(
@@ -86,13 +85,19 @@ void main() {
         ),
       );
       final p = (await PersonalizationSdk().products.getInfo('x'))!;
-      expect(p.brand, '');
-      expect(p.description, '');
-      expect(p.imageUrl, '');
-      expect(p.priceFull, 0);
-      expect(p.salesRate, 0);
-      expect(p.categories, isEmpty);
-      expect(p.params, isEmpty);
+      expect(p.groupId, isNull);
+      expect(p.brand, isNull);
+      expect(p.description, isNull);
+      expect(p.imageUrl, isNull);
+      expect(p.priceFormatted, isNull);
+      expect(p.priceFull, isNull);
+      expect(p.discountPercent, isNull);
+      expect(p.salesRate, isNull);
+      expect(p.rating, isNull);
+      expect(p.isNew, isFalse);
+      expect(p.categoryIds, isNull);
+      expect(p.categories, isNull);
+      expect(p.params, isNull);
       expect(p.oldPrice, isNull);
     });
 
@@ -188,18 +193,20 @@ void main() {
       final r = await PersonalizationSdk().products.getList();
       expect(r.productsTotal, 120);
       expect(r.products.single.id, 'p1');
-      expect(r.categories.single.count, 7);
-      expect(r.categories.single.alias, 'kitchen');
-      expect(r.brands, ['Bosch']);
-      expect(r.brandCounts, {'Bosch': 3});
+      expect(r.categories!.single.count, 7);
+      expect(r.categories!.single.alias, 'kitchen');
+      expect(r.brands!.single.name, 'Bosch');
+      expect(r.brands!.single.count, 3);
       expect(r.locations!.single.name, 'Moscow');
-      expect(r.filters['Цвет']!.values, {'red': 3});
-      expect(r.filters['Цвет']!.priority, 1);
-      expect([r.filters['Вес']!.min, r.filters['Вес']!.max], [1, 9.5]);
-      expect(r.industrialFilters!.colorCounts, {'red': 4});
+      expect(r.filters!['Цвет']!.values, {'red': 3});
+      expect(r.filters!['Цвет']!.priority, 1);
+      expect([r.filters!['Вес']!.min, r.filters!['Вес']!.max], [1, 9.5]);
+      final color = r.industrialFilters!.colors!.single;
+      expect([color.color, color.count], ['red', 4]);
+      expect(r.industrialFilters!.fashionSizes, isNull);
       expect([r.priceRange!.min, r.priceRange!.max], [100, 900]);
-      expect(r.priceRanges.first.to, 500);
-      expect(r.priceRanges.last.to, isNull);
+      expect(r.priceRanges!.first.to, 500);
+      expect(r.priceRanges!.last.to, isNull);
       expect(r.priceMedian, 450);
     });
   });
@@ -274,10 +281,10 @@ void main() {
       final r = await PersonalizationSdk().products.getCategory('kitchen');
       expect(r.productsTotal, 2);
       expect(r.products.map((p) => p.id), ['p1', 'p2']);
-      expect(r.categories.single.name, 'Kitchen');
-      expect(r.brandCounts, {'Bosch': 2});
+      expect(r.categories!.single.name, 'Kitchen');
+      expect(r.brands!.single.count, 2);
       expect(r.priceRange!.max, 2);
-      expect(r.priceRanges.single.count, 2);
+      expect(r.priceRanges!.single.count, 2);
       expect(r.priceMedian, 1.5);
     });
 

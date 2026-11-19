@@ -1,9 +1,9 @@
+import '../models/catalog.dart';
 import '../core/native_events.dart';
 import '../errors/sdk_error.dart';
 import '../models/agent_models.dart';
 import '../models/request_models.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
-import '../search/search_response.dart';
 import 'from_wire.dart';
 import 'to_wire.dart';
 

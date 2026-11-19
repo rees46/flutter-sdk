@@ -1,9 +1,7 @@
-import '../category/category_response.dart';
+import '../models/catalog.dart';
 import '../errors/sdk_error.dart';
 import '../models/request_models.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
-import '../products/product_counters_response.dart';
-import '../products/products_list_response.dart';
 import 'from_wire.dart';
 import 'to_wire.dart';
 

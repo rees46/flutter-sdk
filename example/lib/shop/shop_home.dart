@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/rees46_sdk.dart'
+    hide Product, ProductCategory, ProductsListResponse;
+import 'package:rees46_sdk/models.dart';
 // v3 (popups of the new builder, stories over API v3) is not public API; its gate is
 // lifted when v3 goes public. The example reaches it directly, which the analyzer
 // flags as an implementation import on purpose.
@@ -310,7 +312,7 @@ class _ShopCategoryGroup extends StatelessWidget {
                   context,
                   shopId,
                   category.id,
-                  category.name,
+                  category.name ?? '',
                 ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
@@ -323,7 +325,7 @@ class _ShopCategoryGroup extends StatelessWidget {
                     child: Center(
                       child: PersonalizationSuggestionRow(
                         kind: PersonalizationSuggestionKind.category,
-                        title: category.name,
+                        title: category.name ?? '',
                         iconBuilder: shopIcon,
                       ),
                     ),

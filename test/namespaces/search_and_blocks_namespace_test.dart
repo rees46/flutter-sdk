@@ -78,9 +78,9 @@ void main() {
       expect(r.link, 'https://shop.test/popular');
       expect(r.itemIds, ['p1']);
       final product = r.products.single;
-      expect(product.resizedImageUrl, 'https://img.test/p1-180.jpg');
+      expect(product.picture, 'https://img.test/p1-180.jpg');
       expect(product.model, 'TWK');
-      expect(product.params.single.key, 'Power');
+      expect(product.params!.single.key, 'Power');
       expect(product.discountPercent, 20);
     });
   });
@@ -117,12 +117,12 @@ void main() {
       final r = await PersonalizationSdk().search.blank();
       expect(r.products.single.id, 'p1');
       expect(r.lastProducts, isTrue);
-      expect(r.lastQueries.single.url, '/s?q=kettle');
-      expect(r.suggests.single.score, 0.5);
-      expect(r.suggests.single.url, '', reason: 'no link is an empty one');
-      expect(r.popularCategories.single.name, 'Kitchen');
-      expect(r.popularBrands.single.name, 'Bosch');
-      expect(r.popularLinks.single.url, '/sale');
+      expect(r.lastQueries!.single.url, '/s?q=kettle');
+      expect(r.suggests!.single.score, 0.5);
+      expect(r.suggests!.single.url, isNull, reason: 'no link is null');
+      expect(r.popularCategories!.single.name, 'Kitchen');
+      expect(r.popularBrands!.single.name, 'Bosch');
+      expect(r.popularLinks!.single.url, '/sale');
     });
 
     test('instant sends its lists and maps the answer', () async {
@@ -156,9 +156,9 @@ void main() {
       expect(r.searchQueryOriginal, 'kettel');
       expect(r.clarification, isTrue);
       expect(r.productsTotal, 1);
-      expect(r.products.single.categories.single.id, 'c1');
-      expect(r.categories.single.name, 'K');
-      expect(r.queries.single.name, 'kettle');
+      expect(r.products.single.categories!.single.id, 'c1');
+      expect(r.categories!.single.name, 'K');
+      expect(r.queries!.single.name, 'kettle');
       expect(r.locations!.single.id, 'msk');
       expect(r.redirect!.url, '/sale');
     });
@@ -197,9 +197,12 @@ void main() {
       expect(request.disableClarification, isTrue);
       expect([request.categoryLimit, request.brandLimit], [3, 4]);
       expect(request.page, 2);
-      expect(r.brandCounts, {'Bosch': 1});
+      expect(r.brands!.single.name, 'Bosch');
+      expect(r.brands!.single.count, 1);
       expect(r.priceRange!.max, 2);
-      expect(r.priceRanges.single.count, 1);
+      expect(r.priceRanges!.single.count, 1);
+      expect(r.filters, isNull);
+      expect(r.industrialFilters, isNull);
       expect(r.priceMedian, 1.5);
       expect(r.searchQuery, 'kettle');
     });

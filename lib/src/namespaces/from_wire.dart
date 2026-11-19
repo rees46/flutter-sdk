@@ -1,13 +1,10 @@
-// The models of the native channel turned into the public Dart models: the
-// contract's models, and the released ones with the contract's fields added. Not
-// exported.
+// The models of the native channel turned into the public Dart models of the
+// contract. Not exported.
 
-import '../category/category_response.dart';
-import '../collection/collection_response.dart';
 import '../loyalty/loyalty_response.dart' show LoyaltyLevel;
 import '../models/agent_models.dart';
 import '../models/cart_models.dart';
-import '../models/catalog_models.dart';
+import '../models/catalog.dart';
 import '../models/loyalty_models.dart';
 import '../models/predict_models.dart';
 import '../models/profile_models.dart';
@@ -18,10 +15,6 @@ import '../models/slider_models.dart';
 import '../models/subscription_models.dart';
 import '../models/values.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
-import '../products/product_counters_response.dart';
-import '../products/products_list_response.dart';
-import '../recommendation/recommendation_response.dart';
-import '../search/search_response.dart';
 import '../stories/stories_response.dart';
 
 // region generated from the contract's models
@@ -353,235 +346,121 @@ ClientReview clientReviewFromWire(pigeon.ClientReviewWire w) => ClientReview(
 
 // endregion
 
-// region the released models, with the contract's fields
+// region the catalog
 
-Map<String, String> _images(Map<String, String>? images) =>
-    Map<String, String>.unmodifiable(images ?? const <String, String>{});
-
-/// A [Product] of the contract's `Product`. The released fields the contract makes
-/// optional keep their released defaults: `""` and `0`.
 Product productFromWire(pigeon.ProductWire w) => Product(
   id: w.id,
+  groupId: w.groupId,
   name: w.name,
-  brand: w.brand ?? '',
-  description: w.description ?? '',
-  imageUrl: w.imageUrl ?? '',
+  brand: w.brand,
+  model: w.model,
+  description: w.description,
+  barcode: w.barcode,
   url: w.url,
-  price: w.price,
-  priceFull: w.priceFull ?? 0,
-  priceFormatted: w.priceFormatted,
-  priceFullFormatted: w.priceFullFormatted,
-  currency: w.currency,
-  salesRate: w.salesRate ?? 0,
-  relativeSalesRate: w.relativeSalesRate ?? 0,
-  resizedImages: _images(w.resizedImages),
-  categories: (w.categories ?? const []).map(productCategoryFromWire).toList(),
+  deeplinkAndroid: w.deeplinkAndroid,
+  deeplinkIos: w.deeplinkIos,
+  imageUrl: w.imageUrl,
   picture: w.picture,
+  resizedImages: w.resizedImages == null
+      ? null
+      : Map<String, String>.unmodifiable(w.resizedImages!),
+  price: w.price,
+  priceFormatted: w.priceFormatted,
+  priceFull: w.priceFull,
+  priceFullFormatted: w.priceFullFormatted,
   oldPrice: w.oldPrice,
   oldPriceFormatted: w.oldPriceFormatted,
-  discount: w.discountPercent,
-  discountFormatted: w.discountFormatted,
-  discountPercent: w.discountPercent,
-  deeplinkAndroid: w.deeplinkAndroid,
-  deeplinkIos: w.deeplinkIos,
-  isNew: w.isNew,
-  groupId: w.groupId,
-  model: w.model,
-  barcode: w.barcode,
   oldPriceFull: w.oldPriceFull,
   oldPriceFullFormatted: w.oldPriceFullFormatted,
-  rating: w.rating,
-  stockQuantity: w.stockQuantity,
-  categoryIds: w.categoryIds,
-  params: (w.params ?? const []).map(productParamFromWire).toList(),
-  locationIds: w.locationIds,
-);
-
-/// A product of a recommendation block, the released [RecommendedProduct].
-RecommendedProduct recommendedProductFromWire(pigeon.ProductWire w) =>
-    RecommendedProduct(
-      id: w.id,
-      name: w.name,
-      brand: w.brand ?? '',
-      description: w.description ?? '',
-      imageUrl: w.imageUrl ?? '',
-      resizedImageUrl: w.picture ?? '',
-      resizedImages: _images(w.resizedImages),
-      url: w.url,
-      categories: (w.categories ?? const [])
-          .map(productCategoryFromWire)
-          .toList(),
-      price: w.price,
-      priceFull: w.priceFull ?? 0,
-      priceFormatted: w.priceFormatted,
-      priceFullFormatted: w.priceFullFormatted,
-      currency: w.currency,
-      salesRate: w.salesRate ?? 0,
-      relativeSalesRate: w.relativeSalesRate ?? 0,
-      oldPrice: w.oldPrice,
-      oldPriceFormatted: w.oldPriceFormatted,
-      discount: w.discountPercent,
-      discountFormatted: w.discountFormatted,
-      discountPercent: w.discountPercent,
-      deeplinkAndroid: w.deeplinkAndroid,
-      deeplinkIos: w.deeplinkIos,
-      isNew: w.isNew,
-      groupId: w.groupId,
-      model: w.model,
-      barcode: w.barcode,
-      oldPriceFull: w.oldPriceFull,
-      oldPriceFullFormatted: w.oldPriceFullFormatted,
-      rating: w.rating,
-      stockQuantity: w.stockQuantity,
-      categoryIds: w.categoryIds,
-      params: (w.params ?? const []).map(productParamFromWire).toList(),
-      locationIds: w.locationIds,
-    );
-
-/// A product of a search, the released [SearchProduct]: no old price or discount is
-/// `0`, as released.
-SearchProduct searchProductFromWire(pigeon.ProductWire w) => SearchProduct(
-  id: w.id,
-  name: w.name,
-  brand: w.brand ?? '',
-  description: w.description ?? '',
-  imageUrl: w.imageUrl ?? '',
-  url: w.url,
-  price: w.price,
-  priceFull: w.priceFull ?? 0,
-  priceFormatted: w.priceFormatted,
-  priceFullFormatted: w.priceFullFormatted,
   currency: w.currency,
-  salesRate: w.salesRate ?? 0,
-  relativeSalesRate: w.relativeSalesRate ?? 0,
-  resizedImages: _images(w.resizedImages),
-  picture: w.picture,
-  oldPrice: w.oldPrice ?? 0,
-  oldPriceFormatted: w.oldPriceFormatted,
-  discount: w.discountPercent ?? 0,
-  discountFormatted: w.discountFormatted,
   discountPercent: w.discountPercent,
-  deeplinkAndroid: w.deeplinkAndroid,
-  deeplinkIos: w.deeplinkIos,
-  isNew: w.isNew,
-  categories: (w.categories ?? const []).map(productCategoryFromWire).toList(),
-  groupId: w.groupId,
-  model: w.model,
-  barcode: w.barcode,
-  oldPriceFull: w.oldPriceFull,
-  oldPriceFullFormatted: w.oldPriceFullFormatted,
+  discountFormatted: w.discountFormatted,
+  salesRate: w.salesRate,
+  relativeSalesRate: w.relativeSalesRate,
   rating: w.rating,
+  isNew: w.isNew,
   stockQuantity: w.stockQuantity,
-  categoryIds: w.categoryIds,
-  params: (w.params ?? const []).map(productParamFromWire).toList(),
-  locationIds: w.locationIds,
+  categoryIds: _list(w.categoryIds),
+  categories: w.categories?.map(productCategoryFromWire).toList(),
+  params: w.params?.map(productParamFromWire).toList(),
+  locationIds: _list(w.locationIds),
 );
+
+List<T>? _list<T>(List<T>? list) =>
+    list == null ? null : List<T>.unmodifiable(list);
 
 ProductCategory productCategoryFromWire(pigeon.ProductCategoryWire w) =>
     ProductCategory(
       id: w.id,
-      name: w.name ?? '',
-      parentId: w.parentId,
+      name: w.name,
       url: w.url,
+      parentId: w.parentId,
       level: w.level,
       count: w.count,
       alias: w.alias,
     );
 
-SearchCategory searchCategoryFromWire(pigeon.ProductCategoryWire w) =>
-    SearchCategory(
-      id: w.id,
-      name: w.name ?? '',
-      url: w.url,
-      parentId: w.parentId,
-      count: w.count,
-      alias: w.alias,
-      level: w.level,
-    );
+Location locationFromWire(pigeon.LocationWire w) =>
+    Location(id: w.id, name: w.name, type: w.type);
 
-SearchLocation searchLocationFromWire(pigeon.LocationWire w) =>
-    SearchLocation(id: w.id, name: w.name, type: w.type);
+Brand brandFromWire(pigeon.BrandWire w) => Brand(name: w.name, count: w.count);
 
 SearchFilter searchFilterFromWire(pigeon.SearchFilterWire w) => SearchFilter(
-  count: w.count ?? 0,
-  values: Map<String, int>.unmodifiable(w.values ?? const <String, int>{}),
+  count: w.count,
   priority: w.priority,
+  values: w.values == null ? null : Map<String, int>.unmodifiable(w.values!),
   min: w.min,
   max: w.max,
 );
 
-Map<String, SearchFilter> _filters(Map<String, pigeon.SearchFilterWire>? w) =>
-    Map<String, SearchFilter>.unmodifiable(
-      (w ?? const <String, pigeon.SearchFilterWire>{}).map(
-        (name, filter) => MapEntry(name, searchFilterFromWire(filter)),
-      ),
+Map<String, SearchFilter>? _filters(Map<String, pigeon.SearchFilterWire>? w) =>
+    w == null
+    ? null
+    : Map<String, SearchFilter>.unmodifiable(
+        w.map((name, filter) => MapEntry(name, searchFilterFromWire(filter))),
+      );
+
+IndustrialFilters industrialFiltersFromWire(pigeon.IndustrialFiltersWire w) =>
+    IndustrialFilters(
+      colors: w.colors
+          ?.map((c) => ColorFilter(color: c.color, count: c.count))
+          .toList(),
+      fashionSizes: w.fashionSizes
+          ?.map((s) => SizeFilter(size: s.size, count: s.count))
+          .toList(),
     );
 
-SearchIndustrialFilters searchIndustrialFiltersFromWire(
-  pigeon.IndustrialFiltersWire w,
-) {
-  final colors = w.colors ?? const <pigeon.ColorFilterWire>[];
-  final sizes = w.fashionSizes ?? const <pigeon.SizeFilterWire>[];
-  return SearchIndustrialFilters(
-    colors: colors.map((c) => c.color).toList(),
-    fashionSizes: sizes.map((s) => s.size).toList(),
-    // A count of 0 is no count: a facet value without products is not one.
-    colorCounts: {
-      for (final c in colors)
-        if (c.count > 0) c.color: c.count,
-    },
-    fashionSizeCounts: {
-      for (final s in sizes)
-        if (s.count > 0) s.size: s.count,
-    },
-  );
-}
-
-List<String> _brandNames(List<pigeon.BrandWire>? brands) => (brands ?? const [])
-    .map((b) => b.name)
-    .where((name) => name.isNotEmpty)
-    .toList();
-
-Map<String, int> _brandCounts(List<pigeon.BrandWire>? brands) => {
-  for (final b in brands ?? const <pigeon.BrandWire>[])
-    if (b.name.isNotEmpty && b.count > 0) b.name: b.count,
-};
+PriceRange? _priceRange(pigeon.PriceRangeWire? w) =>
+    w == null ? null : PriceRange(min: w.min, max: w.max);
 
 ProductsListResponse productsListResponseFromWire(
   pigeon.ProductsListResponseWire w,
 ) => ProductsListResponse(
+  productsTotal: w.productsTotal,
   products: w.products.map(productFromWire).toList(),
-  productsTotal: w.productsTotal ?? 0,
-  priceRange: w.priceRange == null
-      ? null
-      : PriceRange(min: w.priceRange!.min, max: w.priceRange!.max),
-  brands: _brandNames(w.brands),
+  categories: w.categories?.map(productCategoryFromWire).toList(),
+  brands: w.brands?.map(brandFromWire).toList(),
+  locations: w.locations?.map(locationFromWire).toList(),
   filters: _filters(w.filters),
-  categories: (w.categories ?? const []).map(productCategoryFromWire).toList(),
-  brandCounts: _brandCounts(w.brands),
-  locations: w.locations?.map(searchLocationFromWire).toList(),
   industrialFilters: w.industrialFilters == null
       ? null
-      : searchIndustrialFiltersFromWire(w.industrialFilters!),
-  priceRanges: (w.priceRanges ?? const []).map(priceIntervalFromWire).toList(),
+      : industrialFiltersFromWire(w.industrialFilters!),
+  priceRange: _priceRange(w.priceRange),
+  priceRanges: w.priceRanges?.map(priceIntervalFromWire).toList(),
   priceMedian: w.priceMedian,
 );
 
-CategoryResponse categoryResponseFromWire(
-  pigeon.ProductsListResponseWire w,
-) => CategoryResponse(
-  productsTotal: w.productsTotal ?? 0,
-  products: w.products.map(productFromWire).toList(),
-  brands: _brandNames(w.brands),
-  brandCounts: _brandCounts(w.brands),
-  filters: _filters(w.filters),
-  priceRange: w.priceRange == null
-      ? null
-      : PriceRange(min: w.priceRange!.min, max: w.priceRange!.max),
-  categories: (w.categories ?? const []).map(productCategoryFromWire).toList(),
-  priceRanges: (w.priceRanges ?? const []).map(priceIntervalFromWire).toList(),
-  priceMedian: w.priceMedian,
-);
+CategoryResponse categoryResponseFromWire(pigeon.ProductsListResponseWire w) =>
+    CategoryResponse(
+      productsTotal: w.productsTotal,
+      products: w.products.map(productFromWire).toList(),
+      categories: w.categories?.map(productCategoryFromWire).toList(),
+      brands: w.brands?.map(brandFromWire).toList(),
+      filters: _filters(w.filters),
+      priceRange: _priceRange(w.priceRange),
+      priceRanges: w.priceRanges?.map(priceIntervalFromWire).toList(),
+      priceMedian: w.priceMedian,
+    );
 
 CollectionResponse collectionResponseFromWire(
   pigeon.CollectionResponseWire w,
@@ -609,67 +488,68 @@ ProductCountersResponse productCountersResponseFromWire(
 RecommendationResponse recommendationResponseFromWire(
   pigeon.RecommendationResponseWire w,
 ) => RecommendationResponse(
-  title: w.title ?? '',
-  products: w.products.map(recommendedProductFromWire).toList(),
   id: w.id,
+  title: w.title,
   link: w.link,
+  products: w.products.map(productFromWire).toList(),
   itemIds: List<String>.unmodifiable(w.itemIds),
 );
 
-SearchSuggest _query(pigeon.QueryWire w) =>
-    SearchSuggest(name: w.name, url: w.url ?? '', score: w.score);
+Query _query(pigeon.QueryWire w) =>
+    Query(name: w.name, url: w.url, score: w.score);
 
-SearchSuggest _popular(pigeon.PopularItemWire w) =>
-    SearchSuggest(name: w.name, url: w.url);
+PopularItem _popular(pigeon.PopularItemWire w) =>
+    PopularItem(name: w.name, url: w.url);
 
 SearchBlankResponse searchBlankResponseFromWire(
   pigeon.SearchBlankResponseWire w,
 ) => SearchBlankResponse(
-  products: w.products.map(searchProductFromWire).toList(),
-  suggests: (w.suggests ?? const []).map(_query).toList(),
-  lastQueries: (w.lastQueries ?? const []).map(_query).toList(),
-  popularCategories: (w.popularCategories ?? const []).map(_popular).toList(),
+  products: w.products.map(productFromWire).toList(),
   lastProducts: w.lastProducts,
-  popularBrands: (w.popularBrands ?? const []).map(_popular).toList(),
-  popularLinks: (w.popularLinks ?? const []).map(_popular).toList(),
+  lastQueries: w.lastQueries?.map(_query).toList(),
+  suggests: w.suggests?.map(_query).toList(),
+  popularCategories: w.popularCategories?.map(_popular).toList(),
+  popularBrands: w.popularBrands?.map(_popular).toList(),
+  popularLinks: w.popularLinks?.map(_popular).toList(),
 );
 
 SearchInstantResponse searchInstantResponseFromWire(
   pigeon.SearchInstantResponseWire w,
 ) => SearchInstantResponse(
-  products: w.products.map(searchProductFromWire).toList(),
-  categories: (w.categories ?? const []).map(searchCategoryFromWire).toList(),
-  productsTotal: w.productsTotal ?? 0,
-  locations: w.locations?.map(searchLocationFromWire).toList(),
-  queries: (w.queries ?? const []).map(_query).toList(),
   searchQuery: w.searchQuery,
   searchQueryOriginal: w.searchQueryOriginal,
   clarification: w.clarification,
+  productsTotal: w.productsTotal,
+  products: w.products.map(productFromWire).toList(),
+  categories: w.categories?.map(productCategoryFromWire).toList(),
+  queries: w.queries?.map(_query).toList(),
+  locations: w.locations?.map(locationFromWire).toList(),
   redirect: w.redirect == null ? null : searchRedirectFromWire(w.redirect!),
 );
 
 SearchFullResponse searchFullResponseFromWire(
   pigeon.SearchFullResponseWire w,
 ) => SearchFullResponse(
-  products: w.products.map(searchProductFromWire).toList(),
-  categories: (w.categories ?? const []).map(searchCategoryFromWire).toList(),
-  productsTotal: w.productsTotal ?? 0,
-  priceRange: w.priceRange == null
-      ? null
-      : SearchPriceRange(min: w.priceRange!.min, max: w.priceRange!.max),
-  locations: w.locations?.map(searchLocationFromWire).toList(),
-  brands: _brandNames(w.brands),
-  brandCounts: _brandCounts(w.brands),
-  filters: _filters(w.filters),
-  industrialFilters: w.industrialFilters == null
-      ? null
-      : searchIndustrialFiltersFromWire(w.industrialFilters!),
   searchQuery: w.searchQuery,
   searchQueryOriginal: w.searchQueryOriginal,
   clarification: w.clarification,
-  priceRanges: (w.priceRanges ?? const []).map(priceIntervalFromWire).toList(),
+  productsTotal: w.productsTotal,
+  products: w.products.map(productFromWire).toList(),
+  categories: w.categories?.map(productCategoryFromWire).toList(),
+  brands: w.brands?.map(brandFromWire).toList(),
+  locations: w.locations?.map(locationFromWire).toList(),
+  filters: _filters(w.filters),
+  industrialFilters: w.industrialFilters == null
+      ? null
+      : industrialFiltersFromWire(w.industrialFilters!),
+  priceRange: _priceRange(w.priceRange),
+  priceRanges: w.priceRanges?.map(priceIntervalFromWire).toList(),
   priceMedian: w.priceMedian,
 );
+
+// endregion
+
+// region the stories, the released model of the contract
 
 StoriesBlock storiesBlockFromWire(pigeon.StoriesBlockWire w) =>
     StoriesBlock(id: w.id, stories: w.stories.map(_story).toList());
