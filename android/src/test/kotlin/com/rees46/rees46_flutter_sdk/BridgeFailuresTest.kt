@@ -8,7 +8,6 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /** A native failure reaches Dart as its type, message, HTTP code and server code. */
 internal class BridgeFailuresTest {
@@ -80,27 +79,5 @@ internal class BridgeFailuresTest {
         completion<Int, String>({ results += it }) { error("no") }.onComplete(SdkResult.Success(1))
 
         assertEquals("decoding", (results.single().exceptionOrNull() as FlutterError).code)
-    }
-
-    @Test
-    fun anOldStyleErrorBecomesTheWholeError() {
-        val results = mutableListOf<Result<Unit>>()
-
-        answered { results += it }.onError(503, "")
-        answered { results += it }.onError(-1, null)
-
-        val http = results[0].exceptionOrNull() as FlutterError
-        assertEquals("http", http.code)
-        assertEquals(503L, (http.details as Map<*, *>)["httpCode"])
-        assertEquals("network", (results[1].exceptionOrNull() as FlutterError).code)
-    }
-
-    @Test
-    fun anOldStyleSuccessCompletes() {
-        val results = mutableListOf<Result<Unit>>()
-
-        answered { results += it }.onSuccess(null as org.json.JSONObject?)
-
-        assertTrue(results.single().isSuccess)
     }
 }

@@ -4,8 +4,6 @@ import android.os.Handler
 import android.os.Looper
 import com.personalization.AmbiguousShopException
 import com.personalization.UnknownShopIdException
-import com.personalization.api.OnApiCallbackListener
-import com.personalization.core.BridgeErrors
 import com.personalization.core.CompletionListener
 import com.personalization.core.SdkError
 import com.personalization.core.SdkException
@@ -95,15 +93,3 @@ internal fun <T, R> completion(callback: (Result<R>) -> Unit, map: (T) -> R): Co
 
 /** [completion] for the calls that answer nothing. */
 internal fun done(callback: (Result<Unit>) -> Unit): CompletionListener<Unit> = completion(callback) { }
-
-/**
- * An old-style listener (the `tracking` namespace) that completes [callback] once: success on any answer,
- * or the whole native error behind `onError(code, message)` — read while the SDK calls it, on its thread.
- */
-internal fun answered(callback: (Result<Unit>) -> Unit): OnApiCallbackListener = BridgeErrors.listener { result ->
-    val reply: Result<Unit> = when (result) {
-        is SdkResult.Success -> Result.success(Unit)
-        is SdkResult.Failure -> Result.failure(BridgeFailures.of(result.error))
-    }
-    onMain { callback(reply) }
-}

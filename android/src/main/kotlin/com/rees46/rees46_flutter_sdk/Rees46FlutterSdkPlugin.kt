@@ -13,7 +13,6 @@ import android.view.ViewTreeObserver
 import com.personalization.Cancellable
 import com.personalization.Rees46
 import com.personalization.SDK
-import com.personalization.api.OnApiCallbackListener
 import com.personalization.api.models.purchase.PurchaseTrackingRequest
 import com.personalization.core.PushEvent
 import com.personalization.sdk.data.models.dto.notification.NotificationData
@@ -185,7 +184,10 @@ class Rees46FlutterSdkPlugin :
      * The instance of [shopId], or of the single shop with none. An unknown or (with no id) ambiguous shop
      * throws, and the calling method reports `notInitialized`.
      */
-    private fun sdk(shopId: String?): SDK = Rees46.instance(shopId?.trim()?.ifEmpty { null })
+    private fun sdk(shopId: String?): SDK = instances(shopId?.trim()?.ifEmpty { null })
+
+    /** Where a shop's instance is found: the native registry. Tests hand their own instances. */
+    internal var instances: (String?) -> SDK = { Rees46.instance(it) }
 
     /** Resolves the instance and runs [body]; a failure before the native call reaches [callback]. */
     private inline fun <R> call(shopId: String?, noinline callback: (Result<R>) -> Unit, body: (SDK) -> Unit) {
@@ -275,8 +277,10 @@ class Rees46FlutterSdkPlugin :
 
     // region tracking
     //
-    // Each method hands straight to the native `tracking` namespace of the instance; its listener completes
-    // the Dart future with the native answer, or the whole native error.
+    // Each method hands straight to the native `tracking.queued` of the instance — the events of `tracking`,
+    // completed as the contract and iOS complete them: the Dart future completes once the queue accepted the
+    // event, and fails only with the error that kept it out of the queue (`invalidArgument`, `shopBlocked`,
+    // `notInitialized`). The server's answer comes later and is not the call's.
 
     override fun trackEvent(
         event: String,
@@ -288,14 +292,14 @@ class Rees46FlutterSdkPlugin :
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
     ) = call(shopId, callback) {
-        it.tracking.custom(
+        it.tracking.queued.custom(
             event = event,
             time = time?.let(::toIntClamped),
             category = category,
             label = label,
             value = value?.let(::toIntClamped),
             customFields = customFields,
-            listener = answered(callback),
+            listener = done(callback),
         )
     }
 
@@ -304,43 +308,43 @@ class Rees46FlutterSdkPlugin :
         source: TrackingSourceWire?,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
-    ) = call(shopId, callback) { it.tracking.productView(itemId, source?.toNative(), answered(callback)) }
+    ) = call(shopId, callback) { it.tracking.queued.productView(itemId, source?.toNative(), done(callback)) }
 
     override fun trackCategoryView(categoryId: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        call(shopId, callback) { it.tracking.categoryView(categoryId, answered(callback)) }
+        call(shopId, callback) { it.tracking.queued.categoryView(categoryId, done(callback)) }
 
     override fun trackSearch(
         query: String,
         results: List<String>?,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
-    ) = call(shopId, callback) { it.tracking.search(query, results, answered(callback)) }
+    ) = call(shopId, callback) { it.tracking.queued.search(query, results, done(callback)) }
 
     override fun trackAddToCart(
         item: TrackingItemWire,
         source: TrackingSourceWire?,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
-    ) = call(shopId, callback) { it.tracking.addToCart(item.toNative(), source?.toNative(), answered(callback)) }
+    ) = call(shopId, callback) { it.tracking.queued.addToCart(item.toNative(), source?.toNative(), done(callback)) }
 
     override fun trackSyncCart(items: List<TrackingItemWire>, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        call(shopId, callback) { it.tracking.syncCart(items.map { item -> item.toNative() }, answered(callback)) }
+        call(shopId, callback) { it.tracking.queued.syncCart(items.map { item -> item.toNative() }, done(callback)) }
 
     override fun trackRemoveFromCart(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        call(shopId, callback) { it.tracking.removeFromCart(itemId, answered(callback)) }
+        call(shopId, callback) { it.tracking.queued.removeFromCart(itemId, done(callback)) }
 
     override fun trackAddToFavorites(
         itemId: String,
         source: TrackingSourceWire?,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
-    ) = call(shopId, callback) { it.tracking.addToFavorites(itemId, source?.toNative(), answered(callback)) }
+    ) = call(shopId, callback) { it.tracking.queued.addToFavorites(itemId, source?.toNative(), done(callback)) }
 
     override fun trackSyncFavorites(itemIds: List<String>, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        call(shopId, callback) { it.tracking.syncFavorites(itemIds, answered(callback)) }
+        call(shopId, callback) { it.tracking.queued.syncFavorites(itemIds, done(callback)) }
 
     override fun trackRemoveFromFavorites(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        call(shopId, callback) { it.tracking.removeFromFavorites(itemId, answered(callback)) }
+        call(shopId, callback) { it.tracking.queued.removeFromFavorites(itemId, done(callback)) }
 
     override fun trackStoryView(
         storyId: String,
@@ -348,7 +352,7 @@ class Rees46FlutterSdkPlugin :
         code: String?,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
-    ) = call(shopId, callback) { it.tracking.storyView(storyId, slideId, code, answered(callback)) }
+    ) = call(shopId, callback) { it.tracking.queued.storyView(storyId, slideId, code, done(callback)) }
 
     override fun trackStoryClick(
         storyId: String,
@@ -356,13 +360,13 @@ class Rees46FlutterSdkPlugin :
         code: String?,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
-    ) = call(shopId, callback) { it.tracking.storyClick(storyId, slideId, code, answered(callback)) }
+    ) = call(shopId, callback) { it.tracking.queued.storyClick(storyId, slideId, code, done(callback)) }
 
     override fun trackBannerView(bannerId: String, code: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        call(shopId, callback) { it.tracking.bannerView(bannerId, code, done(callback)) }
+        call(shopId, callback) { it.tracking.queued.bannerView(bannerId, code, done(callback)) }
 
     override fun trackBannerClick(bannerId: String, code: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        call(shopId, callback) { it.tracking.bannerClick(bannerId, code, done(callback)) }
+        call(shopId, callback) { it.tracking.queued.bannerClick(bannerId, code, done(callback)) }
 
     override fun trackSetSource(source: TrackingSourceWire, shopId: String?) {
         try {
@@ -415,11 +419,11 @@ class Rees46FlutterSdkPlugin :
             isGiftPackage = isGiftPackage,
         )
         // No per-call source: Dart stores one with `setSource`, and the native namespace attaches it.
-        it.tracking.purchase(request, null, answered(callback))
+        it.tracking.queued.purchase(request, null, done(callback))
     }
 
     override fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit) =
-        call(shopId, callback) { it.tracking.popupShown(popupId.toInt(), answered(callback)) }
+        call(shopId, callback) { it.tracking.queued.popupShown(popupId.toInt(), done(callback)) }
 
     // endregion
 
