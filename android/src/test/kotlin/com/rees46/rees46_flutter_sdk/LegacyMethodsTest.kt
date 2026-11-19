@@ -2,14 +2,20 @@ package com.rees46.rees46_flutter_sdk
 
 import com.personalization.Params
 import com.personalization.SDK
-import com.personalization.api.OnApiCallbackListener
 import com.personalization.api.managers.LoyaltyManager
+import com.personalization.api.managers.QueuedTrackingApi
+import com.personalization.api.managers.TrackingApi
+import com.personalization.api.models.purchase.PurchaseTrackingRequest
+import com.personalization.core.CompletionListener
+import com.personalization.core.SdkError
+import com.personalization.core.SdkResult
 import com.personalization.api.managers.RecommendationManager
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
-import org.json.JSONObject
+import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockingDetails
 import org.mockito.Mockito.`when`
+import org.mockito.invocation.Invocation
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -119,21 +125,116 @@ internal class LegacyMethodsTest {
         assertTrue(error.message!!.contains("did"))
     }
 
+    /** The native `tracking` with a recording `tracking.queued`, which a mock of the interface cannot answer. */
+    private fun queued(): QueuedTrackingApi {
+        val queued = mock(QueuedTrackingApi::class.java)
+        `when`(sdk.tracking).thenReturn(LegacyQueued(mock(TrackingApi::class.java), queued))
+        return queued
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Invocation.listener(): CompletionListener<Unit> = arguments.last() as CompletionListener<Unit>
+
     @Test
-    fun aCustomEventGoesToPushCustomWithItsFieldsAtTheTopAndInThePayload() {
+    fun aCustomEventGoesToTheQueueWithItsFieldsAndCompletesOnceAccepted() {
+        val queued = queued()
         val results = mutableListOf<Result<Unit>>()
 
         legacy.trackEvent("e", 5L, "c", null, 7L, """{"color":"red","n":2}""", "s") { results += it }
-        val call = mockingDetails(sdk).invocations.single { it.method.name == "sendAsync" }
+        val call = mockingDetails(queued).invocations.single()
 
-        assertEquals("push/custom", call.arguments[0])
-        val body = call.arguments[1] as JSONObject
-        assertEquals("e", body.getString("event"))
-        assertEquals(5, body.getInt("time"))
-        assertEquals(7, body.getInt("value"))
-        assertEquals("red", body.getString("color"))
-        assertEquals("red", body.getJSONObject("payload").getString("color"))
-        (call.arguments[2] as OnApiCallbackListener).onError(400, "unknown event")
-        assertEquals("track_event_failed", (results.single().exceptionOrNull() as FlutterError).code)
+        assertEquals("custom", call.method.name)
+        assertEquals("e", call.arguments[0])
+        assertEquals(5, call.arguments[1])
+        assertEquals("c", call.arguments[2])
+        assertEquals(7, call.arguments[4])
+        assertEquals(mapOf("color" to "red", "n" to 2), call.arguments[5])
+        assertTrue(results.isEmpty(), "nothing answers before the queue")
+        call.listener().onComplete(SdkResult.Success(Unit))
+        assertTrue(results.single().isSuccess)
+        assertTrue(mockingDetails(sdk).invocations.none { it.method.name == "sendAsync" }, "not the request that waits for the server")
     }
+
+    @Test
+    fun aCustomEventTheQueueRefusesFailsWithTheReleasedCode() {
+        val queued = queued()
+        val results = mutableListOf<Result<Unit>>()
+
+        legacy.trackEvent("e", null, null, null, null, null, "s") { results += it }
+        mockingDetails(queued).invocations.single().listener().onComplete(SdkResult.Failure(SdkError.ShopBlocked))
+
+        val error = results.single().exceptionOrNull() as FlutterError
+        assertEquals("track_event_failed", error.code)
+        assertNull(error.details)
+    }
+
+    @Test
+    fun aPurchaseGoesToTheQueueWithTheReleasedRequestAndCompletesOnceAccepted() {
+        val queued = queued()
+        val results = mutableListOf<Result<Unit>>()
+
+        legacy.trackPurchase(
+            "o-1", 10.0, listOf(PurchaseLineItemWire("37", 1L, 10.0)), null, null, null, false, true, null, null,
+            null, null, null, null, """{"k":"v"}""", """{"from":"dynamic","code":"b"}""", "flutter", "A", "s",
+        ) { results += it }
+        val call = mockingDetails(queued).invocations.single()
+
+        assertEquals("purchase", call.method.name)
+        val request = call.arguments[0] as PurchaseTrackingRequest
+        assertEquals("o-1", request.orderId)
+        assertEquals("37", request.items.single().id)
+        assertEquals(true, request.isGiftPackage)
+        assertEquals("dynamic", request.recommendedSource?.getString("from"))
+        assertEquals("A", request.segment)
+        assertNull(call.arguments[1], "the released purchase takes no source of its own")
+        assertTrue(results.isEmpty())
+        call.listener().onComplete(SdkResult.Success(Unit))
+        assertTrue(results.single().isSuccess)
+    }
+
+    @Test
+    fun aPurchaseTheQueueRefusesFailsWithTheReleasedCodes() {
+        val queued = queued()
+        val results = mutableListOf<Result<Unit>>()
+        val buy = {
+            legacy.trackPurchase(
+                "o-1", 10.0, listOf(PurchaseLineItemWire("37", 1L, 10.0)), null, null, null, false, false, null,
+                null, null, null, null, null, null, null, null, null, "s",
+            ) { results += it }
+        }
+
+        buy()
+        buy()
+        val calls = mockingDetails(queued).invocations.toList()
+        calls[0].listener().onComplete(SdkResult.Failure(SdkError.InvalidArgument("custom: reserved key")))
+        calls[1].listener().onComplete(SdkResult.Failure(SdkError.NotInitialized))
+
+        val invalid = results[0].exceptionOrNull() as FlutterError
+        assertEquals("track_purchase_failed", invalid.code)
+        assertEquals(mapOf("code" to LegacyMethods.PURCHASE_CLIENT_VALIDATION_ERROR_CODE), invalid.details)
+        assertEquals("track_purchase_failed", (results[1].exceptionOrNull() as FlutterError).code)
+    }
+
+    @Test
+    fun aPurchaseWithoutOrderOrLinesIsBadArgsBeforeTheQueue() {
+        val queued = queued()
+        val results = mutableListOf<Result<Unit>>()
+
+        legacy.trackPurchase(
+            " ", 1.0, listOf(PurchaseLineItemWire("37", 1L, 1.0)), null, null, null, false, false, null, null,
+            null, null, null, null, null, null, null, null, "s",
+        ) { results += it }
+        legacy.trackPurchase(
+            "o-1", 1.0, emptyList(), null, null, null, false, false, null, null, null, null, null, null, null, null,
+            null, null, "s",
+        ) { results += it }
+
+        assertEquals(listOf("bad_args", "bad_args"), results.map { (it.exceptionOrNull() as FlutterError).code })
+        assertTrue(mockingDetails(queued).invocations.isEmpty())
+    }
+}
+
+/** The native `tracking` whose `queued` is [queuedApi]; every other member goes to [legacy]. */
+private class LegacyQueued(legacy: TrackingApi, private val queuedApi: QueuedTrackingApi) : TrackingApi by legacy {
+    override val queued: QueuedTrackingApi get() = queuedApi
 }

@@ -105,8 +105,10 @@ the same answers, the same error codes. What an app can notice:
 - **Tracking completes on acceptance.** A `sdk.tracking.*` future completes once the
   event is in the shop's queue on disk, not when the server answered: an event the server
   refuses later is no error. Only `invalidArgument`, `shopBlocked` and `notInitialized`
-  fail it. The deprecated `trackEvent` and `trackPurchase` still complete with the
-  server's answer.
+  fail it. The deprecated `trackEvent` and `trackPurchase` now complete the same way:
+  once the event is queued — without network too, where 1.6.4 waited for the server —
+  and a server refusal that comes later is not reported. Their argument checks and error
+  codes (`bad_args`, `track_event_failed`, `track_purchase_failed`) stay those of 1.6.4.
 - **`tracking` takes the contract's arguments.** `tracking.purchase` takes a
   `PurchaseTrackingRequest` (lines are `PurchaseItem`) and an optional `source`
   instead of named arguments; the order goes with the source given, else the stored

@@ -874,24 +874,35 @@ extension PersonalizationHostApiImpl {
     let timeInt: Int? = time.map { Int(truncatingIfNeeded: $0) }
     let valueInt: Int? = value.map { Int(truncatingIfNeeded: $0) }
     let customFields = parseJsonObject(customFieldsJson)
-    sdk.trackEvent(
-      event: event,
-      time: timeInt,
-      category: category,
-      label: label,
-      value: valueInt,
-      customFields: customFields
-    ) { result in
-      switch result {
-      case .success:
+    // The same event as `trackEvent`, completed once the shop's queue accepted it: on the new core the
+    // server's answer can be days away, and an app awaiting it would wait that long.
+    legacyTrack(sdk, failure: "track_event_failed", completion) { tracking in
+      try await tracking.custom(
+        event: event,
+        time: timeInt,
+        category: category,
+        label: label,
+        value: valueInt,
+        customFields: customFields
+      )
+    }
+  }
+
+  /// A released tracking call through the shop's tracking line and `tracking.async`: [completion] hears
+  /// once the queue accepted the event, or [failure] with the error that kept it out of the queue.
+  fileprivate func legacyTrack(
+    _ sdk: PersonalizationSDK,
+    failure: String,
+    _ completion: @escaping (Result<Void, Error>) -> Void,
+    _ body: @escaping (TrackingAsyncAPI) async throws -> Void
+  ) {
+    let tracking = sdk.tracking.async
+    trackingLine(sdk.shopId).send {
+      do {
+        try await body(tracking)
         completion(.success(()))
-      case .failure(let err):
-        completion(
-          .failure(
-            PigeonError(
-              code: "track_event_failed",
-              message: String(describing: err),
-              details: nil)))
+      } catch {
+        completion(.failure(PigeonError(code: failure, message: String(describing: error), details: nil)))
       }
     }
   }
@@ -968,18 +979,10 @@ extension PersonalizationHostApiImpl {
       segment: segment,
       isGiftPackage: isGiftPackage
     )
-    sdk.trackPurchase(request, recommendedBy: nil) { result in
-      switch result {
-      case .success:
-        completion(.success(()))
-      case .failure(let err):
-        completion(
-          .failure(
-            PigeonError(
-              code: "track_purchase_failed",
-              message: String(describing: err),
-              details: nil)))
-      }
+    // The same request as `trackPurchase`, completed once the shop's queue accepted it: a late server
+    // answer must not look like a lost purchase to an app that would send it again.
+    legacyTrack(sdk, failure: "track_purchase_failed", completion) { tracking in
+      try await tracking.purchase(request, source: nil)
     }
   }
 

@@ -329,8 +329,9 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  /// The line of [shopId]'s tracking events, made on first use.
-  private func trackingLine(_ shopId: String) -> TrackingLine {
+  /// The line of [shopId]'s tracking events, made on first use. The released `trackEvent` and
+  /// `trackPurchase` go through it too, in the order Dart sent them among the namespace's events.
+  func trackingLine(_ shopId: String) -> TrackingLine {
     lock.lock()
     defer { lock.unlock() }
     if let line = trackingLines[shopId] { return line }

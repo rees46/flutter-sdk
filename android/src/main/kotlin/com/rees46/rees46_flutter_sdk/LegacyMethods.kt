@@ -8,6 +8,9 @@ import com.personalization.api.OnApiCallbackListener
 import com.personalization.api.models.purchase.PurchaseItemRequest
 import com.personalization.api.models.purchase.PurchaseTrackingRequest
 import com.personalization.api.params.ProfileParams
+import com.personalization.core.CompletionListener
+import com.personalization.core.SdkError
+import com.personalization.core.SdkResult
 import com.personalization.api.params.SearchParams as NativeSearchParams
 import com.personalization.SearchParams as LegacySearchParams
 import com.personalization.sdk.data.models.params.UserBasicParams
@@ -16,7 +19,6 @@ import com.rees46.rees46_flutter_sdk.pigeon.ProfileParamsWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
 import com.rees46.rees46_flutter_sdk.pigeon.SubscriptionsUpdateRequestWire
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 
 /**
@@ -335,8 +337,10 @@ internal class LegacyMethods(private val sdk: (String?) -> SDK) {
 
     /**
      * `push/custom` as 1.6.4 built it — the event's fields and the custom fields at the top level and in
-     * `payload`, the keys the request owns refused — through the native SDK's released request path; the
-     * answer is the server's.
+     * `payload`, the keys the request owns refused — through the native `tracking.queued.custom`, which
+     * sends the same body. It completes once the shop's queue accepted the event: on the new core the
+     * server's answer can be days away (no network), and an app awaiting it before going on would wait
+     * that long. A refusal before the queue is `track_event_failed`.
      */
     fun trackEvent(
         event: String,
@@ -367,37 +371,14 @@ internal class LegacyMethods(private val sdk: (String?) -> SDK) {
                     ),
                 )
             }
-            val body = JSONObject()
-            try {
-                body.put("event", event)
-                time?.let { body.put("time", toIntClamped(it)) }
-                category?.let { body.put("category", it) }
-                label?.let { body.put("label", it) }
-                value?.let { body.put("value", toIntClamped(it)) }
-                if (custom.isNotEmpty()) {
-                    val payload = JSONObject()
-                    for ((key, field) in custom) {
-                        putJsonValue(body, key, field)
-                        putJsonValue(payload, key, field)
-                    }
-                    body.put("payload", payload)
-                }
-            } catch (e: JSONException) {
-                return reply(callback, fail("track_event_failed", "trackEvent: failed to build JSON: ${e.message}"))
-            }
-            @Suppress("DEPRECATION")
-            sdk(shopId).sendAsync(
-                "push/custom",
-                body,
-                object : OnApiCallbackListener() {
-                    override fun onSuccess(response: JSONObject?) {
-                        reply(callback, Result.success(Unit))
-                    }
-
-                    override fun onError(code: Int, msg: String?) {
-                        reply(callback, fail("track_event_failed", listOfNotNull(code.toString(), msg).joinToString(": ")))
-                    }
-                },
+            sdk(shopId).tracking.queued.custom(
+                event = event,
+                time = time?.let(::toIntClamped),
+                category = category,
+                label = label,
+                value = value?.let(::toIntClamped),
+                customFields = custom.ifEmpty { null },
+                listener = accepted("track_event_failed", TRACK_EVENT_CLIENT_ERROR_CODE, callback),
             )
         } catch (t: Throwable) {
             reply(callback, fail("track_event_failed", t.message))
@@ -451,24 +432,12 @@ internal class LegacyMethods(private val sdk: (String?) -> SDK) {
                 segment = segment,
                 isGiftPackage = isGiftPackage,
             )
-            // The released listener: the server's answer.
-            sdk(shopId).tracking.purchase(
+            // The same request as `tracking.purchase`, completed once the shop's queue accepted it: the
+            // server's answer can be days away, and the app must not take a late one for a lost purchase.
+            sdk(shopId).tracking.queued.purchase(
                 request,
                 null,
-                object : OnApiCallbackListener() {
-                    override fun onSuccess(response: JSONObject?) {
-                        reply(callback, Result.success(Unit))
-                    }
-
-                    override fun onError(code: Int, msg: String?) {
-                        val error = if (code == PURCHASE_CLIENT_VALIDATION_ERROR_CODE) {
-                            FlutterError("track_purchase_failed", msg ?: "validation failed", mapOf("code" to code))
-                        } else {
-                            FlutterError("track_purchase_failed", listOfNotNull(code.toString(), msg).joinToString(": "), null)
-                        }
-                        reply(callback, Result.failure(error))
-                    }
-                },
+                accepted("track_purchase_failed", PURCHASE_CLIENT_VALIDATION_ERROR_CODE, callback),
             )
         } catch (t: Throwable) {
             reply(callback, fail("track_purchase_failed", t.message))
@@ -502,6 +471,23 @@ internal class LegacyMethods(private val sdk: (String?) -> SDK) {
             }
         }
 
+    /**
+     * Completes [callback] once the queue accepted the event. A refusal fails with 1.6.4's [errorCode]; one
+     * of the arguments (`invalidArgument`) carries [validationCode] in `details`, as the native builder's
+     * refusal did.
+     */
+    private fun accepted(errorCode: String, validationCode: Int, callback: (Result<Unit>) -> Unit) =
+        CompletionListener<Unit> { result ->
+            when (result) {
+                is SdkResult.Success -> reply(callback, Result.success(Unit))
+                is SdkResult.Failure -> {
+                    val error = result.error
+                    val details = if (error is SdkError.InvalidArgument) mapOf("code" to validationCode) else null
+                    reply(callback, Result.failure(FlutterError(errorCode, error.message, details)))
+                }
+            }
+        }
+
     private fun unitListener(errorCode: String, callback: (Result<Unit>) -> Unit) =
         object : OnApiCallbackListener() {
             override fun onSuccess(response: JSONObject?) {
@@ -524,16 +510,6 @@ internal class LegacyMethods(private val sdk: (String?) -> SDK) {
             UserBasicParams.SEGMENT, "stream", "event", "time", "category", "label", "value", "source",
             "payload", "from", "code",
         )
-    }
-}
-
-@Throws(JSONException::class)
-private fun putJsonValue(target: JSONObject, key: String, value: Any) {
-    when (value) {
-        is String, is Int, is Long, is Double, is Boolean, is JSONObject, is JSONArray -> target.put(key, value)
-        is Float -> target.put(key, value.toDouble())
-        // As 1.6.4: a nested object or list goes as its text.
-        else -> target.put(key, value.toString())
     }
 }
 
