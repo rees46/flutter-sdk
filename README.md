@@ -294,11 +294,14 @@ await sdk.tracking.productView('sku-1');
 ```
 
 Events go through the native SDK's event queue on disk, which sends them in order
-and retries them after a failure or a restart. Each method returns a `Future<void>`:
-on iOS it completes once the queue took the event, on Android once the API answered
-it. A rejected event throws an [`SdkException`](#errors) — `invalidArgument` for an
-empty id or a source the API does not take in an event. Awaiting is optional —
-fire-and-forget from UI code is fine.
+and retries them after a failure or a restart. Each method returns a `Future<void>`
+that completes once the queue took the event, on Android and iOS alike. The server's
+answer comes later and is not the call's: an event the server refuses later — a
+custom event the shop does not know, say — still completes. The call throws an
+[`SdkException`](#errors) only when the event does not get into the queue —
+`invalidArgument` for an empty id or a source the API does not take in an event,
+`shopBlocked` for a shop the server refused, `notInitialized` after `release()`.
+Awaiting is optional — fire-and-forget from UI code is fine.
 
 With several shops the namespace follows the instance:
 

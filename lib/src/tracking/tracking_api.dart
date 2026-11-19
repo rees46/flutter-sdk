@@ -7,10 +7,11 @@ import 'tracking_models.dart';
 /// Standard tracking events — the `tracking` namespace of the SDK.
 ///
 /// Reached through an SDK handle: `REES46.getInstance().tracking.productView('sku-1')`.
-/// An event fired from Dart is the same request the native SDKs send. Most methods go to the
-/// method of the same name in the native `tracking` namespace; on iOS [custom], [popupShown] and
-/// [purchase] go to the native SDK's own `trackEvent`, `trackPopupShown` and `trackPurchase`,
-/// which send the same requests.
+/// An event fired from Dart is the same request the native SDKs send: each method goes to the
+/// method of the same name in the native `tracking` namespace (on Android its `tracking.queued`
+/// twin, which completes the same way). Its future completes once the shop's queue accepted the
+/// event; the server's later answer is not the call's. It fails with an [SdkException] only when
+/// the event does not get into the queue: `invalidArgument`, `shopBlocked`, `notInitialized`.
 class TrackingApi {
   TrackingApi(
     this._api,
