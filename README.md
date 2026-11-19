@@ -513,6 +513,34 @@ final cart = await sdk.cart.get();                          // List<CartItem>
 With several shops the namespaces follow the instance, as `tracking` does:
 `REES46.getInstance('shop-b').products.getInfo('37')`.
 
+### The instance itself
+
+Besides `shopId`, `deviceId`, `sessionId`, `state` and `ready`, the handle's root has
+three methods of the instance's life:
+
+```dart
+await sdk.flush();                  // send the queued events now
+await sdk.deleteUserCredentials();  // forget the customer on this device
+sdk.release();                      // stop the instance
+```
+
+- `flush()` sends the events waiting in the shop's queue without waiting for the
+  queue's own triggers, and completes once each was tried — sent, or kept for later
+  (no network, a server that asked to wait). It promises no delivery.
+- `deleteUserCredentials()` forgets the shop's customer: device id, session, queued
+  events, the saved init answer and the rest of the customer's data. The device's
+  push token and A/B group stay. The instance asks the API again and gets a new
+  device id: `deviceId` is null until then, and calls made meanwhile wait for it.
+  Other shops keep their customers.
+- `release()` stops the instance: nothing more is sent, the queued events stay on
+  the device for the next launch, and the shop leaves the registry —
+  `REES46.isInitialized(shopId)` is false. Every later call of the handle throws
+  `SdkException` `notInitialized`, and `state` is `notInitialized`. A new
+  `REES46.initialize` of the shop gives a fresh instance and a new handle.
+
+`flush` and `deleteUserCredentials` throw `notInitialized` after `release()`; they
+have no other error.
+
 ### Errors
 
 A failed call throws an `SdkException` whose `error` is one of the closed set of
@@ -520,7 +548,7 @@ A failed call throws an `SdkException` whose `error` is one of the closed set of
 
 | `type` | Class | When |
 |---|---|---|
-| `notInitialized` | `SdkErrorNotInitialized` | the shop is not initialized, or the plugin does not know it |
+| `notInitialized` | `SdkErrorNotInitialized` | the shop is not initialized, the plugin does not know it, or the handle was released |
 | `shopBlocked` | `SdkErrorShopBlocked` | the server refused the shop on init |
 | `invalidArgument` | `SdkErrorInvalidArgument` | an argument refused before any request; `message` says which |
 | `network` | `SdkErrorNetwork` | no connection |
