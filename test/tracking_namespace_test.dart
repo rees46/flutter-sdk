@@ -226,6 +226,27 @@ void main() {
         invalid,
       );
       await expectLater(sdk.tracking.custom(''), invalid);
+      await expectLater(
+        sdk.tracking.purchase(
+          const PurchaseTrackingRequest(
+            orderId: '',
+            orderPrice: 1,
+            items: [PurchaseItem(id: 'sku-1', amount: 1, price: 1)],
+          ),
+        ),
+        invalid,
+      );
+      await expectLater(
+        sdk.tracking.purchase(
+          const PurchaseTrackingRequest(
+            orderId: 'order-1',
+            orderPrice: 1,
+            items: [],
+          ),
+        ),
+        invalid,
+        reason: 'an order without lines',
+      );
     });
 
     test('an empty collection is sent, not rejected', () async {

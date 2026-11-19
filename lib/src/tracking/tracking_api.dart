@@ -139,9 +139,14 @@ class TrackingApi {
     PurchaseTrackingRequest request, {
     TrackingSource? source,
   }) {
-    PopupsV3Hooks.purchase(this);
-    return sdkCall(
-      () => _api.trackPurchase(
+    if (request.items.isEmpty) {
+      return Future<void>.error(
+        SdkException(const SdkErrorInvalidArgument('items must not be empty')),
+      );
+    }
+    return _send({'orderId': request.orderId}, () {
+      PopupsV3Hooks.purchase(this);
+      return _api.trackPurchase(
         pigeon.PurchaseTrackingRequestWire(
           orderId: request.orderId,
           orderPrice: request.orderPrice,
@@ -170,8 +175,8 @@ class TrackingApi {
         ),
         source?._wire,
         _shopId,
-      ),
-    );
+      );
+    });
   }
 
   /// Custom event defined by the shop (`push/custom`).
