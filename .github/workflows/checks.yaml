@@ -62,6 +62,16 @@ jobs:
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed $(git ls-files '*.dart' ':!:*.g.dart')
       
+      # The mirror's sync renames the iOS SDK's module and its facade to one word, so a type
+      # qualified with the module name (`REES46.X`) names a nested type there and fails to compile.
+      # Import such a type by name instead (`import struct REES46.X`).
+      - name: No module-qualified iOS SDK types in Swift
+        run: |
+          if git grep -nE '\bREES46\.[A-Z]' -- '*.swift' | grep -vE '^[^:]+:[0-9]+:\s*(//|import )'; then
+            echo "::error::Qualify no type with the module name REES46; import it by name instead."
+            exit 1
+          fi
+      
       # This is a plugin package: the buildable app lives in example/,
       # so build there (the repo root has no lib/main.dart).
       - name: Build (verify)

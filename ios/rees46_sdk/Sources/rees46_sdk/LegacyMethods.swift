@@ -2,6 +2,9 @@ import Flutter
 import Foundation
 import UIKit
 @_spi(Bridge) import REES46
+// The released top-level `Category`, imported by name: the mirror's sync turns the module name into
+// the facade's, so `REES46.Category` would there name a type nested in the facade, which has none.
+import struct REES46.Category
 
 // The handle's deprecated methods as the plugin ran them in 1.6.4: each calls the native SDK's released
 // method of the same meaning — they still run on the new core — and answers Dart with the JSON 1.6.4
@@ -107,7 +110,7 @@ extension PersonalizationHostApiImpl {
     if discount > 0 { dict["discount"] = discount }
   }
 
-  static func _categoryToDict(_ c: REES46.Category) -> [String: Any] {
+  static func _categoryToDict(_ c: Category) -> [String: Any] {
     var dict: [String: Any] = ["id": c.id, "name": c.name]
     if let parentId = c.parentId { dict["parent_id"] = parentId }
     if let url = c.url { dict["url"] = url }
@@ -439,7 +442,7 @@ extension PersonalizationHostApiImpl {
     return dict
   }
 
-  static func _searchCategoryToDict(_ c: REES46.Category) -> [String: Any] {
+  static func _searchCategoryToDict(_ c: Category) -> [String: Any] {
     var dict: [String: Any] = ["id": c.id, "name": c.name]
     if let url = c.url { dict["url"] = url }
     if let parent = c.parentId { dict["parent"] = parent }

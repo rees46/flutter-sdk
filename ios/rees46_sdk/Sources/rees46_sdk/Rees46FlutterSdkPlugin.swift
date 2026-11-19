@@ -380,7 +380,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       Rees46Config(
         shopId: shopId,
         apiDomain: Self.apiHost(config.apiDomain) ?? "api.rees46.ru",
-        appDomain: config.appDomain.flatMap(Self.apiHost) ?? "app.rees46.ru",
+        // Empty is the native SDK's own default host, so each SDK build keeps its own.
+        appDomain: config.appDomain.flatMap(Self.apiHost) ?? "",
         stream: config.stream,
         deviceId: Self.nonEmpty(config.deviceId),
         enableLogs: config.enableLogs,
