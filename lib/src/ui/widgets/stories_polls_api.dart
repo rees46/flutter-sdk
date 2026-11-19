@@ -1,3 +1,4 @@
+import '../../core/sdk_logs.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../personalization_sdk.dart';
@@ -120,6 +121,7 @@ class StoriesPollsApi implements StoryPollsTransport {
       return await request();
     } catch (error) {
       debugPrint('PersonalizationStories: poll $what not sent — $error');
+      SdkLogs.log(LogLevel.warning, 'stories_v3', 'poll $what not sent');
       rethrow;
     }
   }

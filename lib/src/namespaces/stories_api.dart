@@ -1,6 +1,6 @@
 import '../errors/sdk_error.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
-import '../stories/stories_response.dart';
+import '../models/stories.dart';
 import 'from_wire.dart';
 
 /// The stories blocks — the `stories` namespace: `sdk.stories.get(code)`. The

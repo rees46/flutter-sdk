@@ -15,7 +15,7 @@ import '../models/slider_models.dart';
 import '../models/subscription_models.dart';
 import '../models/values.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
-import '../stories/stories_response.dart';
+import '../models/stories.dart';
 
 // region generated from the contract's models
 
@@ -549,7 +549,7 @@ SearchFullResponse searchFullResponseFromWire(
 
 // endregion
 
-// region the stories, the released model of the contract
+// region the stories
 
 StoriesBlock storiesBlockFromWire(pigeon.StoriesBlockWire w) =>
     StoriesBlock(id: w.id, stories: w.stories.map(_story).toList());
@@ -624,7 +624,8 @@ StoryProduct _storyProduct(pigeon.StoryProductWire w) => StoryProduct(
   imageUrl: w.imageUrl,
   price: w.price,
   priceFormatted: w.priceFormatted,
-  oldPrice: w.oldPrice ?? 0,
+  // Without a discount the API sends the price itself: no old price then.
+  oldPrice: (w.oldPrice ?? 0) > w.price ? w.oldPrice : null,
   oldPriceFormatted: w.oldPriceFormatted,
   discountPercent: w.discountPercent,
   promocode: w.promocode,

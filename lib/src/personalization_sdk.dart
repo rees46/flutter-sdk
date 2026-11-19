@@ -10,6 +10,7 @@ import 'category/category_response.dart';
 import 'collection/collection_response.dart';
 import 'core/handle_channel.dart';
 import 'core/native_events.dart';
+import 'core/sdk_logs.dart';
 import 'errors/sdk_error.dart';
 import 'init/sdk_init_handler.dart';
 import 'loyalty/loyalty_response.dart';
@@ -277,6 +278,7 @@ class PersonalizationSdk {
     PopupDispatcher.instance.register(config.shopId, _popups);
     PopupsV3Hooks.initialized(tracking, config);
     _stateShopId = config.shopId;
+    SdkLogs.setLevel(config.shopId, config.effectiveLogLevel);
     final early = _earlyPushCallbacks;
     if (early != null) {
       // Set on this handle before it knew its shop: the shop's callbacks now.

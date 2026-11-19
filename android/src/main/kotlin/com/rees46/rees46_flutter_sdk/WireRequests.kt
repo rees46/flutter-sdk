@@ -55,10 +55,16 @@ internal fun InitConfig.toNative(): Rees46Config {
         autoSendPushToken = autoSendPushToken,
         needReInitialization = needReInitialization,
         enableAutoPopupPresentation = enableAutoPopupPresentation,
-        logLevel = if (enableLogs) LogLevel.DEBUG else LogLevel.WARNING,
+        logLevel = logLevelOf(logLevel) ?: if (enableLogs) LogLevel.DEBUG else LogLevel.WARNING,
+        storageKey = storageKey?.trim()?.ifEmpty { null },
+        deviceId = deviceId?.trim()?.ifEmpty { null },
         sendAdvertisingId = sendAdvertisingId,
+        appDomain = apiHost(appDomain) ?: defaults.appDomain,
     )
 }
+
+/** A log level from Dart by its name (`debug` … `none`); null for none or an unknown one. */
+internal fun logLevelOf(name: String?): LogLevel? = LogLevel.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
 
 /** The API's host: without a scheme, a trailing slash and spaces; null when nothing is left. */
 internal fun apiHost(domain: String?): String? =
@@ -202,10 +208,15 @@ internal fun TrackingItemWire.toNative(): TrackingItem =
     TrackingItem(id = id, quantity = quantity.toInt(), price = price, fashionSize = fashionSize)
 
 internal fun TrackingSourceWire.toNative(): TrackingSource {
+    // The contract's `slider` and `agent_search` wait for the native SDK's bridge source.
+    if (type in NOT_YET_NATIVE_SOURCES) throw IllegalArgumentException("Source type $type is not supported yet")
     val sourceType = TrackingSourceType.entries.firstOrNull { it.value == type }
         ?: throw IllegalArgumentException("Unknown source type: $type")
     return TrackingSource(type = sourceType, code = code)
 }
+
+/** The contract's source types the native SDK cannot send yet: `invalidArgument` until it can. */
+internal val NOT_YET_NATIVE_SOURCES = setOf("slider", "agent_search")
 
 internal fun PurchaseLineItemWire.toNative(): PurchaseItemRequest = PurchaseItemRequest(
     id = id,

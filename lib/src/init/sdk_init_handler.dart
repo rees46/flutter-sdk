@@ -37,9 +37,18 @@ class SdkInitHandler {
           sendAdvertisingId: sendAdvertisingId,
           enableAutoPopupPresentation: enableAutoPopupPresentation,
           needReInitialization: needReInitialization,
+          appDomain: _orNull(config.appDomain),
+          deviceId: _orNull(config.deviceId),
+          logLevel: config.logLevel?.name,
+          storageKey: _orNull(config.storageKey),
         ),
       ),
     );
+  }
+
+  static String? _orNull(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   /// The traffic stream of a Flutter app that sets none: `flutter`, as the

@@ -204,6 +204,21 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     subscriptions = [:]
     lock.unlock()
     all.forEach { $0.cancel() }
+    LogForwarding.shared.remove(logSink)
+  }
+
+  /// This engine's Dart side of the native log, while Dart has a log handler.
+  private lazy var logSink = LogForwarding.Sink { [weak self] message in
+    let wire = message.toWire()
+    onMain { self?.stateApi.onLog(message: wire) { _ in } }
+  }
+
+  func setLogForwarding(enabled: Bool) throws {
+    if enabled {
+      LogForwarding.shared.add(logSink)
+    } else {
+      LogForwarding.shared.remove(logSink)
+    }
   }
 
   /// Tells Dart the shop's state on every change of its state and session. A second initialization
@@ -254,6 +269,17 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
   }
 
   /// The API's host: the SDK takes a host only, so a scheme and a trailing slash go, as on Android.
+  /// A log level from Dart by its name (`debug` … `none`); nil for none or an unknown one.
+  static func logLevel(_ name: String?) -> Rees46.LogLevel? {
+    guard let name = name?.lowercased() else { return nil }
+    return Rees46.LogLevel.allCases.first { "\($0)" == name }
+  }
+
+  static func nonEmpty(_ value: String?) -> String? {
+    guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+    return trimmed
+  }
+
   static func apiHost(_ domain: String) -> String? {
     var host = domain.trimmingCharacters(in: .whitespacesAndNewlines)
     if let scheme = host.range(of: "^https?://", options: [.regularExpression, .caseInsensitive]) {
@@ -354,12 +380,16 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       Rees46Config(
         shopId: shopId,
         apiDomain: Self.apiHost(config.apiDomain) ?? "api.rees46.ru",
+        appDomain: config.appDomain.flatMap(Self.apiHost) ?? "app.rees46.ru",
         stream: config.stream,
+        deviceId: Self.nonEmpty(config.deviceId),
         enableLogs: config.enableLogs,
+        logLevel: Self.logLevel(config.logLevel) ?? (config.enableLogs ? .debug : .warning),
         autoSendPushToken: config.autoSendPushToken,
         sendAdvertisingId: config.sendAdvertisingId,
         enableAutoPopupPresentation: config.enableAutoPopupPresentation,
-        needReInitialization: config.needReInitialization
+        needReInitialization: config.needReInitialization,
+        storageKey: Self.nonEmpty(config.storageKey)
       ),
       segment: nil
     )
@@ -840,28 +870,6 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     run(shopId, completion) { sdk, done in
       sdk.notifications.trackClosed(code: code, type: type, completion: done)
     }
-  }
-
-  /// The token the SDK keeps for the shop. An app that sends the token itself (`autoSendPushToken:
-  /// false`) gave the SDK none: then, without a provider or for APNs, the device token the plugin
-  /// kept is the answer, as `getStoredPushToken` always gave it.
-  func notificationsGetPushToken(provider: String?, shopId: String?) throws -> PushTokenWire? {
-    // A synchronous call hands Dart what it throws as it is: only a `PigeonError` keeps its type.
-    let native: Rees46.PushProvider?
-    do {
-      native = try provider.map(nativePushProvider)
-    } catch {
-      throw BridgeFailure.error(error)
-    }
-    if let token = try instance(shopId).notifications.getPushToken(provider: native) {
-      return token.toWire()
-    }
-    guard native == nil || native == .apns,
-          let deviceToken = UserDefaults.standard.data(forKey: Rees46FlutterSdkPlugin.pushTokenKey) else {
-      return nil
-    }
-    let hex = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-    return hex.isEmpty ? nil : PushTokenWire(token: hex, provider: Rees46.PushProvider.apns.rawValue)
   }
 
   /// The SDK tells no listener about a token the app hands over: Dart's copy of the shop's tokens is

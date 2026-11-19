@@ -15,6 +15,7 @@ import com.personalization.Rees46
 import com.personalization.SDK
 import com.personalization.api.models.purchase.PurchaseTrackingRequest
 import com.personalization.core.PushEvent
+import com.personalization.SdkLogMessage
 import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.pigeon.AgentDialogResponseWire
 import com.rees46.rees46_flutter_sdk.pigeon.AgentResponseWire
@@ -101,6 +102,11 @@ class Rees46FlutterSdkPlugin :
 
     /** Which tokens Dart's `onToken` hears. */
     private val tokenReports = TokenReports()
+
+    /** This engine's Dart side of the native log, while Dart has a log handler. */
+    private val logSink: (SdkLogMessage) -> Unit = { message ->
+        onMain { runCatching { stateApi?.onLog(message.toWire()) { } } }
+    }
 
     /** The popup sinks this engine connected, by shop: only these go when the engine goes. */
     private val popupSinks = ConcurrentHashMap<String, (String) -> Unit>()
@@ -634,12 +640,6 @@ class Rees46FlutterSdkPlugin :
     override fun notificationsTrackClosed(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit) =
         call(shopId, callback) { it.notifications.trackClosed(code, type, done(callback)) }
 
-    override fun notificationsGetPushToken(provider: String?, shopId: String?): PushTokenWire? = try {
-        sdk(shopId).notifications.getPushToken(provider?.let(::pushProvider))?.toWire()
-    } catch (t: Throwable) {
-        throw BridgeFailures.of(t)
-    }
-
     override fun notificationsSetPushToken(
         token: String,
         provider: String,
@@ -1043,6 +1043,11 @@ class Rees46FlutterSdkPlugin :
         popupSinks.forEach { (shopId, sink) -> PopupRelay.disconnect(shopId, sink) }
         popupSinks.clear()
         Rees46PushMessages.detach(pushReceiver)
+        LogForwarding.remove(logSink)
+    }
+
+    override fun setLogForwarding(enabled: Boolean) {
+        if (enabled) LogForwarding.add(logSink) else LogForwarding.remove(logSink)
     }
 
     /**

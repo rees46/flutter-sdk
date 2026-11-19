@@ -40,15 +40,15 @@ class AgentProduct {
 /// A message of a dialog with the search agent.
 class AgentMessage {
   const AgentMessage({
-    required this.id,
+    this.id,
     this.role,
     this.content,
     this.createdAt,
     required this.products,
   });
 
-  /// 64-bit.
-  final int id;
+  /// 64-bit; null for a message the server sent without one.
+  final int? id;
 
   /// Who wrote it.
   final AgentMessageRole? role;

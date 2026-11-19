@@ -4,6 +4,7 @@ export 'src/multi_instance/rees46.dart';
 export 'src/multi_instance/rees46_config.dart';
 export 'src/multi_instance/push_event.dart';
 export 'src/multi_instance/sdk_exceptions.dart';
+export 'src/core/sdk_logs.dart' show LogLevel, SdkLogMessage;
 export 'src/errors/sdk_error.dart' hide sdkCall;
 export 'src/popups/in_app_popup.dart';
 export 'src/loyalty/loyalty_response.dart';

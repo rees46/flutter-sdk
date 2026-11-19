@@ -49,6 +49,33 @@ internal class WireRequestsTest {
         assertEquals(LogLevel.WARNING, native.logLevel)
         assertEquals(LogLevel.DEBUG, config(enableLogs = true).toNative().logLevel)
         assertEquals("api.rees46.ru", config(apiDomain = " ").toNative().apiDomain)
+        assertEquals("app.rees46.ru", native.appDomain)
+        assertNull(native.deviceId)
+        assertNull(native.storageKey)
+    }
+
+    @Test
+    fun sourcesTheNativeSdkCannotSendYetAreRefused() {
+        assertFailsWith<IllegalArgumentException> { TrackingSourceWire("slider", "c").toNative() }
+        assertFailsWith<IllegalArgumentException> { TrackingSourceWire("agent_search", "c").toNative() }
+        assertEquals("stories", TrackingSourceWire("stories", "c").toNative().type.value)
+    }
+
+    @Test
+    fun theContractsConfigurationFieldsReachTheNativeOne() {
+        val native = config(enableLogs = true).copy(
+            appDomain = "https://app.cluster.test/",
+            deviceId = " did-kept ",
+            logLevel = "info",
+            storageKey = "partition-a",
+        ).toNative()
+
+        assertEquals("app.cluster.test", native.appDomain)
+        assertEquals("did-kept", native.deviceId)
+        assertEquals(LogLevel.INFO, native.logLevel, "logLevel wins over enableLogs")
+        assertEquals("partition-a", native.storageKey)
+        assertEquals(LogLevel.NONE, config().copy(logLevel = "none").toNative().logLevel)
+        assertEquals(LogLevel.WARNING, config().copy(logLevel = "loud").toNative().logLevel)
     }
 
     @Test

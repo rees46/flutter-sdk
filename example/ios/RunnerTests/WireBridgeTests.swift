@@ -129,7 +129,7 @@ final class WireBridgeTests: XCTestCase {
 
     // MARK: - Search agent
 
-    func test_agentMessage_roleIsTheWireValue_andAMissingIdIsZero() {
+    func test_agentMessage_roleIsTheWireValue_andAMissingIdStaysMissing() {
         let message = Rees46.AgentMessage(
             id: nil, role: .assistant, content: "Вот", createdAt: "2026-11-18T10:00:00Z",
             products: [Rees46.AgentProduct(
@@ -140,7 +140,7 @@ final class WireBridgeTests: XCTestCase {
 
         let wire = message.toWire()
 
-        XCTAssertEqual(wire.id, 0)
+        XCTAssertNil(wire.id, "the contract's id is nullable: no 0 for a missing one")
         XCTAssertEqual(wire.role, "assistant")
         XCTAssertEqual(wire.products.first?.reason, "fits")
     }
@@ -181,14 +181,14 @@ final class WireBridgeTests: XCTestCase {
         XCTAssertEqual(((custom["nested"] ?? nil) as? [String: Any?])?["k"] as? String, "v")
     }
 
-    func test_loyaltyStatus_levelWithoutCode_isEmptyCode() {
+    /// The contract: a level without a code is no level (the base level), not one coded "".
+    func test_loyaltyStatus_levelWithoutCode_isNoLevel() {
         var level = LoyaltyLevel(json: [:])
         level.name = "Gold"
         let wire = LoyaltyStatus(isMember: true, level: level).toWire()
 
         XCTAssertTrue(wire.isMember)
-        XCTAssertEqual(wire.level?.code, "")
-        XCTAssertEqual(wire.level?.name, "Gold")
+        XCTAssertNil(wire.level)
     }
 
     func test_promotionAndReview_enumsAreWireValues() {

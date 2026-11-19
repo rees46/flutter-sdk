@@ -90,7 +90,15 @@ data class InitConfig (
   val autoSendPushToken: Boolean,
   val sendAdvertisingId: Boolean,
   val enableAutoPopupPresentation: Boolean,
-  val needReInitialization: Boolean
+  val needReInitialization: Boolean,
+  /** The host of API v3 (polls, the search agent, predict); null — the native default. */
+  val appDomain: String? = null,
+  /** A `did` the app kept from another SDK; taken only when the shop has none yet. */
+  val deviceId: String? = null,
+  /** `debug`, `info`, `warning`, `error` or `none`; null — from [enableLogs]. */
+  val logLevel: String? = null,
+  /** The prefix of the shop's storage; null — the shop id. */
+  val storageKey: String? = null
 )
  {
   companion object {
@@ -103,7 +111,11 @@ data class InitConfig (
       val sendAdvertisingId = pigeonVar_list[5] as Boolean
       val enableAutoPopupPresentation = pigeonVar_list[6] as Boolean
       val needReInitialization = pigeonVar_list[7] as Boolean
-      return InitConfig(shopId, apiDomain, stream, enableLogs, autoSendPushToken, sendAdvertisingId, enableAutoPopupPresentation, needReInitialization)
+      val appDomain = pigeonVar_list[8] as String?
+      val deviceId = pigeonVar_list[9] as String?
+      val logLevel = pigeonVar_list[10] as String?
+      val storageKey = pigeonVar_list[11] as String?
+      return InitConfig(shopId, apiDomain, stream, enableLogs, autoSendPushToken, sendAdvertisingId, enableAutoPopupPresentation, needReInitialization, appDomain, deviceId, logLevel, storageKey)
     }
   }
   fun toList(): List<Any?> {
@@ -116,10 +128,59 @@ data class InitConfig (
       sendAdvertisingId,
       enableAutoPopupPresentation,
       needReInitialization,
+      appDomain,
+      deviceId,
+      logLevel,
+      storageKey,
     )
   }
   override fun equals(other: Any?): Boolean {
     if (other !is InitConfig) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * One message of the native SDK's log (`Rees46.setLogHandler`): [level] is `debug`, `info`,
+ * `warning` or `error`; [context] holds no personal data.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SdkLogMessageWire (
+  val level: String,
+  val code: String,
+  val message: String,
+  val shopId: String? = null,
+  val context: Map<String, Any?>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SdkLogMessageWire {
+      val level = pigeonVar_list[0] as String
+      val code = pigeonVar_list[1] as String
+      val message = pigeonVar_list[2] as String
+      val shopId = pigeonVar_list[3] as String?
+      val context = pigeonVar_list[4] as Map<String, Any?>
+      return SdkLogMessageWire(level, code, message, shopId, context)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      level,
+      code,
+      message,
+      shopId,
+      context,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SdkLogMessageWire) {
       return false
     }
     if (this === other) {
@@ -1617,7 +1678,8 @@ data class AgentProductWire (
  * Generated class from Pigeon that represents data sent in messages.
  */
 data class AgentMessageWire (
-  val id: Long,
+  /** 64-bit; null for a message the server sent without one. */
+  val id: Long? = null,
   val role: String? = null,
   val content: String? = null,
   val createdAt: String? = null,
@@ -1626,7 +1688,7 @@ data class AgentMessageWire (
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): AgentMessageWire {
-      val id = pigeonVar_list[0] as Long
+      val id = pigeonVar_list[0] as Long?
       val role = pigeonVar_list[1] as String?
       val content = pigeonVar_list[2] as String?
       val createdAt = pigeonVar_list[3] as String?
@@ -3954,380 +4016,385 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
       }
       130.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PurchaseLineItemWire.fromList(it)
+          SdkLogMessageWire.fromList(it)
         }
       }
       131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          TrackingItemWire.fromList(it)
+          PurchaseLineItemWire.fromList(it)
         }
       }
       132.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          TrackingSourceWire.fromList(it)
+          TrackingItemWire.fromList(it)
         }
       }
       133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SdkSnapshotWire.fromList(it)
+          TrackingSourceWire.fromList(it)
         }
       }
       134.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductWire.fromList(it)
+          SdkSnapshotWire.fromList(it)
         }
       }
       135.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductCategoryWire.fromList(it)
+          ProductWire.fromList(it)
         }
       }
       136.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductParamWire.fromList(it)
+          ProductCategoryWire.fromList(it)
         }
       }
       137.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LocationWire.fromList(it)
+          ProductParamWire.fromList(it)
         }
       }
       138.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          BrandWire.fromList(it)
+          LocationWire.fromList(it)
         }
       }
       139.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SearchFilterWire.fromList(it)
+          BrandWire.fromList(it)
         }
       }
       140.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ColorFilterWire.fromList(it)
+          SearchFilterWire.fromList(it)
         }
       }
       141.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SizeFilterWire.fromList(it)
+          ColorFilterWire.fromList(it)
         }
       }
       142.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          IndustrialFiltersWire.fromList(it)
+          SizeFilterWire.fromList(it)
         }
       }
       143.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PriceRangeWire.fromList(it)
+          IndustrialFiltersWire.fromList(it)
         }
       }
       144.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PriceIntervalWire.fromList(it)
+          PriceRangeWire.fromList(it)
         }
       }
       145.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductsListResponseWire.fromList(it)
+          PriceIntervalWire.fromList(it)
         }
       }
       146.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductsListRequestWire.fromList(it)
+          ProductsListResponseWire.fromList(it)
         }
       }
       147.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductCounterWire.fromList(it)
+          ProductsListRequestWire.fromList(it)
         }
       }
       148.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductCounterTriggersWire.fromList(it)
+          ProductCounterWire.fromList(it)
         }
       }
       149.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductCountersResponseWire.fromList(it)
+          ProductCounterTriggersWire.fromList(it)
         }
       }
       150.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          CollectionResponseWire.fromList(it)
+          ProductCountersResponseWire.fromList(it)
         }
       }
       151.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          RecommendationRequestWire.fromList(it)
+          CollectionResponseWire.fromList(it)
         }
       }
       152.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          RecommendationResponseWire.fromList(it)
+          RecommendationRequestWire.fromList(it)
         }
       }
       153.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SearchFullRequestWire.fromList(it)
+          RecommendationResponseWire.fromList(it)
         }
       }
       154.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          QueryWire.fromList(it)
+          SearchFullRequestWire.fromList(it)
         }
       }
       155.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PopularItemWire.fromList(it)
+          QueryWire.fromList(it)
         }
       }
       156.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SearchRedirectWire.fromList(it)
+          PopularItemWire.fromList(it)
         }
       }
       157.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SearchBlankResponseWire.fromList(it)
+          SearchRedirectWire.fromList(it)
         }
       }
       158.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SearchInstantResponseWire.fromList(it)
+          SearchBlankResponseWire.fromList(it)
         }
       }
       159.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SearchFullResponseWire.fromList(it)
+          SearchInstantResponseWire.fromList(it)
         }
       }
       160.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          AgentProductWire.fromList(it)
+          SearchFullResponseWire.fromList(it)
         }
       }
       161.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          AgentMessageWire.fromList(it)
+          AgentProductWire.fromList(it)
         }
       }
       162.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          AgentSessionWire.fromList(it)
+          AgentMessageWire.fromList(it)
         }
       }
       163.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          AgentDialogResponseWire.fromList(it)
+          AgentSessionWire.fromList(it)
         }
       }
       164.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          AgentResponseWire.fromList(it)
+          AgentDialogResponseWire.fromList(it)
         }
       }
       165.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          CartItemWire.fromList(it)
+          AgentResponseWire.fromList(it)
         }
       }
       166.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProfileWire.fromList(it)
+          CartItemWire.fromList(it)
         }
       }
       167.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProfileKidWire.fromList(it)
+          ProfileWire.fromList(it)
         }
       }
       168.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProfileCarWire.fromList(it)
+          ProfileKidWire.fromList(it)
         }
       }
       169.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProfileUpdateRequestWire.fromList(it)
+          ProfileCarWire.fromList(it)
         }
       }
       170.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          OrderItemWire.fromList(it)
+          ProfileUpdateRequestWire.fromList(it)
         }
       }
       171.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          OrderWire.fromList(it)
+          OrderItemWire.fromList(it)
         }
       }
       172.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PurchaseTrackingRequestWire.fromList(it)
+          OrderWire.fromList(it)
         }
       }
       173.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProfileParamsWire.fromList(it)
+          PurchaseTrackingRequestWire.fromList(it)
         }
       }
       174.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SubscriptionsUpdateRequestWire.fromList(it)
+          ProfileParamsWire.fromList(it)
         }
       }
       175.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SubscriptionStatusWire.fromList(it)
+          SubscriptionsUpdateRequestWire.fromList(it)
         }
       }
       176.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          BackInStockPropertiesWire.fromList(it)
+          SubscriptionStatusWire.fromList(it)
         }
       }
       177.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SegmentWire.fromList(it)
+          BackInStockPropertiesWire.fromList(it)
         }
       }
       178.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushTokenWire.fromList(it)
+          SegmentWire.fromList(it)
         }
       }
       179.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushActionWire.fromList(it)
+          PushTokenWire.fromList(it)
         }
       }
       180.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushTargetWire.fromList(it)
+          PushActionWire.fromList(it)
         }
       }
       181.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushPayloadWire.fromList(it)
+          PushTargetWire.fromList(it)
         }
       }
       182.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationStatisticsWire.fromList(it)
+          PushPayloadWire.fromList(it)
         }
       }
       183.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationMessageWire.fromList(it)
+          NotificationStatisticsWire.fromList(it)
         }
       }
       184.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationHistoryWire.fromList(it)
+          NotificationMessageWire.fromList(it)
         }
       }
       185.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoriesBlockWire.fromList(it)
+          NotificationHistoryWire.fromList(it)
         }
       }
       186.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryWire.fromList(it)
+          StoriesBlockWire.fromList(it)
         }
       }
       187.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StorySlideWire.fromList(it)
+          StoryWire.fromList(it)
         }
       }
       188.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryElementWire.fromList(it)
+          StorySlideWire.fromList(it)
         }
       }
       189.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryProductWire.fromList(it)
+          StoryElementWire.fromList(it)
         }
       }
       190.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PurchaseProbabilityWire.fromList(it)
+          StoryProductWire.fromList(it)
         }
       }
       191.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyMemberWire.fromList(it)
+          PurchaseProbabilityWire.fromList(it)
         }
       }
       192.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyLevelWire.fromList(it)
+          LoyaltyMemberWire.fromList(it)
         }
       }
       193.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyStatusWire.fromList(it)
+          LoyaltyLevelWire.fromList(it)
         }
       }
       194.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyPromotionWire.fromList(it)
+          LoyaltyStatusWire.fromList(it)
         }
       }
       195.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SliderWire.fromList(it)
+          LoyaltyPromotionWire.fromList(it)
         }
       }
       196.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SliderBannerWire.fromList(it)
+          SliderWire.fromList(it)
         }
       }
       197.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PollReviewWire.fromList(it)
+          SliderBannerWire.fromList(it)
         }
       }
       198.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NpsCategoryWire.fromList(it)
+          PollReviewWire.fromList(it)
         }
       }
       199.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          CsatCampaignWire.fromList(it)
+          NpsCategoryWire.fromList(it)
         }
       }
       200.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          CesCampaignWire.fromList(it)
+          CsatCampaignWire.fromList(it)
         }
       }
       201.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PollChannelWire.fromList(it)
+          CesCampaignWire.fromList(it)
         }
       }
       202.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductRatingSummaryWire.fromList(it)
+          PollChannelWire.fromList(it)
         }
       }
       203.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductReviewWire.fromList(it)
+          ProductRatingSummaryWire.fromList(it)
         }
       }
       204.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductReviewsResponseWire.fromList(it)
+          ProductReviewWire.fromList(it)
         }
       }
       205.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductReviewsResponseWire.fromList(it)
+        }
+      }
+      206.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           ClientReviewWire.fromList(it)
         }
@@ -4341,308 +4408,312 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
         stream.write(129)
         writeValue(stream, value.toList())
       }
-      is PurchaseLineItemWire -> {
+      is SdkLogMessageWire -> {
         stream.write(130)
         writeValue(stream, value.toList())
       }
-      is TrackingItemWire -> {
+      is PurchaseLineItemWire -> {
         stream.write(131)
         writeValue(stream, value.toList())
       }
-      is TrackingSourceWire -> {
+      is TrackingItemWire -> {
         stream.write(132)
         writeValue(stream, value.toList())
       }
-      is SdkSnapshotWire -> {
+      is TrackingSourceWire -> {
         stream.write(133)
         writeValue(stream, value.toList())
       }
-      is ProductWire -> {
+      is SdkSnapshotWire -> {
         stream.write(134)
         writeValue(stream, value.toList())
       }
-      is ProductCategoryWire -> {
+      is ProductWire -> {
         stream.write(135)
         writeValue(stream, value.toList())
       }
-      is ProductParamWire -> {
+      is ProductCategoryWire -> {
         stream.write(136)
         writeValue(stream, value.toList())
       }
-      is LocationWire -> {
+      is ProductParamWire -> {
         stream.write(137)
         writeValue(stream, value.toList())
       }
-      is BrandWire -> {
+      is LocationWire -> {
         stream.write(138)
         writeValue(stream, value.toList())
       }
-      is SearchFilterWire -> {
+      is BrandWire -> {
         stream.write(139)
         writeValue(stream, value.toList())
       }
-      is ColorFilterWire -> {
+      is SearchFilterWire -> {
         stream.write(140)
         writeValue(stream, value.toList())
       }
-      is SizeFilterWire -> {
+      is ColorFilterWire -> {
         stream.write(141)
         writeValue(stream, value.toList())
       }
-      is IndustrialFiltersWire -> {
+      is SizeFilterWire -> {
         stream.write(142)
         writeValue(stream, value.toList())
       }
-      is PriceRangeWire -> {
+      is IndustrialFiltersWire -> {
         stream.write(143)
         writeValue(stream, value.toList())
       }
-      is PriceIntervalWire -> {
+      is PriceRangeWire -> {
         stream.write(144)
         writeValue(stream, value.toList())
       }
-      is ProductsListResponseWire -> {
+      is PriceIntervalWire -> {
         stream.write(145)
         writeValue(stream, value.toList())
       }
-      is ProductsListRequestWire -> {
+      is ProductsListResponseWire -> {
         stream.write(146)
         writeValue(stream, value.toList())
       }
-      is ProductCounterWire -> {
+      is ProductsListRequestWire -> {
         stream.write(147)
         writeValue(stream, value.toList())
       }
-      is ProductCounterTriggersWire -> {
+      is ProductCounterWire -> {
         stream.write(148)
         writeValue(stream, value.toList())
       }
-      is ProductCountersResponseWire -> {
+      is ProductCounterTriggersWire -> {
         stream.write(149)
         writeValue(stream, value.toList())
       }
-      is CollectionResponseWire -> {
+      is ProductCountersResponseWire -> {
         stream.write(150)
         writeValue(stream, value.toList())
       }
-      is RecommendationRequestWire -> {
+      is CollectionResponseWire -> {
         stream.write(151)
         writeValue(stream, value.toList())
       }
-      is RecommendationResponseWire -> {
+      is RecommendationRequestWire -> {
         stream.write(152)
         writeValue(stream, value.toList())
       }
-      is SearchFullRequestWire -> {
+      is RecommendationResponseWire -> {
         stream.write(153)
         writeValue(stream, value.toList())
       }
-      is QueryWire -> {
+      is SearchFullRequestWire -> {
         stream.write(154)
         writeValue(stream, value.toList())
       }
-      is PopularItemWire -> {
+      is QueryWire -> {
         stream.write(155)
         writeValue(stream, value.toList())
       }
-      is SearchRedirectWire -> {
+      is PopularItemWire -> {
         stream.write(156)
         writeValue(stream, value.toList())
       }
-      is SearchBlankResponseWire -> {
+      is SearchRedirectWire -> {
         stream.write(157)
         writeValue(stream, value.toList())
       }
-      is SearchInstantResponseWire -> {
+      is SearchBlankResponseWire -> {
         stream.write(158)
         writeValue(stream, value.toList())
       }
-      is SearchFullResponseWire -> {
+      is SearchInstantResponseWire -> {
         stream.write(159)
         writeValue(stream, value.toList())
       }
-      is AgentProductWire -> {
+      is SearchFullResponseWire -> {
         stream.write(160)
         writeValue(stream, value.toList())
       }
-      is AgentMessageWire -> {
+      is AgentProductWire -> {
         stream.write(161)
         writeValue(stream, value.toList())
       }
-      is AgentSessionWire -> {
+      is AgentMessageWire -> {
         stream.write(162)
         writeValue(stream, value.toList())
       }
-      is AgentDialogResponseWire -> {
+      is AgentSessionWire -> {
         stream.write(163)
         writeValue(stream, value.toList())
       }
-      is AgentResponseWire -> {
+      is AgentDialogResponseWire -> {
         stream.write(164)
         writeValue(stream, value.toList())
       }
-      is CartItemWire -> {
+      is AgentResponseWire -> {
         stream.write(165)
         writeValue(stream, value.toList())
       }
-      is ProfileWire -> {
+      is CartItemWire -> {
         stream.write(166)
         writeValue(stream, value.toList())
       }
-      is ProfileKidWire -> {
+      is ProfileWire -> {
         stream.write(167)
         writeValue(stream, value.toList())
       }
-      is ProfileCarWire -> {
+      is ProfileKidWire -> {
         stream.write(168)
         writeValue(stream, value.toList())
       }
-      is ProfileUpdateRequestWire -> {
+      is ProfileCarWire -> {
         stream.write(169)
         writeValue(stream, value.toList())
       }
-      is OrderItemWire -> {
+      is ProfileUpdateRequestWire -> {
         stream.write(170)
         writeValue(stream, value.toList())
       }
-      is OrderWire -> {
+      is OrderItemWire -> {
         stream.write(171)
         writeValue(stream, value.toList())
       }
-      is PurchaseTrackingRequestWire -> {
+      is OrderWire -> {
         stream.write(172)
         writeValue(stream, value.toList())
       }
-      is ProfileParamsWire -> {
+      is PurchaseTrackingRequestWire -> {
         stream.write(173)
         writeValue(stream, value.toList())
       }
-      is SubscriptionsUpdateRequestWire -> {
+      is ProfileParamsWire -> {
         stream.write(174)
         writeValue(stream, value.toList())
       }
-      is SubscriptionStatusWire -> {
+      is SubscriptionsUpdateRequestWire -> {
         stream.write(175)
         writeValue(stream, value.toList())
       }
-      is BackInStockPropertiesWire -> {
+      is SubscriptionStatusWire -> {
         stream.write(176)
         writeValue(stream, value.toList())
       }
-      is SegmentWire -> {
+      is BackInStockPropertiesWire -> {
         stream.write(177)
         writeValue(stream, value.toList())
       }
-      is PushTokenWire -> {
+      is SegmentWire -> {
         stream.write(178)
         writeValue(stream, value.toList())
       }
-      is PushActionWire -> {
+      is PushTokenWire -> {
         stream.write(179)
         writeValue(stream, value.toList())
       }
-      is PushTargetWire -> {
+      is PushActionWire -> {
         stream.write(180)
         writeValue(stream, value.toList())
       }
-      is PushPayloadWire -> {
+      is PushTargetWire -> {
         stream.write(181)
         writeValue(stream, value.toList())
       }
-      is NotificationStatisticsWire -> {
+      is PushPayloadWire -> {
         stream.write(182)
         writeValue(stream, value.toList())
       }
-      is NotificationMessageWire -> {
+      is NotificationStatisticsWire -> {
         stream.write(183)
         writeValue(stream, value.toList())
       }
-      is NotificationHistoryWire -> {
+      is NotificationMessageWire -> {
         stream.write(184)
         writeValue(stream, value.toList())
       }
-      is StoriesBlockWire -> {
+      is NotificationHistoryWire -> {
         stream.write(185)
         writeValue(stream, value.toList())
       }
-      is StoryWire -> {
+      is StoriesBlockWire -> {
         stream.write(186)
         writeValue(stream, value.toList())
       }
-      is StorySlideWire -> {
+      is StoryWire -> {
         stream.write(187)
         writeValue(stream, value.toList())
       }
-      is StoryElementWire -> {
+      is StorySlideWire -> {
         stream.write(188)
         writeValue(stream, value.toList())
       }
-      is StoryProductWire -> {
+      is StoryElementWire -> {
         stream.write(189)
         writeValue(stream, value.toList())
       }
-      is PurchaseProbabilityWire -> {
+      is StoryProductWire -> {
         stream.write(190)
         writeValue(stream, value.toList())
       }
-      is LoyaltyMemberWire -> {
+      is PurchaseProbabilityWire -> {
         stream.write(191)
         writeValue(stream, value.toList())
       }
-      is LoyaltyLevelWire -> {
+      is LoyaltyMemberWire -> {
         stream.write(192)
         writeValue(stream, value.toList())
       }
-      is LoyaltyStatusWire -> {
+      is LoyaltyLevelWire -> {
         stream.write(193)
         writeValue(stream, value.toList())
       }
-      is LoyaltyPromotionWire -> {
+      is LoyaltyStatusWire -> {
         stream.write(194)
         writeValue(stream, value.toList())
       }
-      is SliderWire -> {
+      is LoyaltyPromotionWire -> {
         stream.write(195)
         writeValue(stream, value.toList())
       }
-      is SliderBannerWire -> {
+      is SliderWire -> {
         stream.write(196)
         writeValue(stream, value.toList())
       }
-      is PollReviewWire -> {
+      is SliderBannerWire -> {
         stream.write(197)
         writeValue(stream, value.toList())
       }
-      is NpsCategoryWire -> {
+      is PollReviewWire -> {
         stream.write(198)
         writeValue(stream, value.toList())
       }
-      is CsatCampaignWire -> {
+      is NpsCategoryWire -> {
         stream.write(199)
         writeValue(stream, value.toList())
       }
-      is CesCampaignWire -> {
+      is CsatCampaignWire -> {
         stream.write(200)
         writeValue(stream, value.toList())
       }
-      is PollChannelWire -> {
+      is CesCampaignWire -> {
         stream.write(201)
         writeValue(stream, value.toList())
       }
-      is ProductRatingSummaryWire -> {
+      is PollChannelWire -> {
         stream.write(202)
         writeValue(stream, value.toList())
       }
-      is ProductReviewWire -> {
+      is ProductRatingSummaryWire -> {
         stream.write(203)
         writeValue(stream, value.toList())
       }
-      is ProductReviewsResponseWire -> {
+      is ProductReviewWire -> {
         stream.write(204)
         writeValue(stream, value.toList())
       }
-      is ClientReviewWire -> {
+      is ProductReviewsResponseWire -> {
         stream.write(205)
+        writeValue(stream, value.toList())
+      }
+      is ClientReviewWire -> {
+        stream.write(206)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -4684,6 +4755,11 @@ interface PersonalizationHostApi {
    * wipe; the new device id comes with the next `/init`, as a snapshot.
    */
   fun deleteUserCredentials(shopId: String?, callback: (Result<SdkSnapshotWire>) -> Unit)
+  /**
+   * Whether this engine's Dart hears the native SDK's log messages
+   * (`Rees46.setLogHandler`), through [PersonalizationStateFlutterApi.onLog].
+   */
+  fun setLogForwarding(enabled: Boolean)
   /** `tracking.custom`. [customFields] are the event's free-form fields. */
   fun trackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFields: Map<String, Any?>?, shopId: String?, callback: (Result<Unit>) -> Unit)
   fun trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
@@ -4746,11 +4822,6 @@ interface PersonalizationHostApi {
   fun notificationsTrackOpened(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit)
   fun notificationsTrackClicked(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit)
   fun notificationsTrackClosed(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit)
-  /**
-   * The push token the native SDK keeps for the shop, read without the network;
-   * [provider] is `apns`, `fcm` or `hms`.
-   */
-  fun notificationsGetPushToken(provider: String?, shopId: String?): PushTokenWire?
   fun notificationsSetPushToken(token: String, provider: String, shopId: String?, callback: (Result<Unit>) -> Unit)
   /** A server method: [shopSecret] is passed by the caller and never kept. */
   fun notificationsGetHistory(shopSecret: String, type: String, phone: String?, email: String?, externalId: String?, loyaltyId: String?, channel: String?, limit: Long?, page: Long?, dateFrom: String?, did: String?, shopId: String?, callback: (Result<NotificationHistoryWire>) -> Unit)
@@ -4996,6 +5067,24 @@ interface PersonalizationHostApi {
                 reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
               }
             }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setLogForwarding$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val enabledArg = args[0] as Boolean
+            val wrapped: List<Any?> = try {
+              api.setLogForwarding(enabledArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)
@@ -6017,24 +6106,6 @@ interface PersonalizationHostApi {
                 reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
               }
             }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsGetPushToken$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val providerArg = args[0] as String?
-            val shopIdArg = args[1] as String?
-            val wrapped: List<Any?> = try {
-              listOf(api.notificationsGetPushToken(providerArg, shopIdArg))
-            } catch (exception: Throwable) {
-              PersonalizationApiPigeonUtils.wrapError(exception)
-            }
-            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)
@@ -7071,6 +7142,24 @@ class PersonalizationStateFlutterApi(private val binaryMessenger: BinaryMessenge
     val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushToken$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
     channel.send(listOf(tokenArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(PersonalizationApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+  /** A message of the native SDK's log, while Dart has a log handler. */
+  fun onLog(messageArg: SdkLogMessageWire, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onLog$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(messageArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))

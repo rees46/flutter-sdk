@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 
 import '../core/handle_channel.dart';
 import '../core/native_events.dart';
+import '../core/sdk_logs.dart';
 import '../models/push_models.dart';
 import '../personalization_sdk.dart';
+import '../pigeon/personalization_api.g.dart' as pigeon;
 import '../popups/in_app_popup.dart';
 import '../popups/popup_presenter.dart';
 import 'instance_resolver.dart';
@@ -150,6 +152,20 @@ class REES46 {
   static void setPushCallbacks(PushCallbacks? callbacks) =>
       NativeEvents.instance.sharedPushCallbacks = callbacks;
 
+  /// The app's receiver of the SDK's log messages, of every shop: each message
+  /// that passes its shop's `logLevel` — the native SDKs' and those of the SDK's
+  /// own Dart code, under the code of their area — for example to forward it to
+  /// the app's crash reporter. Messages carry no personal data. An exception the
+  /// handler throws is caught. Replaces the handler set before; null removes it.
+  static void setLogHandler(void Function(SdkLogMessage message)? handler) {
+    SdkLogs.handler = handler;
+    pigeon.PersonalizationHostApi()
+        .setLogForwarding(handler != null)
+        .catchError((Object error) {
+          debugPrint('REES46: setLogHandler — $error');
+        });
+  }
+
   /// Shops that are live (initialized), sorted.
   static List<String> get liveShopIds => _instance._live.keys.toList()..sort();
 
@@ -192,8 +208,12 @@ class REES46 {
   static bool _sameConfig(REES46Config? a, REES46Config b) =>
       a != null &&
       a.apiDomain == b.apiDomain &&
+      a.appDomain == b.appDomain &&
       a.stream == b.stream &&
+      a.deviceId == b.deviceId &&
+      // ignore: deprecated_member_use_from_same_package
       a.enableLogs == b.enableLogs &&
+      a.logLevel == b.logLevel &&
       a.autoSendPushToken == b.autoSendPushToken &&
       a.sendAdvertisingId == b.sendAdvertisingId &&
       a.enableAutoPopupPresentation == b.enableAutoPopupPresentation &&

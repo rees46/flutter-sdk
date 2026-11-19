@@ -309,8 +309,8 @@ extension Rees46.AgentProduct {
 extension Rees46.AgentMessage {
   func toWire() -> AgentMessageWire {
     AgentMessageWire(
-      // The SDK leaves a message without an id at nil; the wire's id is required.
-      id: Int64(id ?? 0),
+      // A message without an id stays without one, as the contract has it.
+      id: id.map(Int64.init),
       role: role?.rawValue,
       content: content,
       createdAt: createdAt,
@@ -586,9 +586,11 @@ extension LoyaltyMember {
 }
 
 extension LoyaltyLevel {
-  func toWire() -> LoyaltyLevelWire {
-    LoyaltyLevelWire(
-      code: code ?? "",
+  /// Nil for a level without a code: the contract's base level, which is no level.
+  func toWire() -> LoyaltyLevelWire? {
+    guard let code else { return nil }
+    return LoyaltyLevelWire(
+      code: code,
       name: name,
       expirationDate: expirationDate
     )

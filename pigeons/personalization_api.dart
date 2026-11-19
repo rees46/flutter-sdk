@@ -26,6 +26,18 @@ class InitConfig {
   final bool enableAutoPopupPresentation;
   final bool needReInitialization;
 
+  /// The host of API v3 (polls, the search agent, predict); null — the native default.
+  final String? appDomain;
+
+  /// A `did` the app kept from another SDK; taken only when the shop has none yet.
+  final String? deviceId;
+
+  /// `debug`, `info`, `warning`, `error` or `none`; null — from [enableLogs].
+  final String? logLevel;
+
+  /// The prefix of the shop's storage; null — the shop id.
+  final String? storageKey;
+
   const InitConfig({
     required this.shopId,
     required this.apiDomain,
@@ -35,6 +47,28 @@ class InitConfig {
     required this.sendAdvertisingId,
     required this.enableAutoPopupPresentation,
     required this.needReInitialization,
+    this.appDomain,
+    this.deviceId,
+    this.logLevel,
+    this.storageKey,
+  });
+}
+
+/// One message of the native SDK's log (`Rees46.setLogHandler`): [level] is `debug`, `info`,
+/// `warning` or `error`; [context] holds no personal data.
+class SdkLogMessageWire {
+  final String level;
+  final String code;
+  final String message;
+  final String? shopId;
+  final Map<String, Object?> context;
+
+  const SdkLogMessageWire({
+    required this.level,
+    required this.code,
+    required this.message,
+    this.shopId,
+    required this.context,
   });
 }
 
@@ -603,14 +637,15 @@ class AgentProductWire {
 
 /// `AgentMessage`; [role] is the wire value (`user`, `assistant`).
 class AgentMessageWire {
-  final int id;
+  /// 64-bit; null for a message the server sent without one.
+  final int? id;
   final String? role;
   final String? content;
   final String? createdAt;
   final List<AgentProductWire> products;
 
   const AgentMessageWire({
-    required this.id,
+    this.id,
     this.role,
     this.content,
     this.createdAt,
@@ -1602,6 +1637,10 @@ abstract class PersonalizationHostApi {
   @async
   SdkSnapshotWire deleteUserCredentials(String? shopId);
 
+  /// Whether this engine's Dart hears the native SDK's log messages
+  /// (`Rees46.setLogHandler`), through [PersonalizationStateFlutterApi.onLog].
+  void setLogForwarding(bool enabled);
+
   // region tracking
 
   /// `tracking.custom`. [customFields] are the event's free-form fields.
@@ -1899,10 +1938,6 @@ abstract class PersonalizationHostApi {
 
   @async
   void notificationsTrackClosed(String code, String type, String? shopId);
-
-  /// The push token the native SDK keeps for the shop, read without the network;
-  /// [provider] is `apns`, `fcm` or `hms`.
-  PushTokenWire? notificationsGetPushToken(String? provider, String? shopId);
 
   @async
   void notificationsSetPushToken(String token, String provider, String? shopId);
@@ -2219,6 +2254,9 @@ abstract class PersonalizationStateFlutterApi {
 
   /// A new push token the native SDK got from APNs, FCM or HMS.
   void onPushToken(PushTokenWire token);
+
+  /// A message of the native SDK's log, while Dart has a log handler.
+  void onLog(SdkLogMessageWire message);
 }
 
 /// Server popups, handed over instead of being shown natively: the plugin sets the native

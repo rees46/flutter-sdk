@@ -1,3 +1,4 @@
+import '../../core/sdk_logs.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -256,6 +257,16 @@ abstract final class StoriesApiV3 {
       }
     } catch (error) {
       debugPrint('PersonalizationStories: v3 ${event.wire} — $error');
+      SdkLogs.log(
+        LogLevel.warning,
+        'stories_v3',
+        'event ${event.wire} not sent',
+        shopId: sdk.shopId,
+        context: <String, Object?>{
+          if (error is StoriesV3Exception && error.status != null)
+            'http_code': error.status,
+        },
+      );
     }
   }
 

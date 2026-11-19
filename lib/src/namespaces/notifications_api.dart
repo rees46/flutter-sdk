@@ -60,14 +60,6 @@ class NotificationsApi {
     return null;
   }
 
-  /// The push token the native SDK keeps now, read on the native side.
-  Future<PushToken?> readPushToken({PushProvider? provider}) async {
-    final wire = await sdkCall(
-      () => _api.notificationsGetPushToken(provider?.wireValue, _shopId),
-    );
-    return wire == null ? null : pushTokenFromWire(wire);
-  }
-
   /// A [token] the app got itself (its own messaging, or `autoSendPushToken:
   /// false`): kept and sent to this shop (`POST /mobile_push_tokens`). A token sent
   /// this week ends in success without a request. `apns` on Android and `hms` on

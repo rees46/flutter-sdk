@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rees46_sdk/models.dart' as contract;
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
@@ -259,6 +260,19 @@ void main() {
       expect(answer.session.title, 'Kettles');
     });
 
+    test('an agent message without an id has none, not 0', () async {
+      stubValue(
+        'searchAgent',
+        pigeon.AgentResponseWire(
+          session: pigeon.AgentSessionWire(id: 1, messages: const []),
+          message: pigeon.AgentMessageWire(content: 'Hi', products: const []),
+        ),
+      );
+      final answer = await PersonalizationSdk().search.agent('hello');
+      expect(answer.message.id, isNull);
+      expect(answer.message.content, 'Hi');
+    });
+
     test('agentEnabled is the copy of the native flag', () async {
       stubValue('initialize', snapshotWire('agent-shop', agentEnabled: true));
       final sdk = REES46.initialize(const REES46Config(shopId: 'agent-shop'));
@@ -350,11 +364,83 @@ void main() {
       expect(slide.type, StorySlideType.video);
       expect(slide.duration, const Duration(seconds: 10), reason: 'default');
       expect(slide.elements, hasLength(4), reason: 'unknown kinds dropped');
-      expect((slide.elements[0] as StoryButtonElement).textBold, isTrue);
-      expect(slide.product!.brand, 'Bosch');
-      expect((slide.elements[2] as StoryProductsElement).hideLabel, 'Hide');
-      final text = slide.elements[3] as StoryTextBlockElement;
+      expect(
+        (slide.elements[0] as contract.StoryButtonElement).textBold,
+        isTrue,
+      );
+      final item = (slide.elements[1] as contract.StoryProductElement).item!;
+      expect(item.brand, 'Bosch');
+      expect(item.oldPrice, isNull, reason: 'no old price is null, not 0');
+      expect(item.priceWithPromocode, 0);
+      final products = slide.elements[2] as contract.StoryProductsElement;
+      expect(products.hideLabel, 'Hide');
+      final text = slide.elements[3] as contract.StoryTextBlockElement;
       expect([text.text, text.fontSize, text.promocode], ['Hi', 20, 'SALE']);
+    });
+
+    test('an old price goes only when it is above the price', () async {
+      final product = pigeon.StoryProductWire(
+        id: 'p1',
+        name: 'Kettle',
+        brand: '',
+        picture: '',
+        imageUrl: '',
+        price: 10,
+        priceFormatted: '10',
+        oldPrice: 12,
+        oldPriceFormatted: '12',
+        discountPercent: 0,
+        promocode: '',
+        priceWithPromocode: 0,
+        priceWithPromocodeFormatted: '',
+        currency: '₽',
+        url: '',
+        deeplinkAndroid: '',
+        deeplinkIos: '',
+      );
+      pigeon.StoriesBlockWire block(pigeon.StoryProductWire item) =>
+          pigeon.StoriesBlockWire(
+            id: 'b',
+            stories: [
+              pigeon.StoryWire(
+                id: '1',
+                name: 'S',
+                avatar: '',
+                viewed: false,
+                pinned: false,
+                startPosition: 0,
+                slides: [
+                  pigeon.StorySlideWire(
+                    id: '1',
+                    type: 'image',
+                    background: '',
+                    backgroundColor: '',
+                    preview: '',
+                    duration: 5,
+                    elements: [
+                      pigeon.StoryElementWire(type: 'product', item: item),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+      double? oldPriceOf(contract.StoriesBlock b) =>
+          (b.stories.single.slides.single.elements.single
+                  as contract.StoryProductElement)
+              .item!
+              .oldPrice;
+
+      stubValue('storiesGet', block(product));
+      expect(oldPriceOf(await PersonalizationSdk().stories.get('b')), 12);
+
+      product.oldPrice = 10;
+      stubValue('storiesGet', block(product));
+      expect(
+        oldPriceOf(await PersonalizationSdk().stories.get('b')),
+        isNull,
+        reason: 'the API sends the price itself without a discount',
+      );
     });
   });
 }

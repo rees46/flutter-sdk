@@ -159,6 +159,20 @@ the same answers, the same error codes. What an app can notice:
   `legacy…` methods (`legacyGetRecommendation`, `legacySearchFull`, …) with the JSON
   strings of 1.6.4, and `initialize` answers with the shop's state. A fake that extends
   it needs the new names.
+- **The facade's errors.** `REES46.getInstance` throws a `Rees46Exception` (the
+  contract's `Rees46Error`) whose `type` is `unknownShop` or `ambiguousShop`. The released
+  `UnknownShopIdException` and `AmbiguousShopException` are its two cases, so code that
+  catches them keeps working.
+- **Configuration.** `REES46Config` takes the contract's `appDomain`, `deviceId`,
+  `logLevel` and `storageKey` and hands them to the native SDKs; `enableLogs` is
+  deprecated (`logLevel: LogLevel.debug`). New: [`REES46.setLogHandler`](#logs).
+- **Stories models.** `stories.get` answers with the contract's `StoriesBlock` from
+  `package:rees46_sdk/models.dart`: a story product's `oldPrice` is `null` without a
+  discount. The UI kit and the deprecated `getStories` keep the released classes of the
+  same names.
+- **Tracking sources.** `TrackingSourceType` gains `slider` and `agentSearch`
+  (`agent_search`), which an exhaustive `switch` needs to handle. Until the native SDKs
+  take them, an event or `setSource` with either fails with `invalidArgument`.
 - **New on the handle.** `state` and `stateChanges`, `deviceId` and `sessionId`,
   [`flush`, `release` and `deleteUserCredentials`](#the-instance-itself), the push
   callbacks of each shop (`sdk.notifications.setCallbacks`). `onToken` hears a token the
@@ -205,6 +219,28 @@ the server refused the shop, `invalidArgument` for an empty `shopId`. `state` an
 | `autoSendPushToken` | `true` | Fetches and sends the push token during init; on iOS it also asks for notification permission. With `false` the app asks and sends the token itself |
 | `needReInitialization` | `false` | Forces a fresh session / device id |
 | `enableAutoPopupPresentation` | `true` | Shows server popups without an `onPopup` handler, see [Popups](#popups) |
+| `appDomain` | `app.rees46.ru` | Host of the shop's app API (polls, the search agent, predict); a shop of its own cluster has its own |
+| `deviceId` | — | A device id the app kept from another SDK; taken only while the shop has none |
+| `logLevel` | `LogLevel.warning` | What the SDK logs and hands to [`REES46.setLogHandler`](#logs); `enableLogs: true` is `LogLevel.debug` |
+| `sendAdvertisingId` | `false` | Sends the advertising id (IDFA, GAID) |
+| `storageKey` | the shop id | Prefix of the shop's storage, for an app that needs a split of its own |
+
+### Logs
+
+`REES46.setLogHandler` hands the app every message of the SDK that passes its shop's
+`logLevel` — to forward it to Crashlytics or Sentry, say:
+
+```dart
+REES46.setLogHandler((message) {
+  // message.level, message.code ("init_retry", "queue_dropped", …), message.message,
+  // message.shopId, message.context (the request's path, the HTTP code, the attempt)
+  crashReporter.log('${message.level.name} ${message.code}: ${message.message}');
+});
+```
+
+Match on `code`, which is the same on Android and iOS, not on the text. Messages carry
+no personal data: no request data or bodies, contacts, push token or push content. An
+exception the handler throws is caught. `REES46.setLogHandler(null)` removes it.
 
 Push delivery needs platform setup of its own — a Firebase config on Android, the
 Push Notifications capability on iOS. Without it initialization still succeeds;
@@ -607,8 +643,10 @@ With several shops the namespaces follow the instance, as `tracking` does:
 A field the API does not send is `null` in the models, not `""` or `0`. The catalog
 models of `products`, `collections`, `recommendations` and `search` — `Product`,
 `ProductCategory`, `Brand`, `SearchFilter`, `ProductsListResponse`,
-`SearchFullResponse`, … — live in `package:rees46_sdk/models.dart`: the main library
-keeps the released classes of the same names for the deprecated methods. To name
+`SearchFullResponse`, … — and the stories models of `stories.get` (`StoriesBlock`,
+`Story`, `StoryProduct`, …) live in `package:rees46_sdk/models.dart`: the main library
+keeps the released classes of the same names for the deprecated methods and the UI
+kit. To name
 them, import that library with a prefix:
 
 ```dart

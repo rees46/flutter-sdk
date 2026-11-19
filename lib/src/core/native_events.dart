@@ -7,6 +7,7 @@ import '../models/push_models.dart';
 import '../models/values.dart';
 import '../namespaces/from_wire.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
+import 'sdk_logs.dart';
 
 /// What the bridge keeps of one shop's native instance: the copy of its local
 /// values the contract reads at once — state, device id, session, A/B group, push
@@ -33,6 +34,12 @@ class ShopMirror {
   /// Every change of [state].
   Stream<SdkState> get states => _states.stream;
 
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  /// Every snapshot the native side told: a change of the state, the device id or
+  /// the session (the native SDK's "session changed" event).
+  Stream<void> get changes => _changes.stream;
+
   /// How many snapshots the mirror took: one the native side told while an answer
   /// was on its way is at least as new as that answer.
   int applied = 0;
@@ -53,11 +60,13 @@ class ShopMirror {
       snapshot.pushTokens.map(pushTokenFromWire),
     );
     if (state != previous && !_states.isClosed) _states.add(state);
+    if (!_changes.isClosed) _changes.add(null);
   }
 
   /// The instance was released: the state is [SdkState.notInitialized] for good,
   /// [states] tells it and ends. The other values stay as they were.
   void release() {
+    if (!_changes.isClosed) _changes.close();
     if (_states.isClosed) return;
     final previous = state;
     state = SdkState.notInitialized;
@@ -161,6 +170,17 @@ class NativeEvents implements pigeon.PersonalizationStateFlutterApi {
       _guard(() => callback(parsed));
     }
   }
+
+  @override
+  void onLog(pigeon.SdkLogMessageWire message) => SdkLogs.deliver(
+    SdkLogMessage(
+      level: LogLevel.fromWire(message.level),
+      code: message.code,
+      message: message.message,
+      shopId: message.shopId,
+      context: Map<String, Object?>.unmodifiable(message.context),
+    ),
+  );
 
   /// A callback of the app that throws is reported, and goes no further.
   void _guard(void Function() call) {

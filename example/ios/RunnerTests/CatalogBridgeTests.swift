@@ -134,9 +134,65 @@ final class CatalogBridgeTests: XCTestCase {
     }
 
     func test_anUnknownPushProvider_isAnInvalidArgument() {
-        XCTAssertThrowsError(try plugin.notificationsGetPushToken(provider: "gcm", shopId: shopId)) { error in
-            XCTAssertEqual((error as? PigeonError)?.code, "invalidArgument")
+        let done = expectation(description: "answered")
+        var code: String?
+        plugin.notificationsSetPushToken(token: "t", provider: "gcm", shopId: shopId) { result in
+            if case .failure(let error) = result { code = (error as? PigeonError)?.code }
+            done.fulfill()
         }
+        wait(for: [done], timeout: 5)
+        XCTAssertEqual(code, "invalidArgument")
+    }
+
+    /// Dart's `logLevel` by its contract name; an unknown or absent one leaves it to `enableLogs`.
+    func test_aLogLevelFromDart_isTheNativeOne() {
+        XCTAssertEqual(PersonalizationHostApiImpl.logLevel("debug"), .debug)
+        XCTAssertEqual(PersonalizationHostApiImpl.logLevel("INFO"), .info)
+        XCTAssertEqual(PersonalizationHostApiImpl.logLevel("none"), Rees46.LogLevel.none)
+        XCTAssertNil(PersonalizationHostApiImpl.logLevel("loud"))
+        XCTAssertNil(PersonalizationHostApiImpl.logLevel(nil))
+        XCTAssertEqual(PersonalizationHostApiImpl.nonEmpty("  did  "), "did")
+        XCTAssertNil(PersonalizationHostApiImpl.nonEmpty("  "))
+        XCTAssertEqual(Rees46.LogLevel.allCases.map(\.wireName), ["debug", "info", "warning", "error", "none"])
+    }
+
+    /// A loyalty level without a code is the contract's base level — no level, not one coded "".
+    func test_aLoyaltyLevelWithoutACode_isNoLevel() {
+        XCTAssertNil(LoyaltyLevel(json: ["name": "Base"]).toWire())
+        XCTAssertEqual(LoyaltyLevel(json: ["code": "gold", "name": "Gold"]).toWire()?.code, "gold")
+    }
+
+    /// The contract's `slider` and `agent_search` wait for the native SDK: refused, not guessed.
+    func test_sourcesTheNativeSdkCannotSendYet_areRefused() {
+        XCTAssertNil(TrackingSourceWire(type: "slider", code: "c").native)
+        XCTAssertNil(TrackingSourceWire(type: "agent_search", code: "c").native)
+        XCTAssertNotNil(TrackingSourceWire(type: "stories", code: "c").native)
+    }
+
+    /// The native log reaches each engine whose Dart has a handler; the native handler is set only while
+    /// one has.
+    func test_theNativeLog_reachesTheEnginesThatWantIt() {
+        let forwarding = LogForwarding()
+        var installed: [Bool] = []
+        var handler: ((Rees46.SdkLogMessage) -> Void)?
+        forwarding.install = { installed.append($0 != nil); handler = $0 }
+        var heard: [String] = []
+        let app = LogForwarding.Sink { heard.append("app \($0.code)") }
+        let background = LogForwarding.Sink { heard.append("background \($0.code)") }
+
+        forwarding.add(app)
+        forwarding.add(app)
+        forwarding.add(background)
+        handler?(Rees46.SdkLogMessage(level: .warning, code: "init_retry", message: "m", shopId: "s", context: ["attempt": "2"]))
+        forwarding.remove(background)
+        handler?(Rees46.SdkLogMessage(level: .error, code: "init_refused", message: "m", shopId: "s"))
+        forwarding.remove(app)
+
+        XCTAssertEqual(installed, [true, false])
+        XCTAssertEqual(heard, ["app init_retry", "background init_retry", "app init_refused"])
+        let wire = Rees46.SdkLogMessage(level: .info, code: "c", message: "m", shopId: nil, context: ["k": "v"]).toWire()
+        XCTAssertEqual(wire.level, "info")
+        XCTAssertEqual(wire.context["k"] as? String, "v")
     }
 }
 

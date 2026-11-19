@@ -27,7 +27,6 @@ const _methods = [
   'notificationsTrackOpened',
   'notificationsTrackClicked',
   'notificationsTrackClosed',
-  'notificationsGetPushToken',
   'notificationsSetPushToken',
   'notificationsGetHistory',
   'slidersGet',
@@ -110,18 +109,6 @@ void main() {
         sdk.notifications.getPushToken(provider: PushProvider.apns),
         isNull,
       );
-    });
-
-    test('readPushToken asks natively', () async {
-      final calls = stubValue(
-        'notificationsGetPushToken',
-        pigeon.PushTokenWire(token: 'apns-token', provider: 'apns'),
-      );
-      final token = await PersonalizationSdk(
-        shopId: 's',
-      ).notifications.readPushToken(provider: PushProvider.apns);
-      expect(calls.single, ['apns', 's']);
-      expect(token!.provider, PushProvider.apns);
     });
 
     test('the released getStoredPushToken reads the stored token as 1.6.4 '
