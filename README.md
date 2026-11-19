@@ -101,6 +101,24 @@ the same answers, the same error codes. What an app can notice:
   refuses later is no error. Only `invalidArgument`, `shopBlocked` and `notInitialized`
   fail it. The deprecated `trackEvent` and `trackPurchase` still complete with the
   server's answer.
+- **`tracking` takes the contract's arguments.** `tracking.purchase` takes a
+  `PurchaseTrackingRequest` (lines are `PurchaseItem`) and an optional `source`
+  instead of named arguments; the order goes with the source given, else the stored
+  one. `storyView` and `storyClick` take the story and the slide as positional
+  arguments: `storyView('4321', '2', code: 'main_stories')`. `setSource` returns
+  `void` — the source is stored at once. An empty id fails the future with
+  `SdkException` `invalidArgument` instead of throwing an `ArgumentError`. The
+  deprecated `trackPurchase` keeps its named arguments, `recommendedSource`, `stream`
+  and `segment` included.
+- **Catalog models.** `products`, `collections`, `recommendations` and `search`
+  answer with the contract's models from `package:rees46_sdk/models.dart`: a field the
+  answer does not have is `null`, not `""` or `0`; `brands` are `Brand`s with their
+  counts; the facets are `SearchFilter`s and `IndustrialFilters` with `ColorFilter`s
+  and `SizeFilter`s; `Product.discountPercent` is the discount. Several of them —
+  `Product`, `ProductCategory`, `ProductsListResponse`, `SearchFullResponse`, … —
+  have the names of the released classes the deprecated methods return, which the
+  main library keeps exporting. Type inference needs no import; to name them, import
+  the library with a prefix ([Namespaces](#namespaces)).
 - **Default stream.** Without `stream` in the configuration events go with
   `stream: flutter`; 1.6.4 sent `android` or `ios`. Set `stream` to keep the reports
   split by platform.
@@ -108,10 +126,14 @@ the same answers, the same error codes. What an app can notice:
   (1.6.4 sent `track/received`, which the server counts as an open), the notification the
   plugin drew as `track/opened`, a tap as `track/clicked` and a dismissal as
   `track/closed`. iOS reports `opened` for a push shown while the app is open,
-  `delivered` from `didReceiveRemoteNotification`, and `clicked`. A host with its own
-  messaging service that calls `REES46.handlePush(payload, event)`: `PushEvent.received`
-  sends `delivered`, `PushEvent.delivered` (its notification is on screen) sends `opened`,
-  `PushEvent.clicked` sends `clicked`, on both platforms.
+  `delivered` from `didReceiveRemoteNotification`, and `clicked`.
+- **`PushEvent`.** A host with its own messaging service calls
+  `REES46.handlePush(payload, event)` with one of the four events of the API:
+  `PushEvent.delivered` (the push reached the app), `opened` (its notification is on
+  screen), `clicked` and `closed`; each goes as its own request. 1.6.4's
+  `PushEvent.received` is now `delivered` and its `delivered` is now `opened`. The
+  deprecated `setPushNotificationCallbacks` hears them as in 1.6.4: `onPushReceived`
+  for `delivered`, `onPushDelivered` for `opened`, `onPushClicked` for `clicked`.
 - **Profile checks.** `sdk.profile.set` refuses with `invalidArgument`, before any
   request: a custom property key outside `[a-z0-9_]`, or one that is a field of the
   request (`email`, `first_name`, …) or a reserved one (`shop_id`, `did`, `sid`,
@@ -425,17 +447,9 @@ Only needed when you render stories yourself — the built-in stories view track
 its own views and taps.
 
 ```dart
-await sdk.tracking.storyView(
-  storyId: '4321',
-  slideId: '2',
-  code: 'main_stories',
-);
+await sdk.tracking.storyView('4321', '2', code: 'main_stories');
 
-await sdk.tracking.storyClick(
-  storyId: '4321',
-  slideId: '2',
-  code: 'main_stories',
-);
+await sdk.tracking.storyClick('4321', '2', code: 'main_stories');
 ```
 
 `code` is the stories block; omit it and the native SDK uses the block it loaded
@@ -457,12 +471,14 @@ await sdk.tracking.bannerClick(banner.id, banner.code);
 
 ```dart
 await sdk.tracking.purchase(
-  orderId: 'order-1024',
-  orderPrice: 149.8,
-  items: const [
-    PurchaseLineItem(id: 'sku-1', amount: 2, price: 49.9, fashionSize: '42'),
-    PurchaseLineItem(id: 'sku-2', amount: 1, price: 50.0),
-  ],
+  const PurchaseTrackingRequest(
+    orderId: 'order-1024',
+    orderPrice: 149.8,
+    items: [
+      PurchaseItem(id: 'sku-1', amount: 2, price: 49.9, fashionSize: '42'),
+      PurchaseItem(id: 'sku-2', amount: 1, price: 50.0),
+    ],
+  ),
 );
 ```
 
@@ -470,29 +486,34 @@ Those three are required; everything else is optional:
 
 ```dart
 await sdk.tracking.purchase(
-  orderId: 'order-1024',
-  orderPrice: 149.8,
-  items: const [PurchaseLineItem(id: 'sku-1', amount: 1, price: 149.8)],
-  deliveryType: 'courier',
-  deliveryAddress: 'Tverskaya 1, Moscow',
-  paymentType: 'card',
-  isTaxFree: false,
-  isGiftPackage: true,
-  promocode: 'WINTER20',
-  orderCash: 100.0,
-  orderBonuses: 49.8,
-  orderDelivery: 5.0,
-  orderDiscount: 20.0,
-  channel: 'mobile_app',
-  custom: const {'store_id': 'msk-01'},
-  recommendedSource: const {'from': 'dynamic', 'code': 'main_page_block'},
-  stream: 'flutter',
-  segment: 'a',
+  const PurchaseTrackingRequest(
+    orderId: 'order-1024',
+    orderPrice: 149.8,
+    items: [PurchaseItem(id: 'sku-1', amount: 1, price: 149.8, lineId: '1')],
+    deliveryType: 'courier',
+    deliveryAddress: 'Tverskaya 1, Moscow',
+    paymentType: 'card',
+    isTaxFree: false,
+    isGiftPackage: true,
+    promocode: 'WINTER20',
+    orderCash: 100.0,
+    orderBonuses: 49.8,
+    orderDelivery: 5.0,
+    orderDiscount: 20.0,
+    channel: 'mobile_app',
+    custom: {'store_id': 'msk-01'},
+  ),
+  source: const TrackingSource(
+    type: TrackingSourceType.dynamicBlock,
+    code: 'main_page_block',
+  ),
 );
 ```
 
 `custom` goes on the wire under `custom`; keys that collide with the order's own
-fields (`order_id`, `items`, `event`, `shop_id`, …) are rejected natively.
+fields (`order_id`, `items`, `event`, `shop_id`, …) are rejected natively, and so
+are `tax_free` and `gift_package`. An empty `orderId` or `items` is
+`invalidArgument`.
 
 ### Custom event
 
@@ -526,7 +547,7 @@ A campaign brings the user in and then colours everything they do next, so store
 it once when you handle the link:
 
 ```dart
-await sdk.tracking.setSource(
+sdk.tracking.setSource(
   const TrackingSource(type: TrackingSourceType.bulk, code: 'jkIWdXSRfwVyK'),
 );
 
@@ -538,7 +559,7 @@ The stored source lives natively per shop, survives restarts, and is kept for 48
 hours or until it is replaced.
 
 To attribute a single event instead of everything that follows, pass `source` per
-call — `productView`, `addToCart` and `addToFavorites` accept it:
+call — `productView`, `addToCart`, `addToFavorites` and `purchase` accept it:
 
 ```dart
 await sdk.tracking.addToCart(
@@ -547,8 +568,7 @@ await sdk.tracking.addToCart(
 );
 ```
 
-A per-call `source` wins over the stored one, and an order is attributed by the
-`recommendedSource` of the `purchase` call itself.
+A per-call `source` wins over the stored one.
 
 | `TrackingSourceType` | Wire value | Set by |
 |---|---|---|
@@ -575,6 +595,27 @@ final cart = await sdk.cart.get();                          // List<CartItem>
 
 With several shops the namespaces follow the instance, as `tracking` does:
 `REES46.getInstance('shop-b').products.getInfo('37')`.
+
+A field the API does not send is `null` in the models, not `""` or `0`. The catalog
+models of `products`, `collections`, `recommendations` and `search` — `Product`,
+`ProductCategory`, `Brand`, `SearchFilter`, `ProductsListResponse`,
+`SearchFullResponse`, … — live in `package:rees46_sdk/models.dart`: the main library
+keeps the released classes of the same names for the deprecated methods. To name
+them, import that library with a prefix:
+
+```dart
+import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/models.dart' as rees46;
+
+Future<void> show(PersonalizationSdk sdk) async {
+  final rees46.Product? product = await sdk.products.getInfo('37');
+  final brand = product?.brand ?? '';
+}
+```
+
+A file that uses no deprecated method can hide the released names instead:
+`import 'package:rees46_sdk/rees46_sdk.dart' hide Product, ProductCategory;` next to
+`import 'package:rees46_sdk/models.dart';`.
 
 ### The instance itself
 
@@ -779,6 +820,20 @@ sdk.notifications.setCallbacks(
 
 `REES46.setPushCallbacks(PushCallbacks(…))` sets them for every shop at once; a
 shop's own callback of an event wins.
+
+A host that owns its messaging service hands each push of the SDK over with the
+event that happened to it — the push reached the app, its notification was shown,
+tapped or dismissed:
+
+```dart
+await REES46.handlePush(message.data, PushEvent.delivered); // track/delivered
+await REES46.handlePush(message.data, PushEvent.opened);    // track/opened
+await REES46.handlePush(message.data, PushEvent.clicked);   // track/clicked
+await REES46.handlePush(message.data, PushEvent.closed);    // track/closed
+```
+
+It routes the push to the shop of its `shop_id` and answers with that shop's id, or
+`null` for a push of no shop the app registered.
 
 ### Stories, predict, loyalty
 
