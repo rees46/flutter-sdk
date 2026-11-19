@@ -12,8 +12,10 @@ let package = Package(
         .library(name: "rees46-sdk", targets: ["rees46_sdk"])
     ],
     dependencies: [
-        // Keep in step with the dependency in ../rees46_sdk.podspec.
-        .package(url: "https://github.com/rees46/ios-sdk.git", exact: "3.40.0")
+        // Keep in step with the dependency in ../rees46_sdk.podspec. Until the iOS SDK's next release
+        // this is its unreleased commit with the full notification history (status, channel, campaign id,
+        // statistics); the podspec stays on 3.40.0, a pod cannot name a commit.
+        .package(url: "https://github.com/rees46/ios-sdk.git", revision: "40d32d1ce26cb5e964a209f492c36a0406687562")
     ],
     targets: [
         .target(

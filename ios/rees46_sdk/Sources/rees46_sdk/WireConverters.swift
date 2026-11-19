@@ -816,26 +816,45 @@ extension StoryElement {
 }
 
 extension UserPayloadResponse {
-  /// The history of messages. The iOS SDK's released model reads less than the answer has: no
-  /// `status`, `channel` or numeric campaign id, and statistics the bridge cannot read — they go
-  /// as nil.
+  /// The history of messages: the answer's `status` and its messages, as Android hands them over.
   func toWire() -> NotificationHistoryWire {
-    NotificationHistoryWire(messages: notifications.map { $0.toWire() })
+    NotificationHistoryWire(status: nonEmpty(status), messages: notifications.map { $0.toWire() })
   }
 }
 
 extension UserNotificationsResponse {
+  /// A message: the native model reads the server's one `statistics` object as the one element of
+  /// its list; none is nil.
   func toWire() -> NotificationMessageWire {
     NotificationMessageWire(
       body: nonEmpty(bodyData),
+      campaignId: campaignId.map(Int64.init),
+      channel: nonEmpty(channel),
       code: nonEmpty(codeId),
       date: nonEmpty(dateString),
       icon: nonEmpty(icon),
       picture: nonEmpty(picture),
       sentAt: nonEmpty(dateSentAt),
+      statistics: statistics.first?.toWire(),
       subject: nonEmpty(subject),
       type: nonEmpty(type),
       url: nonEmpty(url)
+    )
+  }
+}
+
+extension UserNotificationsStatistics {
+  /// What the customer did with the message; a field the answer does not have is `false`, as Android
+  /// reads it.
+  func toWire() -> NotificationStatisticsWire {
+    NotificationStatisticsWire(
+      clicked: clicked ?? false,
+      complained: complained ?? false,
+      hardBounced: hardBounced ?? false,
+      opened: opened ?? false,
+      purchased: purchased ?? false,
+      softBounced: softBounced ?? false,
+      unsubscribed: unsubscribed ?? false
     )
   }
 }

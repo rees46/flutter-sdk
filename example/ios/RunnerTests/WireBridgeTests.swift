@@ -301,6 +301,75 @@ final class WireBridgeTests: XCTestCase {
         XCTAssertEqual(Rees46.PushToken(token: "t", provider: .fcm).toWire().provider, "fcm")
     }
 
+    // MARK: - Notification history
+
+    /// The history as the server sends it: the answer's status, and each message's channel, numeric
+    /// campaign id and one statistics object under snake-case keys — what Android hands Dart.
+    func test_notificationHistory_carriesStatusChannelCampaignAndStatistics() {
+        let answer: [String: Any] = [
+            "status": "success",
+            "payload": ["messages": [[
+                "type": "bulk", "code": "c-1", "date": "2026-11-01", "sent_at": "2026-11-01T10:00:00Z",
+                "subject": "Sale", "body": "Up to 50%", "url": "https://shop.test/sale",
+                "icon": "https://img.test/i.png", "picture": "https://img.test/p.png",
+                "campaign_id": 4217, "channel": "email",
+                "statistics": [
+                    "opened": true, "clicked": true, "hard_bounced": false, "soft_bounced": true,
+                    "complained": false, "unsubscribed": false, "purchased": true,
+                ],
+            ]]],
+        ]
+
+        let wire = UserPayloadResponse(json: answer).toWire()
+
+        XCTAssertEqual(wire.status, "success")
+        XCTAssertEqual(wire.messages.count, 1)
+        let message = wire.messages[0]
+        XCTAssertEqual(message.campaignId, 4217)
+        XCTAssertEqual(message.channel, "email")
+        XCTAssertEqual(message.type, "bulk")
+        XCTAssertEqual(message.code, "c-1")
+        XCTAssertEqual(message.date, "2026-11-01")
+        XCTAssertEqual(message.sentAt, "2026-11-01T10:00:00Z")
+        XCTAssertEqual(message.subject, "Sale")
+        XCTAssertEqual(message.body, "Up to 50%")
+        XCTAssertEqual(message.url, "https://shop.test/sale")
+        XCTAssertEqual(message.icon, "https://img.test/i.png")
+        XCTAssertEqual(message.picture, "https://img.test/p.png")
+        let statistics = message.statistics
+        XCTAssertNotNil(statistics)
+        XCTAssertEqual(statistics?.opened, true)
+        XCTAssertEqual(statistics?.clicked, true)
+        XCTAssertEqual(statistics?.hardBounced, false)
+        XCTAssertEqual(statistics?.softBounced, true)
+        XCTAssertEqual(statistics?.complained, false)
+        XCTAssertEqual(statistics?.unsubscribed, false)
+        XCTAssertEqual(statistics?.purchased, true)
+    }
+
+    /// A message without channel, campaign id or statistics leaves them nil; a statistics field the
+    /// answer does not have is `false`, as on Android.
+    func test_notificationHistory_whatTheAnswerLacksIsNilOrFalse() {
+        let answer: [String: Any] = [
+            "payload": ["messages": [
+                ["type": "chain", "code": "c-2"],
+                ["type": "chain", "code": "c-3", "campaign_id": "not a number", "statistics": ["opened": true]],
+            ]],
+        ]
+
+        let wire = UserPayloadResponse(json: answer).toWire()
+
+        XCTAssertNil(wire.status)
+        XCTAssertNil(wire.messages[0].channel)
+        XCTAssertNil(wire.messages[0].campaignId)
+        XCTAssertNil(wire.messages[0].statistics)
+        XCTAssertNil(wire.messages[0].subject, "an empty field of the native model is nil")
+        XCTAssertNil(wire.messages[1].campaignId)
+        XCTAssertEqual(wire.messages[1].statistics?.opened, true)
+        XCTAssertEqual(wire.messages[1].statistics?.clicked, false)
+        XCTAssertEqual(wire.messages[1].statistics?.purchased, false)
+    }
+
     // MARK: - Requests
 
     func test_listingRequest_takesEveryField() throws {
