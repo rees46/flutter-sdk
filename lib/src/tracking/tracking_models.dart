@@ -27,7 +27,13 @@ enum TrackingSourceType {
   instantSearch('instant_search'),
   fullSearch('full_search'),
   stories('stories'),
-  webPushDigest('web_push_digest');
+  webPushDigest('web_push_digest'),
+
+  /// A banner of a slider (`sliders.get`).
+  slider('slider'),
+
+  /// An answer of the AI search agent (`search.agent`).
+  agentSearch('agent_search');
 
   const TrackingSourceType(this.wireValue);
 

@@ -184,6 +184,8 @@ void main() {
         'full_search',
         'stories',
         'web_push_digest',
+        'slider',
+        'agent_search',
       ]);
     });
   });
