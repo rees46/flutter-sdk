@@ -47,23 +47,42 @@ class ShopMirror {
     pushTokens = List<PushToken>.unmodifiable(
       snapshot.pushTokens.map(pushTokenFromWire),
     );
+    if (state != previous && !_states.isClosed) _states.add(state);
+  }
+
+  /// The instance was released: the state is [SdkState.notInitialized] for good,
+  /// [states] tells it and ends. The other values stay as they were.
+  void release() {
+    if (_states.isClosed) return;
+    final previous = state;
+    state = SdkState.notInitialized;
     if (state != previous) _states.add(state);
+    _states.close();
   }
 
   /// Completes once the shop works: [SdkState.ready], or [SdkState.retrying] with a
   /// device id from an earlier launch. Fails with [SdkErrorShopBlocked] once the
-  /// shop is refused.
+  /// shop is refused, and with [SdkErrorNotInitialized] once it is released first.
   Future<void> whenUsable() {
     final now = _outcome();
     if (now != null) return now;
+    if (_states.isClosed) {
+      return Future<void>.error(SdkException(const SdkErrorNotInitialized()));
+    }
     final completer = Completer<void>();
     late final StreamSubscription<SdkState> subscription;
-    subscription = states.listen((_) {
-      final outcome = _outcome();
-      if (outcome == null) return;
-      subscription.cancel();
-      completer.complete(outcome);
-    });
+    subscription = states.listen(
+      (_) {
+        final outcome = _outcome();
+        if (outcome == null) return;
+        subscription.cancel();
+        completer.complete(outcome);
+      },
+      onDone: () {
+        if (completer.isCompleted) return;
+        completer.completeError(SdkException(const SdkErrorNotInitialized()));
+      },
+    );
     return completer.future;
   }
 
@@ -96,6 +115,11 @@ class NativeEvents implements pigeon.PersonalizationStateFlutterApi {
   /// The mirror of [shopId], made on first use.
   ShopMirror shop(String shopId) =>
       _shops.putIfAbsent(shopId, () => ShopMirror(shopId));
+
+  /// [shopId]'s instance was released: its mirror tells [SdkState.notInitialized]
+  /// and stops, and goes back to the released handle, which keeps the last values;
+  /// the shop's next instance gets a new mirror. Null when the shop had none.
+  ShopMirror? release(String shopId) => _shops.remove(shopId)?..release();
 
   @override
   void onSnapshot(pigeon.SdkSnapshotWire snapshot) =>

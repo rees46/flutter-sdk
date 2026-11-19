@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:ui' show Rect;
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show PlatformException;
 
 import 'pigeon/personalization_api.g.dart' as pigeon;
 import 'category/category_response.dart';
 import 'collection/collection_response.dart';
+import 'core/handle_channel.dart';
 import 'core/native_events.dart';
 import 'errors/sdk_error.dart';
 import 'init/sdk_init_handler.dart';
@@ -55,9 +57,18 @@ import 'tracking/tracking_api.dart';
 /// `sdk.tracking.productView('37')` — over the native Android and iOS SDKs, which run
 /// the shop: its init, session, event queue, storage and requests. A failed call is
 /// an [SdkException] with the native error's type and codes.
+///
+/// At the root, besides the shop's identity and state: [flush] sends the queue now,
+/// [deleteUserCredentials] forgets the customer, [release] stops the instance.
 class PersonalizationSdk {
   final pigeon.PersonalizationHostApi _api;
-  final SdkInitHandler _initHandler;
+  late final SdkInitHandler _initHandler = SdkInitHandler(api: _api);
+
+  /// The channel of this handle's calls; closed by [release].
+  final HandleChannel _channel;
+
+  /// What the handle mirrored of its shop when it was released; null before.
+  ShopMirror? _releasedMirror;
   final PushNotificationCallbacks _pushCallbacks = PushNotificationCallbacks();
   late final PopupPresenter _popups = PopupPresenter(
     trackShown: (popupId) => _api.trackPopupShown(popupId, shopId),
@@ -136,9 +147,16 @@ class PersonalizationSdk {
   /// NPS, CSAT and CES ratings and the reviews of products.
   late final ReviewsApi reviews = ReviewsApi(_api, shopId);
 
-  PersonalizationSdk({pigeon.PersonalizationHostApi? api, this.shopId})
-    : _api = api ?? pigeon.PersonalizationHostApi(),
-      _initHandler = SdkInitHandler(api: api),
+  /// A handle of [shopId]. [api] stands in for the native channel in tests: its
+  /// calls are not closed by [release].
+  PersonalizationSdk({pigeon.PersonalizationHostApi? api, String? shopId})
+    : this._(api, shopId, HandleChannel());
+
+  PersonalizationSdk._(
+    pigeon.PersonalizationHostApi? api,
+    this.shopId,
+    this._channel,
+  ) : _api = api ?? pigeon.PersonalizationHostApi(binaryMessenger: _channel),
       _stateShopId = shopId {
     tracking = TrackingApi(
       _api,
@@ -155,21 +173,26 @@ class PersonalizationSdk {
   }
 
   ShopMirror? _mirror() {
+    if (_channel.isClosed) return _releasedMirror;
     final id = _stateShopId;
     return id == null ? null : NativeEvents.instance.shop(id);
   }
 
   /// Where the shop's native initialization stands; [SdkState.notInitialized]
-  /// before [REES46.initialize].
+  /// before [REES46.initialize] and after [release].
   SdkState get state => _mirror()?.state ?? SdkState.notInitialized;
 
-  /// The current [state] at once, then every change of it.
+  /// The current [state] at once, then every change of it; it ends with
+  /// [SdkState.notInitialized] once the handle is [release]d.
   Stream<SdkState> get stateChanges {
     final mirror = _mirror();
     if (mirror == null) return Stream<SdkState>.value(state);
     return Stream<SdkState>.multi((controller) {
       controller.add(mirror.state);
-      final subscription = mirror.states.listen(controller.add);
+      final subscription = mirror.states.listen(
+        controller.add,
+        onDone: controller.close,
+      );
       controller.onCancel = subscription.cancel;
     });
   }
@@ -240,6 +263,9 @@ class PersonalizationSdk {
   }
 
   Future<void> initialize(SdkInitConfig config) {
+    if (_channel.isClosed) {
+      return Future<void>.error(SdkException(const SdkErrorNotInitialized()));
+    }
     _popups.autoPresentation = config.enableAutoPopupPresentation ?? true;
     // The native side reports popups under the shop id it was initialized with.
     PopupDispatcher.instance.register(config.shopId, _popups);
@@ -250,6 +276,9 @@ class PersonalizationSdk {
 
   Future<void> _start(SdkInitConfig config) async {
     final snapshot = await _initHandler.initialize(config);
+    // Released while the native side started it: the shop's next instance owns the
+    // mirror now.
+    if (_channel.isClosed) throw SdkException(const SdkErrorNotInitialized());
     final mirror = NativeEvents.instance.shop(config.shopId)..apply(snapshot);
     await mirror.whenUsable();
   }
@@ -261,8 +290,62 @@ class PersonalizationSdk {
   /// launch — and fails with an [SdkException] (`shopBlocked`) once the server
   /// refused the shop, or with the error that kept the native SDK from starting it.
   /// [REES46.initialize] hands the handle back at once — await this to learn
-  /// whether the shop is up. Before [initialize] is called it completes at once.
+  /// whether the shop is up. Before [initialize] is called it completes at once;
+  /// released while it waits, it fails with `notInitialized`.
   Future<void> get ready => _ready ?? Future<void>.value();
+
+  /// Sends the shop's queued events now, without waiting for the queue's own
+  /// triggers. Completes once each event queued at the call was tried — sent, or
+  /// kept for later: no network, a server that asked to wait, an instance not
+  /// ready yet — so it promises no delivery. The only error is `notInitialized`,
+  /// after [release].
+  Future<void> flush() => sdkCall(() async {
+    _ensureLive();
+    await _api.flush(shopId);
+  });
+
+  /// Stops the shop's instance: nothing more is sent, the queued events stay on
+  /// the device for the next launch, and the instance leaves the registry —
+  /// [REES46.getInstance] no longer finds it. From then on every call of this
+  /// handle fails with `notInitialized`, [state] is [SdkState.notInitialized], and
+  /// [deviceId] and [sessionId] keep their last values. A new [REES46.initialize]
+  /// of the shop makes a fresh instance and a new handle. Releasing twice does
+  /// nothing.
+  void release() {
+    if (_channel.isClosed) return;
+    // The native release goes out before the channel closes: a call is handed to
+    // the channel as it is made.
+    unawaited(
+      _api.release(shopId).catchError((Object error) {
+        debugPrint('REES46: release of shop $shopId failed: $error');
+      }),
+    );
+    _channel.close();
+    PushDispatcher.instance.unregister(shopId, _pushCallbacks);
+    final id = _stateShopId;
+    if (id != null) {
+      PopupDispatcher.instance.unregister(id, _popups);
+      _releasedMirror = NativeEvents.instance.release(id);
+    }
+    HandleReleases.released(this);
+  }
+
+  /// Forgets the shop's customer on this device: the device id, the session, the
+  /// queued events, the saved `/init` answer and the rest of the customer's data;
+  /// the device's push token, A/B group and advertising id stay. The instance
+  /// stays and asks `/init` again: [deviceId] is null until the new device id
+  /// comes, and requests made meanwhile wait for it. Other shops keep their
+  /// customers. `notInitialized` after [release].
+  Future<void> deleteUserCredentials() => sdkCall(() async {
+    _ensureLive();
+    final snapshot = await _api.deleteUserCredentials(shopId);
+    if (!_channel.isClosed) NativeEvents.instance.onSnapshot(snapshot);
+  });
+
+  /// A released handle takes no call, whichever channel it was given.
+  void _ensureLive() {
+    if (_channel.isClosed) throw SdkException(const SdkErrorNotInitialized());
+  }
 
   /// Whether the SDK shows popups by itself: the server popups while no [onPopup] is
   /// set, and the other popups the SDK shows by itself (one shown by hand is shown all

@@ -26,6 +26,12 @@ class PopupDispatcher implements pigeon.PersonalizationPopupFlutterApi {
     _byShop[shopId] = presenter;
   }
 
+  /// Drops [presenter] as the sink for [shopId]'s popups, unless another handle
+  /// registered since.
+  void unregister(String shopId, PopupPresenter presenter) {
+    if (identical(_byShop[shopId], presenter)) _byShop.remove(shopId);
+  }
+
   @override
   void onPopup(String shopId, String popupJson) {
     final presenter = _byShop[shopId];

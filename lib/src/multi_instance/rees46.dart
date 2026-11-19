@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/handle_channel.dart';
 import '../core/native_events.dart';
 import '../models/push_models.dart';
 import '../personalization_sdk.dart';
@@ -74,9 +75,10 @@ class REES46 {
   // ---------------------------------------------------------------------------
 
   /// Initializes an SDK instance for [config] immediately and returns it. The
-  /// instance is registered, so it is also reachable via [getInstance]. Any
-  /// pending registration for the same shop is cleared. The native init goes on
-  /// after the handle is back; its outcome is [PersonalizationSdk.ready].
+  /// instance is registered, so it is also reachable via [getInstance] until it is
+  /// [PersonalizationSdk.release]d. Any pending registration for the same shop is
+  /// cleared. The native init goes on after the handle is back; its outcome is
+  /// [PersonalizationSdk.ready].
   static PersonalizationSdk initialize(REES46Config config) =>
       _instance._initialize(config);
 
@@ -155,6 +157,10 @@ class REES46 {
     final sdk = _factory(config);
     _live[config.shopId] = sdk;
     _pending.remove(config.shopId);
+    // A released handle leaves the registry; the shop can be initialized again.
+    HandleReleases.listen(sdk, () {
+      if (identical(_live[config.shopId], sdk)) _live.remove(config.shopId);
+    });
     return sdk;
   }
 

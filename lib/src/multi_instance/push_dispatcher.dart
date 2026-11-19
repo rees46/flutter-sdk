@@ -36,6 +36,16 @@ class PushDispatcher implements pigeon.PersonalizationFlutterApi {
     }
   }
 
+  /// Drops [callbacks] as the sink for [shopId] (or the default when null), unless
+  /// another handle registered since.
+  void unregister(String? shopId, PushNotificationCallbacks callbacks) {
+    if (shopId != null) {
+      if (identical(_byShop[shopId], callbacks)) _byShop.remove(shopId);
+    } else if (identical(_default, callbacks)) {
+      _default = null;
+    }
+  }
+
   PushNotificationCallbacks? _resolve(String? shopId) {
     if (shopId != null) {
       return _byShop[shopId]; // unknown shop → drop
