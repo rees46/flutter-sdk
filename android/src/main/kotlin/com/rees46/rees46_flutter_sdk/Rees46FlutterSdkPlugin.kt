@@ -64,6 +64,7 @@ import com.rees46.rees46_flutter_sdk.pigeon.SubscriptionStatusWire
 import com.rees46.rees46_flutter_sdk.pigeon.SubscriptionsUpdateRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.TrackingItemWire
 import com.rees46.rees46_flutter_sdk.pigeon.TrackingSourceWire
+import com.rees46.rees46_flutter_sdk.push.Rees46PushMessages
 import com.rees46.rees46_flutter_sdk.push.Rees46PushNotifier
 import com.rees46.rees46_flutter_sdk.push.Rees46ShopStore
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -71,12 +72,6 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.PluginRegistry
 import java.util.concurrent.ConcurrentHashMap
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -93,7 +88,6 @@ class Rees46FlutterSdkPlugin :
     ActivityAware,
     PersonalizationHostApi {
     private lateinit var applicationContext: Context
-    private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
     private var flutterApi: PersonalizationFlutterApi? = null
     private var popupApi: PersonalizationPopupFlutterApi? = null
     private var stateApi: PersonalizationStateFlutterApi? = null
@@ -107,6 +101,29 @@ class Rees46FlutterSdkPlugin :
 
     /** Which tokens Dart's `onToken` hears. */
     private val tokenReports = TokenReports()
+
+    /** The popup sinks this engine connected, by shop: only these go when the engine goes. */
+    private val popupSinks = ConcurrentHashMap<String, (String) -> Unit>()
+
+    /** The sink through which this engine's Dart takes a shop's popups. Tests record them. */
+    internal var popupSinkOf: (String) -> (String) -> Unit = { shopId ->
+        { json -> onMain { runCatching { popupApi?.onPopup(shopId, json) { } } } }
+    }
+
+    /**
+     * This engine's Dart side of the pushes the plugin draws: `onPushReceived` when one reached the app,
+     * `onPushDelivered` once its notification was drawn — tagged with the shop, which rides in the payload
+     * too, as on a tap.
+     */
+    internal val pushReceiver = object : Rees46PushMessages.Receiver {
+        override fun received(shopId: String, data: NotificationData) {
+            runCatching { flutterApi?.onPushReceived(shopId, data.toPayload() + (SHOP_ID_KEY to shopId)) { _ -> } }
+        }
+
+        override fun delivered(shopId: String, data: NotificationData) {
+            runCatching { flutterApi?.onPushDelivered(shopId, data.toPayload() + (SHOP_ID_KEY to shopId)) { _ -> } }
+        }
+    }
 
     private val onNewIntentListener =
         object : PluginRegistry.NewIntentListener {
@@ -150,12 +167,10 @@ class Rees46FlutterSdkPlugin :
         pushSinks = emptyList()
         subscriptions.values.forEach { it.cancel() }
         subscriptions.clear()
-        // Popups wait for the next engine instead of going to a channel nobody listens on.
-        PopupRelay.disconnectAll()
+        disconnectEngine()
         flutterApi = null
         popupApi = null
         stateApi = null
-        coroutineScope.cancel()
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
@@ -221,18 +236,12 @@ class Rees46FlutterSdkPlugin :
             subscriptions.remove(shopId)?.cancel()
             val sdk = BridgeShops.start(applicationContext, nativeConfig)
 
-            // Dart draws popups with the UI kit: every popup is kept back from the native SDK and handed
-            // over, those that came before Dart connected the shop among them. Dart decides whether to show
-            // it, and reports it once it is on screen.
-            PopupRelay.connect(shopId, sink = { json ->
-                onMain { runCatching { popupApi?.onPopup(shopId, json) { } } }
-            })
-
             // Persist so the cold-start push provider (Rees46PushInitProvider) starts this shop on a process
             // FCM spins up before Dart runs — otherwise the registry is empty and the push is dropped.
             Rees46ShopStore.save(applicationContext, nativeConfig)
             Rees46PushNotifier.ensureChannel(applicationContext)
-            installMessageListener()
+            Rees46PushMessages.install(applicationContext)
+            connectEngine(shopId)
 
             val state = sdk.onStateChange { emit(snapshotOf(sdk, it)) }
             val session = sdk.onSessionChange { emit(snapshotOf(sdk)) }
@@ -1014,27 +1023,26 @@ class Rees46FlutterSdkPlugin :
     // region pushes the plugin draws
 
     /**
-     * One process-global, shop-aware listener (not per instance) so a push for any shop routes here with its
-     * shop id: it draws a heads-up BigPicture notification (image, tap opens the app), reports it shown
-     * (`opened`: the bridge draws the notification, so the bridge reports it) and forwards the push to Dart
-     * (`onPushReceived` / `onPushDelivered`), tagged with its shop.
+     * This engine takes [shopId]'s popups — Dart draws them with the UI kit: every popup is kept back from
+     * the native SDK and handed over, those that came before Dart connected the shop among them; Dart
+     * decides whether to show it, and reports it once it is on screen — and the pushes the plugin draws.
      */
-    private fun installMessageListener() {
-        Rees46.setOnMessageListener { messageShopId, data ->
-            android.util.Log.d(Rees46PushNotifier.TAG, "onMessage (plugin listener) shop=$messageShopId id=${data.id}")
-            // The shop rides in the payload too, as on a tap.
-            val payload = data.toPayload() + (SHOP_ID_KEY to messageShopId)
-            // The listener fires on an FCM background thread, but the Pigeon channels are @UiThread: every
-            // call to Dart goes from the main thread, and the notification is drawn off it.
-            coroutineScope.launch {
-                runCatching { flutterApi?.onPushReceived(messageShopId, payload) { _ -> } }
-                val shown = withContext(Dispatchers.IO) {
-                    Rees46PushNotifier.show(applicationContext, data, messageShopId)
-                }
-                if (shown) Rees46PushNotifier.reportShown(messageShopId, data)
-                runCatching { flutterApi?.onPushDelivered(messageShopId, payload) { _ -> } }
-            }
-        }
+    internal fun connectEngine(shopId: String) {
+        val sink = popupSinkOf(shopId)
+        popupSinks.put(shopId, sink)?.let { PopupRelay.disconnect(shopId, it) }
+        PopupRelay.connect(shopId, sink)
+        Rees46PushMessages.attach(pushReceiver)
+    }
+
+    /**
+     * This engine went — Back out of the app, or a background engine (a messaging or work isolate) done:
+     * only what it connected goes. Another engine keeps its popups, and the plugin's listener keeps drawing
+     * the pushes, whether an engine is left or not.
+     */
+    internal fun disconnectEngine() {
+        popupSinks.forEach { (shopId, sink) -> PopupRelay.disconnect(shopId, sink) }
+        popupSinks.clear()
+        Rees46PushMessages.detach(pushReceiver)
     }
 
     /**

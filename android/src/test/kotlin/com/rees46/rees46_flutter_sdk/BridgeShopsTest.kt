@@ -145,14 +145,38 @@ internal class BridgeShopsTest {
     fun afterTheEngineWentPopupsWaitAgain() {
         val first = mutableListOf<String>()
         val second = mutableListOf<String>()
-        PopupRelay.connect("shop-1", { first += it }, now = 0)
-        PopupRelay.disconnectAll()
+        val sink: (String) -> Unit = { first += it }
+        PopupRelay.connect("shop-1", sink, now = 0)
+        PopupRelay.disconnect("shop-1", sink)
 
         PopupRelay.relay("shop-1", "held", now = 1_000)
         PopupRelay.connect("shop-1", { second += it }, now = 2_000)
 
         assertEquals(emptyList(), first)
         assertEquals(listOf("held"), second)
+    }
+
+    @Test
+    fun anEngineThatWentTakesOnlyItsOwnSinksAlong() {
+        val app = mutableListOf<String>()
+        val background = mutableListOf<String>()
+        val other = mutableListOf<String>()
+        val appSink: (String) -> Unit = { app += it }
+        val backgroundSink: (String) -> Unit = { background += it }
+        PopupRelay.connect("shop-1", appSink, now = 0)
+        PopupRelay.connect("shop-2", { other += it }, now = 0)
+        PopupRelay.connect("shop-1", backgroundSink, now = 0)
+
+        PopupRelay.relay("shop-1", "to the last engine", now = 1_000)
+        PopupRelay.disconnect("shop-1", backgroundSink)
+        PopupRelay.relay("shop-1", "back to the app", now = 2_000)
+        PopupRelay.relay("shop-2", "untouched", now = 2_000)
+        PopupRelay.disconnect("shop-1", backgroundSink)
+        PopupRelay.relay("shop-1", "still the app", now = 3_000)
+
+        assertEquals(listOf("to the last engine"), background)
+        assertEquals(listOf("back to the app", "still the app"), app)
+        assertEquals(listOf("untouched"), other)
     }
 }
 

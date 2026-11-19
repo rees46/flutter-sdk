@@ -81,15 +81,24 @@ internal object BridgeShops {
  * kept from the native presentation and handed to the shop's sink. A popup that comes while Dart has not
  * connected the shop yet (the provider started it at process start, the engine is still loading) waits up
  * to [HOLD_MS] for it; the native SDK never shows it.
+ *
+ * Several engines may connect a shop — the app's and a background one (a messaging or work isolate). The
+ * one connected last takes its popups; when an engine goes, only its own sinks go, and the shop's popups
+ * go back to the engine connected before it, or wait for the next one.
  */
 internal object PopupRelay {
 
     private class Held(val json: String, val at: Long)
 
-    private val sinks = ConcurrentHashMap<String, (String) -> Unit>()
-    private val held = ConcurrentHashMap<String, MutableList<Held>>()
+    /** Per shop, the sinks of the engines that connected it, the last connected last. */
+    private val sinks = HashMap<String, MutableList<(String) -> Unit>>()
+    private val held = HashMap<String, MutableList<Held>>()
 
     const val HOLD_MS = 60_000L
+
+    /** The time popups are held by. Tests set their own. */
+    @Volatile
+    internal var clock: () -> Long = { SystemClock.elapsedRealtime() }
 
     /** Keeps every popup of [sdk] from the native presentation and relays it. Runs on the main thread. */
     fun attach(sdk: SDK, shopId: String) {
@@ -99,33 +108,47 @@ internal object PopupRelay {
         }
     }
 
-    fun relay(shopId: String, json: String, now: Long = SystemClock.elapsedRealtime()) {
-        val sink = sinks[shopId]
-        if (sink != null) {
-            sink(json)
-            return
+    fun relay(shopId: String, json: String, now: Long = clock()) {
+        val sink = synchronized(this) {
+            sinks[shopId]?.lastOrNull() ?: run {
+                held.getOrPut(shopId) { mutableListOf() } += Held(json, now)
+                null
+            }
         }
-        val list = held.getOrPut(shopId) { mutableListOf() }
-        synchronized(list) { list += Held(json, now) }
+        sink?.invoke(json)
     }
 
-    /** Dart takes [shopId]'s popups from now on, and those held for it that are still fresh. */
-    fun connect(shopId: String, sink: (String) -> Unit, now: Long = SystemClock.elapsedRealtime()) {
-        sinks[shopId] = sink
-        val waiting = held.remove(shopId) ?: return
-        synchronized(waiting) { waiting.filter { now - it.at <= HOLD_MS } }.forEach { sink(it.json) }
+    /** Dart takes [shopId]'s popups through [sink] from now on, and those held for it that are still fresh. */
+    fun connect(shopId: String, sink: (String) -> Unit, now: Long = clock()) {
+        val waiting = synchronized(this) {
+            val engines = sinks.getOrPut(shopId) { mutableListOf() }
+            engines.removeAll { it === sink }
+            engines += sink
+            held.remove(shopId)
+        } ?: return
+        waiting.filter { now - it.at <= HOLD_MS }.forEach { sink(it.json) }
     }
 
-    /** The engine went: popups are held again until Dart connects. */
-    fun disconnectAll() = sinks.clear()
+    /**
+     * The engine that connected [sink] for [shopId] went: that sink only. Popups go to an engine connected
+     * before it, else they are held again until Dart connects.
+     */
+    @Synchronized
+    fun disconnect(shopId: String, sink: (String) -> Unit) {
+        val engines = sinks[shopId] ?: return
+        engines.removeAll { it === sink }
+        if (engines.isEmpty()) sinks.remove(shopId)
+    }
 
     /** [shopId] was released: its popups go to Dart no more, and none is held for it. */
+    @Synchronized
     fun disconnect(shopId: String) {
         sinks.remove(shopId)
         held.remove(shopId)
     }
 
     /** Test-only. */
+    @Synchronized
     internal fun reset() {
         sinks.clear()
         held.clear()
