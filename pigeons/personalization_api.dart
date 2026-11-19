@@ -800,6 +800,53 @@ class OrderWire {
   });
 }
 
+/// The released `setProfile`'s parameters (1.6.4), for the native SDKs' released profile method.
+class ProfileParamsWire {
+  final String? email;
+  final String? phone;
+  final String? loyaltyId;
+  final String? firstName;
+  final String? lastName;
+  final String? birthday;
+  final int? age;
+  final String? gender;
+  final String? location;
+  final String? advertisingId;
+  final String? fbId;
+  final String? vkId;
+  final String? telegramId;
+  final String? loyaltyCardLocation;
+  final String? loyaltyStatus;
+  final int? loyaltyBonuses;
+  final int? loyaltyBonusesToNextLevel;
+  final bool? boughtSomething;
+  final String? userId;
+  final String? customPropertiesJson;
+
+  const ProfileParamsWire({
+    this.email,
+    this.phone,
+    this.loyaltyId,
+    this.firstName,
+    this.lastName,
+    this.birthday,
+    this.age,
+    this.gender,
+    this.location,
+    this.advertisingId,
+    this.fbId,
+    this.vkId,
+    this.telegramId,
+    this.loyaltyCardLocation,
+    this.loyaltyStatus,
+    this.loyaltyBonuses,
+    this.loyaltyBonusesToNextLevel,
+    this.boughtSomething,
+    this.userId,
+    this.customPropertiesJson,
+  });
+}
+
 /// `SubscriptionsUpdateRequest`: `true` subscribes, `false` unsubscribes, `null` leaves it.
 class SubscriptionsUpdateRequestWire {
   final String? email;
@@ -1966,6 +2013,113 @@ abstract class PersonalizationHostApi {
     String orderId,
     String? shopId,
   );
+
+  // endregion
+
+  // region released methods
+  //
+  // The handle's deprecated methods as 1.6.4 had them: each calls the native SDKs' released method
+  // of the same meaning and answers with the JSON 1.6.4 handed Dart, or fails with 1.6.4's error
+  // codes (`bad_args`, `not_initialized`, `<method>_failed`, `serialization_failed`). The
+  // namespaces above stay the typed contract.
+
+  @async
+  String legacyGetRecommendation(String code, String? paramsJson, String? shopId);
+
+  @async
+  String legacyGetProductInfo(String itemId, String? shopId);
+
+  @async
+  String legacyGetProductsList(String? paramsJson, String? shopId);
+
+  @async
+  String legacySearchBlank(String? shopId);
+
+  @async
+  String legacySearchInstant(String query, String? paramsJson, String? shopId);
+
+  @async
+  String legacySearchFull(String query, String? paramsJson, String? shopId);
+
+  @async
+  String legacyJoinLoyalty(
+    String phone,
+    String? email,
+    String? firstName,
+    String? lastName,
+    String? shopId,
+  );
+
+  @async
+  String legacyGetLoyaltyStatus(String identifier, String? shopId);
+
+  @async
+  String legacyGetProfile(String? shopId);
+
+  @async
+  String legacyGetProductCounters(String item, String? shopId);
+
+  @async
+  String legacyGetCategory(
+    String category,
+    int? limit,
+    int? page,
+    String? paramsJson,
+    String? shopId,
+  );
+
+  @async
+  String legacyGetCollection(String collectionId, String? shopId);
+
+  @async
+  String legacyGetStories(String code, String? shopId);
+
+  @async
+  void legacySetProfile(ProfileParamsWire params, String? shopId);
+
+  @async
+  void legacyManageSubscription(
+    SubscriptionsUpdateRequestWire params,
+    String? shopId,
+  );
+
+  /// [customFieldsJson] is a JSON object string or null.
+  @async
+  void legacyTrackEvent(
+    String event,
+    int? time,
+    String? category,
+    String? label,
+    int? value,
+    String? customFieldsJson,
+    String? shopId,
+  );
+
+  @async
+  void legacyTrackPurchase(
+    String orderId,
+    double orderPrice,
+    List<PurchaseLineItemWire> items,
+    String? deliveryType,
+    String? deliveryAddress,
+    String? paymentType,
+    bool isTaxFree,
+    bool isGiftPackage,
+    String? promocode,
+    double? orderCash,
+    double? orderBonuses,
+    double? orderDelivery,
+    double? orderDiscount,
+    String? channel,
+    String? customJson,
+    String? recommendedSourceJson,
+    String? stream,
+    String? segment,
+    String? shopId,
+  );
+
+  /// The push token the native SDK stored, as 1.6.4 read it; null when there is none.
+  String? legacyGetStoredPushToken(String? shopId);
 
   // endregion
 

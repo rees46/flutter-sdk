@@ -1,9 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-
-import '../support/wire.dart';
 import 'package:rees46_sdk/src/ui/widgets/personalization_results_screen_base.dart'
     show facetValueLabel, jsonValueTitle;
 
@@ -50,23 +50,29 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   final List<Map<String, dynamic>> params = <Map<String, dynamic>>[];
 
   @override
-  Future<pigeon.SearchFullResponseWire> searchFull(
+  Future<String> legacySearchFull(
     String query,
-    pigeon.SearchFullRequestWire request,
+    String? paramsJson,
     String? shopId,
   ) async {
-    params.add(legacySearchParams(request));
-    return searchFullWireFromJson(_answer());
+    params.add(jsonDecode(paramsJson!) as Map<String, dynamic>);
+    return jsonEncode(_answer());
   }
 
   @override
-  Future<pigeon.ProductsListResponseWire> productsGetCategory(
+  Future<String> legacyGetCategory(
     String category,
-    pigeon.ProductsListRequestWire request,
+    int? limit,
+    int? page,
+    String? paramsJson,
     String? shopId,
   ) async {
-    params.add(legacyCategoryParams(request) ?? <String, dynamic>{});
-    return productsListWireFromJson(_answer());
+    params.add(
+      paramsJson == null
+          ? <String, dynamic>{}
+          : jsonDecode(paramsJson) as Map<String, dynamic>,
+    );
+    return jsonEncode(_answer());
   }
 
   @override

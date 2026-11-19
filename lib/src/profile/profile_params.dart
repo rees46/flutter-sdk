@@ -1,5 +1,6 @@
+import 'dart:convert';
+
 import '../models/values.dart';
-import '../namespaces/to_wire.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
 
 class ProfileParams {
@@ -49,8 +50,32 @@ class ProfileParams {
     this.customProperties,
   });
 
-  /// The request of [ProfileApi.set] these parameters make, as the native channel
-  /// takes it.
-  pigeon.ProfileUpdateRequestWire toWire() =>
-      profileUpdateRequestToWire(profileParamsToRequest(this));
+  /// These parameters as the released `setProfile` hands them to the native SDKs, as
+  /// in 1.6.4: the custom properties as a JSON object.
+  pigeon.ProfileParamsWire toWire() {
+    return pigeon.ProfileParamsWire(
+      email: email,
+      phone: phone,
+      loyaltyId: loyaltyId,
+      firstName: firstName,
+      lastName: lastName,
+      birthday: birthday,
+      age: age,
+      gender: gender?.wireValue,
+      location: location,
+      advertisingId: advertisingId,
+      fbId: fbId,
+      vkId: vkId,
+      telegramId: telegramId,
+      loyaltyCardLocation: loyaltyCardLocation,
+      loyaltyStatus: loyaltyStatus,
+      loyaltyBonuses: loyaltyBonuses,
+      loyaltyBonusesToNextLevel: loyaltyBonusesToNextLevel,
+      boughtSomething: boughtSomething,
+      userId: userId,
+      customPropertiesJson: customProperties == null
+          ? null
+          : jsonEncode(customProperties),
+    );
+  }
 }

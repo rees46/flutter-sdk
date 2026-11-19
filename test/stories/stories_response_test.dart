@@ -1,11 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/personalization_sdk.dart'
     show PersonalizationStoryViewerBridge;
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-
-import '../support/wire.dart';
 import 'package:rees46_sdk/src/stories/stories_response.dart';
 
 /// A trimmed copy of a real `stories/{code}` answer (block 115bd0b6…, demo shop): a
@@ -146,12 +146,9 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
       <String, Map<String, List<String>>>{};
 
   @override
-  Future<pigeon.StoriesBlockWire> storiesGet(
-    String code,
-    String? shopId,
-  ) async {
+  Future<String> legacyGetStories(String code, String? shopId) async {
     requests.add((code, shopId));
-    return storiesWireFromJson(_block);
+    return jsonEncode(_block);
   }
 
   @override

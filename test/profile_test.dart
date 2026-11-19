@@ -1,11 +1,12 @@
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
 const _setProfileChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileSet';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySetProfile';
 const _getSidChannel =
     'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid';
 const _getDidChannel =
@@ -64,11 +65,11 @@ void main() {
     }
   });
 
-  pigeon.ProfileUpdateRequestWire Function() captureWire() {
-    pigeon.ProfileUpdateRequestWire? captured;
+  pigeon.ProfileParamsWire Function() captureWire() {
+    pigeon.ProfileParamsWire? captured;
     mockChannel(_setProfileChannel, (ByteData? msg) async {
       final args = codec.decodeMessage(msg) as List<Object?>;
-      captured = args[0] as pigeon.ProfileUpdateRequestWire;
+      captured = args[0] as pigeon.ProfileParamsWire;
       return codec.encodeMessage(<Object?>[]);
     });
     return () => captured!;
@@ -78,7 +79,7 @@ void main() {
   // toWire: field mapping
   // ---------------------------------------------------------------------------
   group('ProfileParams.toWire field mapping', () {
-    test('the fields of ProfileUpdateRequest map one to one', () {
+    test('all string fields map to correct wire fields', () {
       final wire = const ProfileParams(
         email: 'user@example.com',
         phone: '+79001234567',
@@ -87,10 +88,12 @@ void main() {
         lastName: 'Petrov',
         birthday: '1990-06-15',
         location: 'Moscow',
+        advertisingId: 'adv-id-123',
         fbId: 'fb-456',
         vkId: 'vk-789',
         telegramId: 'tg-000',
-        age: 33,
+        loyaltyCardLocation: 'store-1',
+        loyaltyStatus: 'gold',
         userId: 'user-99',
       ).toWire();
 
@@ -101,41 +104,27 @@ void main() {
       expect(wire.lastName, 'Petrov');
       expect(wire.birthday, '1990-06-15');
       expect(wire.location, 'Moscow');
+      expect(wire.advertisingId, 'adv-id-123');
       expect(wire.fbId, 'fb-456');
       expect(wire.vkId, 'vk-789');
       expect(wire.telegramId, 'tg-000');
-      expect(wire.age, 33);
-      // The shop's id of the customer: sent as `id` and `external_id`.
-      expect(wire.externalId, 'user-99');
-      expect(wire.customProperties, isNull);
+      expect(wire.loyaltyCardLocation, 'store-1');
+      expect(wire.loyaltyStatus, 'gold');
+      expect(wire.userId, 'user-99');
     });
 
-    test('the fields the contract left out go as free-form fields', () {
+    test('int and bool fields map correctly', () {
       final wire = const ProfileParams(
-        advertisingId: 'adv-id-123',
-        loyaltyCardLocation: 'store-1',
-        loyaltyStatus: 'gold',
+        age: 33,
         loyaltyBonuses: 500,
         loyaltyBonusesToNextLevel: 1000,
         boughtSomething: true,
       ).toWire();
 
-      expect(wire.customProperties, {
-        'loyalty_card_location': 'store-1',
-        'loyalty_status': 'gold',
-        'loyalty_bonuses': 500,
-        'loyalty_bonuses_to_next_level': 1000,
-        'bought_something': '1',
-        // The test platform is Android.
-        'google_advertising_id': 'adv-id-123',
-      });
-    });
-
-    test('on iOS the advertising id is apple_advertising_id', () {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      addTearDown(() => debugDefaultTargetPlatformOverride = null);
-      final wire = const ProfileParams(advertisingId: 'idfa').toWire();
-      expect(wire.customProperties, {'apple_advertising_id': 'idfa'});
+      expect(wire.age, 33);
+      expect(wire.loyaltyBonuses, 500);
+      expect(wire.loyaltyBonusesToNextLevel, 1000);
+      expect(wire.boughtSomething, true);
     });
 
     test('all fields null when ProfileParams is empty', () {
@@ -143,20 +132,24 @@ void main() {
 
       expect(wire.email, isNull);
       expect(wire.phone, isNull);
-      expect(wire.externalId, isNull);
       expect(wire.loyaltyId, isNull);
-      expect(wire.telegramId, isNull);
-      expect(wire.fbId, isNull);
-      expect(wire.vkId, isNull);
       expect(wire.firstName, isNull);
       expect(wire.lastName, isNull);
-      expect(wire.gender, isNull);
       expect(wire.birthday, isNull);
       expect(wire.age, isNull);
+      expect(wire.gender, isNull);
       expect(wire.location, isNull);
-      expect(wire.kids, isNull);
-      expect(wire.cars, isNull);
-      expect(wire.customProperties, isNull);
+      expect(wire.advertisingId, isNull);
+      expect(wire.fbId, isNull);
+      expect(wire.vkId, isNull);
+      expect(wire.telegramId, isNull);
+      expect(wire.loyaltyCardLocation, isNull);
+      expect(wire.loyaltyStatus, isNull);
+      expect(wire.loyaltyBonuses, isNull);
+      expect(wire.loyaltyBonusesToNextLevel, isNull);
+      expect(wire.boughtSomething, isNull);
+      expect(wire.userId, isNull);
+      expect(wire.customPropertiesJson, isNull);
     });
   });
 
@@ -165,11 +158,17 @@ void main() {
   // ---------------------------------------------------------------------------
   group('ProfileParams.toWire gender', () {
     test('male → "m"', () {
-      expect(const ProfileParams(gender: Gender.male).toWire().gender, 'm');
+      expect(
+        const ProfileParams(gender: ProfileGender.male).toWire().gender,
+        'm',
+      );
     });
 
     test('female → "f"', () {
-      expect(const ProfileParams(gender: Gender.female).toWire().gender, 'f');
+      expect(
+        const ProfileParams(gender: ProfileGender.female).toWire().gender,
+        'f',
+      );
     });
 
     test('null gender → null wire gender', () {
@@ -178,34 +177,34 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // toWire: customProperties
+  // toWire: customProperties JSON
   // ---------------------------------------------------------------------------
   group('ProfileParams.toWire customProperties', () {
-    test('null customProperties → null', () {
-      expect(const ProfileParams().toWire().customProperties, isNull);
+    test('null customProperties → null customPropertiesJson', () {
+      expect(const ProfileParams().toWire().customPropertiesJson, isNull);
     });
 
-    test('customProperties keep their types', () {
+    test('customProperties serialized to valid JSON', () {
       final wire = const ProfileParams(
-        customProperties: {
-          'club': 'vip',
-          'score': 42,
-          'tags': ['a', 'b'],
-        },
+        customProperties: {'club': 'vip', 'score': 42},
       ).toWire();
 
-      expect(wire.customProperties!['club'], 'vip');
-      expect(wire.customProperties!['score'], 42);
-      expect(wire.customProperties!['tags'], ['a', 'b']);
+      expect(wire.customPropertiesJson, isNotNull);
+      final decoded =
+          jsonDecode(wire.customPropertiesJson!) as Map<String, dynamic>;
+      expect(decoded['club'], 'vip');
+      expect(decoded['score'], 42);
     });
 
-    test('customProperties with null value keeps the key', () {
+    test('customProperties with null value keeps key in JSON', () {
       final wire = const ProfileParams(
         customProperties: {'present': 'yes', 'absent': null},
       ).toWire();
 
-      expect(wire.customProperties!.containsKey('absent'), true);
-      expect(wire.customProperties!['absent'], isNull);
+      final decoded =
+          jsonDecode(wire.customPropertiesJson!) as Map<String, dynamic>;
+      expect(decoded.containsKey('absent'), true);
+      expect(decoded['absent'], isNull);
     });
   });
 
@@ -213,7 +212,7 @@ void main() {
   // setProfile channel
   // ---------------------------------------------------------------------------
   group('setProfile channel', () {
-    test('sends ProfileUpdateRequestWire at args[0]', () async {
+    test('sends ProfileParamsWire at args[0]', () async {
       final getWire = captureWire();
       await PersonalizationSdk().setProfile(
         const ProfileParams(email: 'a@b.com', phone: '+7000'),
@@ -230,7 +229,7 @@ void main() {
     test('gender is encoded as string in wire sent over channel', () async {
       final getWire = captureWire();
       await PersonalizationSdk().setProfile(
-        const ProfileParams(gender: Gender.female),
+        const ProfileParams(gender: ProfileGender.female),
       );
       expect(getWire().gender, 'f');
     });

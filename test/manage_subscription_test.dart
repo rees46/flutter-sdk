@@ -4,7 +4,7 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
 const _manageSubscriptionChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsManage';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyManageSubscription';
 
 // Push channels registered by PersonalizationFlutterApi.setUp in the SDK ctor.
 const _pushChannels = [
@@ -123,17 +123,4 @@ void main() {
     expect(sentArgs[1], 'shop-b');
     expect(sentWire().walletBulk, true);
   });
-
-  test(
-    'the released name is the contract request, wallet chains too',
-    () async {
-      const ManageSubscriptionParams params = SubscriptionsUpdateRequest(
-        walletChain: true,
-        walletTransactional: false,
-      );
-      await PersonalizationSdk().subscriptions.manage(params);
-      expect(sentWire().walletChain, true);
-      expect(sentWire().walletTransactional, false);
-    },
-  );
 }

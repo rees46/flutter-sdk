@@ -2138,6 +2138,95 @@ data class OrderWire (
 }
 
 /**
+ * The released `setProfile`'s parameters (1.6.4), for the native SDKs' released profile method.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProfileParamsWire (
+  val email: String? = null,
+  val phone: String? = null,
+  val loyaltyId: String? = null,
+  val firstName: String? = null,
+  val lastName: String? = null,
+  val birthday: String? = null,
+  val age: Long? = null,
+  val gender: String? = null,
+  val location: String? = null,
+  val advertisingId: String? = null,
+  val fbId: String? = null,
+  val vkId: String? = null,
+  val telegramId: String? = null,
+  val loyaltyCardLocation: String? = null,
+  val loyaltyStatus: String? = null,
+  val loyaltyBonuses: Long? = null,
+  val loyaltyBonusesToNextLevel: Long? = null,
+  val boughtSomething: Boolean? = null,
+  val userId: String? = null,
+  val customPropertiesJson: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProfileParamsWire {
+      val email = pigeonVar_list[0] as String?
+      val phone = pigeonVar_list[1] as String?
+      val loyaltyId = pigeonVar_list[2] as String?
+      val firstName = pigeonVar_list[3] as String?
+      val lastName = pigeonVar_list[4] as String?
+      val birthday = pigeonVar_list[5] as String?
+      val age = pigeonVar_list[6] as Long?
+      val gender = pigeonVar_list[7] as String?
+      val location = pigeonVar_list[8] as String?
+      val advertisingId = pigeonVar_list[9] as String?
+      val fbId = pigeonVar_list[10] as String?
+      val vkId = pigeonVar_list[11] as String?
+      val telegramId = pigeonVar_list[12] as String?
+      val loyaltyCardLocation = pigeonVar_list[13] as String?
+      val loyaltyStatus = pigeonVar_list[14] as String?
+      val loyaltyBonuses = pigeonVar_list[15] as Long?
+      val loyaltyBonusesToNextLevel = pigeonVar_list[16] as Long?
+      val boughtSomething = pigeonVar_list[17] as Boolean?
+      val userId = pigeonVar_list[18] as String?
+      val customPropertiesJson = pigeonVar_list[19] as String?
+      return ProfileParamsWire(email, phone, loyaltyId, firstName, lastName, birthday, age, gender, location, advertisingId, fbId, vkId, telegramId, loyaltyCardLocation, loyaltyStatus, loyaltyBonuses, loyaltyBonusesToNextLevel, boughtSomething, userId, customPropertiesJson)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      email,
+      phone,
+      loyaltyId,
+      firstName,
+      lastName,
+      birthday,
+      age,
+      gender,
+      location,
+      advertisingId,
+      fbId,
+      vkId,
+      telegramId,
+      loyaltyCardLocation,
+      loyaltyStatus,
+      loyaltyBonuses,
+      loyaltyBonusesToNextLevel,
+      boughtSomething,
+      userId,
+      customPropertiesJson,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProfileParamsWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
  * `SubscriptionsUpdateRequest`: `true` subscribes, `false` unsubscribes, `null` leaves it.
  *
  * Generated class from Pigeon that represents data sent in messages.
@@ -4001,160 +4090,165 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
       }
       172.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SubscriptionsUpdateRequestWire.fromList(it)
+          ProfileParamsWire.fromList(it)
         }
       }
       173.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SubscriptionStatusWire.fromList(it)
+          SubscriptionsUpdateRequestWire.fromList(it)
         }
       }
       174.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          BackInStockPropertiesWire.fromList(it)
+          SubscriptionStatusWire.fromList(it)
         }
       }
       175.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SegmentWire.fromList(it)
+          BackInStockPropertiesWire.fromList(it)
         }
       }
       176.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushTokenWire.fromList(it)
+          SegmentWire.fromList(it)
         }
       }
       177.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushActionWire.fromList(it)
+          PushTokenWire.fromList(it)
         }
       }
       178.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushTargetWire.fromList(it)
+          PushActionWire.fromList(it)
         }
       }
       179.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushPayloadWire.fromList(it)
+          PushTargetWire.fromList(it)
         }
       }
       180.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationStatisticsWire.fromList(it)
+          PushPayloadWire.fromList(it)
         }
       }
       181.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationMessageWire.fromList(it)
+          NotificationStatisticsWire.fromList(it)
         }
       }
       182.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationHistoryWire.fromList(it)
+          NotificationMessageWire.fromList(it)
         }
       }
       183.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoriesBlockWire.fromList(it)
+          NotificationHistoryWire.fromList(it)
         }
       }
       184.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryWire.fromList(it)
+          StoriesBlockWire.fromList(it)
         }
       }
       185.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StorySlideWire.fromList(it)
+          StoryWire.fromList(it)
         }
       }
       186.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryElementWire.fromList(it)
+          StorySlideWire.fromList(it)
         }
       }
       187.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryProductWire.fromList(it)
+          StoryElementWire.fromList(it)
         }
       }
       188.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PurchaseProbabilityWire.fromList(it)
+          StoryProductWire.fromList(it)
         }
       }
       189.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyMemberWire.fromList(it)
+          PurchaseProbabilityWire.fromList(it)
         }
       }
       190.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyLevelWire.fromList(it)
+          LoyaltyMemberWire.fromList(it)
         }
       }
       191.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyStatusWire.fromList(it)
+          LoyaltyLevelWire.fromList(it)
         }
       }
       192.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyPromotionWire.fromList(it)
+          LoyaltyStatusWire.fromList(it)
         }
       }
       193.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SliderWire.fromList(it)
+          LoyaltyPromotionWire.fromList(it)
         }
       }
       194.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SliderBannerWire.fromList(it)
+          SliderWire.fromList(it)
         }
       }
       195.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PollReviewWire.fromList(it)
+          SliderBannerWire.fromList(it)
         }
       }
       196.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NpsCategoryWire.fromList(it)
+          PollReviewWire.fromList(it)
         }
       }
       197.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          CsatCampaignWire.fromList(it)
+          NpsCategoryWire.fromList(it)
         }
       }
       198.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          CesCampaignWire.fromList(it)
+          CsatCampaignWire.fromList(it)
         }
       }
       199.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PollChannelWire.fromList(it)
+          CesCampaignWire.fromList(it)
         }
       }
       200.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductRatingSummaryWire.fromList(it)
+          PollChannelWire.fromList(it)
         }
       }
       201.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductReviewWire.fromList(it)
+          ProductRatingSummaryWire.fromList(it)
         }
       }
       202.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductReviewsResponseWire.fromList(it)
+          ProductReviewWire.fromList(it)
         }
       }
       203.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductReviewsResponseWire.fromList(it)
+        }
+      }
+      204.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           ClientReviewWire.fromList(it)
         }
@@ -4336,132 +4430,136 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
         stream.write(171)
         writeValue(stream, value.toList())
       }
-      is SubscriptionsUpdateRequestWire -> {
+      is ProfileParamsWire -> {
         stream.write(172)
         writeValue(stream, value.toList())
       }
-      is SubscriptionStatusWire -> {
+      is SubscriptionsUpdateRequestWire -> {
         stream.write(173)
         writeValue(stream, value.toList())
       }
-      is BackInStockPropertiesWire -> {
+      is SubscriptionStatusWire -> {
         stream.write(174)
         writeValue(stream, value.toList())
       }
-      is SegmentWire -> {
+      is BackInStockPropertiesWire -> {
         stream.write(175)
         writeValue(stream, value.toList())
       }
-      is PushTokenWire -> {
+      is SegmentWire -> {
         stream.write(176)
         writeValue(stream, value.toList())
       }
-      is PushActionWire -> {
+      is PushTokenWire -> {
         stream.write(177)
         writeValue(stream, value.toList())
       }
-      is PushTargetWire -> {
+      is PushActionWire -> {
         stream.write(178)
         writeValue(stream, value.toList())
       }
-      is PushPayloadWire -> {
+      is PushTargetWire -> {
         stream.write(179)
         writeValue(stream, value.toList())
       }
-      is NotificationStatisticsWire -> {
+      is PushPayloadWire -> {
         stream.write(180)
         writeValue(stream, value.toList())
       }
-      is NotificationMessageWire -> {
+      is NotificationStatisticsWire -> {
         stream.write(181)
         writeValue(stream, value.toList())
       }
-      is NotificationHistoryWire -> {
+      is NotificationMessageWire -> {
         stream.write(182)
         writeValue(stream, value.toList())
       }
-      is StoriesBlockWire -> {
+      is NotificationHistoryWire -> {
         stream.write(183)
         writeValue(stream, value.toList())
       }
-      is StoryWire -> {
+      is StoriesBlockWire -> {
         stream.write(184)
         writeValue(stream, value.toList())
       }
-      is StorySlideWire -> {
+      is StoryWire -> {
         stream.write(185)
         writeValue(stream, value.toList())
       }
-      is StoryElementWire -> {
+      is StorySlideWire -> {
         stream.write(186)
         writeValue(stream, value.toList())
       }
-      is StoryProductWire -> {
+      is StoryElementWire -> {
         stream.write(187)
         writeValue(stream, value.toList())
       }
-      is PurchaseProbabilityWire -> {
+      is StoryProductWire -> {
         stream.write(188)
         writeValue(stream, value.toList())
       }
-      is LoyaltyMemberWire -> {
+      is PurchaseProbabilityWire -> {
         stream.write(189)
         writeValue(stream, value.toList())
       }
-      is LoyaltyLevelWire -> {
+      is LoyaltyMemberWire -> {
         stream.write(190)
         writeValue(stream, value.toList())
       }
-      is LoyaltyStatusWire -> {
+      is LoyaltyLevelWire -> {
         stream.write(191)
         writeValue(stream, value.toList())
       }
-      is LoyaltyPromotionWire -> {
+      is LoyaltyStatusWire -> {
         stream.write(192)
         writeValue(stream, value.toList())
       }
-      is SliderWire -> {
+      is LoyaltyPromotionWire -> {
         stream.write(193)
         writeValue(stream, value.toList())
       }
-      is SliderBannerWire -> {
+      is SliderWire -> {
         stream.write(194)
         writeValue(stream, value.toList())
       }
-      is PollReviewWire -> {
+      is SliderBannerWire -> {
         stream.write(195)
         writeValue(stream, value.toList())
       }
-      is NpsCategoryWire -> {
+      is PollReviewWire -> {
         stream.write(196)
         writeValue(stream, value.toList())
       }
-      is CsatCampaignWire -> {
+      is NpsCategoryWire -> {
         stream.write(197)
         writeValue(stream, value.toList())
       }
-      is CesCampaignWire -> {
+      is CsatCampaignWire -> {
         stream.write(198)
         writeValue(stream, value.toList())
       }
-      is PollChannelWire -> {
+      is CesCampaignWire -> {
         stream.write(199)
         writeValue(stream, value.toList())
       }
-      is ProductRatingSummaryWire -> {
+      is PollChannelWire -> {
         stream.write(200)
         writeValue(stream, value.toList())
       }
-      is ProductReviewWire -> {
+      is ProductRatingSummaryWire -> {
         stream.write(201)
         writeValue(stream, value.toList())
       }
-      is ProductReviewsResponseWire -> {
+      is ProductReviewWire -> {
         stream.write(202)
         writeValue(stream, value.toList())
       }
-      is ClientReviewWire -> {
+      is ProductReviewsResponseWire -> {
         stream.write(203)
+        writeValue(stream, value.toList())
+      }
+      is ClientReviewWire -> {
+        stream.write(204)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -4596,6 +4694,26 @@ interface PersonalizationHostApi {
   fun reviewsGetCesCampaigns(shopId: String?, callback: (Result<List<CesCampaignWire>>) -> Unit)
   fun reviewsGetProductReviews(itemId: String, limit: Long?, offset: Long?, shopId: String?, callback: (Result<ProductReviewsResponseWire>) -> Unit)
   fun reviewsGetClientReviews(orderId: String, shopId: String?, callback: (Result<List<ClientReviewWire>>) -> Unit)
+  fun legacyGetRecommendation(code: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetProductInfo(itemId: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetProductsList(paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacySearchBlank(shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacySearchInstant(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacySearchFull(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyJoinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetLoyaltyStatus(identifier: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetProfile(shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetProductCounters(item: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetCategory(category: String, limit: Long?, page: Long?, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetCollection(collectionId: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetStories(code: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacySetProfile(params: ProfileParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun legacyManageSubscription(params: SubscriptionsUpdateRequestWire, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** [customFieldsJson] is a JSON object string or null. */
+  fun legacyTrackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFieldsJson: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun legacyTrackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, isGiftPackage: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** The push token the native SDK stored, as 1.6.4 read it; null when there is none. */
+  fun legacyGetStoredPushToken(shopId: String?): String?
   /**
    * Opens [url] with the system handler (browser or the app that claims the link).
    * Returns false when nothing could open it.
@@ -6259,6 +6377,405 @@ interface PersonalizationHostApi {
                 reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
               }
             }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetRecommendation$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val paramsJsonArg = args[1] as String?
+            val shopIdArg = args[2] as String?
+            api.legacyGetRecommendation(codeArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductInfo$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetProductInfo(itemIdArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductsList$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val paramsJsonArg = args[0] as String?
+            val shopIdArg = args[1] as String?
+            api.legacyGetProductsList(paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchBlank$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.legacySearchBlank(shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchInstant$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val queryArg = args[0] as String
+            val paramsJsonArg = args[1] as String?
+            val shopIdArg = args[2] as String?
+            api.legacySearchInstant(queryArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val queryArg = args[0] as String
+            val paramsJsonArg = args[1] as String?
+            val shopIdArg = args[2] as String?
+            api.legacySearchFull(queryArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyJoinLoyalty$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val phoneArg = args[0] as String
+            val emailArg = args[1] as String?
+            val firstNameArg = args[2] as String?
+            val lastNameArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.legacyJoinLoyalty(phoneArg, emailArg, firstNameArg, lastNameArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetLoyaltyStatus$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val identifierArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetLoyaltyStatus(identifierArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProfile$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.legacyGetProfile(shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductCounters$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetProductCounters(itemArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetCategory$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val categoryArg = args[0] as String
+            val limitArg = args[1] as Long?
+            val pageArg = args[2] as Long?
+            val paramsJsonArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.legacyGetCategory(categoryArg, limitArg, pageArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetCollection$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val collectionIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetCollection(collectionIdArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetStories$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetStories(codeArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySetProfile$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val paramsArg = args[0] as ProfileParamsWire
+            val shopIdArg = args[1] as String?
+            api.legacySetProfile(paramsArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyManageSubscription$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val paramsArg = args[0] as SubscriptionsUpdateRequestWire
+            val shopIdArg = args[1] as String?
+            api.legacyManageSubscription(paramsArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackEvent$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val eventArg = args[0] as String
+            val timeArg = args[1] as Long?
+            val categoryArg = args[2] as String?
+            val labelArg = args[3] as String?
+            val valueArg = args[4] as Long?
+            val customFieldsJsonArg = args[5] as String?
+            val shopIdArg = args[6] as String?
+            api.legacyTrackEvent(eventArg, timeArg, categoryArg, labelArg, valueArg, customFieldsJsonArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackPurchase$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val orderIdArg = args[0] as String
+            val orderPriceArg = args[1] as Double
+            val itemsArg = args[2] as List<PurchaseLineItemWire>
+            val deliveryTypeArg = args[3] as String?
+            val deliveryAddressArg = args[4] as String?
+            val paymentTypeArg = args[5] as String?
+            val isTaxFreeArg = args[6] as Boolean
+            val isGiftPackageArg = args[7] as Boolean
+            val promocodeArg = args[8] as String?
+            val orderCashArg = args[9] as Double?
+            val orderBonusesArg = args[10] as Double?
+            val orderDeliveryArg = args[11] as Double?
+            val orderDiscountArg = args[12] as Double?
+            val channelArg = args[13] as String?
+            val customJsonArg = args[14] as String?
+            val recommendedSourceJsonArg = args[15] as String?
+            val streamArg = args[16] as String?
+            val segmentArg = args[17] as String?
+            val shopIdArg = args[18] as String?
+            api.legacyTrackPurchase(orderIdArg, orderPriceArg, itemsArg, deliveryTypeArg, deliveryAddressArg, paymentTypeArg, isTaxFreeArg, isGiftPackageArg, promocodeArg, orderCashArg, orderBonusesArg, orderDeliveryArg, orderDiscountArg, channelArg, customJsonArg, recommendedSourceJsonArg, streamArg, segmentArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetStoredPushToken$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            val wrapped: List<Any?> = try {
+              listOf(api.legacyGetStoredPushToken(shopIdArg))
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)

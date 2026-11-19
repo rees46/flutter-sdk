@@ -43,6 +43,7 @@ import com.rees46.rees46_flutter_sdk.pigeon.ProductReviewsResponseWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProductWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProductsListRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProductsListResponseWire
+import com.rees46.rees46_flutter_sdk.pigeon.ProfileParamsWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileUpdateRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
@@ -102,6 +103,7 @@ class Rees46FlutterSdkPlugin :
 
     /** The SDK's push events and new tokens of every shop, for Dart. */
     private var pushSinks: List<Cancellable> = emptyList()
+
 
     private val onNewIntentListener =
         object : PluginRegistry.NewIntentListener {
@@ -842,6 +844,109 @@ class Rees46FlutterSdkPlugin :
     ) = call(shopId, callback) {
         it.reviews.getClientReviews(orderId, completion(callback) { l -> l.map { r -> r.toWire() } })
     }
+
+    // endregion
+
+    // region released methods (1.6.4)
+    //
+    // The handle's deprecated methods go to the native SDK's released methods, as in 1.6.4 ([LegacyMethods]).
+
+    private val legacy by lazy { LegacyMethods { shopId -> sdk(shopId) } }
+
+    override fun legacyGetRecommendation(code: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.getRecommendation(code, paramsJson, shopId, callback)
+
+    override fun legacyGetProductInfo(itemId: String, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.getProductInfo(itemId, shopId, callback)
+
+    override fun legacyGetProductsList(paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.getProductsList(paramsJson, shopId, callback)
+
+    override fun legacySearchBlank(shopId: String?, callback: (Result<String>) -> Unit) = legacy.searchBlank(shopId, callback)
+
+    override fun legacySearchInstant(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.searchInstant(query, paramsJson, shopId, callback)
+
+    override fun legacySearchFull(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.searchFull(query, paramsJson, shopId, callback)
+
+    override fun legacyJoinLoyalty(
+        phone: String,
+        email: String?,
+        firstName: String?,
+        lastName: String?,
+        shopId: String?,
+        callback: (Result<String>) -> Unit,
+    ) = legacy.joinLoyalty(phone, email, firstName, lastName, shopId, callback)
+
+    override fun legacyGetLoyaltyStatus(identifier: String, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.getLoyaltyStatus(identifier, shopId, callback)
+
+    override fun legacyGetProfile(shopId: String?, callback: (Result<String>) -> Unit) = legacy.getProfile(shopId, callback)
+
+    override fun legacyGetProductCounters(item: String, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.getProductCounters(item, shopId, callback)
+
+    override fun legacyGetCategory(
+        category: String,
+        limit: Long?,
+        page: Long?,
+        paramsJson: String?,
+        shopId: String?,
+        callback: (Result<String>) -> Unit,
+    ) = legacy.getCategory(category, limit, page, paramsJson, shopId, callback)
+
+    override fun legacyGetCollection(collectionId: String, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.getCollection(collectionId, shopId, callback)
+
+    override fun legacyGetStories(code: String, shopId: String?, callback: (Result<String>) -> Unit) =
+        legacy.getStories(code, shopId, callback)
+
+    override fun legacySetProfile(params: ProfileParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        legacy.setProfile(params, shopId, callback)
+
+    override fun legacyManageSubscription(params: SubscriptionsUpdateRequestWire, shopId: String?, callback: (Result<Unit>) -> Unit) =
+        legacy.manageSubscription(params, shopId, callback)
+
+    override fun legacyTrackEvent(
+        event: String,
+        time: Long?,
+        category: String?,
+        label: String?,
+        value: Long?,
+        customFieldsJson: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = legacy.trackEvent(event, time, category, label, value, customFieldsJson, shopId, callback)
+
+    override fun legacyTrackPurchase(
+        orderId: String,
+        orderPrice: Double,
+        items: List<PurchaseLineItemWire>,
+        deliveryType: String?,
+        deliveryAddress: String?,
+        paymentType: String?,
+        isTaxFree: Boolean,
+        isGiftPackage: Boolean,
+        promocode: String?,
+        orderCash: Double?,
+        orderBonuses: Double?,
+        orderDelivery: Double?,
+        orderDiscount: Double?,
+        channel: String?,
+        customJson: String?,
+        recommendedSourceJson: String?,
+        stream: String?,
+        segment: String?,
+        shopId: String?,
+        callback: (Result<Unit>) -> Unit,
+    ) = legacy.trackPurchase(
+        orderId, orderPrice, items, deliveryType, deliveryAddress, paymentType, isTaxFree, isGiftPackage, promocode,
+        orderCash, orderBonuses, orderDelivery, orderDiscount, channel, customJson, recommendedSourceJson, stream,
+        segment, shopId, callback,
+    )
+
+    override fun legacyGetStoredPushToken(shopId: String?): String? = legacy.getStoredPushToken(shopId)
 
     // endregion
 

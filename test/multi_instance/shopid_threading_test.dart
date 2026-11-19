@@ -12,7 +12,7 @@ void main() {
   const sidChannel =
       'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid';
   const trackChannel =
-      'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent';
+      'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackEvent';
 
   late List<Object?> capturedGetSidArgs;
   late List<Object?> capturedTrackArgs;
@@ -61,7 +61,7 @@ void main() {
 
   test('trackEvent sends shopId as the trailing argument', () async {
     await PersonalizationSdk(shopId: 'shop-B').trackEvent('view');
-    // event, time, category, label, value, customFields, shopId
+    // event, time, category, label, value, customFieldsJson, shopId
     expect(capturedTrackArgs.length, 7);
     expect(capturedTrackArgs.first, 'view');
     expect(capturedTrackArgs.last, 'shop-B');

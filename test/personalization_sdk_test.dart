@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
@@ -5,9 +7,9 @@ import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
 // Channel names from generated Pigeon code.
 const _trackEventChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackEvent';
 const _trackPurchaseChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackPurchase';
 // Stub channels registered by PersonalizationFlutterApi.setUp in the SDK ctor.
 const _onReceivedChannel =
     'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived';
@@ -85,21 +87,21 @@ void main() {
   });
 
   group('trackEvent channel args', () {
-    test('customFields null → arg[5] is null', () async {
+    test('customFields null → customFieldsJson (arg[5]) is null', () async {
       final getArgs = captureArgs(_trackEventChannel);
       await PersonalizationSdk().trackEvent('ev');
       expect(getArgs()[5], isNull);
     });
 
-    test('customFields provided → a map at arg[5]', () async {
+    test('customFields provided → valid JSON at arg[5]', () async {
       final getArgs = captureArgs(_trackEventChannel);
       await PersonalizationSdk().trackEvent(
         'ev',
         customFields: {'source': 'app', 'count': 3},
       );
-      final fields = getArgs()[5]! as Map<Object?, Object?>;
-      expect(fields['source'], 'app');
-      expect(fields['count'], 3);
+      final json = jsonDecode(getArgs()[5] as String) as Map<String, dynamic>;
+      expect(json['source'], 'app');
+      expect(json['count'], 3);
     });
 
     test('all positional args sent in correct order', () async {
@@ -118,18 +120,18 @@ void main() {
       expect(args[2], 'cat'); // category
       expect(args[3], 'lbl'); // label
       expect(args[4], 42); // value
-      expect(args[5], {'k': 'v'}); // customFields
+      expect(args[5], isNotNull); // customFieldsJson
     });
 
-    test('customFields with null value → key preserved', () async {
+    test('customFields with null value → key preserved in JSON', () async {
       final getArgs = captureArgs(_trackEventChannel);
       await PersonalizationSdk().trackEvent(
         'ev',
         customFields: {'present': 'yes', 'absent': null},
       );
-      final fields = getArgs()[5]! as Map<Object?, Object?>;
-      expect(fields.containsKey('absent'), true);
-      expect(fields['absent'], isNull);
+      final json = jsonDecode(getArgs()[5] as String) as Map<String, dynamic>;
+      expect(json.containsKey('absent'), true);
+      expect(json['absent'], isNull);
     });
   });
 
@@ -196,7 +198,7 @@ void main() {
       expect(wire.fashionSize, isNull);
     });
 
-    test('custom null → arg[14] is null', () async {
+    test('custom null → customJson (arg[14]) is null', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
@@ -206,7 +208,7 @@ void main() {
       expect(getArgs()[14], isNull);
     });
 
-    test('custom provided → a map at arg[14]', () async {
+    test('custom provided → valid JSON at arg[14]', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
@@ -214,10 +216,11 @@ void main() {
         items: [const PurchaseLineItem(id: 'x', amount: 1, price: 1.0)],
         custom: {'channel': 'app'},
       );
-      expect(getArgs()[14], {'channel': 'app'});
+      final json = jsonDecode(getArgs()[14] as String) as Map<String, dynamic>;
+      expect(json['channel'], 'app');
     });
 
-    test('recommendedSource provided → a map at arg[15]', () async {
+    test('recommendedSource provided → valid JSON at arg[15]', () async {
       final getArgs = captureArgs(_trackPurchaseChannel);
       await PersonalizationSdk().trackPurchase(
         orderId: 'ord',
@@ -225,7 +228,9 @@ void main() {
         items: [const PurchaseLineItem(id: 'x', amount: 1, price: 1.0)],
         recommendedSource: {'type': 'popular', 'code': 'rec-1'},
       );
-      expect(getArgs()[15], {'type': 'popular', 'code': 'rec-1'});
+      final json = jsonDecode(getArgs()[15] as String) as Map<String, dynamic>;
+      expect(json['type'], 'popular');
+      expect(json['code'], 'rec-1');
     });
 
     test('all positional args sent in correct order', () async {

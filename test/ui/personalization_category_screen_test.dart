@@ -1,11 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-
-import '../support/wire.dart';
 
 /// Host API that answers `getCategory` from memory: [total] products, a page of the
 /// requested limit at a time, with the facets the API sends with a category.
@@ -46,20 +45,24 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   };
 
   @override
-  Future<pigeon.ProductsListResponseWire> productsGetCategory(
+  Future<String> legacyGetCategory(
     String category,
-    pigeon.ProductsListRequestWire request,
+    int? limit,
+    int? page,
+    String? paramsJson,
     String? shopId,
   ) async {
-    final limit = request.limit;
-    final page = request.page;
     categories.add(category);
     pages.add(page!);
-    params.add(legacyCategoryParams(request));
+    params.add(
+      paramsJson == null
+          ? null
+          : jsonDecode(paramsJson) as Map<String, dynamic>,
+    );
     await hold?.future;
     if (failing.contains(page)) throw StateError('offline');
     final from = (page - 1) * limit!;
-    return productsListWireFromJson(<String, Object>{
+    return jsonEncode(<String, Object>{
       'products': <Map<String, Object>>[
         for (int i = from; i < from + limit && i < (available ?? total); i++)
           <String, Object>{'id': '$i', 'name': 'Item $i', 'price': i},

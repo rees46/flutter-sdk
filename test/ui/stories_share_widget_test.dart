@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-
-import '../support/wire.dart';
 import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
@@ -88,16 +86,8 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Future<String?> getDid(String? shopId) async => 'did-1';
 
   @override
-  Future<pigeon.StoriesBlockWire> storiesGet(
-    String code,
-    String? shopId,
-  ) async => storiesWireFromJson(
-    jsonDecode(
-          bridgeFeed ??
-              (throw StateError('the bridge feed is off with API v3')),
-        )
-        as Map<String, dynamic>,
-  );
+  Future<String> legacyGetStories(String code, String? shopId) async =>
+      bridgeFeed ?? (throw StateError('the bridge feed is off with API v3'));
 
   @override
   Future<Map<String, List<String>>> getStoriesSeen(String shop) async =>

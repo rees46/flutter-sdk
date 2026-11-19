@@ -2200,6 +2200,109 @@ struct OrderWire: Hashable {
   }
 }
 
+/// The released `setProfile`'s parameters (1.6.4), for the native SDKs' released profile method.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ProfileParamsWire: Hashable {
+  var email: String? = nil
+  var phone: String? = nil
+  var loyaltyId: String? = nil
+  var firstName: String? = nil
+  var lastName: String? = nil
+  var birthday: String? = nil
+  var age: Int64? = nil
+  var gender: String? = nil
+  var location: String? = nil
+  var advertisingId: String? = nil
+  var fbId: String? = nil
+  var vkId: String? = nil
+  var telegramId: String? = nil
+  var loyaltyCardLocation: String? = nil
+  var loyaltyStatus: String? = nil
+  var loyaltyBonuses: Int64? = nil
+  var loyaltyBonusesToNextLevel: Int64? = nil
+  var boughtSomething: Bool? = nil
+  var userId: String? = nil
+  var customPropertiesJson: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ProfileParamsWire? {
+    let email: String? = nilOrValue(pigeonVar_list[0])
+    let phone: String? = nilOrValue(pigeonVar_list[1])
+    let loyaltyId: String? = nilOrValue(pigeonVar_list[2])
+    let firstName: String? = nilOrValue(pigeonVar_list[3])
+    let lastName: String? = nilOrValue(pigeonVar_list[4])
+    let birthday: String? = nilOrValue(pigeonVar_list[5])
+    let age: Int64? = nilOrValue(pigeonVar_list[6])
+    let gender: String? = nilOrValue(pigeonVar_list[7])
+    let location: String? = nilOrValue(pigeonVar_list[8])
+    let advertisingId: String? = nilOrValue(pigeonVar_list[9])
+    let fbId: String? = nilOrValue(pigeonVar_list[10])
+    let vkId: String? = nilOrValue(pigeonVar_list[11])
+    let telegramId: String? = nilOrValue(pigeonVar_list[12])
+    let loyaltyCardLocation: String? = nilOrValue(pigeonVar_list[13])
+    let loyaltyStatus: String? = nilOrValue(pigeonVar_list[14])
+    let loyaltyBonuses: Int64? = nilOrValue(pigeonVar_list[15])
+    let loyaltyBonusesToNextLevel: Int64? = nilOrValue(pigeonVar_list[16])
+    let boughtSomething: Bool? = nilOrValue(pigeonVar_list[17])
+    let userId: String? = nilOrValue(pigeonVar_list[18])
+    let customPropertiesJson: String? = nilOrValue(pigeonVar_list[19])
+
+    return ProfileParamsWire(
+      email: email,
+      phone: phone,
+      loyaltyId: loyaltyId,
+      firstName: firstName,
+      lastName: lastName,
+      birthday: birthday,
+      age: age,
+      gender: gender,
+      location: location,
+      advertisingId: advertisingId,
+      fbId: fbId,
+      vkId: vkId,
+      telegramId: telegramId,
+      loyaltyCardLocation: loyaltyCardLocation,
+      loyaltyStatus: loyaltyStatus,
+      loyaltyBonuses: loyaltyBonuses,
+      loyaltyBonusesToNextLevel: loyaltyBonusesToNextLevel,
+      boughtSomething: boughtSomething,
+      userId: userId,
+      customPropertiesJson: customPropertiesJson
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      email,
+      phone,
+      loyaltyId,
+      firstName,
+      lastName,
+      birthday,
+      age,
+      gender,
+      location,
+      advertisingId,
+      fbId,
+      vkId,
+      telegramId,
+      loyaltyCardLocation,
+      loyaltyStatus,
+      loyaltyBonuses,
+      loyaltyBonusesToNextLevel,
+      boughtSomething,
+      userId,
+      customPropertiesJson,
+    ]
+  }
+  static func == (lhs: ProfileParamsWire, rhs: ProfileParamsWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
 /// `SubscriptionsUpdateRequest`: `true` subscribes, `false` unsubscribes, `null` leaves it.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
@@ -3982,68 +4085,70 @@ private class PersonalizationApiPigeonCodecReader: FlutterStandardReader {
     case 171:
       return OrderWire.fromList(self.readValue() as! [Any?])
     case 172:
-      return SubscriptionsUpdateRequestWire.fromList(self.readValue() as! [Any?])
+      return ProfileParamsWire.fromList(self.readValue() as! [Any?])
     case 173:
-      return SubscriptionStatusWire.fromList(self.readValue() as! [Any?])
+      return SubscriptionsUpdateRequestWire.fromList(self.readValue() as! [Any?])
     case 174:
-      return BackInStockPropertiesWire.fromList(self.readValue() as! [Any?])
+      return SubscriptionStatusWire.fromList(self.readValue() as! [Any?])
     case 175:
-      return SegmentWire.fromList(self.readValue() as! [Any?])
+      return BackInStockPropertiesWire.fromList(self.readValue() as! [Any?])
     case 176:
-      return PushTokenWire.fromList(self.readValue() as! [Any?])
+      return SegmentWire.fromList(self.readValue() as! [Any?])
     case 177:
-      return PushActionWire.fromList(self.readValue() as! [Any?])
+      return PushTokenWire.fromList(self.readValue() as! [Any?])
     case 178:
-      return PushTargetWire.fromList(self.readValue() as! [Any?])
+      return PushActionWire.fromList(self.readValue() as! [Any?])
     case 179:
-      return PushPayloadWire.fromList(self.readValue() as! [Any?])
+      return PushTargetWire.fromList(self.readValue() as! [Any?])
     case 180:
-      return NotificationStatisticsWire.fromList(self.readValue() as! [Any?])
+      return PushPayloadWire.fromList(self.readValue() as! [Any?])
     case 181:
-      return NotificationMessageWire.fromList(self.readValue() as! [Any?])
+      return NotificationStatisticsWire.fromList(self.readValue() as! [Any?])
     case 182:
-      return NotificationHistoryWire.fromList(self.readValue() as! [Any?])
+      return NotificationMessageWire.fromList(self.readValue() as! [Any?])
     case 183:
-      return StoriesBlockWire.fromList(self.readValue() as! [Any?])
+      return NotificationHistoryWire.fromList(self.readValue() as! [Any?])
     case 184:
-      return StoryWire.fromList(self.readValue() as! [Any?])
+      return StoriesBlockWire.fromList(self.readValue() as! [Any?])
     case 185:
-      return StorySlideWire.fromList(self.readValue() as! [Any?])
+      return StoryWire.fromList(self.readValue() as! [Any?])
     case 186:
-      return StoryElementWire.fromList(self.readValue() as! [Any?])
+      return StorySlideWire.fromList(self.readValue() as! [Any?])
     case 187:
-      return StoryProductWire.fromList(self.readValue() as! [Any?])
+      return StoryElementWire.fromList(self.readValue() as! [Any?])
     case 188:
-      return PurchaseProbabilityWire.fromList(self.readValue() as! [Any?])
+      return StoryProductWire.fromList(self.readValue() as! [Any?])
     case 189:
-      return LoyaltyMemberWire.fromList(self.readValue() as! [Any?])
+      return PurchaseProbabilityWire.fromList(self.readValue() as! [Any?])
     case 190:
-      return LoyaltyLevelWire.fromList(self.readValue() as! [Any?])
+      return LoyaltyMemberWire.fromList(self.readValue() as! [Any?])
     case 191:
-      return LoyaltyStatusWire.fromList(self.readValue() as! [Any?])
+      return LoyaltyLevelWire.fromList(self.readValue() as! [Any?])
     case 192:
-      return LoyaltyPromotionWire.fromList(self.readValue() as! [Any?])
+      return LoyaltyStatusWire.fromList(self.readValue() as! [Any?])
     case 193:
-      return SliderWire.fromList(self.readValue() as! [Any?])
+      return LoyaltyPromotionWire.fromList(self.readValue() as! [Any?])
     case 194:
-      return SliderBannerWire.fromList(self.readValue() as! [Any?])
+      return SliderWire.fromList(self.readValue() as! [Any?])
     case 195:
-      return PollReviewWire.fromList(self.readValue() as! [Any?])
+      return SliderBannerWire.fromList(self.readValue() as! [Any?])
     case 196:
-      return NpsCategoryWire.fromList(self.readValue() as! [Any?])
+      return PollReviewWire.fromList(self.readValue() as! [Any?])
     case 197:
-      return CsatCampaignWire.fromList(self.readValue() as! [Any?])
+      return NpsCategoryWire.fromList(self.readValue() as! [Any?])
     case 198:
-      return CesCampaignWire.fromList(self.readValue() as! [Any?])
+      return CsatCampaignWire.fromList(self.readValue() as! [Any?])
     case 199:
-      return PollChannelWire.fromList(self.readValue() as! [Any?])
+      return CesCampaignWire.fromList(self.readValue() as! [Any?])
     case 200:
-      return ProductRatingSummaryWire.fromList(self.readValue() as! [Any?])
+      return PollChannelWire.fromList(self.readValue() as! [Any?])
     case 201:
-      return ProductReviewWire.fromList(self.readValue() as! [Any?])
+      return ProductRatingSummaryWire.fromList(self.readValue() as! [Any?])
     case 202:
-      return ProductReviewsResponseWire.fromList(self.readValue() as! [Any?])
+      return ProductReviewWire.fromList(self.readValue() as! [Any?])
     case 203:
+      return ProductReviewsResponseWire.fromList(self.readValue() as! [Any?])
+    case 204:
       return ClientReviewWire.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -4182,101 +4287,104 @@ private class PersonalizationApiPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? OrderWire {
       super.writeByte(171)
       super.writeValue(value.toList())
-    } else if let value = value as? SubscriptionsUpdateRequestWire {
+    } else if let value = value as? ProfileParamsWire {
       super.writeByte(172)
       super.writeValue(value.toList())
-    } else if let value = value as? SubscriptionStatusWire {
+    } else if let value = value as? SubscriptionsUpdateRequestWire {
       super.writeByte(173)
       super.writeValue(value.toList())
-    } else if let value = value as? BackInStockPropertiesWire {
+    } else if let value = value as? SubscriptionStatusWire {
       super.writeByte(174)
       super.writeValue(value.toList())
-    } else if let value = value as? SegmentWire {
+    } else if let value = value as? BackInStockPropertiesWire {
       super.writeByte(175)
       super.writeValue(value.toList())
-    } else if let value = value as? PushTokenWire {
+    } else if let value = value as? SegmentWire {
       super.writeByte(176)
       super.writeValue(value.toList())
-    } else if let value = value as? PushActionWire {
+    } else if let value = value as? PushTokenWire {
       super.writeByte(177)
       super.writeValue(value.toList())
-    } else if let value = value as? PushTargetWire {
+    } else if let value = value as? PushActionWire {
       super.writeByte(178)
       super.writeValue(value.toList())
-    } else if let value = value as? PushPayloadWire {
+    } else if let value = value as? PushTargetWire {
       super.writeByte(179)
       super.writeValue(value.toList())
-    } else if let value = value as? NotificationStatisticsWire {
+    } else if let value = value as? PushPayloadWire {
       super.writeByte(180)
       super.writeValue(value.toList())
-    } else if let value = value as? NotificationMessageWire {
+    } else if let value = value as? NotificationStatisticsWire {
       super.writeByte(181)
       super.writeValue(value.toList())
-    } else if let value = value as? NotificationHistoryWire {
+    } else if let value = value as? NotificationMessageWire {
       super.writeByte(182)
       super.writeValue(value.toList())
-    } else if let value = value as? StoriesBlockWire {
+    } else if let value = value as? NotificationHistoryWire {
       super.writeByte(183)
       super.writeValue(value.toList())
-    } else if let value = value as? StoryWire {
+    } else if let value = value as? StoriesBlockWire {
       super.writeByte(184)
       super.writeValue(value.toList())
-    } else if let value = value as? StorySlideWire {
+    } else if let value = value as? StoryWire {
       super.writeByte(185)
       super.writeValue(value.toList())
-    } else if let value = value as? StoryElementWire {
+    } else if let value = value as? StorySlideWire {
       super.writeByte(186)
       super.writeValue(value.toList())
-    } else if let value = value as? StoryProductWire {
+    } else if let value = value as? StoryElementWire {
       super.writeByte(187)
       super.writeValue(value.toList())
-    } else if let value = value as? PurchaseProbabilityWire {
+    } else if let value = value as? StoryProductWire {
       super.writeByte(188)
       super.writeValue(value.toList())
-    } else if let value = value as? LoyaltyMemberWire {
+    } else if let value = value as? PurchaseProbabilityWire {
       super.writeByte(189)
       super.writeValue(value.toList())
-    } else if let value = value as? LoyaltyLevelWire {
+    } else if let value = value as? LoyaltyMemberWire {
       super.writeByte(190)
       super.writeValue(value.toList())
-    } else if let value = value as? LoyaltyStatusWire {
+    } else if let value = value as? LoyaltyLevelWire {
       super.writeByte(191)
       super.writeValue(value.toList())
-    } else if let value = value as? LoyaltyPromotionWire {
+    } else if let value = value as? LoyaltyStatusWire {
       super.writeByte(192)
       super.writeValue(value.toList())
-    } else if let value = value as? SliderWire {
+    } else if let value = value as? LoyaltyPromotionWire {
       super.writeByte(193)
       super.writeValue(value.toList())
-    } else if let value = value as? SliderBannerWire {
+    } else if let value = value as? SliderWire {
       super.writeByte(194)
       super.writeValue(value.toList())
-    } else if let value = value as? PollReviewWire {
+    } else if let value = value as? SliderBannerWire {
       super.writeByte(195)
       super.writeValue(value.toList())
-    } else if let value = value as? NpsCategoryWire {
+    } else if let value = value as? PollReviewWire {
       super.writeByte(196)
       super.writeValue(value.toList())
-    } else if let value = value as? CsatCampaignWire {
+    } else if let value = value as? NpsCategoryWire {
       super.writeByte(197)
       super.writeValue(value.toList())
-    } else if let value = value as? CesCampaignWire {
+    } else if let value = value as? CsatCampaignWire {
       super.writeByte(198)
       super.writeValue(value.toList())
-    } else if let value = value as? PollChannelWire {
+    } else if let value = value as? CesCampaignWire {
       super.writeByte(199)
       super.writeValue(value.toList())
-    } else if let value = value as? ProductRatingSummaryWire {
+    } else if let value = value as? PollChannelWire {
       super.writeByte(200)
       super.writeValue(value.toList())
-    } else if let value = value as? ProductReviewWire {
+    } else if let value = value as? ProductRatingSummaryWire {
       super.writeByte(201)
       super.writeValue(value.toList())
-    } else if let value = value as? ProductReviewsResponseWire {
+    } else if let value = value as? ProductReviewWire {
       super.writeByte(202)
       super.writeValue(value.toList())
-    } else if let value = value as? ClientReviewWire {
+    } else if let value = value as? ProductReviewsResponseWire {
       super.writeByte(203)
+      super.writeValue(value.toList())
+    } else if let value = value as? ClientReviewWire {
+      super.writeByte(204)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -4411,6 +4519,26 @@ protocol PersonalizationHostApi {
   func reviewsGetCesCampaigns(shopId: String?, completion: @escaping (Result<[CesCampaignWire], Error>) -> Void)
   func reviewsGetProductReviews(itemId: String, limit: Int64?, offset: Int64?, shopId: String?, completion: @escaping (Result<ProductReviewsResponseWire, Error>) -> Void)
   func reviewsGetClientReviews(orderId: String, shopId: String?, completion: @escaping (Result<[ClientReviewWire], Error>) -> Void)
+  func legacyGetRecommendation(code: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyGetProductInfo(itemId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyGetProductsList(paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacySearchBlank(shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacySearchInstant(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacySearchFull(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyJoinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyGetLoyaltyStatus(identifier: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyGetProfile(shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyGetProductCounters(item: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyGetCategory(category: String, limit: Int64?, page: Int64?, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyGetCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacyGetStories(code: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void)
+  func legacySetProfile(params: ProfileParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func legacyManageSubscription(params: SubscriptionsUpdateRequestWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// [customFieldsJson] is a JSON object string or null.
+  func legacyTrackEvent(event: String, time: Int64?, category: String?, label: String?, value: Int64?, customFieldsJson: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func legacyTrackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, isGiftPackage: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// The push token the native SDK stored, as 1.6.4 read it; null when there is none.
+  func legacyGetStoredPushToken(shopId: String?) throws -> String?
   /// Opens [url] with the system handler (browser or the app that claims the link).
   /// Returns false when nothing could open it.
   func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void)
@@ -5908,6 +6036,358 @@ class PersonalizationHostApiSetup {
       }
     } else {
       reviewsGetClientReviewsChannel.setMessageHandler(nil)
+    }
+    let legacyGetRecommendationChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetRecommendation\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetRecommendationChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let paramsJsonArg: String? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.legacyGetRecommendation(code: codeArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetRecommendationChannel.setMessageHandler(nil)
+    }
+    let legacyGetProductInfoChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductInfo\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetProductInfoChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.legacyGetProductInfo(itemId: itemIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetProductInfoChannel.setMessageHandler(nil)
+    }
+    let legacyGetProductsListChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductsList\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetProductsListChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let paramsJsonArg: String? = nilOrValue(args[0])
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.legacyGetProductsList(paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetProductsListChannel.setMessageHandler(nil)
+    }
+    let legacySearchBlankChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchBlank\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacySearchBlankChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.legacySearchBlank(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacySearchBlankChannel.setMessageHandler(nil)
+    }
+    let legacySearchInstantChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchInstant\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacySearchInstantChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let queryArg = args[0] as! String
+        let paramsJsonArg: String? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.legacySearchInstant(query: queryArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacySearchInstantChannel.setMessageHandler(nil)
+    }
+    let legacySearchFullChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacySearchFullChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let queryArg = args[0] as! String
+        let paramsJsonArg: String? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.legacySearchFull(query: queryArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacySearchFullChannel.setMessageHandler(nil)
+    }
+    let legacyJoinLoyaltyChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyJoinLoyalty\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyJoinLoyaltyChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let phoneArg = args[0] as! String
+        let emailArg: String? = nilOrValue(args[1])
+        let firstNameArg: String? = nilOrValue(args[2])
+        let lastNameArg: String? = nilOrValue(args[3])
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.legacyJoinLoyalty(phone: phoneArg, email: emailArg, firstName: firstNameArg, lastName: lastNameArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyJoinLoyaltyChannel.setMessageHandler(nil)
+    }
+    let legacyGetLoyaltyStatusChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetLoyaltyStatus\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetLoyaltyStatusChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let identifierArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.legacyGetLoyaltyStatus(identifier: identifierArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetLoyaltyStatusChannel.setMessageHandler(nil)
+    }
+    let legacyGetProfileChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProfile\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetProfileChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.legacyGetProfile(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetProfileChannel.setMessageHandler(nil)
+    }
+    let legacyGetProductCountersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductCounters\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetProductCountersChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let itemArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.legacyGetProductCounters(item: itemArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetProductCountersChannel.setMessageHandler(nil)
+    }
+    let legacyGetCategoryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetCategory\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetCategoryChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let categoryArg = args[0] as! String
+        let limitArg: Int64? = nilOrValue(args[1])
+        let pageArg: Int64? = nilOrValue(args[2])
+        let paramsJsonArg: String? = nilOrValue(args[3])
+        let shopIdArg: String? = nilOrValue(args[4])
+        api.legacyGetCategory(category: categoryArg, limit: limitArg, page: pageArg, paramsJson: paramsJsonArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetCategoryChannel.setMessageHandler(nil)
+    }
+    let legacyGetCollectionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetCollection\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetCollectionChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let collectionIdArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.legacyGetCollection(collectionId: collectionIdArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetCollectionChannel.setMessageHandler(nil)
+    }
+    let legacyGetStoriesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetStories\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetStoriesChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let codeArg = args[0] as! String
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.legacyGetStories(code: codeArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyGetStoriesChannel.setMessageHandler(nil)
+    }
+    let legacySetProfileChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySetProfile\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacySetProfileChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let paramsArg = args[0] as! ProfileParamsWire
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.legacySetProfile(params: paramsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacySetProfileChannel.setMessageHandler(nil)
+    }
+    let legacyManageSubscriptionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyManageSubscription\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyManageSubscriptionChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let paramsArg = args[0] as! SubscriptionsUpdateRequestWire
+        let shopIdArg: String? = nilOrValue(args[1])
+        api.legacyManageSubscription(params: paramsArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyManageSubscriptionChannel.setMessageHandler(nil)
+    }
+    /// [customFieldsJson] is a JSON object string or null.
+    let legacyTrackEventChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackEvent\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyTrackEventChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let eventArg = args[0] as! String
+        let timeArg: Int64? = nilOrValue(args[1])
+        let categoryArg: String? = nilOrValue(args[2])
+        let labelArg: String? = nilOrValue(args[3])
+        let valueArg: Int64? = nilOrValue(args[4])
+        let customFieldsJsonArg: String? = nilOrValue(args[5])
+        let shopIdArg: String? = nilOrValue(args[6])
+        api.legacyTrackEvent(event: eventArg, time: timeArg, category: categoryArg, label: labelArg, value: valueArg, customFieldsJson: customFieldsJsonArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyTrackEventChannel.setMessageHandler(nil)
+    }
+    let legacyTrackPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyTrackPurchaseChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let orderIdArg = args[0] as! String
+        let orderPriceArg = args[1] as! Double
+        let itemsArg = args[2] as! [PurchaseLineItemWire]
+        let deliveryTypeArg: String? = nilOrValue(args[3])
+        let deliveryAddressArg: String? = nilOrValue(args[4])
+        let paymentTypeArg: String? = nilOrValue(args[5])
+        let isTaxFreeArg = args[6] as! Bool
+        let isGiftPackageArg = args[7] as! Bool
+        let promocodeArg: String? = nilOrValue(args[8])
+        let orderCashArg: Double? = nilOrValue(args[9])
+        let orderBonusesArg: Double? = nilOrValue(args[10])
+        let orderDeliveryArg: Double? = nilOrValue(args[11])
+        let orderDiscountArg: Double? = nilOrValue(args[12])
+        let channelArg: String? = nilOrValue(args[13])
+        let customJsonArg: String? = nilOrValue(args[14])
+        let recommendedSourceJsonArg: String? = nilOrValue(args[15])
+        let streamArg: String? = nilOrValue(args[16])
+        let segmentArg: String? = nilOrValue(args[17])
+        let shopIdArg: String? = nilOrValue(args[18])
+        api.legacyTrackPurchase(orderId: orderIdArg, orderPrice: orderPriceArg, items: itemsArg, deliveryType: deliveryTypeArg, deliveryAddress: deliveryAddressArg, paymentType: paymentTypeArg, isTaxFree: isTaxFreeArg, isGiftPackage: isGiftPackageArg, promocode: promocodeArg, orderCash: orderCashArg, orderBonuses: orderBonusesArg, orderDelivery: orderDeliveryArg, orderDiscount: orderDiscountArg, channel: channelArg, customJson: customJsonArg, recommendedSourceJson: recommendedSourceJsonArg, stream: streamArg, segment: segmentArg, shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      legacyTrackPurchaseChannel.setMessageHandler(nil)
+    }
+    /// The push token the native SDK stored, as 1.6.4 read it; null when there is none.
+    let legacyGetStoredPushTokenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetStoredPushToken\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      legacyGetStoredPushTokenChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        do {
+          let result = try api.legacyGetStoredPushToken(shopId: shopIdArg)
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      legacyGetStoredPushTokenChannel.setMessageHandler(nil)
     }
     /// Opens [url] with the system handler (browser or the app that claims the link).
     /// Returns false when nothing could open it.

@@ -13,8 +13,7 @@ import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 class FakeHostApi extends pigeon.PersonalizationHostApi {
   String? did = 'DID123';
   String sid = 'SID123';
-  final List<pigeon.ProfileUpdateRequestWire> profiles =
-      <pigeon.ProfileUpdateRequestWire>[];
+  final List<pigeon.ProfileParamsWire> profiles = <pigeon.ProfileParamsWire>[];
   final List<pigeon.SubscriptionsUpdateRequestWire> subscriptions =
       <pigeon.SubscriptionsUpdateRequestWire>[];
   final List<String> opened = <String>[];
@@ -37,16 +36,16 @@ class FakeHostApi extends pigeon.PersonalizationHostApi {
   Future<String> getSid(String? shopId) async => sid;
 
   @override
-  Future<void> profileSet(
-    pigeon.ProfileUpdateRequestWire request,
+  Future<void> legacySetProfile(
+    pigeon.ProfileParamsWire params,
     String? shopId,
-  ) async => profiles.add(request);
+  ) async => profiles.add(params);
 
   @override
-  Future<void> subscriptionsManage(
-    pigeon.SubscriptionsUpdateRequestWire request,
+  Future<void> legacyManageSubscription(
+    pigeon.SubscriptionsUpdateRequestWire params,
     String? shopId,
-  ) async => subscriptions.add(request);
+  ) async => subscriptions.add(params);
 
   @override
   Future<bool> openUrl(String url) async {

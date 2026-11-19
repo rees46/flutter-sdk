@@ -1,20 +1,22 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
 const _joinChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyJoin';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyJoinLoyalty';
 const _statusChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyGetStatus';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetLoyaltyStatus';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final messageCodec = pigeon.PersonalizationHostApi.pigeonChannelCodec;
-  ByteData reply(Object value) => messageCodec.encodeMessage([value])!;
+  ByteData reply(String value) => messageCodec.encodeMessage([value])!;
 
-  void stub(String channel, Object json) {
+  void stub(String channel, String json) {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMessageHandler(channel, (_) async => reply(json));
   }
@@ -30,34 +32,28 @@ void main() {
   // joinLoyalty
   // -------------------------------------------------------------------------
   group('joinLoyalty', () {
-    test('answers with the member the native join made', () async {
-      stub(_joinChannel, pigeon.LoyaltyMemberWire(identifier: '79991234567'));
+    test('parses status and raw payload', () async {
+      stub(
+        _joinChannel,
+        jsonEncode({
+          'status': 'success',
+          'payload': {'member_id': 42, 'created': true},
+        }),
+      );
 
       final r = await PersonalizationSdk().joinLoyalty(phone: '79991234567');
       expect(r, isA<LoyaltyJoinResponse>());
       expect(r.status, equals('success'));
-      expect(r.payload['identifier'], equals('79991234567'));
+      expect(r.payload['member_id'], equals(42));
+      expect(r.payload['created'], isTrue);
     });
 
-    test('a failure of the native join is an SdkException', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler(
-            _joinChannel,
-            (_) async => messageCodec.encodeMessage([
-              'decoding',
-              'The answer could not be read',
-              <String, Object?>{'httpCode': null, 'serverCode': null},
-            ]),
-          );
+    test('missing payload defaults to empty map', () async {
+      stub(_joinChannel, jsonEncode({'status': 'success'}));
 
-      await expectLater(
-        PersonalizationSdk().joinLoyalty(phone: '79991234567'),
-        throwsA(
-          isA<SdkException>()
-              .having((e) => e.error, 'error', isA<SdkErrorDecoding>())
-              .having((e) => e, 'released type', isA<PlatformException>()),
-        ),
-      );
+      final r = await PersonalizationSdk().joinLoyalty(phone: '79991234567');
+      expect(r.status, equals('success'));
+      expect(r.payload, isEmpty);
     });
 
     test('empty phone throws ArgumentError (no native call)', () async {
@@ -75,14 +71,17 @@ void main() {
     test('parses member and level', () async {
       stub(
         _statusChannel,
-        pigeon.LoyaltyStatusWire(
-          isMember: true,
-          level: pigeon.LoyaltyLevelWire(
-            code: 'gold',
-            name: 'Gold',
-            expirationDate: '2026-12-31',
-          ),
-        ),
+        jsonEncode({
+          'status': 'success',
+          'payload': {
+            'member': true,
+            'level': {
+              'name': 'Gold',
+              'code': 'gold',
+              'expiration_date': '2026-12-31',
+            },
+          },
+        }),
       );
 
       final r = await PersonalizationSdk().getLoyaltyStatus('79991234567');
@@ -95,10 +94,24 @@ void main() {
     });
 
     test('absent level parses to null, non-member', () async {
-      stub(_statusChannel, pigeon.LoyaltyStatusWire(isMember: false));
+      stub(
+        _statusChannel,
+        jsonEncode({
+          'status': 'success',
+          'payload': {'member': false},
+        }),
+      );
 
       final r = await PersonalizationSdk().getLoyaltyStatus('79991234567');
       expect(r.member, isFalse);
+      expect(r.level, isNull);
+    });
+
+    test('missing payload parses to nulls', () async {
+      stub(_statusChannel, jsonEncode({'status': 'success'}));
+
+      final r = await PersonalizationSdk().getLoyaltyStatus('79991234567');
+      expect(r.member, isNull);
       expect(r.level, isNull);
     });
 

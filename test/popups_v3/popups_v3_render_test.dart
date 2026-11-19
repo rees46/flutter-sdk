@@ -24,7 +24,6 @@ import 'package:rees46_sdk/src/ui/popups_v3/popup_v3_view.dart';
 import 'package:rees46_sdk/src/ui/widgets/personalization_request_cache.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 
-import '../support/wire.dart';
 import 'fixtures.dart';
 import 'harness.dart';
 
@@ -95,9 +94,9 @@ class RecordingActions implements PopupV3Actions {
 /// (в виджет-тестах они не грузятся).
 class _RecommendationsHostApi extends FakeHostApi {
   @override
-  Future<pigeon.RecommendationResponseWire> recommendationsGet(
+  Future<String> legacyGetRecommendation(
     String code,
-    pigeon.RecommendationRequestWire request,
+    String? paramsJson,
     String? shopId,
   ) async {
     final answer =
@@ -111,7 +110,7 @@ class _RecommendationsHostApi extends FakeHostApi {
         ..remove('image_url')
         ..remove('image_url_resized');
     }
-    return recommendationWireFromJson(answer.cast<String, dynamic>());
+    return jsonEncode(answer);
   }
 
   @override

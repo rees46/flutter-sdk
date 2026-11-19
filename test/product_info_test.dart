@@ -1,9 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-
-import 'support/wire.dart';
 
 const _stubJson = {
   'id': 'item-42',
@@ -29,19 +29,21 @@ const _stubJson = {
 };
 
 const _channel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetInfo';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductInfo';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final messageCodec = pigeon.PersonalizationHostApi.pigeonChannelCodec;
 
-  ByteData reply(Map<String, dynamic> json) =>
-      messageCodec.encodeMessage([productWireFromJson(json)])!;
+  ByteData reply(String value) => messageCodec.encodeMessage([value])!;
 
   void stubOk([Map<String, dynamic>? json]) {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMessageHandler(_channel, (_) async => reply(json ?? _stubJson));
+        .setMockMessageHandler(
+          _channel,
+          (_) async => reply(jsonEncode(json ?? _stubJson)),
+        );
   }
 
   // -------------------------------------------------------------------------
@@ -71,7 +73,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(_channel, (msg) async {
             captured = messageCodec.decodeMessage(msg) as List<Object?>;
-            return reply(_stubJson);
+            return reply(jsonEncode(_stubJson));
           });
 
       await PersonalizationSdk().getProductInfo('item-99');

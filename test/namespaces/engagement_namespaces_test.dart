@@ -112,38 +112,30 @@ void main() {
       );
     });
 
-    test(
-      'readPushToken and the released getStoredPushToken ask natively',
-      () async {
-        final calls = stubValue(
-          'notificationsGetPushToken',
-          pigeon.PushTokenWire(token: 'apns-token', provider: 'apns'),
-        );
-        final sdk = PersonalizationSdk(shopId: 's');
-        final token = await sdk.notifications.readPushToken(
-          provider: PushProvider.apns,
-        );
-        final stored = await sdk.getStoredPushToken();
-        expect(calls[0], ['apns', 's']);
-        expect(calls[1], [null, 's']);
-        expect(token!.provider, PushProvider.apns);
-        expect(stored, 'apns-token');
-      },
-    );
+    test('readPushToken asks natively', () async {
+      final calls = stubValue(
+        'notificationsGetPushToken',
+        pigeon.PushTokenWire(token: 'apns-token', provider: 'apns'),
+      );
+      final token = await PersonalizationSdk(
+        shopId: 's',
+      ).notifications.readPushToken(provider: PushProvider.apns);
+      expect(calls.single, ['apns', 's']);
+      expect(token!.provider, PushProvider.apns);
+    });
 
-    test(
-      'the released getStoredPushToken is null for an unknown shop',
-      () async {
-        stubHost(
-          'notificationsGetPushToken',
-          (_) => errorReply('notInitialized'),
-        );
-        expect(
-          await PersonalizationSdk(shopId: 'x').getStoredPushToken(),
-          isNull,
-        );
-      },
-    );
+    test('the released getStoredPushToken reads the stored token as 1.6.4 '
+        'did, null for none', () async {
+      final calls = stubValue('legacyGetStoredPushToken', 'fcm-token');
+      final sdk = PersonalizationSdk(shopId: 's');
+      // ignore: deprecated_member_use_from_same_package
+      expect(await sdk.getStoredPushToken(), 'fcm-token');
+      expect(calls.single, ['s']);
+      stubValue('legacyGetStoredPushToken', null);
+      // ignore: deprecated_member_use_from_same_package
+      expect(await sdk.getStoredPushToken(), isNull);
+      unstub('legacyGetStoredPushToken');
+    });
 
     test('setPushToken sends the token and the provider', () async {
       final calls = stubValue('notificationsSetPushToken', null);

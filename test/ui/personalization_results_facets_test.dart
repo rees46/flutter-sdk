@@ -1,9 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-
-import '../support/wire.dart';
 import 'package:rees46_sdk/src/ui/widgets/personalization_results_screen_base.dart'
     show visibleFacets;
 
@@ -22,11 +22,11 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   final int facets;
 
   @override
-  Future<pigeon.SearchFullResponseWire> searchFull(
+  Future<String> legacySearchFull(
     String query,
-    pigeon.SearchFullRequestWire request,
+    String? paramsJson,
     String? shopId,
-  ) async => searchFullWireFromJson(<String, Object>{
+  ) async => jsonEncode(<String, Object>{
     'products': <Object>[
       <String, Object>{'id': '1', 'name': 'Item', 'price': 1},
     ],

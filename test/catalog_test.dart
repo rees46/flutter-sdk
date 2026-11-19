@@ -5,40 +5,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
-import 'support/wire.dart';
-
 const _profileChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGet';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProfile';
 const _countersChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetCounters';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductCounters';
 const _categoryChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetCategory';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetCategory';
 const _collectionChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.collectionsGet';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetCollection';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final messageCodec = pigeon.PersonalizationHostApi.pigeonChannelCodec;
-  // The native model each channel answers with, made from the API's JSON.
-  Object wireOf(String channel, Map<String, dynamic> json) => switch (channel) {
-    _profileChannel => pigeon.ProfileWire(
-      id: json['id'] as String?,
-      hasEmail: json['has_email'] as bool?,
-      gender: json['gender'] as String?,
-      boughtSomething: json['bought_something'] as bool?,
-      customProperties: (json['custom_properties'] as Map?)
-          ?.cast<String, Object?>(),
-    ),
-    _countersChannel => countersWireFromJson(json),
-    _categoryChannel => productsListWireFromJson(json),
-    _ => collectionWireFromJson(json),
-  };
+  ByteData reply(String value) => messageCodec.encodeMessage([value])!;
 
   void stub(String channel, String json) {
-    ByteData reply(String value) => messageCodec.encodeMessage([
-      wireOf(channel, jsonDecode(value) as Map<String, dynamic>),
-    ])!;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMessageHandler(channel, (_) async => reply(json));
   }
@@ -75,9 +57,7 @@ void main() {
       final r = await PersonalizationSdk().getProfile();
       expect(r, isA<ProfileResponse>());
       expect(r.id, equals('u1'));
-      // The native profile model has no email: without the shop's secret the
-      // API does not send it.
-      expect(r.email, isNull);
+      expect(r.email, equals('a@b.c'));
       expect(r.hasEmail, isTrue);
       expect(r.gender, equals('m'));
       expect(r.boughtSomething, isFalse);
@@ -171,12 +151,16 @@ void main() {
       expect(r.products, isEmpty);
     });
 
-    test('sends the filters as the request, none when unset', () async {
-      final api = _CategoryApi();
-      await PersonalizationSdk(
-        api: api,
-      ).getCategory('shoes', limit: 5, page: 2);
-      await PersonalizationSdk(api: api).getCategory(
+    test('sends the filters as params JSON, none when unset', () async {
+      final calls = <List<Object?>>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMessageHandler(_categoryChannel, (message) async {
+            calls.add(messageCodec.decodeMessage(message)! as List<Object?>);
+            return reply(jsonEncode({'products_total': 0}));
+          });
+
+      await PersonalizationSdk().getCategory('shoes', limit: 5, page: 2);
+      await PersonalizationSdk().getCategory(
         'shoes',
         brands: 'Bosch,Philips',
         locations: '1,2',
@@ -190,22 +174,20 @@ void main() {
         sortDir: 'asc',
       );
 
-      expect(api.categories, ['shoes', 'shoes']);
-      final first = api.requests[0];
-      expect([first.limit, first.page], [5, 2]);
-      expect(first.brands, isNull);
-      expect(first.filters, isNull);
-      expect(first.sortBy, isNull);
-      final second = api.requests[1];
-      expect(second.brands, ['Bosch', 'Philips']);
-      expect(second.locations, ['1', '2']);
-      // A facet with nothing checked is not a filter.
-      expect(second.filters, {
-        'Материал': ['Металл'],
+      expect(calls[0], ['shoes', 5, 2, null, null]);
+      expect(calls[1].take(3), ['shoes', null, null]);
+      expect(jsonDecode(calls[1][3]! as String), {
+        'brands': 'Bosch,Philips',
+        'locations': '1,2',
+        // A facet with nothing checked is not a filter.
+        'filters': {
+          'Материал': ['Металл'],
+        },
+        'price_min': 10.0,
+        'price_max': 99.5,
+        'sort_by': 'price',
+        'sort_dir': 'asc',
       });
-      expect([second.priceMin, second.priceMax], [10.0, 99.5]);
-      expect([second.sortBy, second.sortDir], ['price', 'asc']);
-      expect([second.limit, second.page], [null, null]);
     });
 
     test('empty category throws ArgumentError (no native call)', () async {
@@ -243,23 +225,4 @@ void main() {
       );
     });
   });
-}
-
-/// Captures the requests of `products.getCategory` before the codec: decoding a
-/// map of lists back in Dart casts lazily and throws, which the native side never
-/// does.
-class _CategoryApi extends pigeon.PersonalizationHostApi {
-  final categories = <String>[];
-  final requests = <pigeon.ProductsListRequestWire>[];
-
-  @override
-  Future<pigeon.ProductsListResponseWire> productsGetCategory(
-    String categoryId,
-    pigeon.ProductsListRequestWire request,
-    String? shopId,
-  ) async {
-    categories.add(categoryId);
-    requests.add(request);
-    return pigeon.ProductsListResponseWire(products: const []);
-  }
 }

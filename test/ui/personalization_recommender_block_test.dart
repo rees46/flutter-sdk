@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-
-import '../support/wire.dart';
 import 'package:rees46_sdk/src/ui/widgets/personalization_request_cache.dart';
 
 const String _code = 'e6249bb15043644bf25b135006149962';
@@ -45,26 +43,26 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Object? failure;
 
   @override
-  Future<pigeon.RecommendationResponseWire> recommendationsGet(
+  Future<String> legacyGetRecommendation(
     String code,
-    pigeon.RecommendationRequestWire request,
+    String? paramsJson,
     String? shopId,
   ) async {
-    recommendations.add(legacyRecommendationParams(request));
+    recommendations.add(paramsJson);
     await hold?.future;
     if (failure != null) throw failure!;
-    return recommendationWireFromJson(recommendation);
+    return jsonEncode(recommendation);
   }
 
   @override
-  Future<pigeon.CollectionResponseWire> collectionsGet(
+  Future<String> legacyGetCollection(
     String collectionId,
     String? shopId,
   ) async {
     collections.add(collectionId);
     await hold?.future;
     if (failure != null) throw failure!;
-    return collectionWireFromJson(collection);
+    return jsonEncode(collection);
   }
 
   @override

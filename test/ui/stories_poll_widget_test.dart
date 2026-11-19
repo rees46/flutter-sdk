@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
-
-import '../support/wire.dart';
 import 'package:rees46_sdk/src/ui/components/personalization_story_poll.dart';
 import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
@@ -1234,11 +1232,8 @@ class _HostApi extends pigeon.PersonalizationHostApi {
   Future<String> getSid(String? shopId) async => 'sid-1';
 
   @override
-  Future<pigeon.StoriesBlockWire> storiesGet(
-    String code,
-    String? shopId,
-  ) async =>
-      storiesWireFromJson(jsonDecode(bridgeFeed) as Map<String, dynamic>);
+  Future<String> legacyGetStories(String code, String? shopId) async =>
+      bridgeFeed;
 
   @override
   Future<Map<String, List<String>>> getStoriesSeen(String shop) async =>

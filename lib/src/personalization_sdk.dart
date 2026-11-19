@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui' show Rect;
 
 import 'package:flutter/foundation.dart' show debugPrint;
-import 'package:flutter/services.dart' show PlatformException;
 
 import 'pigeon/personalization_api.g.dart' as pigeon;
+import 'category/category_params.dart';
 import 'category/category_response.dart';
 import 'collection/collection_response.dart';
 import 'core/handle_channel.dart';
@@ -12,7 +13,6 @@ import 'core/native_events.dart';
 import 'errors/sdk_error.dart';
 import 'init/sdk_init_handler.dart';
 import 'loyalty/loyalty_response.dart';
-import 'models/request_models.dart';
 import 'models/values.dart';
 import 'multi_instance/push_dispatcher.dart';
 import 'multi_instance/push_event.dart';
@@ -30,7 +30,6 @@ import 'namespaces/segments_api.dart';
 import 'namespaces/sliders_api.dart';
 import 'namespaces/stories_api.dart';
 import 'namespaces/subscriptions_api.dart';
-import 'namespaces/to_wire.dart';
 import 'popups/in_app_popup.dart';
 import 'popups/popup_dispatcher.dart';
 import 'popups/popup_presenter.dart';
@@ -230,15 +229,11 @@ class PersonalizationSdk {
     return _api.getPlatformVersion();
   }
 
-  /// The push token the native SDK keeps for this shop; null when there is none.
+  /// The push token the native SDK stored for this shop, as 1.6.4 read it; null
+  /// when there is none.
   @Deprecated('Use sdk.notifications.getPushToken().')
-  Future<String?> getStoredPushToken() async {
-    try {
-      return (await notifications.readPushToken())?.token;
-    } on PlatformException {
-      // As released: an unknown shop, or one not initialized yet, has no token.
-      return null;
-    }
+  Future<String?> getStoredPushToken() {
+    return _api.legacyGetStoredPushToken(shopId);
   }
 
   /// Routes [payload] to the native `Rees46.handlePush` for [event] (the entry a
@@ -379,18 +374,32 @@ class PersonalizationSdk {
   /// be shown.
   Future<void> presentPopup(InAppPopup popup) => _popups.present(popup);
 
-  /// Writes the customer's profile: a delegate of [ProfileApi.set]. The fields
-  /// [ProfileUpdateRequest] has no place for go as the free-form fields the API
-  /// reads, as before.
-  @Deprecated('Use sdk.profile.set(ProfileUpdateRequest(…)).')
-  Future<void> setProfile(ProfileParams params) =>
-      profile.set(profileParamsToRequest(params));
+  // The deprecated methods below behave as in 1.6.4: each goes to the native SDKs'
+  // released method, answers with what 1.6.4 answered and fails with its
+  // PlatformException codes (`bad_args`, `not_initialized`, `<method>_failed`,
+  // `serialization_failed`). The namespaces are the typed replacements.
 
-  /// Subscribes or unsubscribes the client per channel and mailing type: a delegate
-  /// of [SubscriptionsApi.manage].
+  /// Writes the customer's profile through the native SDKs' released method.
+  @Deprecated('Use sdk.profile.set(ProfileUpdateRequest(…)).')
+  Future<void> setProfile(ProfileParams params) {
+    final wire = params.toWire();
+    PopupsV3Hooks.contextChanged(tracking, 'profile', 'set', wire.encode());
+    return _api.legacySetProfile(wire, shopId);
+  }
+
+  /// Subscribes or unsubscribes the client per channel and mailing type, see
+  /// [ManageSubscriptionParams].
   @Deprecated('Use sdk.subscriptions.manage(request).')
-  Future<void> manageSubscription(SubscriptionsUpdateRequest params) =>
-      subscriptions.manage(params);
+  Future<void> manageSubscription(SubscriptionsUpdateRequest params) {
+    final wire = params.toWire();
+    PopupsV3Hooks.contextChanged(
+      tracking,
+      'subscription',
+      'manage',
+      wire.encode(),
+    );
+    return _api.legacyManageSubscription(wire, shopId);
+  }
 
   /// The current session id from the native SDK; see [sessionId] for the copy the
   /// bridge keeps.
@@ -404,27 +413,33 @@ class PersonalizationSdk {
     return _api.getDid(shopId);
   }
 
-  /// A product's card: a delegate of [ProductsApi.getInfo]. A product the catalog
-  /// does not have is an empty [Product], as released.
   @Deprecated('Use sdk.products.getInfo(itemId).')
   Future<Product> getProductInfo(String itemId) async {
     if (itemId.isEmpty) {
       throw ArgumentError.value(itemId, 'itemId', 'must be non-empty');
     }
-    return await products.getInfo(itemId) ??
-        Product.fromJson(const <String, dynamic>{});
+    final json = await _api.legacyGetProductInfo(itemId, shopId);
+    return Product.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
-  /// The catalog's listing: a delegate of [ProductsApi.getList].
   @Deprecated('Use sdk.products.getList(request: ProductsListRequest(…)).')
-  Future<ProductsListResponse> getProductsList({ProductsListParams? params}) =>
-      products.getList(request: productsListParamsToRequest(params));
+  Future<ProductsListResponse> getProductsList({
+    ProductsListParams? params,
+  }) async {
+    final json = await _api.legacyGetProductsList(params?.toJson(), shopId);
+    return ProductsListResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
+  }
 
-  /// What to show in an empty search field: a delegate of [SearchApi.blank].
   @Deprecated('Use sdk.search.blank().')
-  Future<SearchBlankResponse> searchBlank() => search.blank();
+  Future<SearchBlankResponse> searchBlank() async {
+    final json = await _api.legacySearchBlank(shopId);
+    return SearchBlankResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
+  }
 
-  /// Instant search: a delegate of [SearchApi.instant].
   @Deprecated('Use sdk.search.instant(query, …).')
   Future<SearchInstantResponse> searchInstant(
     String query, {
@@ -433,16 +448,16 @@ class PersonalizationSdk {
     if (query.isEmpty) {
       throw ArgumentError.value(query, 'query', 'must be non-empty');
     }
-    return search.instant(
+    final json = await _api.legacySearchInstant(
       query,
-      locations: splitList(params?.locations),
-      excludedBrands: (params?.excludedBrands ?? const []).isEmpty
-          ? null
-          : params!.excludedBrands,
+      params?.toJson(),
+      shopId,
+    );
+    return SearchInstantResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
     );
   }
 
-  /// Full search: a delegate of [SearchApi.full].
   @Deprecated('Use sdk.search.full(query, request: SearchFullRequest(…)).')
   Future<SearchFullResponse> searchFull(
     String query, {
@@ -451,12 +466,14 @@ class PersonalizationSdk {
     if (query.isEmpty) {
       throw ArgumentError.value(query, 'query', 'must be non-empty');
     }
-    return search.full(query, request: searchParamsToRequest(params));
+    final json = await _api.legacySearchFull(query, params?.toJson(), shopId);
+    return SearchFullResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
   }
 
-  /// Joins the loyalty program: a delegate of [LoyaltyApi.join]. The answer's
-  /// [LoyaltyJoinResponse.payload] holds the member's `identifier`. [email] is not
-  /// sent: the program's join takes none.
+  /// Joins the loyalty program (native `loyalty/members/join`): the server's
+  /// envelope, its `status` and `payload`.
   @Deprecated('Use sdk.loyalty.join(phone, …).')
   Future<LoyaltyJoinResponse> joinLoyalty({
     required String phone,
@@ -467,59 +484,52 @@ class PersonalizationSdk {
     if (phone.isEmpty) {
       throw ArgumentError.value(phone, 'phone', 'must be non-empty');
     }
-    final member = await loyalty.join(
+    final json = await _api.legacyJoinLoyalty(
       phone,
-      firstName: firstName,
-      lastName: lastName,
+      email,
+      firstName,
+      lastName,
+      shopId,
     );
-    return LoyaltyJoinResponse(
-      status: 'success',
-      payload: <String, dynamic>{'identifier': member.identifier},
+    return LoyaltyJoinResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
     );
   }
 
-  /// The loyalty membership of [identifier] (a phone): a delegate of
-  /// [LoyaltyApi.getStatus].
+  /// The loyalty membership status (native `loyalty/members/status`) of
+  /// [identifier], a phone.
   @Deprecated('Use sdk.loyalty.getStatus(phone).')
   Future<LoyaltyStatusResponse> getLoyaltyStatus(String identifier) async {
     if (identifier.isEmpty) {
       throw ArgumentError.value(identifier, 'identifier', 'must be non-empty');
     }
-    final status = await loyalty.getStatus(identifier);
-    return LoyaltyStatusResponse(
-      status: 'success',
-      member: status.isMember,
-      level: status.level,
+    final json = await _api.legacyGetLoyaltyStatus(identifier, shopId);
+    return LoyaltyStatusResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
     );
   }
 
-  /// The customer's profile: a delegate of [ProfileApi.get]. Without the shop's
-  /// secret the API sends no email, phone or name, so they stay empty.
+  /// The current user's profile (native `ProfileManager.getProfile`).
   @Deprecated('Use sdk.profile.get().')
   Future<ProfileResponse> getProfile() async {
-    final p = await profile.get();
-    return ProfileResponse(
-      id: p.id,
-      hasEmail: p.hasEmail,
-      emailRegisteredAt: p.emailRegisteredAt,
-      gender: p.gender?.wireValue,
-      computedGender: p.computedGender?.wireValue,
-      boughtSomething: p.boughtSomething,
-      customProperties: Map<String, dynamic>.from(p.customProperties),
-    );
+    final json = await _api.legacyGetProfile(shopId);
+    return ProfileResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
-  /// A product's counters: a delegate of [ProductsApi.getCounters].
+  /// View / cart / purchase counters for [item].
   @Deprecated('Use sdk.products.getCounters(itemId).')
   Future<ProductCountersResponse> getProductCounters(String item) async {
     if (item.isEmpty) {
       throw ArgumentError.value(item, 'item', 'must be non-empty');
     }
-    return products.getCounters(item);
+    final json = await _api.legacyGetProductCounters(item, shopId);
+    return ProductCountersResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
   }
 
-  /// A category's listing: a delegate of [ProductsApi.getCategory]. [brands] and
-  /// [locations] are comma-separated; [filters] are the shop's facets by name.
+  /// A category listing. [brands] and [locations] are comma-separated; [filters]
+  /// are the shop's facets by name.
   @Deprecated(
     'Use sdk.products.getCategory(categoryId, request: CategoryRequest(…)).',
   )
@@ -538,27 +548,25 @@ class PersonalizationSdk {
     if (category.isEmpty) {
       throw ArgumentError.value(category, 'category', 'must be non-empty');
     }
-    final facets = <String, List<String>>{
-      for (final entry in (filters ?? const <String, List<String>>{}).entries)
-        if (entry.value.isNotEmpty) entry.key: entry.value,
-    };
-    return products.getCategory(
+    final json = await _api.legacyGetCategory(
       category,
-      request: CategoryRequest(
-        brands: splitList(brands),
-        locations: splitList(locations),
-        filters: facets.isEmpty ? null : facets,
+      limit,
+      page,
+      categoryParamsJson(
+        brands: brands,
+        locations: locations,
+        filters: filters,
         priceMin: priceMin,
         priceMax: priceMax,
-        sortBy: (sortBy ?? '').isEmpty ? null : SortBy(sortBy!),
-        sortDir: sortDirection(sortDir),
-        limit: limit,
-        page: page,
+        sortBy: sortBy,
+        sortDir: sortDir,
       ),
+      shopId,
     );
+    return CategoryResponse.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
-  /// A collection's products: a delegate of [CollectionsApi.get].
+  /// A merchandised collection's products.
   @Deprecated('Use sdk.collections.get(collectionId).')
   Future<CollectionResponse> getCollection(String collectionId) async {
     if (collectionId.isEmpty) {
@@ -568,12 +576,12 @@ class PersonalizationSdk {
         'must be non-empty',
       );
     }
-    return collections.get(collectionId);
+    final json = await _api.legacyGetCollection(collectionId, shopId);
+    return CollectionResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    );
   }
 
-  /// A recommendation block: a delegate of [RecommendationsApi.get].
-  /// [RecommendationParams.imageSize] has no counterpart in the native SDKs and is
-  /// not sent.
   @Deprecated(
     'Use sdk.recommendations.get(code, request: RecommendationRequest(…)).',
   )
@@ -584,13 +592,18 @@ class PersonalizationSdk {
     if (code.isEmpty) {
       throw ArgumentError.value(code, 'code', 'must be non-empty');
     }
-    return recommendations.get(
+    final json = await _api.legacyGetRecommendation(
       code,
-      request: recommendationParamsToRequest(params),
+      params?.toJson(),
+      shopId,
+    );
+    return RecommendationResponse.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
     );
   }
 
-  /// Custom event tracking: a delegate of [TrackingApi.custom].
+  /// Custom event tracking through the native SDKs' released method: completes
+  /// with the server's answer.
   @Deprecated('Use sdk.tracking.custom(event) instead.')
   Future<void> trackEvent(
     String event, {
@@ -599,16 +612,27 @@ class PersonalizationSdk {
     String? label,
     int? value,
     Map<String, Object?>? customFields,
-  }) => tracking.custom(
-    event,
-    time: time,
-    category: category,
-    label: label,
-    value: value,
-    customFields: customFields,
-  );
+  }) {
+    if (event.isEmpty) {
+      throw ArgumentError.value(event, 'event', 'must be non-empty');
+    }
+    final customFieldsJson = customFields == null
+        ? null
+        : jsonEncode(customFields);
+    PopupsV3Hooks.trackEvent(tracking, event);
+    return _api.legacyTrackEvent(
+      event,
+      time,
+      category,
+      label,
+      value,
+      customFieldsJson,
+      shopId,
+    );
+  }
 
-  /// Purchase tracking: a delegate of [TrackingApi.purchase].
+  /// Purchase tracking through the native SDKs' released method: completes with
+  /// the server's answer.
   @Deprecated('Use sdk.tracking.purchase(...) instead.')
   Future<void> trackPurchase({
     required String orderId,
@@ -629,38 +653,60 @@ class PersonalizationSdk {
     Map<String, Object?>? recommendedSource,
     String? stream,
     String? segment,
-  }) => tracking.purchase(
-    orderId: orderId,
-    orderPrice: orderPrice,
-    items: items,
-    deliveryType: deliveryType,
-    deliveryAddress: deliveryAddress,
-    paymentType: paymentType,
-    isTaxFree: isTaxFree,
-    isGiftPackage: isGiftPackage,
-    promocode: promocode,
-    orderCash: orderCash,
-    orderBonuses: orderBonuses,
-    orderDelivery: orderDelivery,
-    orderDiscount: orderDiscount,
-    channel: channel,
-    custom: custom,
-    recommendedSource: recommendedSource,
-    stream: stream,
-    segment: segment,
-  );
+  }) {
+    if (orderId.isEmpty) {
+      throw ArgumentError.value(orderId, 'orderId', 'must be non-empty');
+    }
+    if (items.isEmpty) {
+      throw ArgumentError.value(items, 'items', 'must be non-empty');
+    }
+    PopupsV3Hooks.purchase(tracking);
+    final wireItems = items
+        .map(
+          (e) => pigeon.PurchaseLineItemWire(
+            id: e.id,
+            amount: e.amount,
+            price: e.price,
+            lineId: e.lineId,
+            fashionSize: e.fashionSize,
+          ),
+        )
+        .toList();
+    return _api.legacyTrackPurchase(
+      orderId,
+      orderPrice,
+      wireItems,
+      deliveryType,
+      deliveryAddress,
+      paymentType,
+      isTaxFree,
+      isGiftPackage,
+      promocode,
+      orderCash,
+      orderBonuses,
+      orderDelivery,
+      orderDiscount,
+      channel,
+      custom == null ? null : jsonEncode(custom),
+      recommendedSource == null ? null : jsonEncode(recommendedSource),
+      stream,
+      segment,
+      shopId,
+    );
+  }
 }
 
 /// Stories of the UI kit: the block data and the system handler for its links. It lives
 /// in this library because it calls the host API the handle owns.
 extension PersonalizationStoriesBridge on PersonalizationSdk {
-  /// The stories block [code]: a delegate of [StoriesApi.get].
+  /// The stories block [code] (`stories/{code}`), the server's JSON as 1.6.4 read it.
   @Deprecated('Use sdk.stories.get(code).')
   Future<StoriesBlock> getStories(String code) async {
     if (code.isEmpty) {
       throw ArgumentError.value(code, 'code', 'must be non-empty');
     }
-    return stories.get(code);
+    final json = await _api.legacyGetStories(code, shopId);
+    return StoriesBlock.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
   /// Opens [url] with the system handler; `false` when nothing could open it.

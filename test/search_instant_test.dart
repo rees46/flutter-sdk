@@ -5,8 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
-import 'support/wire.dart';
-
 const _stubJson = {
   'products': [
     {
@@ -42,18 +40,15 @@ const _stubJson = {
 };
 
 const _channel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchInstant';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final messageCodec = pigeon.PersonalizationHostApi.pigeonChannelCodec;
 
-  ByteData reply(Object? value) => messageCodec.encodeMessage([
-    searchInstantWireFromJson(
-      jsonDecode(value as String) as Map<String, dynamic>,
-    ),
-  ])!;
+  ByteData reply(Object? value) =>
+      messageCodec.encodeMessage([value as String])!;
 
   void stubOk() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -104,12 +99,10 @@ void main() {
           });
 
       await PersonalizationSdk().searchInstant('iphone');
-      expect(captured![1], isNull, reason: 'locations');
-      expect(captured![2], isNull, reason: 'excludedMerchants');
-      expect(captured![3], isNull, reason: 'excludedBrands');
+      expect(captured![1], isNull);
     });
 
-    test('SearchInstantParams go as the arguments', () async {
+    test('SearchInstantParams serialised into paramsJson', () async {
       List<Object?>? captured;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(_channel, (msg) async {
@@ -125,8 +118,9 @@ void main() {
         ),
       );
 
-      expect(captured![1], equals(['msk']));
-      expect(captured![3], equals(['Samsung']));
+      final p = jsonDecode(captured![1] as String) as Map<String, dynamic>;
+      expect(p['locations'], equals('msk'));
+      expect(p['excluded_brands'], equals(['Samsung']));
     });
   });
 
