@@ -4,7 +4,7 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
 const _manageSubscriptionChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.manageSubscription';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyManageSubscription';
 
 // Push channels registered by PersonalizationFlutterApi.setUp in the SDK ctor.
 const _pushChannels = [
@@ -43,8 +43,8 @@ void main() {
     }
   });
 
-  pigeon.ManageSubscriptionParamsWire sentWire() =>
-      sentArgs[0] as pigeon.ManageSubscriptionParamsWire;
+  pigeon.SubscriptionsUpdateRequestWire sentWire() =>
+      sentArgs[0] as pigeon.SubscriptionsUpdateRequestWire;
 
   test(
     'contacts and Telegram, WhatsApp, Max, Wallet flags reach the bridge',

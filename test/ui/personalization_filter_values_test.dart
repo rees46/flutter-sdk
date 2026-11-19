@@ -50,7 +50,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   final List<Map<String, dynamic>> params = <Map<String, dynamic>>[];
 
   @override
-  Future<String> searchFull(
+  Future<String> legacySearchFull(
     String query,
     String? paramsJson,
     String? shopId,
@@ -60,7 +60,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   }
 
   @override
-  Future<String> getCategory(
+  Future<String> legacyGetCategory(
     String category,
     int? limit,
     int? page,

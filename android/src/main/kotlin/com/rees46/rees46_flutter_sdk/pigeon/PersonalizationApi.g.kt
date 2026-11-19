@@ -90,7 +90,15 @@ data class InitConfig (
   val autoSendPushToken: Boolean,
   val sendAdvertisingId: Boolean,
   val enableAutoPopupPresentation: Boolean,
-  val needReInitialization: Boolean
+  val needReInitialization: Boolean,
+  /** The host of API v3 (polls, the search agent, predict); null — the native default. */
+  val appDomain: String? = null,
+  /** A `did` the app kept from another SDK; taken only when the shop has none yet. */
+  val deviceId: String? = null,
+  /** `debug`, `info`, `warning`, `error` or `none`; null — from [enableLogs]. */
+  val logLevel: String? = null,
+  /** The prefix of the shop's storage; null — the shop id. */
+  val storageKey: String? = null
 )
  {
   companion object {
@@ -103,7 +111,11 @@ data class InitConfig (
       val sendAdvertisingId = pigeonVar_list[5] as Boolean
       val enableAutoPopupPresentation = pigeonVar_list[6] as Boolean
       val needReInitialization = pigeonVar_list[7] as Boolean
-      return InitConfig(shopId, apiDomain, stream, enableLogs, autoSendPushToken, sendAdvertisingId, enableAutoPopupPresentation, needReInitialization)
+      val appDomain = pigeonVar_list[8] as String?
+      val deviceId = pigeonVar_list[9] as String?
+      val logLevel = pigeonVar_list[10] as String?
+      val storageKey = pigeonVar_list[11] as String?
+      return InitConfig(shopId, apiDomain, stream, enableLogs, autoSendPushToken, sendAdvertisingId, enableAutoPopupPresentation, needReInitialization, appDomain, deviceId, logLevel, storageKey)
     }
   }
   fun toList(): List<Any?> {
@@ -116,10 +128,59 @@ data class InitConfig (
       sendAdvertisingId,
       enableAutoPopupPresentation,
       needReInitialization,
+      appDomain,
+      deviceId,
+      logLevel,
+      storageKey,
     )
   }
   override fun equals(other: Any?): Boolean {
     if (other !is InitConfig) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * One message of the native SDK's log (`Rees46.setLogHandler`): [level] is `debug`, `info`,
+ * `warning` or `error`; [context] holds no personal data.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SdkLogMessageWire (
+  val level: String,
+  val code: String,
+  val message: String,
+  val shopId: String? = null,
+  val context: Map<String, Any?>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SdkLogMessageWire {
+      val level = pigeonVar_list[0] as String
+      val code = pigeonVar_list[1] as String
+      val message = pigeonVar_list[2] as String
+      val shopId = pigeonVar_list[3] as String?
+      val context = pigeonVar_list[4] as Map<String, Any?>
+      return SdkLogMessageWire(level, code, message, shopId, context)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      level,
+      code,
+      message,
+      shopId,
+      context,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SdkLogMessageWire) {
       return false
     }
     if (this === other) {
@@ -167,210 +228,6 @@ data class PurchaseLineItemWire (
   }
   override fun equals(other: Any?): Boolean {
     if (other !is PurchaseLineItemWire) {
-      return false
-    }
-    if (this === other) {
-      return true
-    }
-    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
-
-  override fun hashCode(): Int = toList().hashCode()
-}
-
-/**
- * Wire format for profile fields sent to native SDK.
- * All fields are optional — only non-null values are forwarded.
- * [birthday] must be a "yyyy-MM-dd" string.
- * [gender] must be "m" or "f".
- * [customPropertiesJson] is a JSON object string or null.
- *
- * Generated class from Pigeon that represents data sent in messages.
- */
-data class ProfileParamsWire (
-  val email: String? = null,
-  val phone: String? = null,
-  val loyaltyId: String? = null,
-  val firstName: String? = null,
-  val lastName: String? = null,
-  val birthday: String? = null,
-  val age: Long? = null,
-  val gender: String? = null,
-  val location: String? = null,
-  val advertisingId: String? = null,
-  val fbId: String? = null,
-  val vkId: String? = null,
-  val telegramId: String? = null,
-  val loyaltyCardLocation: String? = null,
-  val loyaltyStatus: String? = null,
-  val loyaltyBonuses: Long? = null,
-  val loyaltyBonusesToNextLevel: Long? = null,
-  val boughtSomething: Boolean? = null,
-  val userId: String? = null,
-  val customPropertiesJson: String? = null
-)
- {
-  companion object {
-    fun fromList(pigeonVar_list: List<Any?>): ProfileParamsWire {
-      val email = pigeonVar_list[0] as String?
-      val phone = pigeonVar_list[1] as String?
-      val loyaltyId = pigeonVar_list[2] as String?
-      val firstName = pigeonVar_list[3] as String?
-      val lastName = pigeonVar_list[4] as String?
-      val birthday = pigeonVar_list[5] as String?
-      val age = pigeonVar_list[6] as Long?
-      val gender = pigeonVar_list[7] as String?
-      val location = pigeonVar_list[8] as String?
-      val advertisingId = pigeonVar_list[9] as String?
-      val fbId = pigeonVar_list[10] as String?
-      val vkId = pigeonVar_list[11] as String?
-      val telegramId = pigeonVar_list[12] as String?
-      val loyaltyCardLocation = pigeonVar_list[13] as String?
-      val loyaltyStatus = pigeonVar_list[14] as String?
-      val loyaltyBonuses = pigeonVar_list[15] as Long?
-      val loyaltyBonusesToNextLevel = pigeonVar_list[16] as Long?
-      val boughtSomething = pigeonVar_list[17] as Boolean?
-      val userId = pigeonVar_list[18] as String?
-      val customPropertiesJson = pigeonVar_list[19] as String?
-      return ProfileParamsWire(email, phone, loyaltyId, firstName, lastName, birthday, age, gender, location, advertisingId, fbId, vkId, telegramId, loyaltyCardLocation, loyaltyStatus, loyaltyBonuses, loyaltyBonusesToNextLevel, boughtSomething, userId, customPropertiesJson)
-    }
-  }
-  fun toList(): List<Any?> {
-    return listOf(
-      email,
-      phone,
-      loyaltyId,
-      firstName,
-      lastName,
-      birthday,
-      age,
-      gender,
-      location,
-      advertisingId,
-      fbId,
-      vkId,
-      telegramId,
-      loyaltyCardLocation,
-      loyaltyStatus,
-      loyaltyBonuses,
-      loyaltyBonusesToNextLevel,
-      boughtSomething,
-      userId,
-      customPropertiesJson,
-    )
-  }
-  override fun equals(other: Any?): Boolean {
-    if (other !is ProfileParamsWire) {
-      return false
-    }
-    if (this === other) {
-      return true
-    }
-    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
-
-  override fun hashCode(): Int = toList().hashCode()
-}
-
-/**
- * Wire format for `subscriptions/manage`: contacts that identify the client and one flag per
- * channel and mailing type. `true` subscribes, `false` unsubscribes, `null` leaves it unchanged.
- *
- * Generated class from Pigeon that represents data sent in messages.
- */
-data class ManageSubscriptionParamsWire (
-  val email: String? = null,
-  val phone: String? = null,
-  val externalId: String? = null,
-  val loyaltyId: String? = null,
-  val telegramId: String? = null,
-  val emailBulk: Boolean? = null,
-  val emailChain: Boolean? = null,
-  val emailTransactional: Boolean? = null,
-  val smsBulk: Boolean? = null,
-  val smsChain: Boolean? = null,
-  val smsTransactional: Boolean? = null,
-  val webPushBulk: Boolean? = null,
-  val webPushChain: Boolean? = null,
-  val webPushTransactional: Boolean? = null,
-  val mobilePushBulk: Boolean? = null,
-  val mobilePushChain: Boolean? = null,
-  val mobilePushTransactional: Boolean? = null,
-  val telegramBulk: Boolean? = null,
-  val telegramChain: Boolean? = null,
-  val telegramTransactional: Boolean? = null,
-  val whatsappBulk: Boolean? = null,
-  val whatsappChain: Boolean? = null,
-  val whatsappTransactional: Boolean? = null,
-  val maxBulk: Boolean? = null,
-  val maxChain: Boolean? = null,
-  val maxTransactional: Boolean? = null,
-  val walletBulk: Boolean? = null
-)
- {
-  companion object {
-    fun fromList(pigeonVar_list: List<Any?>): ManageSubscriptionParamsWire {
-      val email = pigeonVar_list[0] as String?
-      val phone = pigeonVar_list[1] as String?
-      val externalId = pigeonVar_list[2] as String?
-      val loyaltyId = pigeonVar_list[3] as String?
-      val telegramId = pigeonVar_list[4] as String?
-      val emailBulk = pigeonVar_list[5] as Boolean?
-      val emailChain = pigeonVar_list[6] as Boolean?
-      val emailTransactional = pigeonVar_list[7] as Boolean?
-      val smsBulk = pigeonVar_list[8] as Boolean?
-      val smsChain = pigeonVar_list[9] as Boolean?
-      val smsTransactional = pigeonVar_list[10] as Boolean?
-      val webPushBulk = pigeonVar_list[11] as Boolean?
-      val webPushChain = pigeonVar_list[12] as Boolean?
-      val webPushTransactional = pigeonVar_list[13] as Boolean?
-      val mobilePushBulk = pigeonVar_list[14] as Boolean?
-      val mobilePushChain = pigeonVar_list[15] as Boolean?
-      val mobilePushTransactional = pigeonVar_list[16] as Boolean?
-      val telegramBulk = pigeonVar_list[17] as Boolean?
-      val telegramChain = pigeonVar_list[18] as Boolean?
-      val telegramTransactional = pigeonVar_list[19] as Boolean?
-      val whatsappBulk = pigeonVar_list[20] as Boolean?
-      val whatsappChain = pigeonVar_list[21] as Boolean?
-      val whatsappTransactional = pigeonVar_list[22] as Boolean?
-      val maxBulk = pigeonVar_list[23] as Boolean?
-      val maxChain = pigeonVar_list[24] as Boolean?
-      val maxTransactional = pigeonVar_list[25] as Boolean?
-      val walletBulk = pigeonVar_list[26] as Boolean?
-      return ManageSubscriptionParamsWire(email, phone, externalId, loyaltyId, telegramId, emailBulk, emailChain, emailTransactional, smsBulk, smsChain, smsTransactional, webPushBulk, webPushChain, webPushTransactional, mobilePushBulk, mobilePushChain, mobilePushTransactional, telegramBulk, telegramChain, telegramTransactional, whatsappBulk, whatsappChain, whatsappTransactional, maxBulk, maxChain, maxTransactional, walletBulk)
-    }
-  }
-  fun toList(): List<Any?> {
-    return listOf(
-      email,
-      phone,
-      externalId,
-      loyaltyId,
-      telegramId,
-      emailBulk,
-      emailChain,
-      emailTransactional,
-      smsBulk,
-      smsChain,
-      smsTransactional,
-      webPushBulk,
-      webPushChain,
-      webPushTransactional,
-      mobilePushBulk,
-      mobilePushChain,
-      mobilePushTransactional,
-      telegramBulk,
-      telegramChain,
-      telegramTransactional,
-      whatsappBulk,
-      whatsappChain,
-      whatsappTransactional,
-      maxBulk,
-      maxChain,
-      maxTransactional,
-      walletBulk,
-    )
-  }
-  override fun equals(other: Any?): Boolean {
-    if (other !is ManageSubscriptionParamsWire) {
       return false
     }
     if (this === other) {
@@ -462,6 +319,3693 @@ data class TrackingSourceWire (
 
   override fun hashCode(): Int = toList().hashCode()
 }
+
+/**
+ * The state of one shop's native instance, as the bridge mirrors it: on init and on each change.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SdkSnapshotWire (
+  val shopId: String,
+  val state: String,
+  val deviceId: String? = null,
+  val sessionId: String? = null,
+  val segment: String? = null,
+  val agentEnabled: Boolean,
+  val pushToken: PushTokenWire? = null,
+  val pushTokens: List<PushTokenWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SdkSnapshotWire {
+      val shopId = pigeonVar_list[0] as String
+      val state = pigeonVar_list[1] as String
+      val deviceId = pigeonVar_list[2] as String?
+      val sessionId = pigeonVar_list[3] as String?
+      val segment = pigeonVar_list[4] as String?
+      val agentEnabled = pigeonVar_list[5] as Boolean
+      val pushToken = pigeonVar_list[6] as PushTokenWire?
+      val pushTokens = pigeonVar_list[7] as List<PushTokenWire>
+      return SdkSnapshotWire(shopId, state, deviceId, sessionId, segment, agentEnabled, pushToken, pushTokens)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      shopId,
+      state,
+      deviceId,
+      sessionId,
+      segment,
+      agentEnabled,
+      pushToken,
+      pushTokens,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SdkSnapshotWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Product` of the contract (products.md).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductWire (
+  val id: String,
+  val groupId: String? = null,
+  val name: String,
+  val brand: String? = null,
+  val model: String? = null,
+  val description: String? = null,
+  val barcode: String? = null,
+  val url: String,
+  val deeplinkAndroid: String? = null,
+  val deeplinkIos: String? = null,
+  val imageUrl: String? = null,
+  val picture: String? = null,
+  val resizedImages: Map<String, String>? = null,
+  val price: Double,
+  val priceFormatted: String? = null,
+  val priceFull: Double? = null,
+  val priceFullFormatted: String? = null,
+  val oldPrice: Double? = null,
+  val oldPriceFormatted: String? = null,
+  val oldPriceFull: Double? = null,
+  val oldPriceFullFormatted: String? = null,
+  val currency: String,
+  val discountPercent: Long? = null,
+  val discountFormatted: String? = null,
+  val salesRate: Long? = null,
+  val relativeSalesRate: Double? = null,
+  val rating: Long? = null,
+  val isNew: Boolean,
+  val stockQuantity: Long? = null,
+  val categoryIds: List<String>? = null,
+  val categories: List<ProductCategoryWire>? = null,
+  val params: List<ProductParamWire>? = null,
+  val locationIds: List<String>? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductWire {
+      val id = pigeonVar_list[0] as String
+      val groupId = pigeonVar_list[1] as String?
+      val name = pigeonVar_list[2] as String
+      val brand = pigeonVar_list[3] as String?
+      val model = pigeonVar_list[4] as String?
+      val description = pigeonVar_list[5] as String?
+      val barcode = pigeonVar_list[6] as String?
+      val url = pigeonVar_list[7] as String
+      val deeplinkAndroid = pigeonVar_list[8] as String?
+      val deeplinkIos = pigeonVar_list[9] as String?
+      val imageUrl = pigeonVar_list[10] as String?
+      val picture = pigeonVar_list[11] as String?
+      val resizedImages = pigeonVar_list[12] as Map<String, String>?
+      val price = pigeonVar_list[13] as Double
+      val priceFormatted = pigeonVar_list[14] as String?
+      val priceFull = pigeonVar_list[15] as Double?
+      val priceFullFormatted = pigeonVar_list[16] as String?
+      val oldPrice = pigeonVar_list[17] as Double?
+      val oldPriceFormatted = pigeonVar_list[18] as String?
+      val oldPriceFull = pigeonVar_list[19] as Double?
+      val oldPriceFullFormatted = pigeonVar_list[20] as String?
+      val currency = pigeonVar_list[21] as String
+      val discountPercent = pigeonVar_list[22] as Long?
+      val discountFormatted = pigeonVar_list[23] as String?
+      val salesRate = pigeonVar_list[24] as Long?
+      val relativeSalesRate = pigeonVar_list[25] as Double?
+      val rating = pigeonVar_list[26] as Long?
+      val isNew = pigeonVar_list[27] as Boolean
+      val stockQuantity = pigeonVar_list[28] as Long?
+      val categoryIds = pigeonVar_list[29] as List<String>?
+      val categories = pigeonVar_list[30] as List<ProductCategoryWire>?
+      val params = pigeonVar_list[31] as List<ProductParamWire>?
+      val locationIds = pigeonVar_list[32] as List<String>?
+      return ProductWire(id, groupId, name, brand, model, description, barcode, url, deeplinkAndroid, deeplinkIos, imageUrl, picture, resizedImages, price, priceFormatted, priceFull, priceFullFormatted, oldPrice, oldPriceFormatted, oldPriceFull, oldPriceFullFormatted, currency, discountPercent, discountFormatted, salesRate, relativeSalesRate, rating, isNew, stockQuantity, categoryIds, categories, params, locationIds)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      groupId,
+      name,
+      brand,
+      model,
+      description,
+      barcode,
+      url,
+      deeplinkAndroid,
+      deeplinkIos,
+      imageUrl,
+      picture,
+      resizedImages,
+      price,
+      priceFormatted,
+      priceFull,
+      priceFullFormatted,
+      oldPrice,
+      oldPriceFormatted,
+      oldPriceFull,
+      oldPriceFullFormatted,
+      currency,
+      discountPercent,
+      discountFormatted,
+      salesRate,
+      relativeSalesRate,
+      rating,
+      isNew,
+      stockQuantity,
+      categoryIds,
+      categories,
+      params,
+      locationIds,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductCategory`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductCategoryWire (
+  val id: String,
+  val name: String? = null,
+  val url: String? = null,
+  val parentId: String? = null,
+  val level: Long? = null,
+  val count: Long? = null,
+  val alias: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductCategoryWire {
+      val id = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String?
+      val url = pigeonVar_list[2] as String?
+      val parentId = pigeonVar_list[3] as String?
+      val level = pigeonVar_list[4] as Long?
+      val count = pigeonVar_list[5] as Long?
+      val alias = pigeonVar_list[6] as String?
+      return ProductCategoryWire(id, name, url, parentId, level, count, alias)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      name,
+      url,
+      parentId,
+      level,
+      count,
+      alias,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductCategoryWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductParam`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductParamWire (
+  val key: String,
+  val values: List<String>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductParamWire {
+      val key = pigeonVar_list[0] as String
+      val values = pigeonVar_list[1] as List<String>
+      return ProductParamWire(key, values)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      key,
+      values,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductParamWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Location`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class LocationWire (
+  val id: String,
+  val name: String,
+  val type: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LocationWire {
+      val id = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      val type = pigeonVar_list[2] as String?
+      return LocationWire(id, name, type)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      name,
+      type,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is LocationWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Brand`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class BrandWire (
+  val name: String,
+  val count: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BrandWire {
+      val name = pigeonVar_list[0] as String
+      val count = pigeonVar_list[1] as Long
+      return BrandWire(name, count)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      name,
+      count,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is BrandWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SearchFilter`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SearchFilterWire (
+  val count: Long? = null,
+  val priority: Long? = null,
+  val values: Map<String, Long>? = null,
+  val min: Double? = null,
+  val max: Double? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchFilterWire {
+      val count = pigeonVar_list[0] as Long?
+      val priority = pigeonVar_list[1] as Long?
+      val values = pigeonVar_list[2] as Map<String, Long>?
+      val min = pigeonVar_list[3] as Double?
+      val max = pigeonVar_list[4] as Double?
+      return SearchFilterWire(count, priority, values, min, max)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      count,
+      priority,
+      values,
+      min,
+      max,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchFilterWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ColorFilter`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ColorFilterWire (
+  val color: String,
+  val count: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ColorFilterWire {
+      val color = pigeonVar_list[0] as String
+      val count = pigeonVar_list[1] as Long
+      return ColorFilterWire(color, count)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      color,
+      count,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ColorFilterWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SizeFilter`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SizeFilterWire (
+  val size: String,
+  val count: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SizeFilterWire {
+      val size = pigeonVar_list[0] as String
+      val count = pigeonVar_list[1] as Long
+      return SizeFilterWire(size, count)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      size,
+      count,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SizeFilterWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `IndustrialFilters`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class IndustrialFiltersWire (
+  val colors: List<ColorFilterWire>? = null,
+  val fashionSizes: List<SizeFilterWire>? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): IndustrialFiltersWire {
+      val colors = pigeonVar_list[0] as List<ColorFilterWire>?
+      val fashionSizes = pigeonVar_list[1] as List<SizeFilterWire>?
+      return IndustrialFiltersWire(colors, fashionSizes)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      colors,
+      fashionSizes,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is IndustrialFiltersWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PriceRange`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PriceRangeWire (
+  val min: Double,
+  val max: Double
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PriceRangeWire {
+      val min = pigeonVar_list[0] as Double
+      val max = pigeonVar_list[1] as Double
+      return PriceRangeWire(min, max)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      min,
+      max,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PriceRangeWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PriceInterval`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PriceIntervalWire (
+  val from: Double,
+  val to: Double? = null,
+  val count: Long? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PriceIntervalWire {
+      val from = pigeonVar_list[0] as Double
+      val to = pigeonVar_list[1] as Double?
+      val count = pigeonVar_list[2] as Long?
+      return PriceIntervalWire(from, to, count)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      from,
+      to,
+      count,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PriceIntervalWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductsListResponse`; `products.getCategory` answers with it too (`CategoryResponse` is its subset).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductsListResponseWire (
+  val productsTotal: Long? = null,
+  val products: List<ProductWire>,
+  val categories: List<ProductCategoryWire>? = null,
+  val brands: List<BrandWire>? = null,
+  val locations: List<LocationWire>? = null,
+  val filters: Map<String, SearchFilterWire>? = null,
+  val industrialFilters: IndustrialFiltersWire? = null,
+  val priceRange: PriceRangeWire? = null,
+  val priceRanges: List<PriceIntervalWire>? = null,
+  val priceMedian: Double? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductsListResponseWire {
+      val productsTotal = pigeonVar_list[0] as Long?
+      val products = pigeonVar_list[1] as List<ProductWire>
+      val categories = pigeonVar_list[2] as List<ProductCategoryWire>?
+      val brands = pigeonVar_list[3] as List<BrandWire>?
+      val locations = pigeonVar_list[4] as List<LocationWire>?
+      val filters = pigeonVar_list[5] as Map<String, SearchFilterWire>?
+      val industrialFilters = pigeonVar_list[6] as IndustrialFiltersWire?
+      val priceRange = pigeonVar_list[7] as PriceRangeWire?
+      val priceRanges = pigeonVar_list[8] as List<PriceIntervalWire>?
+      val priceMedian = pigeonVar_list[9] as Double?
+      return ProductsListResponseWire(productsTotal, products, categories, brands, locations, filters, industrialFilters, priceRange, priceRanges, priceMedian)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      productsTotal,
+      products,
+      categories,
+      brands,
+      locations,
+      filters,
+      industrialFilters,
+      priceRange,
+      priceRanges,
+      priceMedian,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductsListResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductsListRequest`; `products.getCategory` takes it as `CategoryRequest` and leaves out `categoryIds` and `merchants`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductsListRequestWire (
+  val categoryIds: List<String>? = null,
+  val brands: List<String>? = null,
+  val merchants: List<String>? = null,
+  val locations: List<String>? = null,
+  val priceMin: Double? = null,
+  val priceMax: Double? = null,
+  val filters: Map<String, List<String>>? = null,
+  val sortBy: String? = null,
+  val sortDir: String? = null,
+  val limit: Long? = null,
+  val page: Long? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductsListRequestWire {
+      val categoryIds = pigeonVar_list[0] as List<String>?
+      val brands = pigeonVar_list[1] as List<String>?
+      val merchants = pigeonVar_list[2] as List<String>?
+      val locations = pigeonVar_list[3] as List<String>?
+      val priceMin = pigeonVar_list[4] as Double?
+      val priceMax = pigeonVar_list[5] as Double?
+      val filters = pigeonVar_list[6] as Map<String, List<String>>?
+      val sortBy = pigeonVar_list[7] as String?
+      val sortDir = pigeonVar_list[8] as String?
+      val limit = pigeonVar_list[9] as Long?
+      val page = pigeonVar_list[10] as Long?
+      return ProductsListRequestWire(categoryIds, brands, merchants, locations, priceMin, priceMax, filters, sortBy, sortDir, limit, page)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      categoryIds,
+      brands,
+      merchants,
+      locations,
+      priceMin,
+      priceMax,
+      filters,
+      sortBy,
+      sortDir,
+      limit,
+      page,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductsListRequestWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductCounter`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductCounterWire (
+  val view: Long,
+  val cart: Long,
+  val purchase: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductCounterWire {
+      val view = pigeonVar_list[0] as Long
+      val cart = pigeonVar_list[1] as Long
+      val purchase = pigeonVar_list[2] as Long
+      return ProductCounterWire(view, cart, purchase)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      view,
+      cart,
+      purchase,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductCounterWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductCounterTriggers`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductCounterTriggersWire (
+  val backInStock: Long,
+  val priceDrop: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductCounterTriggersWire {
+      val backInStock = pigeonVar_list[0] as Long
+      val priceDrop = pigeonVar_list[1] as Long
+      return ProductCounterTriggersWire(backInStock, priceDrop)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      backInStock,
+      priceDrop,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductCounterTriggersWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductCountersResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductCountersResponseWire (
+  val daily: ProductCounterWire? = null,
+  val now: ProductCounterWire? = null,
+  val triggers: ProductCounterTriggersWire? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductCountersResponseWire {
+      val daily = pigeonVar_list[0] as ProductCounterWire?
+      val now = pigeonVar_list[1] as ProductCounterWire?
+      val triggers = pigeonVar_list[2] as ProductCounterTriggersWire?
+      return ProductCountersResponseWire(daily, now, triggers)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      daily,
+      now,
+      triggers,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductCountersResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `CollectionResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class CollectionResponseWire (
+  val products: List<ProductWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): CollectionResponseWire {
+      val products = pigeonVar_list[0] as List<ProductWire>
+      return CollectionResponseWire(products)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      products,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is CollectionResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `RecommendationRequest`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class RecommendationRequestWire (
+  val itemId: String? = null,
+  val categoryId: String? = null,
+  val searchQuery: String? = null,
+  val excludedItemIds: List<String>? = null,
+  val brands: List<String>? = null,
+  val locations: List<String>? = null,
+  val limit: Long? = null,
+  val extended: Boolean,
+  val withLocations: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): RecommendationRequestWire {
+      val itemId = pigeonVar_list[0] as String?
+      val categoryId = pigeonVar_list[1] as String?
+      val searchQuery = pigeonVar_list[2] as String?
+      val excludedItemIds = pigeonVar_list[3] as List<String>?
+      val brands = pigeonVar_list[4] as List<String>?
+      val locations = pigeonVar_list[5] as List<String>?
+      val limit = pigeonVar_list[6] as Long?
+      val extended = pigeonVar_list[7] as Boolean
+      val withLocations = pigeonVar_list[8] as Boolean
+      return RecommendationRequestWire(itemId, categoryId, searchQuery, excludedItemIds, brands, locations, limit, extended, withLocations)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      itemId,
+      categoryId,
+      searchQuery,
+      excludedItemIds,
+      brands,
+      locations,
+      limit,
+      extended,
+      withLocations,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is RecommendationRequestWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `RecommendationResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class RecommendationResponseWire (
+  val id: Long? = null,
+  val title: String? = null,
+  val link: String? = null,
+  val products: List<ProductWire>,
+  val itemIds: List<String>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): RecommendationResponseWire {
+      val id = pigeonVar_list[0] as Long?
+      val title = pigeonVar_list[1] as String?
+      val link = pigeonVar_list[2] as String?
+      val products = pigeonVar_list[3] as List<ProductWire>
+      val itemIds = pigeonVar_list[4] as List<String>
+      return RecommendationResponseWire(id, title, link, products, itemIds)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      title,
+      link,
+      products,
+      itemIds,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is RecommendationResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SearchFullRequest`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SearchFullRequestWire (
+  val categoryIds: List<String>? = null,
+  val brands: List<String>? = null,
+  val excludedBrands: List<String>? = null,
+  val merchants: List<String>? = null,
+  val excludedMerchants: List<String>? = null,
+  val locations: List<String>? = null,
+  val priceMin: Double? = null,
+  val priceMax: Double? = null,
+  val colors: List<String>? = null,
+  val fashionSizes: List<String>? = null,
+  val excludedItemIds: List<String>? = null,
+  val filters: Map<String, List<String>>? = null,
+  val sortBy: String? = null,
+  val sortDir: String? = null,
+  val disableClarification: Boolean,
+  val categoryLimit: Long? = null,
+  val brandLimit: Long? = null,
+  val limit: Long? = null,
+  val page: Long? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchFullRequestWire {
+      val categoryIds = pigeonVar_list[0] as List<String>?
+      val brands = pigeonVar_list[1] as List<String>?
+      val excludedBrands = pigeonVar_list[2] as List<String>?
+      val merchants = pigeonVar_list[3] as List<String>?
+      val excludedMerchants = pigeonVar_list[4] as List<String>?
+      val locations = pigeonVar_list[5] as List<String>?
+      val priceMin = pigeonVar_list[6] as Double?
+      val priceMax = pigeonVar_list[7] as Double?
+      val colors = pigeonVar_list[8] as List<String>?
+      val fashionSizes = pigeonVar_list[9] as List<String>?
+      val excludedItemIds = pigeonVar_list[10] as List<String>?
+      val filters = pigeonVar_list[11] as Map<String, List<String>>?
+      val sortBy = pigeonVar_list[12] as String?
+      val sortDir = pigeonVar_list[13] as String?
+      val disableClarification = pigeonVar_list[14] as Boolean
+      val categoryLimit = pigeonVar_list[15] as Long?
+      val brandLimit = pigeonVar_list[16] as Long?
+      val limit = pigeonVar_list[17] as Long?
+      val page = pigeonVar_list[18] as Long?
+      return SearchFullRequestWire(categoryIds, brands, excludedBrands, merchants, excludedMerchants, locations, priceMin, priceMax, colors, fashionSizes, excludedItemIds, filters, sortBy, sortDir, disableClarification, categoryLimit, brandLimit, limit, page)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      categoryIds,
+      brands,
+      excludedBrands,
+      merchants,
+      excludedMerchants,
+      locations,
+      priceMin,
+      priceMax,
+      colors,
+      fashionSizes,
+      excludedItemIds,
+      filters,
+      sortBy,
+      sortDir,
+      disableClarification,
+      categoryLimit,
+      brandLimit,
+      limit,
+      page,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchFullRequestWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Query`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class QueryWire (
+  val name: String,
+  val url: String? = null,
+  val score: Double? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): QueryWire {
+      val name = pigeonVar_list[0] as String
+      val url = pigeonVar_list[1] as String?
+      val score = pigeonVar_list[2] as Double?
+      return QueryWire(name, url, score)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      name,
+      url,
+      score,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is QueryWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PopularItem`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PopularItemWire (
+  val name: String,
+  val url: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PopularItemWire {
+      val name = pigeonVar_list[0] as String
+      val url = pigeonVar_list[1] as String
+      return PopularItemWire(name, url)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      name,
+      url,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PopularItemWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SearchRedirect`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SearchRedirectWire (
+  val query: String? = null,
+  val url: String? = null,
+  val deeplink: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchRedirectWire {
+      val query = pigeonVar_list[0] as String?
+      val url = pigeonVar_list[1] as String?
+      val deeplink = pigeonVar_list[2] as String?
+      return SearchRedirectWire(query, url, deeplink)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      query,
+      url,
+      deeplink,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchRedirectWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SearchBlankResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SearchBlankResponseWire (
+  val products: List<ProductWire>,
+  val lastProducts: Boolean,
+  val lastQueries: List<QueryWire>? = null,
+  val suggests: List<QueryWire>? = null,
+  val popularCategories: List<PopularItemWire>? = null,
+  val popularBrands: List<PopularItemWire>? = null,
+  val popularLinks: List<PopularItemWire>? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchBlankResponseWire {
+      val products = pigeonVar_list[0] as List<ProductWire>
+      val lastProducts = pigeonVar_list[1] as Boolean
+      val lastQueries = pigeonVar_list[2] as List<QueryWire>?
+      val suggests = pigeonVar_list[3] as List<QueryWire>?
+      val popularCategories = pigeonVar_list[4] as List<PopularItemWire>?
+      val popularBrands = pigeonVar_list[5] as List<PopularItemWire>?
+      val popularLinks = pigeonVar_list[6] as List<PopularItemWire>?
+      return SearchBlankResponseWire(products, lastProducts, lastQueries, suggests, popularCategories, popularBrands, popularLinks)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      products,
+      lastProducts,
+      lastQueries,
+      suggests,
+      popularCategories,
+      popularBrands,
+      popularLinks,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchBlankResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SearchInstantResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SearchInstantResponseWire (
+  val searchQuery: String? = null,
+  val searchQueryOriginal: String? = null,
+  val clarification: Boolean? = null,
+  val productsTotal: Long? = null,
+  val products: List<ProductWire>,
+  val categories: List<ProductCategoryWire>? = null,
+  val queries: List<QueryWire>? = null,
+  val locations: List<LocationWire>? = null,
+  val redirect: SearchRedirectWire? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchInstantResponseWire {
+      val searchQuery = pigeonVar_list[0] as String?
+      val searchQueryOriginal = pigeonVar_list[1] as String?
+      val clarification = pigeonVar_list[2] as Boolean?
+      val productsTotal = pigeonVar_list[3] as Long?
+      val products = pigeonVar_list[4] as List<ProductWire>
+      val categories = pigeonVar_list[5] as List<ProductCategoryWire>?
+      val queries = pigeonVar_list[6] as List<QueryWire>?
+      val locations = pigeonVar_list[7] as List<LocationWire>?
+      val redirect = pigeonVar_list[8] as SearchRedirectWire?
+      return SearchInstantResponseWire(searchQuery, searchQueryOriginal, clarification, productsTotal, products, categories, queries, locations, redirect)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      searchQuery,
+      searchQueryOriginal,
+      clarification,
+      productsTotal,
+      products,
+      categories,
+      queries,
+      locations,
+      redirect,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchInstantResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SearchFullResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SearchFullResponseWire (
+  val searchQuery: String? = null,
+  val searchQueryOriginal: String? = null,
+  val clarification: Boolean? = null,
+  val productsTotal: Long? = null,
+  val products: List<ProductWire>,
+  val categories: List<ProductCategoryWire>? = null,
+  val brands: List<BrandWire>? = null,
+  val locations: List<LocationWire>? = null,
+  val filters: Map<String, SearchFilterWire>? = null,
+  val industrialFilters: IndustrialFiltersWire? = null,
+  val priceRange: PriceRangeWire? = null,
+  val priceRanges: List<PriceIntervalWire>? = null,
+  val priceMedian: Double? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SearchFullResponseWire {
+      val searchQuery = pigeonVar_list[0] as String?
+      val searchQueryOriginal = pigeonVar_list[1] as String?
+      val clarification = pigeonVar_list[2] as Boolean?
+      val productsTotal = pigeonVar_list[3] as Long?
+      val products = pigeonVar_list[4] as List<ProductWire>
+      val categories = pigeonVar_list[5] as List<ProductCategoryWire>?
+      val brands = pigeonVar_list[6] as List<BrandWire>?
+      val locations = pigeonVar_list[7] as List<LocationWire>?
+      val filters = pigeonVar_list[8] as Map<String, SearchFilterWire>?
+      val industrialFilters = pigeonVar_list[9] as IndustrialFiltersWire?
+      val priceRange = pigeonVar_list[10] as PriceRangeWire?
+      val priceRanges = pigeonVar_list[11] as List<PriceIntervalWire>?
+      val priceMedian = pigeonVar_list[12] as Double?
+      return SearchFullResponseWire(searchQuery, searchQueryOriginal, clarification, productsTotal, products, categories, brands, locations, filters, industrialFilters, priceRange, priceRanges, priceMedian)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      searchQuery,
+      searchQueryOriginal,
+      clarification,
+      productsTotal,
+      products,
+      categories,
+      brands,
+      locations,
+      filters,
+      industrialFilters,
+      priceRange,
+      priceRanges,
+      priceMedian,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SearchFullResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `AgentProduct`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class AgentProductWire (
+  val id: String,
+  val name: String? = null,
+  val price: Double? = null,
+  val oldPrice: Double? = null,
+  val priceFormatted: String? = null,
+  val oldPriceFormatted: String? = null,
+  val picture: String? = null,
+  val url: String? = null,
+  val reason: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AgentProductWire {
+      val id = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String?
+      val price = pigeonVar_list[2] as Double?
+      val oldPrice = pigeonVar_list[3] as Double?
+      val priceFormatted = pigeonVar_list[4] as String?
+      val oldPriceFormatted = pigeonVar_list[5] as String?
+      val picture = pigeonVar_list[6] as String?
+      val url = pigeonVar_list[7] as String?
+      val reason = pigeonVar_list[8] as String?
+      return AgentProductWire(id, name, price, oldPrice, priceFormatted, oldPriceFormatted, picture, url, reason)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      name,
+      price,
+      oldPrice,
+      priceFormatted,
+      oldPriceFormatted,
+      picture,
+      url,
+      reason,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is AgentProductWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `AgentMessage`; [role] is the wire value (`user`, `assistant`).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class AgentMessageWire (
+  /** 64-bit; null for a message the server sent without one. */
+  val id: Long? = null,
+  val role: String? = null,
+  val content: String? = null,
+  val createdAt: String? = null,
+  val products: List<AgentProductWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AgentMessageWire {
+      val id = pigeonVar_list[0] as Long?
+      val role = pigeonVar_list[1] as String?
+      val content = pigeonVar_list[2] as String?
+      val createdAt = pigeonVar_list[3] as String?
+      val products = pigeonVar_list[4] as List<AgentProductWire>
+      return AgentMessageWire(id, role, content, createdAt, products)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      role,
+      content,
+      createdAt,
+      products,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is AgentMessageWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `AgentSession`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class AgentSessionWire (
+  val id: Long,
+  val title: String? = null,
+  val updatedAt: String? = null,
+  val messages: List<AgentMessageWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AgentSessionWire {
+      val id = pigeonVar_list[0] as Long
+      val title = pigeonVar_list[1] as String?
+      val updatedAt = pigeonVar_list[2] as String?
+      val messages = pigeonVar_list[3] as List<AgentMessageWire>
+      return AgentSessionWire(id, title, updatedAt, messages)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      title,
+      updatedAt,
+      messages,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is AgentSessionWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `AgentDialogResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class AgentDialogResponseWire (
+  val sessions: List<AgentSessionWire>,
+  val session: AgentSessionWire? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AgentDialogResponseWire {
+      val sessions = pigeonVar_list[0] as List<AgentSessionWire>
+      val session = pigeonVar_list[1] as AgentSessionWire?
+      return AgentDialogResponseWire(sessions, session)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      sessions,
+      session,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is AgentDialogResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `AgentResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class AgentResponseWire (
+  val session: AgentSessionWire,
+  val message: AgentMessageWire
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AgentResponseWire {
+      val session = pigeonVar_list[0] as AgentSessionWire
+      val message = pigeonVar_list[1] as AgentMessageWire
+      return AgentResponseWire(session, message)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      session,
+      message,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is AgentResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `CartItem`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class CartItemWire (
+  val id: String,
+  val quantity: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): CartItemWire {
+      val id = pigeonVar_list[0] as String
+      val quantity = pigeonVar_list[1] as Long
+      return CartItemWire(id, quantity)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      quantity,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is CartItemWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Profile`; genders are the wire values `m` / `f`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProfileWire (
+  val id: String? = null,
+  val hasEmail: Boolean? = null,
+  val emailRegisteredAt: String? = null,
+  val gender: String? = null,
+  val computedGender: String? = null,
+  val boughtSomething: Boolean? = null,
+  val customProperties: Map<String, Any?>? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProfileWire {
+      val id = pigeonVar_list[0] as String?
+      val hasEmail = pigeonVar_list[1] as Boolean?
+      val emailRegisteredAt = pigeonVar_list[2] as String?
+      val gender = pigeonVar_list[3] as String?
+      val computedGender = pigeonVar_list[4] as String?
+      val boughtSomething = pigeonVar_list[5] as Boolean?
+      val customProperties = pigeonVar_list[6] as Map<String, Any?>?
+      return ProfileWire(id, hasEmail, emailRegisteredAt, gender, computedGender, boughtSomething, customProperties)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      hasEmail,
+      emailRegisteredAt,
+      gender,
+      computedGender,
+      boughtSomething,
+      customProperties,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProfileWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProfileKid`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProfileKidWire (
+  val gender: String? = null,
+  val birthday: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProfileKidWire {
+      val gender = pigeonVar_list[0] as String?
+      val birthday = pigeonVar_list[1] as String?
+      return ProfileKidWire(gender, birthday)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      gender,
+      birthday,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProfileKidWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProfileCar`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProfileCarWire (
+  val brand: String? = null,
+  val model: String? = null,
+  val vds: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProfileCarWire {
+      val brand = pigeonVar_list[0] as String?
+      val model = pigeonVar_list[1] as String?
+      val vds = pigeonVar_list[2] as String?
+      return ProfileCarWire(brand, model, vds)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      brand,
+      model,
+      vds,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProfileCarWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProfileUpdateRequest`; [gender] is `m` or `f`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProfileUpdateRequestWire (
+  val email: String? = null,
+  val phone: String? = null,
+  val externalId: String? = null,
+  val loyaltyId: String? = null,
+  val telegramId: String? = null,
+  val fbId: String? = null,
+  val vkId: String? = null,
+  val firstName: String? = null,
+  val lastName: String? = null,
+  val gender: String? = null,
+  val birthday: String? = null,
+  val age: Long? = null,
+  val location: String? = null,
+  val kids: List<ProfileKidWire>? = null,
+  val cars: List<ProfileCarWire>? = null,
+  val customProperties: Map<String, Any?>? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProfileUpdateRequestWire {
+      val email = pigeonVar_list[0] as String?
+      val phone = pigeonVar_list[1] as String?
+      val externalId = pigeonVar_list[2] as String?
+      val loyaltyId = pigeonVar_list[3] as String?
+      val telegramId = pigeonVar_list[4] as String?
+      val fbId = pigeonVar_list[5] as String?
+      val vkId = pigeonVar_list[6] as String?
+      val firstName = pigeonVar_list[7] as String?
+      val lastName = pigeonVar_list[8] as String?
+      val gender = pigeonVar_list[9] as String?
+      val birthday = pigeonVar_list[10] as String?
+      val age = pigeonVar_list[11] as Long?
+      val location = pigeonVar_list[12] as String?
+      val kids = pigeonVar_list[13] as List<ProfileKidWire>?
+      val cars = pigeonVar_list[14] as List<ProfileCarWire>?
+      val customProperties = pigeonVar_list[15] as Map<String, Any?>?
+      return ProfileUpdateRequestWire(email, phone, externalId, loyaltyId, telegramId, fbId, vkId, firstName, lastName, gender, birthday, age, location, kids, cars, customProperties)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      email,
+      phone,
+      externalId,
+      loyaltyId,
+      telegramId,
+      fbId,
+      vkId,
+      firstName,
+      lastName,
+      gender,
+      birthday,
+      age,
+      location,
+      kids,
+      cars,
+      customProperties,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProfileUpdateRequestWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * An item of `Order`, the native SDKs' released model: sums are strings.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class OrderItemWire (
+  val amount: Long? = null,
+  val price: String? = null,
+  val status: String? = null,
+  val originalPrice: String? = null,
+  val barcode: String? = null,
+  val lineId: String? = null,
+  val cancelReason: String? = null,
+  val item: ProductWire? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): OrderItemWire {
+      val amount = pigeonVar_list[0] as Long?
+      val price = pigeonVar_list[1] as String?
+      val status = pigeonVar_list[2] as String?
+      val originalPrice = pigeonVar_list[3] as String?
+      val barcode = pigeonVar_list[4] as String?
+      val lineId = pigeonVar_list[5] as String?
+      val cancelReason = pigeonVar_list[6] as String?
+      val item = pigeonVar_list[7] as ProductWire?
+      return OrderItemWire(amount, price, status, originalPrice, barcode, lineId, cancelReason, item)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      amount,
+      price,
+      status,
+      originalPrice,
+      barcode,
+      lineId,
+      cancelReason,
+      item,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is OrderItemWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Order` of `profile.getOrders`, the native SDKs' released model: sums are strings.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class OrderWire (
+  val internalId: Long? = null,
+  val id: String? = null,
+  val date: String? = null,
+  val value: String? = null,
+  val cashValue: String? = null,
+  val bonusesValue: String? = null,
+  val deliveryValue: String? = null,
+  val promocode: String? = null,
+  val deliveryDate: String? = null,
+  val internalStatus: String? = null,
+  val stream: String? = null,
+  val channel: String? = null,
+  val taxFree: Boolean? = null,
+  val deliveryType: String? = null,
+  val deliveryAddress: String? = null,
+  val orderStatus: String? = null,
+  val paymentType: String? = null,
+  val items: List<OrderItemWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): OrderWire {
+      val internalId = pigeonVar_list[0] as Long?
+      val id = pigeonVar_list[1] as String?
+      val date = pigeonVar_list[2] as String?
+      val value = pigeonVar_list[3] as String?
+      val cashValue = pigeonVar_list[4] as String?
+      val bonusesValue = pigeonVar_list[5] as String?
+      val deliveryValue = pigeonVar_list[6] as String?
+      val promocode = pigeonVar_list[7] as String?
+      val deliveryDate = pigeonVar_list[8] as String?
+      val internalStatus = pigeonVar_list[9] as String?
+      val stream = pigeonVar_list[10] as String?
+      val channel = pigeonVar_list[11] as String?
+      val taxFree = pigeonVar_list[12] as Boolean?
+      val deliveryType = pigeonVar_list[13] as String?
+      val deliveryAddress = pigeonVar_list[14] as String?
+      val orderStatus = pigeonVar_list[15] as String?
+      val paymentType = pigeonVar_list[16] as String?
+      val items = pigeonVar_list[17] as List<OrderItemWire>
+      return OrderWire(internalId, id, date, value, cashValue, bonusesValue, deliveryValue, promocode, deliveryDate, internalStatus, stream, channel, taxFree, deliveryType, deliveryAddress, orderStatus, paymentType, items)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      internalId,
+      id,
+      date,
+      value,
+      cashValue,
+      bonusesValue,
+      deliveryValue,
+      promocode,
+      deliveryDate,
+      internalStatus,
+      stream,
+      channel,
+      taxFree,
+      deliveryType,
+      deliveryAddress,
+      orderStatus,
+      paymentType,
+      items,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is OrderWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PurchaseTrackingRequest` of the contract (tracking.md).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PurchaseTrackingRequestWire (
+  val orderId: String,
+  val orderPrice: Double,
+  val items: List<PurchaseLineItemWire>,
+  val deliveryType: String? = null,
+  val deliveryAddress: String? = null,
+  val paymentType: String? = null,
+  val isTaxFree: Boolean,
+  val promocode: String? = null,
+  val orderCash: Double? = null,
+  val orderBonuses: Double? = null,
+  val orderDelivery: Double? = null,
+  val orderDiscount: Double? = null,
+  val channel: String? = null,
+  val custom: Map<String, Any?>? = null,
+  val isGiftPackage: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PurchaseTrackingRequestWire {
+      val orderId = pigeonVar_list[0] as String
+      val orderPrice = pigeonVar_list[1] as Double
+      val items = pigeonVar_list[2] as List<PurchaseLineItemWire>
+      val deliveryType = pigeonVar_list[3] as String?
+      val deliveryAddress = pigeonVar_list[4] as String?
+      val paymentType = pigeonVar_list[5] as String?
+      val isTaxFree = pigeonVar_list[6] as Boolean
+      val promocode = pigeonVar_list[7] as String?
+      val orderCash = pigeonVar_list[8] as Double?
+      val orderBonuses = pigeonVar_list[9] as Double?
+      val orderDelivery = pigeonVar_list[10] as Double?
+      val orderDiscount = pigeonVar_list[11] as Double?
+      val channel = pigeonVar_list[12] as String?
+      val custom = pigeonVar_list[13] as Map<String, Any?>?
+      val isGiftPackage = pigeonVar_list[14] as Boolean
+      return PurchaseTrackingRequestWire(orderId, orderPrice, items, deliveryType, deliveryAddress, paymentType, isTaxFree, promocode, orderCash, orderBonuses, orderDelivery, orderDiscount, channel, custom, isGiftPackage)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      orderId,
+      orderPrice,
+      items,
+      deliveryType,
+      deliveryAddress,
+      paymentType,
+      isTaxFree,
+      promocode,
+      orderCash,
+      orderBonuses,
+      orderDelivery,
+      orderDiscount,
+      channel,
+      custom,
+      isGiftPackage,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PurchaseTrackingRequestWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * The released `setProfile`'s parameters (1.6.4), for the native SDKs' released profile method.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProfileParamsWire (
+  val email: String? = null,
+  val phone: String? = null,
+  val loyaltyId: String? = null,
+  val firstName: String? = null,
+  val lastName: String? = null,
+  val birthday: String? = null,
+  val age: Long? = null,
+  val gender: String? = null,
+  val location: String? = null,
+  val advertisingId: String? = null,
+  val fbId: String? = null,
+  val vkId: String? = null,
+  val telegramId: String? = null,
+  val loyaltyCardLocation: String? = null,
+  val loyaltyStatus: String? = null,
+  val loyaltyBonuses: Long? = null,
+  val loyaltyBonusesToNextLevel: Long? = null,
+  val boughtSomething: Boolean? = null,
+  val userId: String? = null,
+  val customPropertiesJson: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProfileParamsWire {
+      val email = pigeonVar_list[0] as String?
+      val phone = pigeonVar_list[1] as String?
+      val loyaltyId = pigeonVar_list[2] as String?
+      val firstName = pigeonVar_list[3] as String?
+      val lastName = pigeonVar_list[4] as String?
+      val birthday = pigeonVar_list[5] as String?
+      val age = pigeonVar_list[6] as Long?
+      val gender = pigeonVar_list[7] as String?
+      val location = pigeonVar_list[8] as String?
+      val advertisingId = pigeonVar_list[9] as String?
+      val fbId = pigeonVar_list[10] as String?
+      val vkId = pigeonVar_list[11] as String?
+      val telegramId = pigeonVar_list[12] as String?
+      val loyaltyCardLocation = pigeonVar_list[13] as String?
+      val loyaltyStatus = pigeonVar_list[14] as String?
+      val loyaltyBonuses = pigeonVar_list[15] as Long?
+      val loyaltyBonusesToNextLevel = pigeonVar_list[16] as Long?
+      val boughtSomething = pigeonVar_list[17] as Boolean?
+      val userId = pigeonVar_list[18] as String?
+      val customPropertiesJson = pigeonVar_list[19] as String?
+      return ProfileParamsWire(email, phone, loyaltyId, firstName, lastName, birthday, age, gender, location, advertisingId, fbId, vkId, telegramId, loyaltyCardLocation, loyaltyStatus, loyaltyBonuses, loyaltyBonusesToNextLevel, boughtSomething, userId, customPropertiesJson)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      email,
+      phone,
+      loyaltyId,
+      firstName,
+      lastName,
+      birthday,
+      age,
+      gender,
+      location,
+      advertisingId,
+      fbId,
+      vkId,
+      telegramId,
+      loyaltyCardLocation,
+      loyaltyStatus,
+      loyaltyBonuses,
+      loyaltyBonusesToNextLevel,
+      boughtSomething,
+      userId,
+      customPropertiesJson,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProfileParamsWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SubscriptionsUpdateRequest`: `true` subscribes, `false` unsubscribes, `null` leaves it.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SubscriptionsUpdateRequestWire (
+  val email: String? = null,
+  val phone: String? = null,
+  val externalId: String? = null,
+  val loyaltyId: String? = null,
+  val telegramId: String? = null,
+  val emailBulk: Boolean? = null,
+  val emailChain: Boolean? = null,
+  val emailTransactional: Boolean? = null,
+  val smsBulk: Boolean? = null,
+  val smsChain: Boolean? = null,
+  val smsTransactional: Boolean? = null,
+  val webPushBulk: Boolean? = null,
+  val webPushChain: Boolean? = null,
+  val webPushTransactional: Boolean? = null,
+  val mobilePushBulk: Boolean? = null,
+  val mobilePushChain: Boolean? = null,
+  val mobilePushTransactional: Boolean? = null,
+  val telegramBulk: Boolean? = null,
+  val telegramChain: Boolean? = null,
+  val telegramTransactional: Boolean? = null,
+  val whatsappBulk: Boolean? = null,
+  val whatsappChain: Boolean? = null,
+  val whatsappTransactional: Boolean? = null,
+  val maxBulk: Boolean? = null,
+  val maxChain: Boolean? = null,
+  val maxTransactional: Boolean? = null,
+  val walletBulk: Boolean? = null,
+  val walletChain: Boolean? = null,
+  val walletTransactional: Boolean? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SubscriptionsUpdateRequestWire {
+      val email = pigeonVar_list[0] as String?
+      val phone = pigeonVar_list[1] as String?
+      val externalId = pigeonVar_list[2] as String?
+      val loyaltyId = pigeonVar_list[3] as String?
+      val telegramId = pigeonVar_list[4] as String?
+      val emailBulk = pigeonVar_list[5] as Boolean?
+      val emailChain = pigeonVar_list[6] as Boolean?
+      val emailTransactional = pigeonVar_list[7] as Boolean?
+      val smsBulk = pigeonVar_list[8] as Boolean?
+      val smsChain = pigeonVar_list[9] as Boolean?
+      val smsTransactional = pigeonVar_list[10] as Boolean?
+      val webPushBulk = pigeonVar_list[11] as Boolean?
+      val webPushChain = pigeonVar_list[12] as Boolean?
+      val webPushTransactional = pigeonVar_list[13] as Boolean?
+      val mobilePushBulk = pigeonVar_list[14] as Boolean?
+      val mobilePushChain = pigeonVar_list[15] as Boolean?
+      val mobilePushTransactional = pigeonVar_list[16] as Boolean?
+      val telegramBulk = pigeonVar_list[17] as Boolean?
+      val telegramChain = pigeonVar_list[18] as Boolean?
+      val telegramTransactional = pigeonVar_list[19] as Boolean?
+      val whatsappBulk = pigeonVar_list[20] as Boolean?
+      val whatsappChain = pigeonVar_list[21] as Boolean?
+      val whatsappTransactional = pigeonVar_list[22] as Boolean?
+      val maxBulk = pigeonVar_list[23] as Boolean?
+      val maxChain = pigeonVar_list[24] as Boolean?
+      val maxTransactional = pigeonVar_list[25] as Boolean?
+      val walletBulk = pigeonVar_list[26] as Boolean?
+      val walletChain = pigeonVar_list[27] as Boolean?
+      val walletTransactional = pigeonVar_list[28] as Boolean?
+      return SubscriptionsUpdateRequestWire(email, phone, externalId, loyaltyId, telegramId, emailBulk, emailChain, emailTransactional, smsBulk, smsChain, smsTransactional, webPushBulk, webPushChain, webPushTransactional, mobilePushBulk, mobilePushChain, mobilePushTransactional, telegramBulk, telegramChain, telegramTransactional, whatsappBulk, whatsappChain, whatsappTransactional, maxBulk, maxChain, maxTransactional, walletBulk, walletChain, walletTransactional)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      email,
+      phone,
+      externalId,
+      loyaltyId,
+      telegramId,
+      emailBulk,
+      emailChain,
+      emailTransactional,
+      smsBulk,
+      smsChain,
+      smsTransactional,
+      webPushBulk,
+      webPushChain,
+      webPushTransactional,
+      mobilePushBulk,
+      mobilePushChain,
+      mobilePushTransactional,
+      telegramBulk,
+      telegramChain,
+      telegramTransactional,
+      whatsappBulk,
+      whatsappChain,
+      whatsappTransactional,
+      maxBulk,
+      maxChain,
+      maxTransactional,
+      walletBulk,
+      walletChain,
+      walletTransactional,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SubscriptionsUpdateRequestWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SubscriptionStatus`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SubscriptionStatusWire (
+  val exists: Boolean,
+  val emailBulk: Boolean,
+  val emailChain: Boolean,
+  val emailTransactional: Boolean,
+  val smsBulk: Boolean,
+  val smsChain: Boolean,
+  val smsTransactional: Boolean,
+  val webPushBulk: Boolean,
+  val webPushChain: Boolean,
+  val webPushTransactional: Boolean,
+  val mobilePushBulk: Boolean,
+  val mobilePushChain: Boolean,
+  val mobilePushTransactional: Boolean,
+  val telegramBulk: Boolean,
+  val telegramChain: Boolean,
+  val telegramTransactional: Boolean,
+  val whatsappBulk: Boolean,
+  val whatsappChain: Boolean,
+  val whatsappTransactional: Boolean,
+  val maxBulk: Boolean,
+  val maxChain: Boolean,
+  val maxTransactional: Boolean,
+  val walletBulk: Boolean,
+  val walletChain: Boolean,
+  val walletTransactional: Boolean,
+  val hasWebPush: Boolean,
+  val hasMobilePush: Boolean,
+  val emailInvalid: Boolean,
+  val emailBlacklisted: Boolean,
+  val emailBounced: Boolean,
+  val emailSuppressed: Boolean,
+  val emailConfirmed: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SubscriptionStatusWire {
+      val exists = pigeonVar_list[0] as Boolean
+      val emailBulk = pigeonVar_list[1] as Boolean
+      val emailChain = pigeonVar_list[2] as Boolean
+      val emailTransactional = pigeonVar_list[3] as Boolean
+      val smsBulk = pigeonVar_list[4] as Boolean
+      val smsChain = pigeonVar_list[5] as Boolean
+      val smsTransactional = pigeonVar_list[6] as Boolean
+      val webPushBulk = pigeonVar_list[7] as Boolean
+      val webPushChain = pigeonVar_list[8] as Boolean
+      val webPushTransactional = pigeonVar_list[9] as Boolean
+      val mobilePushBulk = pigeonVar_list[10] as Boolean
+      val mobilePushChain = pigeonVar_list[11] as Boolean
+      val mobilePushTransactional = pigeonVar_list[12] as Boolean
+      val telegramBulk = pigeonVar_list[13] as Boolean
+      val telegramChain = pigeonVar_list[14] as Boolean
+      val telegramTransactional = pigeonVar_list[15] as Boolean
+      val whatsappBulk = pigeonVar_list[16] as Boolean
+      val whatsappChain = pigeonVar_list[17] as Boolean
+      val whatsappTransactional = pigeonVar_list[18] as Boolean
+      val maxBulk = pigeonVar_list[19] as Boolean
+      val maxChain = pigeonVar_list[20] as Boolean
+      val maxTransactional = pigeonVar_list[21] as Boolean
+      val walletBulk = pigeonVar_list[22] as Boolean
+      val walletChain = pigeonVar_list[23] as Boolean
+      val walletTransactional = pigeonVar_list[24] as Boolean
+      val hasWebPush = pigeonVar_list[25] as Boolean
+      val hasMobilePush = pigeonVar_list[26] as Boolean
+      val emailInvalid = pigeonVar_list[27] as Boolean
+      val emailBlacklisted = pigeonVar_list[28] as Boolean
+      val emailBounced = pigeonVar_list[29] as Boolean
+      val emailSuppressed = pigeonVar_list[30] as Boolean
+      val emailConfirmed = pigeonVar_list[31] as Boolean
+      return SubscriptionStatusWire(exists, emailBulk, emailChain, emailTransactional, smsBulk, smsChain, smsTransactional, webPushBulk, webPushChain, webPushTransactional, mobilePushBulk, mobilePushChain, mobilePushTransactional, telegramBulk, telegramChain, telegramTransactional, whatsappBulk, whatsappChain, whatsappTransactional, maxBulk, maxChain, maxTransactional, walletBulk, walletChain, walletTransactional, hasWebPush, hasMobilePush, emailInvalid, emailBlacklisted, emailBounced, emailSuppressed, emailConfirmed)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      exists,
+      emailBulk,
+      emailChain,
+      emailTransactional,
+      smsBulk,
+      smsChain,
+      smsTransactional,
+      webPushBulk,
+      webPushChain,
+      webPushTransactional,
+      mobilePushBulk,
+      mobilePushChain,
+      mobilePushTransactional,
+      telegramBulk,
+      telegramChain,
+      telegramTransactional,
+      whatsappBulk,
+      whatsappChain,
+      whatsappTransactional,
+      maxBulk,
+      maxChain,
+      maxTransactional,
+      walletBulk,
+      walletChain,
+      walletTransactional,
+      hasWebPush,
+      hasMobilePush,
+      emailInvalid,
+      emailBlacklisted,
+      emailBounced,
+      emailSuppressed,
+      emailConfirmed,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SubscriptionStatusWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `BackInStockProperties`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class BackInStockPropertiesWire (
+  val fashionSize: String? = null,
+  val fashionColor: String? = null,
+  val barcode: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BackInStockPropertiesWire {
+      val fashionSize = pigeonVar_list[0] as String?
+      val fashionColor = pigeonVar_list[1] as String?
+      val barcode = pigeonVar_list[2] as String?
+      return BackInStockPropertiesWire(fashionSize, fashionColor, barcode)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      fashionSize,
+      fashionColor,
+      barcode,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is BackInStockPropertiesWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Segment`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SegmentWire (
+  val id: Long,
+  val type: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SegmentWire {
+      val id = pigeonVar_list[0] as Long
+      val type = pigeonVar_list[1] as String?
+      return SegmentWire(id, type)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      type,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SegmentWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PushToken`; [provider] is `apns`, `fcm` or `hms`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PushTokenWire (
+  val token: String,
+  val provider: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PushTokenWire {
+      val token = pigeonVar_list[0] as String
+      val provider = pigeonVar_list[1] as String
+      return PushTokenWire(token, provider)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      token,
+      provider,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PushTokenWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PushAction`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PushActionWire (
+  val id: String,
+  val title: String,
+  val url: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PushActionWire {
+      val id = pigeonVar_list[0] as String
+      val title = pigeonVar_list[1] as String
+      val url = pigeonVar_list[2] as String?
+      return PushActionWire(id, title, url)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      title,
+      url,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PushActionWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PushTarget`; [type] is the wire value of `PushTargetType`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PushTargetWire (
+  val type: String,
+  val uri: String,
+  val payload: Map<String, Any?>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PushTargetWire {
+      val type = pigeonVar_list[0] as String
+      val uri = pigeonVar_list[1] as String
+      val payload = pigeonVar_list[2] as Map<String, Any?>
+      return PushTargetWire(type, uri, payload)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      type,
+      uri,
+      payload,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PushTargetWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PushPayload`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PushPayloadWire (
+  val shopId: String? = null,
+  val code: String,
+  val type: String,
+  val title: String? = null,
+  val body: String? = null,
+  val icon: String? = null,
+  val image: String? = null,
+  val actions: List<PushActionWire>,
+  val target: PushTargetWire? = null,
+  val source: String? = null,
+  val sound: String? = null,
+  val data: Map<String, Any?>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PushPayloadWire {
+      val shopId = pigeonVar_list[0] as String?
+      val code = pigeonVar_list[1] as String
+      val type = pigeonVar_list[2] as String
+      val title = pigeonVar_list[3] as String?
+      val body = pigeonVar_list[4] as String?
+      val icon = pigeonVar_list[5] as String?
+      val image = pigeonVar_list[6] as String?
+      val actions = pigeonVar_list[7] as List<PushActionWire>
+      val target = pigeonVar_list[8] as PushTargetWire?
+      val source = pigeonVar_list[9] as String?
+      val sound = pigeonVar_list[10] as String?
+      val data = pigeonVar_list[11] as Map<String, Any?>
+      return PushPayloadWire(shopId, code, type, title, body, icon, image, actions, target, source, sound, data)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      shopId,
+      code,
+      type,
+      title,
+      body,
+      icon,
+      image,
+      actions,
+      target,
+      source,
+      sound,
+      data,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PushPayloadWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * The statistics of a message in `notifications.getHistory`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class NotificationStatisticsWire (
+  val clicked: Boolean,
+  val complained: Boolean,
+  val hardBounced: Boolean,
+  val opened: Boolean,
+  val purchased: Boolean,
+  val softBounced: Boolean,
+  val unsubscribed: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): NotificationStatisticsWire {
+      val clicked = pigeonVar_list[0] as Boolean
+      val complained = pigeonVar_list[1] as Boolean
+      val hardBounced = pigeonVar_list[2] as Boolean
+      val opened = pigeonVar_list[3] as Boolean
+      val purchased = pigeonVar_list[4] as Boolean
+      val softBounced = pigeonVar_list[5] as Boolean
+      val unsubscribed = pigeonVar_list[6] as Boolean
+      return NotificationStatisticsWire(clicked, complained, hardBounced, opened, purchased, softBounced, unsubscribed)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      clicked,
+      complained,
+      hardBounced,
+      opened,
+      purchased,
+      softBounced,
+      unsubscribed,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is NotificationStatisticsWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * A message in `notifications.getHistory`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class NotificationMessageWire (
+  val body: String? = null,
+  val campaignId: Long? = null,
+  val channel: String? = null,
+  val code: String? = null,
+  val date: String? = null,
+  val icon: String? = null,
+  val picture: String? = null,
+  val sentAt: String? = null,
+  val statistics: NotificationStatisticsWire? = null,
+  val subject: String? = null,
+  val type: String? = null,
+  val url: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): NotificationMessageWire {
+      val body = pigeonVar_list[0] as String?
+      val campaignId = pigeonVar_list[1] as Long?
+      val channel = pigeonVar_list[2] as String?
+      val code = pigeonVar_list[3] as String?
+      val date = pigeonVar_list[4] as String?
+      val icon = pigeonVar_list[5] as String?
+      val picture = pigeonVar_list[6] as String?
+      val sentAt = pigeonVar_list[7] as String?
+      val statistics = pigeonVar_list[8] as NotificationStatisticsWire?
+      val subject = pigeonVar_list[9] as String?
+      val type = pigeonVar_list[10] as String?
+      val url = pigeonVar_list[11] as String?
+      return NotificationMessageWire(body, campaignId, channel, code, date, icon, picture, sentAt, statistics, subject, type, url)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      body,
+      campaignId,
+      channel,
+      code,
+      date,
+      icon,
+      picture,
+      sentAt,
+      statistics,
+      subject,
+      type,
+      url,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is NotificationMessageWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * The answer of `notifications.getHistory`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class NotificationHistoryWire (
+  val status: String? = null,
+  val messages: List<NotificationMessageWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): NotificationHistoryWire {
+      val status = pigeonVar_list[0] as String?
+      val messages = pigeonVar_list[1] as List<NotificationMessageWire>
+      return NotificationHistoryWire(status, messages)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      status,
+      messages,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is NotificationHistoryWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `StoriesBlock`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class StoriesBlockWire (
+  val id: String,
+  val stories: List<StoryWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): StoriesBlockWire {
+      val id = pigeonVar_list[0] as String
+      val stories = pigeonVar_list[1] as List<StoryWire>
+      return StoriesBlockWire(id, stories)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      stories,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is StoriesBlockWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Story`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class StoryWire (
+  val id: String,
+  val name: String,
+  val avatar: String,
+  val viewed: Boolean,
+  val pinned: Boolean,
+  val startPosition: Long,
+  val slides: List<StorySlideWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): StoryWire {
+      val id = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      val avatar = pigeonVar_list[2] as String
+      val viewed = pigeonVar_list[3] as Boolean
+      val pinned = pigeonVar_list[4] as Boolean
+      val startPosition = pigeonVar_list[5] as Long
+      val slides = pigeonVar_list[6] as List<StorySlideWire>
+      return StoryWire(id, name, avatar, viewed, pinned, startPosition, slides)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      name,
+      avatar,
+      viewed,
+      pinned,
+      startPosition,
+      slides,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is StoryWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `StorySlide`; [type] is `image`, `video` or `product`, [duration] whole seconds.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class StorySlideWire (
+  val id: String,
+  val type: String,
+  val background: String,
+  val backgroundColor: String,
+  val preview: String,
+  val duration: Long,
+  val elements: List<StoryElementWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): StorySlideWire {
+      val id = pigeonVar_list[0] as String
+      val type = pigeonVar_list[1] as String
+      val background = pigeonVar_list[2] as String
+      val backgroundColor = pigeonVar_list[3] as String
+      val preview = pigeonVar_list[4] as String
+      val duration = pigeonVar_list[5] as Long
+      val elements = pigeonVar_list[6] as List<StoryElementWire>
+      return StorySlideWire(id, type, background, backgroundColor, preview, duration, elements)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      type,
+      background,
+      backgroundColor,
+      preview,
+      duration,
+      elements,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is StorySlideWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * One element of a slide: [type] is `button`, `product`, `products` or `text_block`, and the fields of that kind are set.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class StoryElementWire (
+  val type: String,
+  val title: String? = null,
+  val link: String? = null,
+  val linkAndroid: String? = null,
+  val linkIos: String? = null,
+  val background: String? = null,
+  val color: String? = null,
+  val textBold: Boolean? = null,
+  val item: StoryProductWire? = null,
+  val showLabel: String? = null,
+  val hideLabel: String? = null,
+  val products: List<StoryProductWire>? = null,
+  val text: String? = null,
+  val fontSize: Double? = null,
+  val fontType: String? = null,
+  val bold: Boolean? = null,
+  val italic: Boolean? = null,
+  val textAlign: String? = null,
+  val textColor: String? = null,
+  val backgroundColor: String? = null,
+  val backgroundOpacity: Double? = null,
+  val lineSpacing: Double? = null,
+  val yOffset: Double? = null,
+  val promocode: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): StoryElementWire {
+      val type = pigeonVar_list[0] as String
+      val title = pigeonVar_list[1] as String?
+      val link = pigeonVar_list[2] as String?
+      val linkAndroid = pigeonVar_list[3] as String?
+      val linkIos = pigeonVar_list[4] as String?
+      val background = pigeonVar_list[5] as String?
+      val color = pigeonVar_list[6] as String?
+      val textBold = pigeonVar_list[7] as Boolean?
+      val item = pigeonVar_list[8] as StoryProductWire?
+      val showLabel = pigeonVar_list[9] as String?
+      val hideLabel = pigeonVar_list[10] as String?
+      val products = pigeonVar_list[11] as List<StoryProductWire>?
+      val text = pigeonVar_list[12] as String?
+      val fontSize = pigeonVar_list[13] as Double?
+      val fontType = pigeonVar_list[14] as String?
+      val bold = pigeonVar_list[15] as Boolean?
+      val italic = pigeonVar_list[16] as Boolean?
+      val textAlign = pigeonVar_list[17] as String?
+      val textColor = pigeonVar_list[18] as String?
+      val backgroundColor = pigeonVar_list[19] as String?
+      val backgroundOpacity = pigeonVar_list[20] as Double?
+      val lineSpacing = pigeonVar_list[21] as Double?
+      val yOffset = pigeonVar_list[22] as Double?
+      val promocode = pigeonVar_list[23] as String?
+      return StoryElementWire(type, title, link, linkAndroid, linkIos, background, color, textBold, item, showLabel, hideLabel, products, text, fontSize, fontType, bold, italic, textAlign, textColor, backgroundColor, backgroundOpacity, lineSpacing, yOffset, promocode)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      type,
+      title,
+      link,
+      linkAndroid,
+      linkIos,
+      background,
+      color,
+      textBold,
+      item,
+      showLabel,
+      hideLabel,
+      products,
+      text,
+      fontSize,
+      fontType,
+      bold,
+      italic,
+      textAlign,
+      textColor,
+      backgroundColor,
+      backgroundOpacity,
+      lineSpacing,
+      yOffset,
+      promocode,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is StoryElementWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `StoryProduct`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class StoryProductWire (
+  val id: String,
+  val name: String,
+  val brand: String,
+  val picture: String,
+  val imageUrl: String,
+  val price: Double,
+  val priceFormatted: String,
+  val oldPrice: Double? = null,
+  val oldPriceFormatted: String,
+  val discountPercent: Double,
+  val promocode: String,
+  val priceWithPromocode: Double,
+  val priceWithPromocodeFormatted: String,
+  val currency: String,
+  val url: String,
+  val deeplinkAndroid: String,
+  val deeplinkIos: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): StoryProductWire {
+      val id = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      val brand = pigeonVar_list[2] as String
+      val picture = pigeonVar_list[3] as String
+      val imageUrl = pigeonVar_list[4] as String
+      val price = pigeonVar_list[5] as Double
+      val priceFormatted = pigeonVar_list[6] as String
+      val oldPrice = pigeonVar_list[7] as Double?
+      val oldPriceFormatted = pigeonVar_list[8] as String
+      val discountPercent = pigeonVar_list[9] as Double
+      val promocode = pigeonVar_list[10] as String
+      val priceWithPromocode = pigeonVar_list[11] as Double
+      val priceWithPromocodeFormatted = pigeonVar_list[12] as String
+      val currency = pigeonVar_list[13] as String
+      val url = pigeonVar_list[14] as String
+      val deeplinkAndroid = pigeonVar_list[15] as String
+      val deeplinkIos = pigeonVar_list[16] as String
+      return StoryProductWire(id, name, brand, picture, imageUrl, price, priceFormatted, oldPrice, oldPriceFormatted, discountPercent, promocode, priceWithPromocode, priceWithPromocodeFormatted, currency, url, deeplinkAndroid, deeplinkIos)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      name,
+      brand,
+      picture,
+      imageUrl,
+      price,
+      priceFormatted,
+      oldPrice,
+      oldPriceFormatted,
+      discountPercent,
+      promocode,
+      priceWithPromocode,
+      priceWithPromocodeFormatted,
+      currency,
+      url,
+      deeplinkAndroid,
+      deeplinkIos,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is StoryProductWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PurchaseProbability`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PurchaseProbabilityWire (
+  val probability: Double,
+  val clientId: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PurchaseProbabilityWire {
+      val probability = pigeonVar_list[0] as Double
+      val clientId = pigeonVar_list[1] as String?
+      return PurchaseProbabilityWire(probability, clientId)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      probability,
+      clientId,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PurchaseProbabilityWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `LoyaltyMember`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class LoyaltyMemberWire (
+  val identifier: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LoyaltyMemberWire {
+      val identifier = pigeonVar_list[0] as String
+      return LoyaltyMemberWire(identifier)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      identifier,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is LoyaltyMemberWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `LoyaltyLevel`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class LoyaltyLevelWire (
+  val code: String,
+  val name: String? = null,
+  val expirationDate: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LoyaltyLevelWire {
+      val code = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String?
+      val expirationDate = pigeonVar_list[2] as String?
+      return LoyaltyLevelWire(code, name, expirationDate)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      code,
+      name,
+      expirationDate,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is LoyaltyLevelWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `LoyaltyStatus`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class LoyaltyStatusWire (
+  val isMember: Boolean,
+  val level: LoyaltyLevelWire? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LoyaltyStatusWire {
+      val isMember = pigeonVar_list[0] as Boolean
+      val level = pigeonVar_list[1] as LoyaltyLevelWire?
+      return LoyaltyStatusWire(isMember, level)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      isMember,
+      level,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is LoyaltyStatusWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `LoyaltyPromotion`; [rewardType] is the wire value.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class LoyaltyPromotionWire (
+  val id: Long,
+  val name: String,
+  val description: String? = null,
+  val startDate: String? = null,
+  val finishDate: String? = null,
+  val stream: String? = null,
+  val badgeLabel: String? = null,
+  val badgeColor: String? = null,
+  val rewardType: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): LoyaltyPromotionWire {
+      val id = pigeonVar_list[0] as Long
+      val name = pigeonVar_list[1] as String
+      val description = pigeonVar_list[2] as String?
+      val startDate = pigeonVar_list[3] as String?
+      val finishDate = pigeonVar_list[4] as String?
+      val stream = pigeonVar_list[5] as String?
+      val badgeLabel = pigeonVar_list[6] as String?
+      val badgeColor = pigeonVar_list[7] as String?
+      val rewardType = pigeonVar_list[8] as String?
+      return LoyaltyPromotionWire(id, name, description, startDate, finishDate, stream, badgeLabel, badgeColor, rewardType)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      name,
+      description,
+      startDate,
+      finishDate,
+      stream,
+      badgeLabel,
+      badgeColor,
+      rewardType,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is LoyaltyPromotionWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `Slider` of the contract.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SliderWire (
+  val code: String,
+  val width: Long,
+  val height: Long,
+  val banners: List<SliderBannerWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SliderWire {
+      val code = pigeonVar_list[0] as String
+      val width = pigeonVar_list[1] as Long
+      val height = pigeonVar_list[2] as Long
+      val banners = pigeonVar_list[3] as List<SliderBannerWire>
+      return SliderWire(code, width, height, banners)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      code,
+      width,
+      height,
+      banners,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SliderWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `SliderBanner`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class SliderBannerWire (
+  val id: String,
+  val code: String,
+  val imageUrl: String? = null,
+  val url: String? = null,
+  val deeplinkIos: String? = null,
+  val deeplinkAndroid: String? = null,
+  val html: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): SliderBannerWire {
+      val id = pigeonVar_list[0] as String
+      val code = pigeonVar_list[1] as String
+      val imageUrl = pigeonVar_list[2] as String?
+      val url = pigeonVar_list[3] as String?
+      val deeplinkIos = pigeonVar_list[4] as String?
+      val deeplinkAndroid = pigeonVar_list[5] as String?
+      val html = pigeonVar_list[6] as String?
+      return SliderBannerWire(id, code, imageUrl, url, deeplinkIos, deeplinkAndroid, html)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      code,
+      imageUrl,
+      url,
+      deeplinkIos,
+      deeplinkAndroid,
+      html,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is SliderBannerWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PollReview`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PollReviewWire (
+  val id: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PollReviewWire {
+      val id = pigeonVar_list[0] as Long
+      return PollReviewWire(id)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PollReviewWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `NpsCategory`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class NpsCategoryWire (
+  val code: String,
+  val name: String,
+  val detractorQuestion: String? = null,
+  val passiveQuestion: String? = null,
+  val promoterQuestion: String? = null,
+  val detractorSuccess: String? = null,
+  val passiveSuccess: String? = null,
+  val promoterSuccess: String? = null,
+  val buttonLabel: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): NpsCategoryWire {
+      val code = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      val detractorQuestion = pigeonVar_list[2] as String?
+      val passiveQuestion = pigeonVar_list[3] as String?
+      val promoterQuestion = pigeonVar_list[4] as String?
+      val detractorSuccess = pigeonVar_list[5] as String?
+      val passiveSuccess = pigeonVar_list[6] as String?
+      val promoterSuccess = pigeonVar_list[7] as String?
+      val buttonLabel = pigeonVar_list[8] as String?
+      return NpsCategoryWire(code, name, detractorQuestion, passiveQuestion, promoterQuestion, detractorSuccess, passiveSuccess, promoterSuccess, buttonLabel)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      code,
+      name,
+      detractorQuestion,
+      passiveQuestion,
+      promoterQuestion,
+      detractorSuccess,
+      passiveSuccess,
+      promoterSuccess,
+      buttonLabel,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is NpsCategoryWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `CsatCampaign`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class CsatCampaignWire (
+  val code: String,
+  val name: String,
+  val dissatisfiedQuestion: String? = null,
+  val neutralQuestion: String? = null,
+  val satisfiedQuestion: String? = null,
+  val dissatisfiedSuccess: String? = null,
+  val neutralSuccess: String? = null,
+  val satisfiedSuccess: String? = null,
+  val buttonLabel: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): CsatCampaignWire {
+      val code = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      val dissatisfiedQuestion = pigeonVar_list[2] as String?
+      val neutralQuestion = pigeonVar_list[3] as String?
+      val satisfiedQuestion = pigeonVar_list[4] as String?
+      val dissatisfiedSuccess = pigeonVar_list[5] as String?
+      val neutralSuccess = pigeonVar_list[6] as String?
+      val satisfiedSuccess = pigeonVar_list[7] as String?
+      val buttonLabel = pigeonVar_list[8] as String?
+      return CsatCampaignWire(code, name, dissatisfiedQuestion, neutralQuestion, satisfiedQuestion, dissatisfiedSuccess, neutralSuccess, satisfiedSuccess, buttonLabel)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      code,
+      name,
+      dissatisfiedQuestion,
+      neutralQuestion,
+      satisfiedQuestion,
+      dissatisfiedSuccess,
+      neutralSuccess,
+      satisfiedSuccess,
+      buttonLabel,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is CsatCampaignWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `CesCampaign`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class CesCampaignWire (
+  val code: String,
+  val name: String,
+  val difficultQuestion: String? = null,
+  val neutralQuestion: String? = null,
+  val easyQuestion: String? = null,
+  val difficultSuccess: String? = null,
+  val neutralSuccess: String? = null,
+  val easySuccess: String? = null,
+  val buttonLabel: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): CesCampaignWire {
+      val code = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      val difficultQuestion = pigeonVar_list[2] as String?
+      val neutralQuestion = pigeonVar_list[3] as String?
+      val easyQuestion = pigeonVar_list[4] as String?
+      val difficultSuccess = pigeonVar_list[5] as String?
+      val neutralSuccess = pigeonVar_list[6] as String?
+      val easySuccess = pigeonVar_list[7] as String?
+      val buttonLabel = pigeonVar_list[8] as String?
+      return CesCampaignWire(code, name, difficultQuestion, neutralQuestion, easyQuestion, difficultSuccess, neutralSuccess, easySuccess, buttonLabel)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      code,
+      name,
+      difficultQuestion,
+      neutralQuestion,
+      easyQuestion,
+      difficultSuccess,
+      neutralSuccess,
+      easySuccess,
+      buttonLabel,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is CesCampaignWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `PollChannel`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PollChannelWire (
+  val code: String,
+  val name: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PollChannelWire {
+      val code = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      return PollChannelWire(code, name)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      code,
+      name,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PollChannelWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductRatingSummary`; [ratings] is the count per star.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductRatingSummaryWire (
+  val count: Long,
+  val averageRating: Double? = null,
+  val ratings: Map<Long, Long>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductRatingSummaryWire {
+      val count = pigeonVar_list[0] as Long
+      val averageRating = pigeonVar_list[1] as Double?
+      val ratings = pigeonVar_list[2] as Map<Long, Long>
+      return ProductRatingSummaryWire(count, averageRating, ratings)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      count,
+      averageRating,
+      ratings,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductRatingSummaryWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductReview`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductReviewWire (
+  val id: Long,
+  val rating: Long,
+  val comment: String? = null,
+  val author: String? = null,
+  val createdAt: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductReviewWire {
+      val id = pigeonVar_list[0] as Long
+      val rating = pigeonVar_list[1] as Long
+      val comment = pigeonVar_list[2] as String?
+      val author = pigeonVar_list[3] as String?
+      val createdAt = pigeonVar_list[4] as String
+      return ProductReviewWire(id, rating, comment, author, createdAt)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      rating,
+      comment,
+      author,
+      createdAt,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductReviewWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ProductReviewsResponse`.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ProductReviewsResponseWire (
+  val summary: ProductRatingSummaryWire,
+  val reviews: List<ProductReviewWire>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ProductReviewsResponseWire {
+      val summary = pigeonVar_list[0] as ProductRatingSummaryWire
+      val reviews = pigeonVar_list[1] as List<ProductReviewWire>
+      return ProductReviewsResponseWire(summary, reviews)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      summary,
+      reviews,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ProductReviewsResponseWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
+ * `ClientReview`; [state] is the wire value (`moderation`, `published`, `rejected`).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ClientReviewWire (
+  val id: Long,
+  val itemId: String,
+  val orderId: String,
+  val rating: Long,
+  val comment: String? = null,
+  val state: String? = null,
+  val createdAt: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ClientReviewWire {
+      val id = pigeonVar_list[0] as Long
+      val itemId = pigeonVar_list[1] as String
+      val orderId = pigeonVar_list[2] as String
+      val rating = pigeonVar_list[3] as Long
+      val comment = pigeonVar_list[4] as String?
+      val state = pigeonVar_list[5] as String?
+      val createdAt = pigeonVar_list[6] as String
+      return ClientReviewWire(id, itemId, orderId, rating, comment, state, createdAt)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      itemId,
+      orderId,
+      rating,
+      comment,
+      state,
+      createdAt,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is ClientReviewWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
 private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -472,27 +4016,387 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
       }
       130.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PurchaseLineItemWire.fromList(it)
+          SdkLogMessageWire.fromList(it)
         }
       }
       131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProfileParamsWire.fromList(it)
+          PurchaseLineItemWire.fromList(it)
         }
       }
       132.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ManageSubscriptionParamsWire.fromList(it)
+          TrackingItemWire.fromList(it)
         }
       }
       133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          TrackingItemWire.fromList(it)
+          TrackingSourceWire.fromList(it)
         }
       }
       134.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          TrackingSourceWire.fromList(it)
+          SdkSnapshotWire.fromList(it)
+        }
+      }
+      135.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductWire.fromList(it)
+        }
+      }
+      136.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductCategoryWire.fromList(it)
+        }
+      }
+      137.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductParamWire.fromList(it)
+        }
+      }
+      138.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LocationWire.fromList(it)
+        }
+      }
+      139.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          BrandWire.fromList(it)
+        }
+      }
+      140.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchFilterWire.fromList(it)
+        }
+      }
+      141.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ColorFilterWire.fromList(it)
+        }
+      }
+      142.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SizeFilterWire.fromList(it)
+        }
+      }
+      143.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          IndustrialFiltersWire.fromList(it)
+        }
+      }
+      144.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PriceRangeWire.fromList(it)
+        }
+      }
+      145.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PriceIntervalWire.fromList(it)
+        }
+      }
+      146.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductsListResponseWire.fromList(it)
+        }
+      }
+      147.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductsListRequestWire.fromList(it)
+        }
+      }
+      148.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductCounterWire.fromList(it)
+        }
+      }
+      149.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductCounterTriggersWire.fromList(it)
+        }
+      }
+      150.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductCountersResponseWire.fromList(it)
+        }
+      }
+      151.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          CollectionResponseWire.fromList(it)
+        }
+      }
+      152.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          RecommendationRequestWire.fromList(it)
+        }
+      }
+      153.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          RecommendationResponseWire.fromList(it)
+        }
+      }
+      154.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchFullRequestWire.fromList(it)
+        }
+      }
+      155.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          QueryWire.fromList(it)
+        }
+      }
+      156.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PopularItemWire.fromList(it)
+        }
+      }
+      157.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchRedirectWire.fromList(it)
+        }
+      }
+      158.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchBlankResponseWire.fromList(it)
+        }
+      }
+      159.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchInstantResponseWire.fromList(it)
+        }
+      }
+      160.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SearchFullResponseWire.fromList(it)
+        }
+      }
+      161.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AgentProductWire.fromList(it)
+        }
+      }
+      162.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AgentMessageWire.fromList(it)
+        }
+      }
+      163.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AgentSessionWire.fromList(it)
+        }
+      }
+      164.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AgentDialogResponseWire.fromList(it)
+        }
+      }
+      165.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AgentResponseWire.fromList(it)
+        }
+      }
+      166.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          CartItemWire.fromList(it)
+        }
+      }
+      167.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProfileWire.fromList(it)
+        }
+      }
+      168.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProfileKidWire.fromList(it)
+        }
+      }
+      169.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProfileCarWire.fromList(it)
+        }
+      }
+      170.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProfileUpdateRequestWire.fromList(it)
+        }
+      }
+      171.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          OrderItemWire.fromList(it)
+        }
+      }
+      172.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          OrderWire.fromList(it)
+        }
+      }
+      173.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PurchaseTrackingRequestWire.fromList(it)
+        }
+      }
+      174.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProfileParamsWire.fromList(it)
+        }
+      }
+      175.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SubscriptionsUpdateRequestWire.fromList(it)
+        }
+      }
+      176.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SubscriptionStatusWire.fromList(it)
+        }
+      }
+      177.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          BackInStockPropertiesWire.fromList(it)
+        }
+      }
+      178.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SegmentWire.fromList(it)
+        }
+      }
+      179.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PushTokenWire.fromList(it)
+        }
+      }
+      180.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PushActionWire.fromList(it)
+        }
+      }
+      181.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PushTargetWire.fromList(it)
+        }
+      }
+      182.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PushPayloadWire.fromList(it)
+        }
+      }
+      183.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          NotificationStatisticsWire.fromList(it)
+        }
+      }
+      184.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          NotificationMessageWire.fromList(it)
+        }
+      }
+      185.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          NotificationHistoryWire.fromList(it)
+        }
+      }
+      186.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StoriesBlockWire.fromList(it)
+        }
+      }
+      187.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StoryWire.fromList(it)
+        }
+      }
+      188.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StorySlideWire.fromList(it)
+        }
+      }
+      189.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StoryElementWire.fromList(it)
+        }
+      }
+      190.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          StoryProductWire.fromList(it)
+        }
+      }
+      191.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PurchaseProbabilityWire.fromList(it)
+        }
+      }
+      192.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LoyaltyMemberWire.fromList(it)
+        }
+      }
+      193.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LoyaltyLevelWire.fromList(it)
+        }
+      }
+      194.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LoyaltyStatusWire.fromList(it)
+        }
+      }
+      195.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          LoyaltyPromotionWire.fromList(it)
+        }
+      }
+      196.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SliderWire.fromList(it)
+        }
+      }
+      197.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SliderBannerWire.fromList(it)
+        }
+      }
+      198.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PollReviewWire.fromList(it)
+        }
+      }
+      199.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          NpsCategoryWire.fromList(it)
+        }
+      }
+      200.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          CsatCampaignWire.fromList(it)
+        }
+      }
+      201.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          CesCampaignWire.fromList(it)
+        }
+      }
+      202.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PollChannelWire.fromList(it)
+        }
+      }
+      203.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductRatingSummaryWire.fromList(it)
+        }
+      }
+      204.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductReviewWire.fromList(it)
+        }
+      }
+      205.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductReviewsResponseWire.fromList(it)
+        }
+      }
+      206.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ClientReviewWire.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -504,24 +4408,312 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
         stream.write(129)
         writeValue(stream, value.toList())
       }
-      is PurchaseLineItemWire -> {
+      is SdkLogMessageWire -> {
         stream.write(130)
         writeValue(stream, value.toList())
       }
-      is ProfileParamsWire -> {
+      is PurchaseLineItemWire -> {
         stream.write(131)
         writeValue(stream, value.toList())
       }
-      is ManageSubscriptionParamsWire -> {
+      is TrackingItemWire -> {
         stream.write(132)
         writeValue(stream, value.toList())
       }
-      is TrackingItemWire -> {
+      is TrackingSourceWire -> {
         stream.write(133)
         writeValue(stream, value.toList())
       }
-      is TrackingSourceWire -> {
+      is SdkSnapshotWire -> {
         stream.write(134)
+        writeValue(stream, value.toList())
+      }
+      is ProductWire -> {
+        stream.write(135)
+        writeValue(stream, value.toList())
+      }
+      is ProductCategoryWire -> {
+        stream.write(136)
+        writeValue(stream, value.toList())
+      }
+      is ProductParamWire -> {
+        stream.write(137)
+        writeValue(stream, value.toList())
+      }
+      is LocationWire -> {
+        stream.write(138)
+        writeValue(stream, value.toList())
+      }
+      is BrandWire -> {
+        stream.write(139)
+        writeValue(stream, value.toList())
+      }
+      is SearchFilterWire -> {
+        stream.write(140)
+        writeValue(stream, value.toList())
+      }
+      is ColorFilterWire -> {
+        stream.write(141)
+        writeValue(stream, value.toList())
+      }
+      is SizeFilterWire -> {
+        stream.write(142)
+        writeValue(stream, value.toList())
+      }
+      is IndustrialFiltersWire -> {
+        stream.write(143)
+        writeValue(stream, value.toList())
+      }
+      is PriceRangeWire -> {
+        stream.write(144)
+        writeValue(stream, value.toList())
+      }
+      is PriceIntervalWire -> {
+        stream.write(145)
+        writeValue(stream, value.toList())
+      }
+      is ProductsListResponseWire -> {
+        stream.write(146)
+        writeValue(stream, value.toList())
+      }
+      is ProductsListRequestWire -> {
+        stream.write(147)
+        writeValue(stream, value.toList())
+      }
+      is ProductCounterWire -> {
+        stream.write(148)
+        writeValue(stream, value.toList())
+      }
+      is ProductCounterTriggersWire -> {
+        stream.write(149)
+        writeValue(stream, value.toList())
+      }
+      is ProductCountersResponseWire -> {
+        stream.write(150)
+        writeValue(stream, value.toList())
+      }
+      is CollectionResponseWire -> {
+        stream.write(151)
+        writeValue(stream, value.toList())
+      }
+      is RecommendationRequestWire -> {
+        stream.write(152)
+        writeValue(stream, value.toList())
+      }
+      is RecommendationResponseWire -> {
+        stream.write(153)
+        writeValue(stream, value.toList())
+      }
+      is SearchFullRequestWire -> {
+        stream.write(154)
+        writeValue(stream, value.toList())
+      }
+      is QueryWire -> {
+        stream.write(155)
+        writeValue(stream, value.toList())
+      }
+      is PopularItemWire -> {
+        stream.write(156)
+        writeValue(stream, value.toList())
+      }
+      is SearchRedirectWire -> {
+        stream.write(157)
+        writeValue(stream, value.toList())
+      }
+      is SearchBlankResponseWire -> {
+        stream.write(158)
+        writeValue(stream, value.toList())
+      }
+      is SearchInstantResponseWire -> {
+        stream.write(159)
+        writeValue(stream, value.toList())
+      }
+      is SearchFullResponseWire -> {
+        stream.write(160)
+        writeValue(stream, value.toList())
+      }
+      is AgentProductWire -> {
+        stream.write(161)
+        writeValue(stream, value.toList())
+      }
+      is AgentMessageWire -> {
+        stream.write(162)
+        writeValue(stream, value.toList())
+      }
+      is AgentSessionWire -> {
+        stream.write(163)
+        writeValue(stream, value.toList())
+      }
+      is AgentDialogResponseWire -> {
+        stream.write(164)
+        writeValue(stream, value.toList())
+      }
+      is AgentResponseWire -> {
+        stream.write(165)
+        writeValue(stream, value.toList())
+      }
+      is CartItemWire -> {
+        stream.write(166)
+        writeValue(stream, value.toList())
+      }
+      is ProfileWire -> {
+        stream.write(167)
+        writeValue(stream, value.toList())
+      }
+      is ProfileKidWire -> {
+        stream.write(168)
+        writeValue(stream, value.toList())
+      }
+      is ProfileCarWire -> {
+        stream.write(169)
+        writeValue(stream, value.toList())
+      }
+      is ProfileUpdateRequestWire -> {
+        stream.write(170)
+        writeValue(stream, value.toList())
+      }
+      is OrderItemWire -> {
+        stream.write(171)
+        writeValue(stream, value.toList())
+      }
+      is OrderWire -> {
+        stream.write(172)
+        writeValue(stream, value.toList())
+      }
+      is PurchaseTrackingRequestWire -> {
+        stream.write(173)
+        writeValue(stream, value.toList())
+      }
+      is ProfileParamsWire -> {
+        stream.write(174)
+        writeValue(stream, value.toList())
+      }
+      is SubscriptionsUpdateRequestWire -> {
+        stream.write(175)
+        writeValue(stream, value.toList())
+      }
+      is SubscriptionStatusWire -> {
+        stream.write(176)
+        writeValue(stream, value.toList())
+      }
+      is BackInStockPropertiesWire -> {
+        stream.write(177)
+        writeValue(stream, value.toList())
+      }
+      is SegmentWire -> {
+        stream.write(178)
+        writeValue(stream, value.toList())
+      }
+      is PushTokenWire -> {
+        stream.write(179)
+        writeValue(stream, value.toList())
+      }
+      is PushActionWire -> {
+        stream.write(180)
+        writeValue(stream, value.toList())
+      }
+      is PushTargetWire -> {
+        stream.write(181)
+        writeValue(stream, value.toList())
+      }
+      is PushPayloadWire -> {
+        stream.write(182)
+        writeValue(stream, value.toList())
+      }
+      is NotificationStatisticsWire -> {
+        stream.write(183)
+        writeValue(stream, value.toList())
+      }
+      is NotificationMessageWire -> {
+        stream.write(184)
+        writeValue(stream, value.toList())
+      }
+      is NotificationHistoryWire -> {
+        stream.write(185)
+        writeValue(stream, value.toList())
+      }
+      is StoriesBlockWire -> {
+        stream.write(186)
+        writeValue(stream, value.toList())
+      }
+      is StoryWire -> {
+        stream.write(187)
+        writeValue(stream, value.toList())
+      }
+      is StorySlideWire -> {
+        stream.write(188)
+        writeValue(stream, value.toList())
+      }
+      is StoryElementWire -> {
+        stream.write(189)
+        writeValue(stream, value.toList())
+      }
+      is StoryProductWire -> {
+        stream.write(190)
+        writeValue(stream, value.toList())
+      }
+      is PurchaseProbabilityWire -> {
+        stream.write(191)
+        writeValue(stream, value.toList())
+      }
+      is LoyaltyMemberWire -> {
+        stream.write(192)
+        writeValue(stream, value.toList())
+      }
+      is LoyaltyLevelWire -> {
+        stream.write(193)
+        writeValue(stream, value.toList())
+      }
+      is LoyaltyStatusWire -> {
+        stream.write(194)
+        writeValue(stream, value.toList())
+      }
+      is LoyaltyPromotionWire -> {
+        stream.write(195)
+        writeValue(stream, value.toList())
+      }
+      is SliderWire -> {
+        stream.write(196)
+        writeValue(stream, value.toList())
+      }
+      is SliderBannerWire -> {
+        stream.write(197)
+        writeValue(stream, value.toList())
+      }
+      is PollReviewWire -> {
+        stream.write(198)
+        writeValue(stream, value.toList())
+      }
+      is NpsCategoryWire -> {
+        stream.write(199)
+        writeValue(stream, value.toList())
+      }
+      is CsatCampaignWire -> {
+        stream.write(200)
+        writeValue(stream, value.toList())
+      }
+      is CesCampaignWire -> {
+        stream.write(201)
+        writeValue(stream, value.toList())
+      }
+      is PollChannelWire -> {
+        stream.write(202)
+        writeValue(stream, value.toList())
+      }
+      is ProductRatingSummaryWire -> {
+        stream.write(203)
+        writeValue(stream, value.toList())
+      }
+      is ProductReviewWire -> {
+        stream.write(204)
+        writeValue(stream, value.toList())
+      }
+      is ProductReviewsResponseWire -> {
+        stream.write(205)
+        writeValue(stream, value.toList())
+      }
+      is ClientReviewWire -> {
+        stream.write(206)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -532,99 +4724,149 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
 
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface PersonalizationHostApi {
-  fun initialize(config: InitConfig, callback: (Result<Unit>) -> Unit)
-  fun getPlatformVersion(): String
-  /** Returns the push token stored by the native SDK (if any). */
-  fun getStoredPushToken(shopId: String?): String?
-  /** [customFieldsJson] is JSON object string or null (maps to native custom fields map). */
-  fun trackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFieldsJson: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun setProfile(params: ProfileParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun manageSubscription(params: ManageSubscriptionParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit)
   /**
-   * Returns the recommendation block as a JSON string.
-   * [paramsJson] is a JSON object string with optional filter parameters.
-   * Dart layer parses the result into [RecommendationResponse].
+   * Starts the shop on the native SDK's new core (`Rees46.initializeBridge`)
+   * and answers with its state at once; [PersonalizationStateFlutterApi] tells
+   * every change after that.
    */
-  fun getRecommendation(code: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun initialize(config: InitConfig, callback: (Result<SdkSnapshotWire>) -> Unit)
+  fun getPlatformVersion(): String
+  /** The shop's state as the native instance has it now. */
+  fun getSnapshot(shopId: String?): SdkSnapshotWire
   /** Returns the current session ID from the native SDK. */
   fun getSid(shopId: String?): String
   /** Returns the device ID assigned by the native SDK, or null before first sync. */
   fun getDid(shopId: String?): String?
   /**
-   * Returns a single product's details as a JSON string.
-   * Dart layer parses the result into [Product].
+   * `flush`: sends the shop's queue now; answers once each event queued at the
+   * call was tried. `notInitialized` for a shop the bridge does not know.
    */
-  fun getProductInfo(itemId: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun flush(shopId: String?, callback: (Result<Unit>) -> Unit)
   /**
-   * Returns a paginated product catalog list as a JSON string.
-   * [paramsJson] is a JSON object with optional filter fields.
-   * Dart layer parses the result into [ProductsListResponse].
+   * `release`: stops the shop's instance, which leaves the native registry; its
+   * queue stays on disk. The bridge drops what it keeps of the shop first, so the
+   * released instance tells Dart nothing more. A shop the bridge does not know is
+   * released already: nothing happens.
    */
-  fun getProductsList(paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun release(shopId: String?)
   /**
-   * Returns blank search results (trending/popular) as a JSON string.
-   * No parameters — the native SDK decides what to return based on shop config.
-   * Dart layer parses the result into [SearchBlankResponse].
+   * `deleteUserCredentials`: forgets the shop's customer — device id, session,
+   * queue, saved `/init` answer — and answers with the shop's state after the
+   * wipe; the new device id comes with the next `/init`, as a snapshot.
    */
-  fun searchBlank(shopId: String?, callback: (Result<String>) -> Unit)
+  fun deleteUserCredentials(shopId: String?, callback: (Result<SdkSnapshotWire>) -> Unit)
   /**
-   * Returns instant (typeahead) search results as a JSON string.
-   * [paramsJson] may contain optional "locations" (String) and "excluded_brands" ([String]).
-   * Dart layer parses the result into [SearchInstantResponse].
+   * Whether this engine's Dart hears the native SDK's log messages
+   * (`Rees46.setLogHandler`), through [PersonalizationStateFlutterApi.onLog].
    */
-  fun searchInstant(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun setLogForwarding(enabled: Boolean)
+  /** `tracking.custom`. [customFields] are the event's free-form fields. */
+  fun trackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFields: Map<String, Any?>?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackCategoryView(categoryId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackSearch(query: String, results: List<String>?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackAddToCart(item: TrackingItemWire, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackSyncCart(items: List<TrackingItemWire>, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackRemoveFromCart(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackAddToFavorites(itemId: String, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackSyncFavorites(itemIds: List<String>, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackRemoveFromFavorites(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackStoryView(storyId: String, slideId: String, code: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun trackStoryClick(storyId: String, slideId: String, code: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** `tracking.bannerView`: a banner of a slider was shown. */
+  fun trackBannerView(bannerId: String, code: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** `tracking.bannerClick`: a banner of a slider was tapped. */
+  fun trackBannerClick(bannerId: String, code: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** Stores the attribution source natively for the next event. */
+  fun trackSetSource(source: TrackingSourceWire, shopId: String?)
+  /** `tracking.purchase`: the contract's request and the event's own source. */
+  fun trackPurchase(request: PurchaseTrackingRequestWire, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
   /**
-   * Returns full search results as a JSON string.
-   * [paramsJson] is a JSON object string with optional search parameters.
-   * Dart layer parses the result into [SearchFullResponse].
+   * Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`.
+   * The native SDKs never show a popup themselves under the plugin, so they never
+   * report one either: Dart does, once it is on screen.
    */
-  fun searchFull(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun productsGetInfo(itemId: String, shopId: String?, callback: (Result<ProductWire?>) -> Unit)
+  fun productsGetList(request: ProductsListRequestWire, shopId: String?, callback: (Result<ProductsListResponseWire>) -> Unit)
+  fun productsGetCounters(itemId: String, shopId: String?, callback: (Result<ProductCountersResponseWire>) -> Unit)
+  /** `products.getCategory`: [request] without `categoryIds` and `merchants`. */
+  fun productsGetCategory(categoryId: String, request: ProductsListRequestWire, shopId: String?, callback: (Result<ProductsListResponseWire>) -> Unit)
+  fun collectionsGet(collectionId: String, shopId: String?, callback: (Result<CollectionResponseWire>) -> Unit)
+  fun recommendationsGet(code: String, request: RecommendationRequestWire, shopId: String?, callback: (Result<RecommendationResponseWire>) -> Unit)
+  /** `search.agentEnabled`, read now from the last `/init` answer. */
+  fun searchAgentEnabled(shopId: String?): Boolean
+  fun searchBlank(shopId: String?, callback: (Result<SearchBlankResponseWire>) -> Unit)
+  fun searchInstant(query: String, locations: List<String>?, excludedMerchants: List<String>?, excludedBrands: List<String>?, shopId: String?, callback: (Result<SearchInstantResponseWire>) -> Unit)
+  fun searchFull(query: String, request: SearchFullRequestWire, shopId: String?, callback: (Result<SearchFullResponseWire>) -> Unit)
+  fun searchAgentDialog(sessionId: Long?, locations: List<String>?, shopId: String?, callback: (Result<AgentDialogResponseWire>) -> Unit)
+  fun searchAgent(message: String, sessionId: Long?, locations: List<String>?, shopId: String?, callback: (Result<AgentResponseWire>) -> Unit)
+  fun cartGet(shopId: String?, callback: (Result<List<CartItemWire>>) -> Unit)
+  /** A server method: [shopSecret] is passed by the caller and never kept. */
+  fun cartClear(shopSecret: String, email: String?, phone: String?, loyaltyId: String?, externalId: String?, telegramId: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun profileGet(shopId: String?, callback: (Result<ProfileWire>) -> Unit)
+  fun profileSet(request: ProfileUpdateRequestWire, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun profileGetLastOrder(shopId: String?, callback: (Result<List<ProductWire>>) -> Unit)
+  /** A server method: [shopSecret] is passed by the caller and never kept. */
+  fun profileGetOrders(shopSecret: String, did: String?, email: String?, phone: String?, loyaltyId: String?, externalId: String?, dateFrom: String?, shopId: String?, callback: (Result<List<OrderWire>>) -> Unit)
+  fun subscriptionsManage(request: SubscriptionsUpdateRequestWire, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun subscriptionsCheck(shopId: String?, callback: (Result<SubscriptionStatusWire>) -> Unit)
+  fun subscriptionsSubscribeForPriceDrop(itemId: String, currentPrice: Double, email: String?, phone: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun subscriptionsUnsubscribeFromPriceDrop(itemIds: List<String>, email: String?, phone: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun subscriptionsSubscribeForBackInStock(itemId: String, properties: BackInStockPropertiesWire?, email: String?, phone: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun subscriptionsUnsubscribeFromBackInStock(itemIds: List<String>, email: String?, phone: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun segmentsAdd(segmentId: Long, email: String?, phone: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun segmentsRemove(segmentId: Long, email: String?, phone: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun segmentsGet(shopId: String?, callback: (Result<List<SegmentWire>>) -> Unit)
+  fun notificationsTrackDelivered(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun notificationsTrackOpened(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun notificationsTrackClicked(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun notificationsTrackClosed(code: String, type: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun notificationsSetPushToken(token: String, provider: String, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** A server method: [shopSecret] is passed by the caller and never kept. */
+  fun notificationsGetHistory(shopSecret: String, type: String, phone: String?, email: String?, externalId: String?, loyaltyId: String?, channel: String?, limit: Long?, page: Long?, dateFrom: String?, did: String?, shopId: String?, callback: (Result<NotificationHistoryWire>) -> Unit)
   /**
-   * Joins the loyalty program (`loyalty/members/join`) and returns the
-   * response envelope as a JSON string `{ "status": ..., "payload": { ... } }`.
-   * The shop is identified by the SDK's configured `shop_id`; [phone] is required.
-   * Dart layer parses the result into [LoyaltyJoinResponse].
+   * Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
+   * via the native `Rees46.handlePush`. [event] is the name of the contract's
+   * `PushEvent`: `delivered`, `opened`, `clicked` or `closed`.
    */
-  fun joinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, shopId: String?, callback: (Result<String>) -> Unit)
-  /**
-   * Returns the loyalty membership status (`loyalty/members/status`) as a JSON
-   * string `{ "status": ..., "payload": { "member": ..., "level": { ... } } }`.
-   * [identifier] is the member identifier (phone).
-   * Dart layer parses the result into [LoyaltyStatusResponse].
-   */
-  fun getLoyaltyStatus(identifier: String, shopId: String?, callback: (Result<String>) -> Unit)
-  /**
-   * Returns the current user's profile as a JSON string.
-   * Dart layer parses the result into [ProfileResponse].
-   */
-  fun getProfile(shopId: String?, callback: (Result<String>) -> Unit)
-  /**
-   * Returns view / cart / purchase counters for [item] as a JSON string.
-   * Dart layer parses the result into [ProductCountersResponse].
-   */
-  fun getProductCounters(item: String, shopId: String?, callback: (Result<String>) -> Unit)
-  /**
-   * Returns a category product listing as a JSON string.
-   * [limit] and [page] paginate the result; both are optional.
-   * [paramsJson] is a JSON object string with the optional filters: "brands" and
-   * "locations" (comma-separated strings), "filters" (facet name → [values]),
-   * "price_min" / "price_max" (numbers), "sort_by" / "sort_dir" (strings). A bridge
-   * passes on only what its native SDK takes for a category.
-   * Dart layer parses the result into [CategoryResponse].
-   */
-  fun getCategory(category: String, limit: Long?, page: Long?, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
-  /**
-   * Returns a merchandised collection's products as a JSON string.
-   * Dart layer parses the result into [CollectionResponse].
-   */
-  fun getCollection(collectionId: String, shopId: String?, callback: (Result<String>) -> Unit)
-  /**
-   * Returns the stories block [code] (`stories/{code}`) as the server's JSON string,
-   * untouched: `{ "id": ..., "stories": [...], "settings": {...} }`. Both platforms hand
-   * over the same raw payload, so Dart parses one shape.
-   * Dart layer parses the result into [StoriesBlock].
-   */
-  fun getStories(code: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun handlePush(payload: Map<String, String>, event: String, callback: (Result<Unit>) -> Unit)
+  fun storiesGet(code: String, shopId: String?, callback: (Result<StoriesBlockWire>) -> Unit)
+  fun predictGetProbabilityToPurchase(shopId: String?, callback: (Result<PurchaseProbabilityWire>) -> Unit)
+  /** [gender] is `m` or `f`. */
+  fun loyaltyJoin(phone: String, firstName: String?, lastName: String?, gender: String?, birthday: String?, shopId: String?, callback: (Result<LoyaltyMemberWire>) -> Unit)
+  fun loyaltyGetStatus(phone: String, shopId: String?, callback: (Result<LoyaltyStatusWire>) -> Unit)
+  fun loyaltyGetPromotions(locationId: String?, promoCodes: List<String>?, chargeBonuses: Boolean?, currentTime: String?, shopId: String?, callback: (Result<List<LoyaltyPromotionWire>>) -> Unit)
+  fun slidersGet(code: String, tags: List<String>?, locationId: String?, shopId: String?, callback: (Result<SliderWire>) -> Unit)
+  fun reviewsCreateNps(rate: Long, channel: String, category: String, orderId: String?, comment: String?, label: String?, shopId: String?, callback: (Result<PollReviewWire>) -> Unit)
+  fun reviewsCreateCsat(rate: Long, channel: String, campaign: String, orderId: String?, comment: String?, label: String?, shopId: String?, callback: (Result<PollReviewWire>) -> Unit)
+  fun reviewsCreateCes(rate: Long, channel: String, campaign: String, orderId: String?, comment: String?, label: String?, shopId: String?, callback: (Result<PollReviewWire>) -> Unit)
+  fun reviewsGetNpsCategories(shopId: String?, callback: (Result<List<NpsCategoryWire>>) -> Unit)
+  fun reviewsGetNpsChannels(shopId: String?, callback: (Result<List<PollChannelWire>>) -> Unit)
+  fun reviewsGetCsatCampaigns(shopId: String?, callback: (Result<List<CsatCampaignWire>>) -> Unit)
+  fun reviewsGetCesCampaigns(shopId: String?, callback: (Result<List<CesCampaignWire>>) -> Unit)
+  fun reviewsGetProductReviews(itemId: String, limit: Long?, offset: Long?, shopId: String?, callback: (Result<ProductReviewsResponseWire>) -> Unit)
+  fun reviewsGetClientReviews(orderId: String, shopId: String?, callback: (Result<List<ClientReviewWire>>) -> Unit)
+  fun legacyGetRecommendation(code: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetProductInfo(itemId: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetProductsList(paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacySearchBlank(shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacySearchInstant(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacySearchFull(query: String, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyJoinLoyalty(phone: String, email: String?, firstName: String?, lastName: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetLoyaltyStatus(identifier: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetProfile(shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetProductCounters(item: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetCategory(category: String, limit: Long?, page: Long?, paramsJson: String?, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetCollection(collectionId: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacyGetStories(code: String, shopId: String?, callback: (Result<String>) -> Unit)
+  fun legacySetProfile(params: ProfileParamsWire, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun legacyManageSubscription(params: SubscriptionsUpdateRequestWire, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** [customFieldsJson] is a JSON object string or null. */
+  fun legacyTrackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFieldsJson: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  fun legacyTrackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, isGiftPackage: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** The push token the native SDK stored, as 1.6.4 read it; null when there is none. */
+  fun legacyGetStoredPushToken(shopId: String?): String?
   /**
    * Opens [url] with the system handler (browser or the app that claims the link).
    * Returns false when nothing could open it.
@@ -672,34 +4914,6 @@ interface PersonalizationHostApi {
    */
   fun endStoriesAudio()
   /**
-   * Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-   * via the native `REES46.handlePush`. [event] is the index of the Dart
-   * `PushEvent` enum: 0 = received, 1 = delivered, 2 = clicked. The native side
-   * maps it to its own vocabulary (Android `PushEventType`, iOS `PushEvent`).
-   */
-  fun handlePush(payload: Map<String, String>, event: Long, callback: (Result<Unit>) -> Unit)
-  fun trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackCategoryView(categoryId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackSearch(query: String, results: List<String>?, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackAddToCart(item: TrackingItemWire, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackSyncCart(items: List<TrackingItemWire>, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackRemoveFromCart(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackAddToFavorites(itemId: String, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackSyncFavorites(itemIds: List<String>, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackRemoveFromFavorites(itemId: String, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackStoryView(storyId: String, slideId: String, code: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
-  fun trackStoryClick(storyId: String, slideId: String, code: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
-  /** Stores the attribution source natively for the next event. */
-  fun trackSetSource(source: TrackingSourceWire, shopId: String?)
-  /** [customJson] and [recommendedSourceJson] are JSON object strings or null. */
-  fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, isGiftPackage: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, customJson: String?, recommendedSourceJson: String?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
-  /**
-   * Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`
-   * (Android) / `trackPopupShown` (iOS). The native SDKs never show a popup themselves
-   * under the plugin, so they never report one either: Dart does, once it is on screen.
-   */
-  fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit)
-  /**
    * Opens the system settings where the user turns notifications on for the app: the
    * app's notification settings on Android, the app's page in Settings on iOS. What the
    * native popups do for their push-subscription button.
@@ -721,12 +4935,13 @@ interface PersonalizationHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val configArg = args[0] as InitConfig
-            api.initialize(configArg) { result: Result<Unit> ->
+            api.initialize(configArg) { result: Result<SdkSnapshotWire> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
               } else {
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
               }
             }
           }
@@ -750,104 +4965,17 @@ interface PersonalizationHostApi {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoredPushToken$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSnapshot$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val shopIdArg = args[0] as String?
             val wrapped: List<Any?> = try {
-              listOf(api.getStoredPushToken(shopIdArg))
+              listOf(api.getSnapshot(shopIdArg))
             } catch (exception: Throwable) {
               PersonalizationApiPigeonUtils.wrapError(exception)
             }
             reply.reply(wrapped)
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val eventArg = args[0] as String
-            val timeArg = args[1] as Long?
-            val categoryArg = args[2] as String?
-            val labelArg = args[3] as String?
-            val valueArg = args[4] as Long?
-            val customFieldsJsonArg = args[5] as String?
-            val shopIdArg = args[6] as String?
-            api.trackEvent(eventArg, timeArg, categoryArg, labelArg, valueArg, customFieldsJsonArg, shopIdArg) { result: Result<Unit> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setProfile$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val paramsArg = args[0] as ProfileParamsWire
-            val shopIdArg = args[1] as String?
-            api.setProfile(paramsArg, shopIdArg) { result: Result<Unit> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.manageSubscription$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val paramsArg = args[0] as ManageSubscriptionParamsWire
-            val shopIdArg = args[1] as String?
-            api.manageSubscription(paramsArg, shopIdArg) { result: Result<Unit> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getRecommendation$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val codeArg = args[0] as String
-            val paramsJsonArg = args[1] as String?
-            val shopIdArg = args[2] as String?
-            api.getRecommendation(codeArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
           }
         } else {
           channel.setMessageHandler(null)
@@ -888,294 +5016,12 @@ interface PersonalizationHostApi {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductInfo$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val itemIdArg = args[0] as String
-            val shopIdArg = args[1] as String?
-            api.getProductInfo(itemIdArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductsList$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val paramsJsonArg = args[0] as String?
-            val shopIdArg = args[1] as String?
-            api.getProductsList(paramsJsonArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.flush$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val shopIdArg = args[0] as String?
-            api.searchBlank(shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val queryArg = args[0] as String
-            val paramsJsonArg = args[1] as String?
-            val shopIdArg = args[2] as String?
-            api.searchInstant(queryArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val queryArg = args[0] as String
-            val paramsJsonArg = args[1] as String?
-            val shopIdArg = args[2] as String?
-            api.searchFull(queryArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.joinLoyalty$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val phoneArg = args[0] as String
-            val emailArg = args[1] as String?
-            val firstNameArg = args[2] as String?
-            val lastNameArg = args[3] as String?
-            val shopIdArg = args[4] as String?
-            api.joinLoyalty(phoneArg, emailArg, firstNameArg, lastNameArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getLoyaltyStatus$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val identifierArg = args[0] as String
-            val shopIdArg = args[1] as String?
-            api.getLoyaltyStatus(identifierArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProfile$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val shopIdArg = args[0] as String?
-            api.getProfile(shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductCounters$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val itemArg = args[0] as String
-            val shopIdArg = args[1] as String?
-            api.getProductCounters(itemArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCategory$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val categoryArg = args[0] as String
-            val limitArg = args[1] as Long?
-            val pageArg = args[2] as Long?
-            val paramsJsonArg = args[3] as String?
-            val shopIdArg = args[4] as String?
-            api.getCategory(categoryArg, limitArg, pageArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCollection$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val collectionIdArg = args[0] as String
-            val shopIdArg = args[1] as String?
-            api.getCollection(collectionIdArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStories$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val codeArg = args[0] as String
-            val shopIdArg = args[1] as String?
-            api.getStories(codeArg, shopIdArg) { result: Result<String> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val urlArg = args[0] as String
-            api.openUrl(urlArg) { result: Result<Boolean> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
-              }
-            }
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val urlArg = args[0] as String
-            val anchorXArg = args[1] as Double
-            val anchorYArg = args[2] as Double
-            val anchorWidthArg = args[3] as Double
-            val anchorHeightArg = args[4] as Double
-            api.shareUrl(urlArg, anchorXArg, anchorYArg, anchorWidthArg, anchorHeightArg) { result: Result<Unit> ->
+            api.flush(shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -1189,32 +5035,13 @@ interface PersonalizationHostApi {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.release$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
-            val shopArg = args[0] as String
+            val shopIdArg = args[0] as String?
             val wrapped: List<Any?> = try {
-              listOf(api.getStoriesSeen(shopArg))
-            } catch (exception: Throwable) {
-              PersonalizationApiPigeonUtils.wrapError(exception)
-            }
-            reply.reply(wrapped)
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setStorySlideSeen$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { message, reply ->
-            val args = message as List<Any?>
-            val shopArg = args[0] as String
-            val storyIdArg = args[1] as String
-            val slideIdArg = args[2] as String
-            val wrapped: List<Any?> = try {
-              api.setStorySlideSeen(shopArg, storyIdArg, slideIdArg)
+              api.release(shopIdArg)
               listOf(null)
             } catch (exception: Throwable) {
               PersonalizationApiPigeonUtils.wrapError(exception)
@@ -1226,78 +5053,56 @@ interface PersonalizationHostApi {
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCacheDirectory$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { _, reply ->
-            val wrapped: List<Any?> = try {
-              listOf(api.getCacheDirectory())
-            } catch (exception: Throwable) {
-              PersonalizationApiPigeonUtils.wrapError(exception)
-            }
-            reply.reply(wrapped)
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.beginStoriesAudio$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { _, reply ->
-            val wrapped: List<Any?> = try {
-              api.beginStoriesAudio()
-              listOf(null)
-            } catch (exception: Throwable) {
-              PersonalizationApiPigeonUtils.wrapError(exception)
-            }
-            reply.reply(wrapped)
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.updateStoriesAudio$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.deleteUserCredentials$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
-            val mutedArg = args[0] as Boolean
-            val wrapped: List<Any?> = try {
-              api.updateStoriesAudio(mutedArg)
-              listOf(null)
-            } catch (exception: Throwable) {
-              PersonalizationApiPigeonUtils.wrapError(exception)
+            val shopIdArg = args[0] as String?
+            api.deleteUserCredentials(shopIdArg) { result: Result<SdkSnapshotWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
             }
-            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)
         }
       }
       run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.endStoriesAudio$separatedMessageChannelSuffix", codec)
-        if (api != null) {
-          channel.setMessageHandler { _, reply ->
-            val wrapped: List<Any?> = try {
-              api.endStoriesAudio()
-              listOf(null)
-            } catch (exception: Throwable) {
-              PersonalizationApiPigeonUtils.wrapError(exception)
-            }
-            reply.reply(wrapped)
-          }
-        } else {
-          channel.setMessageHandler(null)
-        }
-      }
-      run {
-        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush$separatedMessageChannelSuffix", codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setLogForwarding$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
-            val payloadArg = args[0] as Map<String, String>
-            val eventArg = args[1] as Long
-            api.handlePush(payloadArg, eventArg) { result: Result<Unit> ->
+            val enabledArg = args[0] as Boolean
+            val wrapped: List<Any?> = try {
+              api.setLogForwarding(enabledArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val eventArg = args[0] as String
+            val timeArg = args[1] as Long?
+            val categoryArg = args[2] as String?
+            val labelArg = args[3] as String?
+            val valueArg = args[4] as Long?
+            val customFieldsArg = args[5] as Map<String, Any?>?
+            val shopIdArg = args[6] as String?
+            api.trackEvent(eventArg, timeArg, categoryArg, labelArg, valueArg, customFieldsArg, shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -1539,6 +5344,48 @@ interface PersonalizationHostApi {
         }
       }
       run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackBannerView$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val bannerIdArg = args[0] as String
+            val codeArg = args[1] as String
+            val shopIdArg = args[2] as String?
+            api.trackBannerView(bannerIdArg, codeArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackBannerClick$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val bannerIdArg = args[0] as String
+            val codeArg = args[1] as String
+            val shopIdArg = args[2] as String?
+            api.trackBannerClick(bannerIdArg, codeArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackSetSource$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
@@ -1562,26 +5409,10 @@ interface PersonalizationHostApi {
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
-            val orderIdArg = args[0] as String
-            val orderPriceArg = args[1] as Double
-            val itemsArg = args[2] as List<PurchaseLineItemWire>
-            val deliveryTypeArg = args[3] as String?
-            val deliveryAddressArg = args[4] as String?
-            val paymentTypeArg = args[5] as String?
-            val isTaxFreeArg = args[6] as Boolean
-            val isGiftPackageArg = args[7] as Boolean
-            val promocodeArg = args[8] as String?
-            val orderCashArg = args[9] as Double?
-            val orderBonusesArg = args[10] as Double?
-            val orderDeliveryArg = args[11] as Double?
-            val orderDiscountArg = args[12] as Double?
-            val channelArg = args[13] as String?
-            val customJsonArg = args[14] as String?
-            val recommendedSourceJsonArg = args[15] as String?
-            val streamArg = args[16] as String?
-            val segmentArg = args[17] as String?
-            val shopIdArg = args[18] as String?
-            api.trackPurchase(orderIdArg, orderPriceArg, itemsArg, deliveryTypeArg, deliveryAddressArg, paymentTypeArg, isTaxFreeArg, isGiftPackageArg, promocodeArg, orderCashArg, orderBonusesArg, orderDeliveryArg, orderDiscountArg, channelArg, customJsonArg, recommendedSourceJsonArg, streamArg, segmentArg, shopIdArg) { result: Result<Unit> ->
+            val requestArg = args[0] as PurchaseTrackingRequestWire
+            val sourceArg = args[1] as TrackingSourceWire?
+            val shopIdArg = args[2] as String?
+            api.trackPurchase(requestArg, sourceArg, shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -1615,6 +5446,1624 @@ interface PersonalizationHostApi {
         }
       }
       run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetInfo$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.productsGetInfo(itemIdArg, shopIdArg) { result: Result<ProductWire?> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetList$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val requestArg = args[0] as ProductsListRequestWire
+            val shopIdArg = args[1] as String?
+            api.productsGetList(requestArg, shopIdArg) { result: Result<ProductsListResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetCounters$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.productsGetCounters(itemIdArg, shopIdArg) { result: Result<ProductCountersResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.productsGetCategory$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val categoryIdArg = args[0] as String
+            val requestArg = args[1] as ProductsListRequestWire
+            val shopIdArg = args[2] as String?
+            api.productsGetCategory(categoryIdArg, requestArg, shopIdArg) { result: Result<ProductsListResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.collectionsGet$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val collectionIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.collectionsGet(collectionIdArg, shopIdArg) { result: Result<CollectionResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.recommendationsGet$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val requestArg = args[1] as RecommendationRequestWire
+            val shopIdArg = args[2] as String?
+            api.recommendationsGet(codeArg, requestArg, shopIdArg) { result: Result<RecommendationResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgentEnabled$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            val wrapped: List<Any?> = try {
+              listOf(api.searchAgentEnabled(shopIdArg))
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchBlank$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.searchBlank(shopIdArg) { result: Result<SearchBlankResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val queryArg = args[0] as String
+            val locationsArg = args[1] as List<String>?
+            val excludedMerchantsArg = args[2] as List<String>?
+            val excludedBrandsArg = args[3] as List<String>?
+            val shopIdArg = args[4] as String?
+            api.searchInstant(queryArg, locationsArg, excludedMerchantsArg, excludedBrandsArg, shopIdArg) { result: Result<SearchInstantResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val queryArg = args[0] as String
+            val requestArg = args[1] as SearchFullRequestWire
+            val shopIdArg = args[2] as String?
+            api.searchFull(queryArg, requestArg, shopIdArg) { result: Result<SearchFullResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgentDialog$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val sessionIdArg = args[0] as Long?
+            val locationsArg = args[1] as List<String>?
+            val shopIdArg = args[2] as String?
+            api.searchAgentDialog(sessionIdArg, locationsArg, shopIdArg) { result: Result<AgentDialogResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchAgent$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val messageArg = args[0] as String
+            val sessionIdArg = args[1] as Long?
+            val locationsArg = args[2] as List<String>?
+            val shopIdArg = args[3] as String?
+            api.searchAgent(messageArg, sessionIdArg, locationsArg, shopIdArg) { result: Result<AgentResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.cartGet$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.cartGet(shopIdArg) { result: Result<List<CartItemWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.cartClear$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopSecretArg = args[0] as String
+            val emailArg = args[1] as String?
+            val phoneArg = args[2] as String?
+            val loyaltyIdArg = args[3] as String?
+            val externalIdArg = args[4] as String?
+            val telegramIdArg = args[5] as String?
+            val shopIdArg = args[6] as String?
+            api.cartClear(shopSecretArg, emailArg, phoneArg, loyaltyIdArg, externalIdArg, telegramIdArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGet$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.profileGet(shopIdArg) { result: Result<ProfileWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileSet$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val requestArg = args[0] as ProfileUpdateRequestWire
+            val shopIdArg = args[1] as String?
+            api.profileSet(requestArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGetLastOrder$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.profileGetLastOrder(shopIdArg) { result: Result<List<ProductWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.profileGetOrders$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopSecretArg = args[0] as String
+            val didArg = args[1] as String?
+            val emailArg = args[2] as String?
+            val phoneArg = args[3] as String?
+            val loyaltyIdArg = args[4] as String?
+            val externalIdArg = args[5] as String?
+            val dateFromArg = args[6] as String?
+            val shopIdArg = args[7] as String?
+            api.profileGetOrders(shopSecretArg, didArg, emailArg, phoneArg, loyaltyIdArg, externalIdArg, dateFromArg, shopIdArg) { result: Result<List<OrderWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsManage$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val requestArg = args[0] as SubscriptionsUpdateRequestWire
+            val shopIdArg = args[1] as String?
+            api.subscriptionsManage(requestArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsCheck$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.subscriptionsCheck(shopIdArg) { result: Result<SubscriptionStatusWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsSubscribeForPriceDrop$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val currentPriceArg = args[1] as Double
+            val emailArg = args[2] as String?
+            val phoneArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.subscriptionsSubscribeForPriceDrop(itemIdArg, currentPriceArg, emailArg, phoneArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsUnsubscribeFromPriceDrop$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdsArg = args[0] as List<String>
+            val emailArg = args[1] as String?
+            val phoneArg = args[2] as String?
+            val shopIdArg = args[3] as String?
+            api.subscriptionsUnsubscribeFromPriceDrop(itemIdsArg, emailArg, phoneArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsSubscribeForBackInStock$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val propertiesArg = args[1] as BackInStockPropertiesWire?
+            val emailArg = args[2] as String?
+            val phoneArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.subscriptionsSubscribeForBackInStock(itemIdArg, propertiesArg, emailArg, phoneArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.subscriptionsUnsubscribeFromBackInStock$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdsArg = args[0] as List<String>
+            val emailArg = args[1] as String?
+            val phoneArg = args[2] as String?
+            val shopIdArg = args[3] as String?
+            api.subscriptionsUnsubscribeFromBackInStock(itemIdsArg, emailArg, phoneArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsAdd$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val segmentIdArg = args[0] as Long
+            val emailArg = args[1] as String?
+            val phoneArg = args[2] as String?
+            val shopIdArg = args[3] as String?
+            api.segmentsAdd(segmentIdArg, emailArg, phoneArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsRemove$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val segmentIdArg = args[0] as Long
+            val emailArg = args[1] as String?
+            val phoneArg = args[2] as String?
+            val shopIdArg = args[3] as String?
+            api.segmentsRemove(segmentIdArg, emailArg, phoneArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.segmentsGet$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.segmentsGet(shopIdArg) { result: Result<List<SegmentWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackDelivered$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val typeArg = args[1] as String
+            val shopIdArg = args[2] as String?
+            api.notificationsTrackDelivered(codeArg, typeArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackOpened$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val typeArg = args[1] as String
+            val shopIdArg = args[2] as String?
+            api.notificationsTrackOpened(codeArg, typeArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackClicked$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val typeArg = args[1] as String
+            val shopIdArg = args[2] as String?
+            api.notificationsTrackClicked(codeArg, typeArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsTrackClosed$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val typeArg = args[1] as String
+            val shopIdArg = args[2] as String?
+            api.notificationsTrackClosed(codeArg, typeArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsSetPushToken$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val tokenArg = args[0] as String
+            val providerArg = args[1] as String
+            val shopIdArg = args[2] as String?
+            api.notificationsSetPushToken(tokenArg, providerArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.notificationsGetHistory$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopSecretArg = args[0] as String
+            val typeArg = args[1] as String
+            val phoneArg = args[2] as String?
+            val emailArg = args[3] as String?
+            val externalIdArg = args[4] as String?
+            val loyaltyIdArg = args[5] as String?
+            val channelArg = args[6] as String?
+            val limitArg = args[7] as Long?
+            val pageArg = args[8] as Long?
+            val dateFromArg = args[9] as String?
+            val didArg = args[10] as String?
+            val shopIdArg = args[11] as String?
+            api.notificationsGetHistory(shopSecretArg, typeArg, phoneArg, emailArg, externalIdArg, loyaltyIdArg, channelArg, limitArg, pageArg, dateFromArg, didArg, shopIdArg) { result: Result<NotificationHistoryWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val payloadArg = args[0] as Map<String, String>
+            val eventArg = args[1] as String
+            api.handlePush(payloadArg, eventArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.storiesGet$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.storiesGet(codeArg, shopIdArg) { result: Result<StoriesBlockWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.predictGetProbabilityToPurchase$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.predictGetProbabilityToPurchase(shopIdArg) { result: Result<PurchaseProbabilityWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyJoin$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val phoneArg = args[0] as String
+            val firstNameArg = args[1] as String?
+            val lastNameArg = args[2] as String?
+            val genderArg = args[3] as String?
+            val birthdayArg = args[4] as String?
+            val shopIdArg = args[5] as String?
+            api.loyaltyJoin(phoneArg, firstNameArg, lastNameArg, genderArg, birthdayArg, shopIdArg) { result: Result<LoyaltyMemberWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyGetStatus$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val phoneArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.loyaltyGetStatus(phoneArg, shopIdArg) { result: Result<LoyaltyStatusWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.loyaltyGetPromotions$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val locationIdArg = args[0] as String?
+            val promoCodesArg = args[1] as List<String>?
+            val chargeBonusesArg = args[2] as Boolean?
+            val currentTimeArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.loyaltyGetPromotions(locationIdArg, promoCodesArg, chargeBonusesArg, currentTimeArg, shopIdArg) { result: Result<List<LoyaltyPromotionWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.slidersGet$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val tagsArg = args[1] as List<String>?
+            val locationIdArg = args[2] as String?
+            val shopIdArg = args[3] as String?
+            api.slidersGet(codeArg, tagsArg, locationIdArg, shopIdArg) { result: Result<SliderWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateNps$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val rateArg = args[0] as Long
+            val channelArg = args[1] as String
+            val categoryArg = args[2] as String
+            val orderIdArg = args[3] as String?
+            val commentArg = args[4] as String?
+            val labelArg = args[5] as String?
+            val shopIdArg = args[6] as String?
+            api.reviewsCreateNps(rateArg, channelArg, categoryArg, orderIdArg, commentArg, labelArg, shopIdArg) { result: Result<PollReviewWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateCsat$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val rateArg = args[0] as Long
+            val channelArg = args[1] as String
+            val campaignArg = args[2] as String
+            val orderIdArg = args[3] as String?
+            val commentArg = args[4] as String?
+            val labelArg = args[5] as String?
+            val shopIdArg = args[6] as String?
+            api.reviewsCreateCsat(rateArg, channelArg, campaignArg, orderIdArg, commentArg, labelArg, shopIdArg) { result: Result<PollReviewWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsCreateCes$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val rateArg = args[0] as Long
+            val channelArg = args[1] as String
+            val campaignArg = args[2] as String
+            val orderIdArg = args[3] as String?
+            val commentArg = args[4] as String?
+            val labelArg = args[5] as String?
+            val shopIdArg = args[6] as String?
+            api.reviewsCreateCes(rateArg, channelArg, campaignArg, orderIdArg, commentArg, labelArg, shopIdArg) { result: Result<PollReviewWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetNpsCategories$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.reviewsGetNpsCategories(shopIdArg) { result: Result<List<NpsCategoryWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetNpsChannels$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.reviewsGetNpsChannels(shopIdArg) { result: Result<List<PollChannelWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetCsatCampaigns$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.reviewsGetCsatCampaigns(shopIdArg) { result: Result<List<CsatCampaignWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetCesCampaigns$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.reviewsGetCesCampaigns(shopIdArg) { result: Result<List<CesCampaignWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetProductReviews$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val limitArg = args[1] as Long?
+            val offsetArg = args[2] as Long?
+            val shopIdArg = args[3] as String?
+            api.reviewsGetProductReviews(itemIdArg, limitArg, offsetArg, shopIdArg) { result: Result<ProductReviewsResponseWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.reviewsGetClientReviews$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val orderIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.reviewsGetClientReviews(orderIdArg, shopIdArg) { result: Result<List<ClientReviewWire>> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetRecommendation$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val paramsJsonArg = args[1] as String?
+            val shopIdArg = args[2] as String?
+            api.legacyGetRecommendation(codeArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductInfo$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetProductInfo(itemIdArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductsList$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val paramsJsonArg = args[0] as String?
+            val shopIdArg = args[1] as String?
+            api.legacyGetProductsList(paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchBlank$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.legacySearchBlank(shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchInstant$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val queryArg = args[0] as String
+            val paramsJsonArg = args[1] as String?
+            val shopIdArg = args[2] as String?
+            api.legacySearchInstant(queryArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val queryArg = args[0] as String
+            val paramsJsonArg = args[1] as String?
+            val shopIdArg = args[2] as String?
+            api.legacySearchFull(queryArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyJoinLoyalty$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val phoneArg = args[0] as String
+            val emailArg = args[1] as String?
+            val firstNameArg = args[2] as String?
+            val lastNameArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.legacyJoinLoyalty(phoneArg, emailArg, firstNameArg, lastNameArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetLoyaltyStatus$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val identifierArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetLoyaltyStatus(identifierArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProfile$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.legacyGetProfile(shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductCounters$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val itemArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetProductCounters(itemArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetCategory$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val categoryArg = args[0] as String
+            val limitArg = args[1] as Long?
+            val pageArg = args[2] as Long?
+            val paramsJsonArg = args[3] as String?
+            val shopIdArg = args[4] as String?
+            api.legacyGetCategory(categoryArg, limitArg, pageArg, paramsJsonArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetCollection$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val collectionIdArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetCollection(collectionIdArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetStories$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val codeArg = args[0] as String
+            val shopIdArg = args[1] as String?
+            api.legacyGetStories(codeArg, shopIdArg) { result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySetProfile$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val paramsArg = args[0] as ProfileParamsWire
+            val shopIdArg = args[1] as String?
+            api.legacySetProfile(paramsArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyManageSubscription$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val paramsArg = args[0] as SubscriptionsUpdateRequestWire
+            val shopIdArg = args[1] as String?
+            api.legacyManageSubscription(paramsArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackEvent$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val eventArg = args[0] as String
+            val timeArg = args[1] as Long?
+            val categoryArg = args[2] as String?
+            val labelArg = args[3] as String?
+            val valueArg = args[4] as Long?
+            val customFieldsJsonArg = args[5] as String?
+            val shopIdArg = args[6] as String?
+            api.legacyTrackEvent(eventArg, timeArg, categoryArg, labelArg, valueArg, customFieldsJsonArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyTrackPurchase$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val orderIdArg = args[0] as String
+            val orderPriceArg = args[1] as Double
+            val itemsArg = args[2] as List<PurchaseLineItemWire>
+            val deliveryTypeArg = args[3] as String?
+            val deliveryAddressArg = args[4] as String?
+            val paymentTypeArg = args[5] as String?
+            val isTaxFreeArg = args[6] as Boolean
+            val isGiftPackageArg = args[7] as Boolean
+            val promocodeArg = args[8] as String?
+            val orderCashArg = args[9] as Double?
+            val orderBonusesArg = args[10] as Double?
+            val orderDeliveryArg = args[11] as Double?
+            val orderDiscountArg = args[12] as Double?
+            val channelArg = args[13] as String?
+            val customJsonArg = args[14] as String?
+            val recommendedSourceJsonArg = args[15] as String?
+            val streamArg = args[16] as String?
+            val segmentArg = args[17] as String?
+            val shopIdArg = args[18] as String?
+            api.legacyTrackPurchase(orderIdArg, orderPriceArg, itemsArg, deliveryTypeArg, deliveryAddressArg, paymentTypeArg, isTaxFreeArg, isGiftPackageArg, promocodeArg, orderCashArg, orderBonusesArg, orderDeliveryArg, orderDiscountArg, channelArg, customJsonArg, recommendedSourceJsonArg, streamArg, segmentArg, shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetStoredPushToken$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            val wrapped: List<Any?> = try {
+              listOf(api.legacyGetStoredPushToken(shopIdArg))
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openUrl$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val urlArg = args[0] as String
+            api.openUrl(urlArg) { result: Result<Boolean> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.shareUrl$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val urlArg = args[0] as String
+            val anchorXArg = args[1] as Double
+            val anchorYArg = args[2] as Double
+            val anchorWidthArg = args[3] as Double
+            val anchorHeightArg = args[4] as Double
+            api.shareUrl(urlArg, anchorXArg, anchorYArg, anchorWidthArg, anchorHeightArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getStoriesSeen$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              listOf(api.getStoriesSeen(shopArg))
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setStorySlideSeen$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopArg = args[0] as String
+            val storyIdArg = args[1] as String
+            val slideIdArg = args[2] as String
+            val wrapped: List<Any?> = try {
+              api.setStorySlideSeen(shopArg, storyIdArg, slideIdArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getCacheDirectory$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.getCacheDirectory())
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.beginStoriesAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.beginStoriesAudio()
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.updateStoriesAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val mutedArg = args[0] as Boolean
+            val wrapped: List<Any?> = try {
+              api.updateStoriesAudio(mutedArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.endStoriesAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.endStoriesAudio()
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.openNotificationSettings$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
@@ -1630,6 +7079,96 @@ interface PersonalizationHostApi {
           channel.setMessageHandler(null)
         }
       }
+    }
+  }
+}
+/**
+ * What the native instances tell Dart on their own: a shop's state, the push
+ * events and the push tokens the native SDK sees. Separate from
+ * [PersonalizationFlutterApi], which carries the legacy push callbacks.
+ *
+ * Generated class from Pigeon that represents Flutter messages that can be called from Kotlin.
+ */
+class PersonalizationStateFlutterApi(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
+  companion object {
+    /** The codec used by PersonalizationStateFlutterApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      PersonalizationApiPigeonCodec()
+    }
+  }
+  /** A shop's state, device id, session or A/B group changed. */
+  fun onSnapshot(snapshotArg: SdkSnapshotWire, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onSnapshot$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(snapshotArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(PersonalizationApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+  /**
+   * A push event the native SDK handled for [shopId]: [event] is `delivered`,
+   * `opened`, `clicked` or `closed`.
+   */
+  fun onPushEvent(shopIdArg: String, eventArg: String, payloadArg: PushPayloadWire, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushEvent$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(shopIdArg, eventArg, payloadArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(PersonalizationApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+  /** A new push token the native SDK got from APNs, FCM or HMS. */
+  fun onPushToken(tokenArg: PushTokenWire, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onPushToken$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(tokenArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(PersonalizationApiPigeonUtils.createConnectionError(channelName)))
+      } 
+    }
+  }
+  /** A message of the native SDK's log, while Dart has a log handler. */
+  fun onLog(messageArg: SdkLogMessageWire, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationStateFlutterApi.onLog$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(messageArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(PersonalizationApiPigeonUtils.createConnectionError(channelName)))
+      } 
     }
   }
 }

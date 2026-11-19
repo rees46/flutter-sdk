@@ -6,7 +6,7 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
 const _setProfileChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.setProfile';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySetProfile';
 const _getSidChannel =
     'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getSid';
 const _getDidChannel =

@@ -48,3 +48,8 @@ bool? toBoolOrNull(dynamic value) {
 /// models fill an absent optional string with `""`.
 String? toNonEmptyStringOrNull(dynamic value) =>
     value is String && value.isNotEmpty ? value : null;
+
+/// A list of strings, numbers turned into strings; null for anything but a list.
+List<String>? toStringListOrNull(dynamic value) => value is List
+    ? value.where((e) => e != null).map((e) => e.toString()).toList()
+    : null;

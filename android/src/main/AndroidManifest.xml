@@ -9,5 +9,9 @@
       android:name="com.rees46.rees46_flutter_sdk.push.Rees46PushInitProvider"
       android:authorities="${applicationId}.rees46pushinitprovider"
       android:exported="false" />
+    <!-- A notification the plugin drew was dismissed: track/closed. -->
+    <receiver
+      android:name="com.rees46.rees46_flutter_sdk.push.Rees46PushDismissReceiver"
+      android:exported="false" />
   </application>
 </manifest>

@@ -133,12 +133,8 @@ void main() {
       final clicked = capture('trackStoryClick');
       final sdk = PersonalizationSdk();
 
-      await sdk.tracking.storyView(
-        storyId: '42',
-        slideId: '3',
-        code: 'main_stories',
-      );
-      await sdk.tracking.storyClick(storyId: '42', slideId: '3');
+      await sdk.tracking.storyView('42', '3', code: 'main_stories');
+      await sdk.tracking.storyClick('42', '3');
 
       expect(viewed().sublist(0, 3), ['42', '3', 'main_stories']);
       expect(
@@ -165,14 +161,15 @@ void main() {
       expect(source.code, 'popular');
     });
 
-    test('setSource sends the stored source', () async {
+    test('setSource sends the stored source and returns nothing', () async {
       final args = capture('trackSetSource');
-      await PersonalizationSdk().tracking.setSource(
+      PersonalizationSdk().tracking.setSource(
         const TrackingSource(
           type: TrackingSourceType.fullSearch,
           code: 'boots',
         ),
       );
+      await pumpEventQueue();
 
       expect((args()[0] as pigeon.TrackingSourceWire).type, 'full_search');
     });
@@ -187,6 +184,8 @@ void main() {
         'full_search',
         'stories',
         'web_push_digest',
+        'slider',
+        'agent_search',
       ]);
     });
   });
@@ -210,19 +209,45 @@ void main() {
   group('validation happens before the channel call', () {
     final sdk = PersonalizationSdk();
 
-    test('empty ids throw', () {
-      expect(() => sdk.tracking.productView(''), throwsArgumentError);
-      expect(() => sdk.tracking.categoryView(''), throwsArgumentError);
-      expect(() => sdk.tracking.search(''), throwsArgumentError);
-      expect(() => sdk.tracking.removeFromCart(''), throwsArgumentError);
-      expect(() => sdk.tracking.addToFavorites(''), throwsArgumentError);
-      expect(
-        () => sdk.tracking.addToCart(const TrackingItem(id: '')),
-        throwsArgumentError,
+    test('an empty id is invalidArgument, as a failed future', () async {
+      final invalid = throwsA(
+        isA<SdkException>().having(
+          (e) => e.error,
+          'error',
+          isA<SdkErrorInvalidArgument>(),
+        ),
       );
-      expect(
-        () => sdk.tracking.storyView(storyId: '', slideId: '3'),
-        throwsArgumentError,
+      await expectLater(sdk.tracking.productView(''), invalid);
+      await expectLater(sdk.tracking.categoryView(''), invalid);
+      await expectLater(sdk.tracking.search(''), invalid);
+      await expectLater(sdk.tracking.removeFromCart(''), invalid);
+      await expectLater(sdk.tracking.addToFavorites(''), invalid);
+      await expectLater(sdk.tracking.removeFromFavorites(''), invalid);
+      await expectLater(
+        sdk.tracking.addToCart(const TrackingItem(id: '')),
+        invalid,
+      );
+      await expectLater(sdk.tracking.custom(''), invalid);
+      await expectLater(
+        sdk.tracking.purchase(
+          const PurchaseTrackingRequest(
+            orderId: '',
+            orderPrice: 1,
+            items: [PurchaseItem(id: 'sku-1', amount: 1, price: 1)],
+          ),
+        ),
+        invalid,
+      );
+      await expectLater(
+        sdk.tracking.purchase(
+          const PurchaseTrackingRequest(
+            orderId: 'order-1',
+            orderPrice: 1,
+            items: [],
+          ),
+        ),
+        invalid,
+        reason: 'an order without lines',
       );
     });
 
@@ -240,35 +265,61 @@ void main() {
   });
 
   group('purchase and custom events keep working through the namespace', () {
-    test('purchase reaches the existing trackPurchase channel', () async {
+    test('purchase sends the contract request and its own source', () async {
       final args = capture('trackPurchase');
-      await PersonalizationSdk().tracking.purchase(
-        orderId: 'order-1',
-        orderPrice: 100,
-        items: const [PurchaseLineItem(id: 'sku-1', amount: 1, price: 100)],
+      await PersonalizationSdk(shopId: 's').tracking.purchase(
+        const PurchaseTrackingRequest(
+          orderId: 'order-1',
+          orderPrice: 100,
+          items: [
+            PurchaseItem(id: 'sku-1', amount: 2, price: 50, lineId: 'l-1'),
+          ],
+          deliveryType: 'courier',
+          isTaxFree: true,
+          promocode: 'SALE',
+          orderCash: 90,
+          channel: 'app',
+          custom: {'k': 'v'},
+          isGiftPackage: true,
+        ),
+        source: const TrackingSource(
+          type: TrackingSourceType.dynamicBlock,
+          code: 'block',
+        ),
       );
 
-      expect(args()[0], 'order-1');
-      expect(args()[1], 100.0);
+      final request = args()[0] as pigeon.PurchaseTrackingRequestWire;
+      expect([request.orderId, request.orderPrice], ['order-1', 100.0]);
+      expect(request.items.single.id, 'sku-1');
+      expect(request.items.single.amount, 2);
+      expect(request.items.single.lineId, 'l-1');
+      expect(request.deliveryType, 'courier');
+      expect(request.isTaxFree, isTrue);
+      expect(request.promocode, 'SALE');
+      expect(request.orderCash, 90);
+      expect(request.channel, 'app');
+      expect(request.custom, {'k': 'v'});
+      expect(request.isGiftPackage, isTrue);
+      final source = args()[1] as pigeon.TrackingSourceWire;
+      expect([source.type, source.code], ['dynamic', 'block']);
+      expect(args()[2], 's');
     });
 
-    test('purchase sends the gift package flag only when set', () async {
-      final plain = capture('trackPurchase');
+    test('a purchase without a source sends none, and flags default to '
+        'false', () async {
+      final args = capture('trackPurchase');
       await PersonalizationSdk().tracking.purchase(
-        orderId: 'order-1',
-        orderPrice: 100,
-        items: const [PurchaseLineItem(id: 'sku-1', amount: 1, price: 100)],
+        const PurchaseTrackingRequest(
+          orderId: 'order-2',
+          orderPrice: 10,
+          items: [PurchaseItem(id: 'sku-1', amount: 1, price: 10)],
+        ),
       );
-      expect(plain()[7], false);
 
-      final gifted = capture('trackPurchase');
-      await PersonalizationSdk().tracking.purchase(
-        orderId: 'order-2',
-        orderPrice: 100,
-        items: const [PurchaseLineItem(id: 'sku-1', amount: 1, price: 100)],
-        isGiftPackage: true,
-      );
-      expect(gifted()[7], true);
+      final request = args()[0] as pigeon.PurchaseTrackingRequestWire;
+      expect(request.isTaxFree, isFalse);
+      expect(request.isGiftPackage, isFalse);
+      expect(args()[1], isNull);
     });
 
     test('custom reaches the existing trackEvent channel', () async {

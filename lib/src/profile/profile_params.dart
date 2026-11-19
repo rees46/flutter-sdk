@@ -1,8 +1,7 @@
 import 'dart:convert';
 
+import '../models/values.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
-
-enum ProfileGender { male, female }
 
 class ProfileParams {
   final String? email;
@@ -14,7 +13,7 @@ class ProfileParams {
   /// Date of birth in "yyyy-MM-dd" format.
   final String? birthday;
   final int? age;
-  final ProfileGender? gender;
+  final Gender? gender;
   final String? location;
   final String? advertisingId;
   final String? fbId;
@@ -51,6 +50,8 @@ class ProfileParams {
     this.customProperties,
   });
 
+  /// These parameters as the released `setProfile` hands them to the native SDKs, as
+  /// in 1.6.4: the custom properties as a JSON object.
   pigeon.ProfileParamsWire toWire() {
     return pigeon.ProfileParamsWire(
       email: email,
@@ -60,11 +61,7 @@ class ProfileParams {
       lastName: lastName,
       birthday: birthday,
       age: age,
-      gender: switch (gender) {
-        ProfileGender.male => 'm',
-        ProfileGender.female => 'f',
-        null => null,
-      },
+      gender: gender?.wireValue,
       location: location,
       advertisingId: advertisingId,
       fbId: fbId,

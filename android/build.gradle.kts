@@ -48,6 +48,9 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
+        // The native SDK's members for its Flutter and React Native bridges: the new core's start
+        // (`Rees46.initializeBridge`), its namespaces, push sinks and whole errors.
+        freeCompilerArgs += "-opt-in=com.personalization.core.BridgeApi"
     }
 
     sourceSets {
@@ -87,7 +90,7 @@ android {
 
 dependencies {
     // REES46 Android SDK.
-    val rees46AndroidSdkVersion = "v2.49.0"
+    val rees46AndroidSdkVersion = "v2.54.0"
     add("rees46Implementation", "com.github.rees46:android-sdk:$rees46AndroidSdkVersion")
 
     // Used directly by the push presenter (NotificationCompat / ContextCompat). The native SDK
@@ -96,4 +99,6 @@ dependencies {
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
+    // The real org.json on the JVM: android.jar only has stubs that throw.
+    testImplementation("org.json:json:20240303")
 }

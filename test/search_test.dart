@@ -55,7 +55,7 @@ void main() {
 
   void stubSearchFull(Object? result) {
     const channel =
-        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull';
+        'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull';
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMessageHandler(
           channel,
@@ -91,7 +91,7 @@ void main() {
     test('query is forwarded as-is', () async {
       List<Object?>? captured;
       const channel =
-          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull';
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull';
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(channel, (msg) async {
             captured = messageCodec.decodeMessage(msg) as List<Object?>;
@@ -106,7 +106,7 @@ void main() {
     test('null paramsJson when no SearchParams supplied', () async {
       List<Object?>? captured;
       const channel =
-          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull';
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull';
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(channel, (msg) async {
             captured = messageCodec.decodeMessage(msg) as List<Object?>;
@@ -121,7 +121,7 @@ void main() {
     test('SearchParams serialised into paramsJson', () async {
       List<Object?>? captured;
       const channel =
-          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull';
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull';
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(channel, (msg) async {
             captured = messageCodec.decodeMessage(msg) as List<Object?>;
@@ -219,7 +219,7 @@ void main() {
   group('searchFull — edge cases', () {
     test('missing optional fields default to safe values', () async {
       const channel =
-          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull';
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull';
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(
             channel,
@@ -243,7 +243,7 @@ void main() {
 
     test('product with null optional fields is parsed without error', () async {
       const channel =
-          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchFull';
+          'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchFull';
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler(
             channel,

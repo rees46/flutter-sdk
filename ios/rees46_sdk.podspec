@@ -20,8 +20,8 @@ Flutter plugin wrapper around REES46 native SDK.
   # Keep in step with the dependency in rees46_sdk/Package.swift. CocoaPods trunk is
   # read-only, so a version newer than the last one there resolves only through the
   # app's Podfile (see "iOS" in README.md).
-  s.dependency 'REES46', '3.37.3'
-  s.platform = :ios, '13.0'
+  s.dependency 'REES46', '3.40.1'
+  s.platform = :ios, '15.0'
 
   # Flutter.framework does not contain a i386 slice.
   s.pod_target_xcconfig = {

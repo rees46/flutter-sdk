@@ -1,3 +1,5 @@
+import '../core/native_events.dart';
+import '../core/sdk_logs.dart';
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
@@ -165,6 +167,12 @@ class PopupsV3 with WidgetsBindingObserver implements PopupsV3Listener {
   Future<void> show(int id) {
     if (!_enabled) {
       debugPrint('PersonalizationPopupsV3: show($id) — popups are not enabled');
+      SdkLogs.log(
+        LogLevel.warning,
+        'popups_v3',
+        'show($id): popups are not enabled',
+        shopId: _shop.isEmpty ? null : _shop,
+      );
       return Future<void>.value();
     }
     return engine.show(id);
@@ -254,30 +262,29 @@ class _SdkPlatform implements PopupsV3Platform {
 
   PersonalizationSdk get _sdk => _popups._sdk;
 
-  static const Duration _poll = Duration(milliseconds: 200);
   static const Duration _timeout = Duration(seconds: 15);
 
+  /// The device id and the session from the copy the bridge keeps, which the
+  /// native SDK updates on each change of the session: no polling. Before the
+  /// first `/init` it waits for them, up to [_timeout].
   @override
   Future<PopupsV3Identity> identity() async {
     final shop = PopupsV3._shopOf(_sdk);
     if (shop.isEmpty) throw StateError('popups v3: unknown shop_id');
-    for (var waited = Duration.zero; ; waited += _poll) {
-      String? did;
-      var sid = '';
-      try {
-        did = await _sdk.getDid();
-        sid = await _sdk.getSid();
-      } catch (_) {
-        // Инстанс ещё не готов — спросим снова.
-      }
-      if (did != null && did.isNotEmpty && sid.isNotEmpty) {
-        return (shopId: shop, did: did, sid: sid);
-      }
-      if (waited >= _timeout) {
-        throw TimeoutException('popups v3: no did or sid', _timeout);
-      }
-      await Future<void>.delayed(_poll);
+    final mirror = NativeEvents.instance.shop(shop);
+    bool known() =>
+        (mirror.deviceId ?? '').isNotEmpty &&
+        (mirror.sessionId ?? '').isNotEmpty;
+    if (!known()) {
+      await mirror.changes
+          .firstWhere((_) => known())
+          .timeout(
+            _timeout,
+            onTimeout: () =>
+                throw TimeoutException('popups v3: no did or sid', _timeout),
+          );
     }
+    return (shopId: shop, did: mirror.deviceId!, sid: mirror.sessionId!);
   }
 
   @override

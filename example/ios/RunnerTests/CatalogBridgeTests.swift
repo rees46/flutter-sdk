@@ -2,11 +2,11 @@ import Flutter
 import UIKit
 import XCTest
 
-@testable import REES46
-@testable import rees46_sdk
+@_spi(Bridge) @testable import REES46
+@_spi(Bridge) @testable import rees46_sdk
 
-/// The catalog calls of the Swift bridge: which native call a Dart call reaches, and what of the
-/// native answer reaches Dart.
+/// The host side of the channel: which shop a Dart call reaches, what a failure looks like to Dart,
+/// and the state Dart mirrors. Offline: no instance here runs the new core or makes a request.
 final class CatalogBridgeTests: XCTestCase {
 
     private let shopId = "bridge-shop"
@@ -17,63 +17,196 @@ final class CatalogBridgeTests: XCTestCase {
         super.setUp()
         native = RecordingSDK(shopId: shopId)
         SdkRegistry.shared.register(shopId: shopId, sdk: native)
-        plugin = PersonalizationHostApiImpl(popupApi: PersonalizationPopupFlutterApi(binaryMessenger: SilentMessenger()))
+        plugin = PersonalizationHostApiImpl(
+            popupApi: PersonalizationPopupFlutterApi(binaryMessenger: SilentMessenger()),
+            stateApi: PersonalizationStateFlutterApi(binaryMessenger: SilentMessenger())
+        )
     }
 
     override func tearDown() {
+        plugin.stop()
         SdkRegistry.shared.reset()
         super.tearDown()
     }
 
-    func test_instantSearch_isTheNativeSuggest_notTheFullSearch() {
-        plugin.searchInstant(query: "shoes", paramsJson: #"{"locations":"msk","excluded_brands":["b1"]}"#, shopId: shopId) { _ in }
-
-        XCTAssertEqual(native.suggestCalls.map(\.query), ["shoes"])
-        XCTAssertEqual(native.suggestCalls.first?.locations, "msk")
-        XCTAssertEqual(native.suggestCalls.first?.excludedBrands ?? [], ["b1"])
-        XCTAssertTrue(native.searchQueries.isEmpty, "instant search went out as the full search")
+    func test_aShopTheBridgeDoesNotKnow_isNotInitialized() {
+        let done = expectation(description: "answered")
+        plugin.productsGetInfo(itemId: "37", shopId: "no-such-shop") { result in
+            XCTAssertTrue(Thread.isMainThread, "Dart is answered on the main thread")
+            guard case .failure(let error as PigeonError) = result else {
+                return XCTFail("expected a failure, got \(result)")
+            }
+            XCTAssertEqual(error.code, "notInitialized")
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 5)
     }
 
-    func test_categoryAnswer_carriesTheFacetsAndThePriceRange() {
-        let answer = CategoryResponse(json: [
-            "products_total": 2,
-            "products": [],
-            "brands": [["name": "Acme", "count": 2]],
-            "filters": ["Цвет": ["count": 2, "values": ["Красный": 2]]],
-            "price_range": ["min": 100.0, "max": 900.0],
-            "categories": [["id": "7", "name": "Обувь", "count": 2]],
-        ])
+    func test_aNamespaceOfAnInstanceOffTheNewCore_failsAsTheNativeSdkSays() {
+        let done = expectation(description: "answered")
+        plugin.cartGet(shopId: shopId) { result in
+            guard case .failure(let error as PigeonError) = result else {
+                return XCTFail("expected a failure, got \(result)")
+            }
+            XCTAssertEqual(error.code, "notInitialized")
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 5)
+    }
 
-        let dict = PersonalizationHostApiImpl._categoryResponseToDict(answer)
+    func test_aSyncCall_forAShopTheBridgeDoesNotKnow_throwsNotInitialized() {
+        XCTAssertThrowsError(try plugin.getSid(shopId: "no-such-shop")) { error in
+            XCTAssertEqual((error as? PigeonError)?.code, "notInitialized")
+        }
+        XCTAssertThrowsError(try plugin.getSnapshot(shopId: "no-such-shop"))
+        XCTAssertNil(try plugin.getDid(shopId: "no-such-shop"))
+    }
 
-        let filters = dict["filters"] as? [String: [String: Any]]
-        XCTAssertEqual(filters?["Цвет"]?["values"] as? [String: Int], ["Красный": 2])
-        let priceRange = dict["price_range"] as? [String: Double]
-        XCTAssertEqual(priceRange?["min"], 100)
-        XCTAssertEqual(priceRange?["max"], 900)
-        XCTAssertTrue(JSONSerialization.isValidJSONObject(dict))
+    func test_snapshot_mirrorsTheInstance() throws {
+        let snapshot = try plugin.getSnapshot(shopId: shopId)
+
+        XCTAssertEqual(snapshot.shopId, shopId)
+        XCTAssertEqual(snapshot.state, "ready")
+        XCTAssertEqual(snapshot.deviceId, "bridge-device")
+        XCTAssertEqual(snapshot.segment, "A")
+        XCTAssertFalse(snapshot.agentEnabled)
+        XCTAssertNil(snapshot.pushToken, "an instance off the new core keeps no token for the bridge")
+        XCTAssertEqual(snapshot.pushTokens, [])
+    }
+
+    func test_snapshot_ofANewDevice_hasNoDeviceIdAndTheGivenState() {
+        native.deviceId = ""
+        native.segment = ""
+
+        let snapshot = PersonalizationHostApiImpl.snapshot(native, state: .retrying)
+
+        XCTAssertEqual(snapshot.state, "retrying")
+        XCTAssertNil(snapshot.deviceId, "an empty did is none")
+        XCTAssertNil(snapshot.segment)
+    }
+
+    func test_initialize_withoutAShopId_isAnInvalidArgument() {
+        let config = InitConfig(
+            shopId: "  ", apiDomain: "api.rees46.ru", stream: "flutter", enableLogs: false,
+            autoSendPushToken: false, sendAdvertisingId: false, enableAutoPopupPresentation: true,
+            needReInitialization: false
+        )
+        var answer: Result<SdkSnapshotWire, Error>?
+
+        plugin.initialize(config: config) { answer = $0 }
+
+        guard case .failure(let error as PigeonError)? = answer else {
+            return XCTFail("expected a failure, got \(String(describing: answer))")
+        }
+        XCTAssertEqual(error.code, "invalidArgument")
+    }
+
+    func test_apiHost_isAHostOnly() {
+        XCTAssertEqual(PersonalizationHostApiImpl.apiHost("https://api.rees46.ru/"), "api.rees46.ru")
+        XCTAssertEqual(PersonalizationHostApiImpl.apiHost("HTTP://api.test//"), "api.test")
+        XCTAssertEqual(PersonalizationHostApiImpl.apiHost("api.test"), "api.test")
+        XCTAssertNil(PersonalizationHostApiImpl.apiHost(" https:// "))
+    }
+
+    func test_dartPushEvents_areTheNativeOnes() {
+        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent("delivered"), .delivered)
+        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent("opened"), .opened)
+        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent("clicked"), .clicked)
+        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent("closed"), .closed)
+        XCTAssertNil(PersonalizationHostApiImpl.pushEvent("received"))
+    }
+
+    func test_handlePush_withAnUnknownEvent_isAnInvalidArgument() {
+        var answer: Result<Void, Error>?
+
+        plugin.handlePush(payload: ["id": "c", "type": "bulk"], event: "received") { answer = $0 }
+
+        guard case .failure(let error as PigeonError)? = answer else {
+            return XCTFail("expected a failure")
+        }
+        XCTAssertEqual(error.code, "invalidArgument")
+    }
+
+    func test_aResponseToANotification_isClickedOrClosed() {
+        XCTAssertEqual(Rees46FlutterSdkPlugin.responseEvent(UNNotificationDefaultActionIdentifier), .clicked)
+        XCTAssertEqual(Rees46FlutterSdkPlugin.responseEvent("carousel_next"), .clicked)
+        XCTAssertEqual(Rees46FlutterSdkPlugin.responseEvent(UNNotificationDismissActionIdentifier), .closed)
+    }
+
+    func test_anUnknownPushProvider_isAnInvalidArgument() {
+        let done = expectation(description: "answered")
+        var code: String?
+        plugin.notificationsSetPushToken(token: "t", provider: "gcm", shopId: shopId) { result in
+            if case .failure(let error) = result { code = (error as? PigeonError)?.code }
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 5)
+        XCTAssertEqual(code, "invalidArgument")
+    }
+
+    /// Dart's `logLevel` by its contract name; an unknown or absent one leaves it to `enableLogs`.
+    func test_aLogLevelFromDart_isTheNativeOne() {
+        XCTAssertEqual(PersonalizationHostApiImpl.logLevel("debug"), .debug)
+        XCTAssertEqual(PersonalizationHostApiImpl.logLevel("INFO"), .info)
+        XCTAssertEqual(PersonalizationHostApiImpl.logLevel("none"), Rees46.LogLevel.none)
+        XCTAssertNil(PersonalizationHostApiImpl.logLevel("loud"))
+        XCTAssertNil(PersonalizationHostApiImpl.logLevel(nil))
+        XCTAssertEqual(PersonalizationHostApiImpl.nonEmpty("  did  "), "did")
+        XCTAssertNil(PersonalizationHostApiImpl.nonEmpty("  "))
+        XCTAssertEqual(Rees46.LogLevel.allCases.map(\.wireName), ["debug", "info", "warning", "error", "none"])
+    }
+
+    /// A loyalty level without a code is the contract's base level — no level, not one coded "".
+    func test_aLoyaltyLevelWithoutACode_isNoLevel() {
+        XCTAssertNil(LoyaltyLevel(json: ["name": "Base"]).toWire())
+        XCTAssertEqual(LoyaltyLevel(json: ["code": "gold", "name": "Gold"]).toWire()?.code, "gold")
+    }
+
+    /// The contract's `slider` and `agent_search` wait for the native SDK: refused, not guessed.
+    func test_sourcesTheNativeSdkCannotSendYet_areRefused() {
+        XCTAssertNil(TrackingSourceWire(type: "slider", code: "c").native)
+        XCTAssertNil(TrackingSourceWire(type: "agent_search", code: "c").native)
+        XCTAssertNotNil(TrackingSourceWire(type: "stories", code: "c").native)
+    }
+
+    /// The native log reaches each engine whose Dart has a handler; the native handler is set only while
+    /// one has.
+    func test_theNativeLog_reachesTheEnginesThatWantIt() {
+        let forwarding = LogForwarding()
+        var installed: [Bool] = []
+        var handler: ((Rees46.SdkLogMessage) -> Void)?
+        forwarding.install = { installed.append($0 != nil); handler = $0 }
+        var heard: [String] = []
+        let app = LogForwarding.Sink { heard.append("app \($0.code)") }
+        let background = LogForwarding.Sink { heard.append("background \($0.code)") }
+
+        forwarding.add(app)
+        forwarding.add(app)
+        forwarding.add(background)
+        handler?(Rees46.SdkLogMessage(level: .warning, code: "init_retry", message: "m", shopId: "s", context: ["attempt": "2"]))
+        forwarding.remove(background)
+        handler?(Rees46.SdkLogMessage(level: .error, code: "init_refused", message: "m", shopId: "s"))
+        forwarding.remove(app)
+
+        XCTAssertEqual(installed, [true, false])
+        XCTAssertEqual(heard, ["app init_retry", "background init_retry", "app init_refused"])
+        let wire = Rees46.SdkLogMessage(level: .info, code: "c", message: "m", shopId: nil, context: ["k": "v"]).toWire()
+        XCTAssertEqual(wire.level, "info")
+        XCTAssertEqual(wire.context["k"] as? String, "v")
     }
 }
 
-/// Takes the popup channel's messages and answers none: the catalog calls do not use it.
-private final class SilentMessenger: NSObject, FlutterBinaryMessenger {
+/// Takes the channels' messages and answers none.
+final class SilentMessenger: NSObject, FlutterBinaryMessenger {
     func send(onChannel channel: String, message: Data?) {}
     func send(onChannel channel: String, message: Data?, binaryReply callback: FlutterBinaryReply? = nil) {}
     func setMessageHandlerOnChannel(_ channel: String, binaryMessageHandler handler: FlutterBinaryMessageHandler? = nil) -> FlutterBinaryMessengerConnection { 0 }
     func cleanUpConnection(_ connection: FlutterBinaryMessengerConnection) {}
 }
 
-/// A native SDK that records the search calls and answers none; the rest is a no-op.
-private final class RecordingSDK: PersonalizationSDK {
-    struct Suggest {
-        let query: String
-        let locations: String?
-        let excludedBrands: [String]?
-    }
-
-    private(set) var suggestCalls: [Suggest] = []
-    private(set) var searchQueries: [String] = []
-
+/// A native SDK that is not the SDK's own instance: its namespaces have no new core behind them. Its
+/// `tracking` records what reaches it.
+final class RecordingSDK: PersonalizationSDK {
     var shopId: String
     var deviceId = "bridge-device"
     var userSeance = "bridge-seance"
@@ -85,17 +218,13 @@ private final class RecordingSDK: PersonalizationSDK {
     var popupPresentationDelegate: PopupPresentationDelegate?
     var enableAutoPopupPresentation = false
     lazy var popupPresenter: PopupPresenter = PopupPresenter(sdk: self)
+    let recordingTracking = RecordingTracking()
+    var tracking: TrackingAPI { recordingTracking }
 
     init(shopId: String) { self.shopId = shopId }
 
-    func suggest(query: String, locations: String?, excludedMerchants: [String]?, excludedBrands: [String]?, timeOut: Double?, extended: String?, completion: @escaping (Result<SearchResponse, SdkError>) -> Void) {
-        suggestCalls.append(Suggest(query: query, locations: locations, excludedBrands: excludedBrands))
-    }
-
-    func search(query: String, limit: Int?, offset: Int?, categoryLimit: Int?, brandLimit: Int?, categories: [Int]?, extended: String?, sortBy: String?, sortDir: String?, locations: String?, excludedMerchants: [String]?, excludedBrands: [String]?, brands: String?, filters: [String: Any]?, priceMin: Double?, priceMax: Double?, colors: [String]?, fashionSizes: [String]?, exclude: String?, email: String?, timeOut: Double?, disableClarification: Bool?, completion: @escaping (Result<SearchResponse, SdkError>) -> Void) {
-        searchQueries.append(query)
-    }
-
+    func suggest(query: String, locations: String?, excludedMerchants: [String]?, excludedBrands: [String]?, timeOut: Double?, extended: String?, completion: @escaping (Result<SearchResponse, SdkError>) -> Void) {}
+    func search(query: String, limit: Int?, offset: Int?, categoryLimit: Int?, brandLimit: Int?, categories: [Int]?, extended: String?, sortBy: String?, sortDir: String?, locations: String?, excludedMerchants: [String]?, excludedBrands: [String]?, brands: String?, filters: [String: Any]?, priceMin: Double?, priceMax: Double?, colors: [String]?, fashionSizes: [String]?, exclude: String?, email: String?, timeOut: Double?, disableClarification: Bool?, completion: @escaping (Result<SearchResponse, SdkError>) -> Void) {}
     func postRequest(path: String, params: [String: Any], completion: @escaping (Result<[String: Any], SdkError>) -> Void) {}
     func getRequest(path: String, params: [String: String], _ isInit: Bool, completion: @escaping (Result<[String: Any], SdkError>) -> Void) {}
     func configureURLSession(configuration: URLSessionConfiguration) {}
@@ -120,4 +249,75 @@ private final class RecordingSDK: PersonalizationSDK {
     func getStories(code: String, completion: @escaping (Result<StoryContent, SdkError>) -> Void) {}
     func configuration() -> SdkConfiguration.Type { SdkConfiguration.self }
     func sendIDFARequest(idfa: UUID, completion: @escaping (Result<InitResponse, SdkError>) -> Void) {}
+
+    // MARK: Root
+
+    private(set) var flushes = 0
+    private(set) var releases = 0
+    private(set) var deletions = 0
+    /// What `flush` answers.
+    var flushError: Rees46.SdkError?
+
+    func flush(completion: @escaping (Rees46.SdkError?) -> Void) {
+        flushes += 1
+        let error = flushError
+        DispatchQueue.main.async { completion(error) }
+    }
+
+    /// Leaves the registry, as the SDK's own instance does.
+    func release() {
+        releases += 1
+        SdkRegistry.shared.unregister(self)
+    }
+
+    /// Forgets the customer as the SDK's own instance does: no device id and no session until `/init`.
+    func deleteUserCredentials() {
+        deletions += 1
+        deviceId = ""
+        userSeance = ""
+    }
+}
+
+/// Records each tracking call and answers it with `answer`.
+final class RecordingTracking: TrackingAPI {
+    struct Custom {
+        let event: String
+        let time: Int?
+        let value: Int?
+        let customFields: [String: Any]?
+    }
+
+    var answer: Result<Void, SdkError> = .success(())
+    private(set) var productViews: [(itemId: String, source: TrackingSource?)] = []
+    private(set) var customs: [Custom] = []
+    private(set) var purchases: [PurchaseTrackingRequest] = []
+    private(set) var purchaseSources: [TrackingSource?] = []
+    private(set) var sources: [TrackingSource] = []
+
+    func productView(itemId: String, source: TrackingSource?, completion: @escaping (Result<Void, SdkError>) -> Void) {
+        productViews.append((itemId, source))
+        completion(answer)
+    }
+    func categoryView(categoryId: String, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func search(query: String, results: [String]?, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func addToCart(item: TrackingItem, source: TrackingSource?, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func syncCart(items: [TrackingItem], completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func removeFromCart(itemId: String, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func addToFavorites(itemId: String, source: TrackingSource?, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func syncFavorites(itemIds: [String], completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func removeFromFavorites(itemId: String, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func storyView(storyId: String, slideId: String, code: String?, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func storyClick(storyId: String, slideId: String, code: String?, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
+    func purchase(_ request: PurchaseTrackingRequest, source: TrackingSource?, completion: @escaping (Result<Void, SdkError>) -> Void) {
+        purchases.append(request)
+        purchaseSources.append(source)
+        completion(answer)
+    }
+    func custom(event: String, time: Int?, category: String?, label: String?, value: Int?, customFields: [String: Any]?, completion: @escaping (Result<Void, SdkError>) -> Void) {
+        customs.append(Custom(event: event, time: time, value: value, customFields: customFields))
+        completion(answer)
+    }
+    func setSource(_ source: TrackingSource) {
+        sources.append(source)
+    }
 }

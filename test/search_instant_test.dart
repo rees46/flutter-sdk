@@ -40,7 +40,7 @@ const _stubJson = {
 };
 
 const _channel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.searchInstant';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacySearchInstant';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

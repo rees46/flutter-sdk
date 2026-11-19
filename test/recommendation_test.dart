@@ -6,7 +6,7 @@ import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 
 const _getRecommendationChannel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getRecommendation';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetRecommendation';
 const _onReceivedChannel =
     'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationFlutterApi.onPushReceived';
 const _onDeliveredChannel =

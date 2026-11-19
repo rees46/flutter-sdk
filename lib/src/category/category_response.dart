@@ -1,4 +1,6 @@
-import '../products/products_list_response.dart' show PriceRange, Product;
+import '../models/catalog_models.dart';
+import '../products/products_list_response.dart'
+    show PriceRange, Product, ProductCategory;
 import '../json_number.dart';
 import '../search/search_facets.dart';
 import '../search/search_response.dart' show SearchFilter;
@@ -25,6 +27,15 @@ class CategoryResponse {
   final Map<String, SearchFilter> filters;
   final PriceRange? priceRange;
 
+  /// The categories of the listing (`categories`).
+  final List<ProductCategory> categories;
+
+  /// The price histogram (`price_ranges`).
+  final List<PriceInterval> priceRanges;
+
+  /// The median price (`price_median`).
+  final double? priceMedian;
+
   const CategoryResponse({
     required this.productsTotal,
     required this.products,
@@ -32,6 +43,9 @@ class CategoryResponse {
     this.brandCounts = const {},
     this.filters = const {},
     this.priceRange,
+    this.categories = const [],
+    this.priceRanges = const [],
+    this.priceMedian,
   });
 
   factory CategoryResponse.fromJson(Map<String, dynamic> json) {
@@ -48,6 +62,12 @@ class CategoryResponse {
               Map<String, dynamic>.from(json['price_range'] as Map),
             )
           : null,
+      categories: (json['categories'] as List<dynamic>? ?? [])
+          .whereType<Map>()
+          .map((e) => ProductCategory.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      priceRanges: parsePriceIntervals(json['price_ranges']),
+      priceMedian: toDoubleOrNull(json['price_median']),
     );
   }
 }

@@ -57,11 +57,15 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
     }
     _shopB = REES46.getInstance(MultiInstancePane.shopIdB); // B is born here
 
-    _shopA.setPushNotificationCallbacks(
-      onReceived: (p) => _addLog('✓ shop A onReceived: ${_pushLabel(p)}'),
+    _shopA.notifications.setCallbacks(
+      PushCallbacks(
+        onDelivered: (p) => _addLog('✓ shop A onDelivered: ${_pushLabel(p)}'),
+      ),
     );
-    _shopB.setPushNotificationCallbacks(
-      onReceived: (p) => _addLog('✓ shop B onReceived: ${_pushLabel(p)}'),
+    _shopB.notifications.setCallbacks(
+      PushCallbacks(
+        onDelivered: (p) => _addLog('✓ shop B onDelivered: ${_pushLabel(p)}'),
+      ),
     );
 
     _refresh();
@@ -125,14 +129,13 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
       'title': note,
       'body': note,
     };
-    final routed = await REES46.handlePush(payload, PushEvent.received);
+    final routed = await REES46.handlePush(payload, PushEvent.delivered);
     final result = routed != null ? 'routed:$routed' : 'dropped';
     setState(() => _lastPushResult = result);
     _addLog('injected shop_id=${shopId ?? '—'} → $result');
   }
 
-  static String _pushLabel(Map<String, String?> p) =>
-      p['title'] ?? p['type'] ?? '—';
+  static String _pushLabel(PushPayload p) => p.title ?? p.type;
 
   @override
   Widget build(BuildContext context) {

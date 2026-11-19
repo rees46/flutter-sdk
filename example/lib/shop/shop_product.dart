@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/rees46_sdk.dart'
+    hide Product, ProductCategory, ProductsListResponse;
+import 'package:rees46_sdk/models.dart';
 
 import '../demo_app.dart';
 import 'shop.dart';
@@ -97,7 +99,9 @@ class _ShopProductScreenState extends State<ShopProductScreen> {
     try {
       final product = await REES46
           .getInstance(widget.shopId)
-          .getProductInfo(widget.productId);
+          .products
+          .getInfo(widget.productId);
+      if (product == null) throw StateError('No product ${widget.productId}');
       if (mounted) setState(() => _product = product);
     } catch (error) {
       if (mounted) setState(() => _error = error);
@@ -216,8 +220,8 @@ class _ShopProductHero extends StatelessWidget {
     final theme = PersonalizationTheme.of(context);
     final colors = theme.colors;
     // The page shows the full image; `picture` is the copy resized for lists.
-    final image = product.imageUrl.isNotEmpty
-        ? product.imageUrl
+    final image = (product.imageUrl ?? '').isNotEmpty
+        ? product.imageUrl!
         : (product.picture ?? '');
     final hero = DecoratedBox(
       decoration: BoxDecoration(

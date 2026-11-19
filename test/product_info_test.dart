@@ -29,7 +29,7 @@ const _stubJson = {
 };
 
 const _channel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductInfo';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductInfo';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

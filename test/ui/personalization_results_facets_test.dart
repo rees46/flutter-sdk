@@ -22,7 +22,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   final int facets;
 
   @override
-  Future<String> searchFull(
+  Future<String> legacySearchFull(
     String query,
     String? paramsJson,
     String? shopId,

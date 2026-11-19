@@ -10,7 +10,14 @@ class _FakeApi extends pigeon.PersonalizationHostApi {
   final List<(int, String?)> tracked = <(int, String?)>[];
 
   @override
-  Future<void> initialize(pigeon.InitConfig config) async {}
+  Future<pigeon.SdkSnapshotWire> initialize(pigeon.InitConfig config) async =>
+      pigeon.SdkSnapshotWire(
+        shopId: config.shopId,
+        state: 'ready',
+        deviceId: 'did',
+        agentEnabled: false,
+        pushTokens: const [],
+      );
 
   @override
   Future<void> trackPopupShown(int popupId, String? shopId) async =>

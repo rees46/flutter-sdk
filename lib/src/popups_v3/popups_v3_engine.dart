@@ -1,3 +1,4 @@
+import '../core/sdk_logs.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -6,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../personalization_sdk.dart';
 import '../popups/popup_presenter.dart';
+import '../models/values.dart';
 import '../profile/profile_params.dart';
 import '../subscriptions/manage_subscription_params.dart';
 import '../ui/components/personalization_product.dart';
@@ -710,10 +712,29 @@ class PopupsV3Engine {
   }
 
   void _log(String message, {bool always = false}) {
+    // The app's log handler hears it by the shop's `logLevel`: a failure as a
+    // warning, each decision of the engine as debug.
+    SdkLogs.log(
+      always ? LogLevel.warning : LogLevel.debug,
+      'popups_v3',
+      _withoutDetails(message),
+      shopId: logTag.isEmpty ? null : logTag,
+    );
     if (!always && !debug) return;
     debugPrint(
       'PersonalizationPopupsV3${logTag.isEmpty ? '' : ' [$logTag]'}: $message',
     );
+  }
+
+  /// The message without the error after it: an error of a request can carry the
+  /// answer's body, which the log handler never gets.
+  static String _withoutDetails(String message) {
+    var text = message.split('\n').first;
+    final dash = text.indexOf(' — ');
+    if (dash >= 0) text = text.substring(0, dash);
+    final failed = text.indexOf('failed: ');
+    if (failed >= 0) text = text.substring(0, failed + 'failed'.length);
+    return text;
   }
 
   /// Запись в лог от действий попапа.
@@ -810,8 +831,8 @@ class _EngineActions implements PopupV3Actions {
         lastName: submission.lastName,
         birthday: submission.birthday,
         gender: switch (submission.gender) {
-          'm' => ProfileGender.male,
-          'f' => ProfileGender.female,
+          'm' => Gender.male,
+          'f' => Gender.female,
           _ => null,
         },
         customProperties: submission.custom.isEmpty ? null : submission.custom,

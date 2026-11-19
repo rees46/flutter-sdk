@@ -37,7 +37,7 @@ const _stubJson = {
 };
 
 const _channel =
-    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.getProductsList';
+    'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.legacyGetProductsList';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

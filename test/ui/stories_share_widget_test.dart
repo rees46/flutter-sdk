@@ -86,7 +86,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Future<String?> getDid(String? shopId) async => 'did-1';
 
   @override
-  Future<String> getStories(String code, String? shopId) async =>
+  Future<String> legacyGetStories(String code, String? shopId) async =>
       bridgeFeed ?? (throw StateError('the bridge feed is off with API v3'));
 
   @override

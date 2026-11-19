@@ -11,10 +11,15 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.personalization.Rees46
+import com.personalization.core.PushEvent
 import com.personalization.sdk.data.models.dto.notification.NotificationData
 import com.rees46.rees46_flutter_sdk.R
 import java.net.URL
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Posts a heads-up BigPicture notification from REES46 push data — the native equivalent of the
@@ -73,11 +78,20 @@ object Rees46PushNotifier {
         }
     }
 
-    /** Builds and posts the notification. Must run off the main thread (downloads images). */
-    fun show(context: Context, data: NotificationData) {
+    /**
+     * Builds and posts the notification; true once it is posted, false when the app may not show it — the
+     * notifications are off for the app (on Android 13+ also without the `POST_NOTIFICATIONS` permission) or
+     * its channel is blocked — so nothing reports it shown. Must run off the main thread (downloads images).
+     * [shopId], the shop the push routed to, rides on the tap's and the dismissal's intents.
+     */
+    fun show(context: Context, data: NotificationData, shopId: String? = null): Boolean {
         Log.d(TAG, "show() title=${data.title} body=${data.body} image=${data.image}")
         try {
             ensureChannel(context)
+            if (!canPost(context)) {
+                Log.d(TAG, "notifications are off for the app or its channel: nothing posted")
+                return false
+            }
 
             val bigPicture = data.image?.split(",")?.firstOrNull()?.trim()
                 ?.takeIf { it.isNotEmpty() }?.let(::loadBitmap)
@@ -90,7 +104,7 @@ object Rees46PushNotifier {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setDefaults(NotificationCompat.DEFAULT_ALL)
-                .setContentIntent(buildContentIntent(context, data))
+                .setContentIntent(buildContentIntent(context, data, shopId))
 
             if (largeIcon != null) builder.setLargeIcon(largeIcon)
             if (bigPicture != null) {
@@ -102,29 +116,94 @@ object Rees46PushNotifier {
             }
 
             val id = (data.title.orEmpty() + data.body.orEmpty()).hashCode()
+            // Dismissed without a tap: track/closed.
+            pushData(shopId, data)?.let { builder.setDeleteIntent(Rees46PushDismissReceiver.intent(context, id, it)) }
             val manager = ContextCompat.getSystemService(context, NotificationManager::class.java)
             if (manager == null) {
                 Log.e(TAG, "NotificationManager unavailable — cannot post notification")
-                return
+                return false
             }
             manager.notify(id, builder.build())
             Log.d(TAG, "notify() posted id=$id (bigPicture=${bigPicture != null})")
+            return true
         } catch (t: Throwable) {
             Log.e(TAG, "Failed to post notification", t)
+            return false
+        }
+    }
+
+    /** Whether the app may post to its push channel: notifications on, and the channel not blocked. */
+    private fun canPost(context: Context): Boolean {
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = ContextCompat.getSystemService(context, NotificationManager::class.java)
+                ?.getNotificationChannel(CHANNEL_ID)
+            if (channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE) return false
+        }
+        return true
+    }
+
+    /**
+     * The notification of [data] is on screen: the bridge draws it, so the bridge reports it — the native
+     * `handlePush` with `OPENED`, through the shop's queue, once per message, with the whole push, so the
+     * `onOpened` callbacks get its texts, buttons and target. A push without its id or type is not the SDK's
+     * and reports nothing.
+     */
+    fun reportShown(shopId: String, data: NotificationData) {
+        val payload = shownPayload(shopId, data) ?: return
+        // Through the SDK's routing, not Rees46.instance: in a process a push started the shop is only
+        // registered, and a lookup would make its full instance and send /init. The routing sends the
+        // event through the instance the push brought up, by the stored did; it never throws.
+        Rees46.handlePush(payload, PushEvent.OPENED)
+    }
+
+    /** The push [data] of [shopId] as the SDK's routing reads it ([pushData]); null without its code or type. */
+    internal fun shownPayload(shopId: String, data: NotificationData): Map<String, String>? = pushData(shopId, data)
+
+    /**
+     * The push [data] under the keys of a push's data — `id`, `type`, `shop_id`, `title`, `body`, `icon`, `image`,
+     * and `actions`, `action_urls` and `event` as JSON — as the SDK's routing and its callbacks read a push. Null
+     * without its code or type: not the SDK's push.
+     */
+    internal fun pushData(shopId: String?, data: NotificationData): Map<String, String>? {
+        val code = data.id?.takeIf { it.isNotBlank() } ?: return null
+        val type = data.type?.takeIf { it.isNotBlank() } ?: return null
+        return buildMap {
+            put("id", code)
+            put("type", type)
+            shopId?.let { put("shop_id", it) }
+            data.title?.let { put("title", it) }
+            data.body?.let { put("body", it) }
+            data.icon?.let { put("icon", it) }
+            data.image?.let { put("image", it) }
+            data.actions?.takeIf { it.isNotEmpty() }?.let { actions ->
+                put("actions", JSONArray(actions.map { JSONObject().put("action", it.action).put("title", it.title) }).toString())
+            }
+            data.actionUrls?.takeIf { it.isNotEmpty() }?.let { put("action_urls", JSONArray(it).toString()) }
+            data.event?.let { event ->
+                val json = JSONObject()
+                event.type?.let { json.put("type", it) }
+                event.uri?.let { json.put("uri", it) }
+                event.payload?.let { json.put("payload", JSONObject(it)) }
+                put("event", json.toString())
+            }
         }
     }
 
     /**
      * Tapping opens the host launcher activity, carrying the push type/id as extras so the plugin's
      * launch-intent handler reports the click to the SDK (and to Dart via onPushClicked). The keys
-     * match the SDK's NotificationConstants (NOTIFICATION_TYPE / NOTIFICATION_ID).
+     * match the SDK's NotificationConstants (NOTIFICATION_TYPE / NOTIFICATION_ID). The whole push rides
+     * along ([pushData]), so the click's callbacks get its target, the screen the app opens.
      */
-    private fun buildContentIntent(context: Context, data: NotificationData): PendingIntent {
+    private fun buildContentIntent(context: Context, data: NotificationData, shopId: String?): PendingIntent {
         val intent = context.packageManager
             .getLaunchIntentForPackage(context.packageName)
             ?.apply {
+                pushData(shopId, data)?.forEach { (key, value) -> putExtra(key, value) }
                 putExtra("NOTIFICATION_TYPE", data.type)
                 putExtra("NOTIFICATION_ID", data.id)
+                shopId?.let { putExtra("shop_id", it) }
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
             ?: Intent()

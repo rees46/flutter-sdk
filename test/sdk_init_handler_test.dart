@@ -21,9 +21,15 @@ void main() {
                   )
                   as List<Object?>;
           captured = args[0] as pigeon.InitConfig;
-          return pigeon.PersonalizationHostApi.pigeonChannelCodec.encodeMessage(
-            <Object?>[],
-          );
+          return pigeon.PersonalizationHostApi.pigeonChannelCodec
+              .encodeMessage(<Object?>[
+                pigeon.SdkSnapshotWire(
+                  shopId: captured.shopId,
+                  state: 'initializing',
+                  agentEnabled: false,
+                  pushTokens: const [],
+                ),
+              ]);
         });
   });
 
@@ -56,22 +62,21 @@ void main() {
   });
 
   group('stream', () {
-    test('null on Android → android', () async {
+    test('null on Android → flutter', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       await init(const SdkInitConfig(shopId: 's'));
-      expect(captured.stream, 'android');
+      expect(captured.stream, 'flutter');
     });
 
-    test('null on iOS → ios', () async {
+    test('null on iOS → flutter', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       await init(const SdkInitConfig(shopId: 's'));
-      expect(captured.stream, 'ios');
+      expect(captured.stream, 'flutter');
     });
 
-    test('blank → platform default', () async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    test('blank → flutter', () async {
       await init(const SdkInitConfig(shopId: 's', stream: ''));
-      expect(captured.stream, 'android');
+      expect(captured.stream, 'flutter');
     });
 
     test('provided → trimmed', () async {

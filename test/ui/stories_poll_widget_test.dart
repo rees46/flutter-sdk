@@ -1232,7 +1232,8 @@ class _HostApi extends pigeon.PersonalizationHostApi {
   Future<String> getSid(String? shopId) async => 'sid-1';
 
   @override
-  Future<String> getStories(String code, String? shopId) async => bridgeFeed;
+  Future<String> legacyGetStories(String code, String? shopId) async =>
+      bridgeFeed;
 
   @override
   Future<Map<String, List<String>>> getStoriesSeen(String shop) async =>

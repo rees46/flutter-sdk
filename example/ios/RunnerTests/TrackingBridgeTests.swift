@@ -1,12 +1,32 @@
 import XCTest
 
-@testable import REES46
-@testable import rees46_sdk
+@_spi(Bridge) @testable import REES46
+@_spi(Bridge) @testable import rees46_sdk
 
 /// The Swift side of the Flutter bridge: everything Dart sends arrives as a pigeon wire struct and
 /// has to be turned into a native type. That conversion is where the bridge can silently drop or
 /// mangle a value — a story source used to be dropped here — so it is pinned rather than trusted.
 final class TrackingBridgeTests: XCTestCase {
+
+    private let shopId = "tracking-shop"
+    private var native: RecordingSDK!
+    private var plugin: PersonalizationHostApiImpl!
+
+    override func setUp() {
+        super.setUp()
+        native = RecordingSDK(shopId: shopId)
+        SdkRegistry.shared.register(shopId: shopId, sdk: native)
+        plugin = PersonalizationHostApiImpl(
+            popupApi: PersonalizationPopupFlutterApi(binaryMessenger: SilentMessenger()),
+            stateApi: PersonalizationStateFlutterApi(binaryMessenger: SilentMessenger())
+        )
+    }
+
+    override func tearDown() {
+        plugin.stop()
+        SdkRegistry.shared.reset()
+        super.tearDown()
+    }
 
     // MARK: - Items
 
@@ -78,5 +98,160 @@ final class TrackingBridgeTests: XCTestCase {
         ]
 
         XCTAssertEqual(Set(native.map(\.rawValue)), Set(wireValues))
+    }
+
+    // MARK: - Calls
+
+    func test_productView_reachesTheNativeTrackingWithItsSource() {
+        let done = expectation(description: "answered")
+
+        plugin.trackProductView(itemId: "37", source: TrackingSourceWire(type: "dynamic", code: "block"), shopId: shopId) { result in
+            XCTAssertTrue(Thread.isMainThread)
+            if case .failure(let error) = result { XCTFail("\(error)") }
+            done.fulfill()
+        }
+
+        wait(for: [done], timeout: 5)
+        XCTAssertEqual(native.recordingTracking.productViews.first?.itemId, "37")
+        XCTAssertEqual(native.recordingTracking.productViews.first?.source?.type, .dynamic)
+    }
+
+    func test_anUnknownSourceOfAnEvent_isAnInvalidArgument_andNothingIsSent() {
+        let done = expectation(description: "answered")
+
+        plugin.trackProductView(itemId: "37", source: TrackingSourceWire(type: "nope", code: "x"), shopId: shopId) { result in
+            guard case .failure(let error as PigeonError) = result else { return XCTFail("expected a failure") }
+            XCTAssertEqual(error.code, "invalidArgument")
+            done.fulfill()
+        }
+
+        wait(for: [done], timeout: 5)
+        XCTAssertTrue(native.recordingTracking.productViews.isEmpty)
+    }
+
+    func test_custom_isTheNativeCustomEvent_withItsFreeFormFields() {
+        let done = expectation(description: "answered")
+
+        plugin.trackEvent(
+            event: "signup", time: 1_700_000_000, category: "c", label: "l", value: 5,
+            customFields: ["plan": "pro", "seats": Int64(3), "note": nil, "tags": ["a", nil] as [Any?]],
+            shopId: shopId
+        ) { _ in done.fulfill() }
+
+        wait(for: [done], timeout: 5)
+        let custom = native.recordingTracking.customs.first
+        XCTAssertEqual(custom?.event, "signup")
+        XCTAssertEqual(custom?.time, 1_700_000_000)
+        XCTAssertEqual(custom?.value, 5)
+        XCTAssertEqual(custom?.customFields?["plan"] as? String, "pro")
+        XCTAssertEqual(custom?.customFields?["seats"] as? Int64, 3)
+        XCTAssertTrue(custom?.customFields?["note"] is NSNull, "Dart's null goes as JSON null")
+        XCTAssertTrue((custom?.customFields?["tags"] as? [Any])?.last is NSNull)
+    }
+
+    func test_purchase_isTheNativePurchaseRequest() {
+        let done = expectation(description: "answered")
+
+        plugin.trackPurchase(
+            request: PurchaseTrackingRequestWire(
+                orderId: "o-1", orderPrice: 100, items: [PurchaseLineItemWire(id: "37", amount: 2, price: 50, lineId: "l-1")],
+                deliveryType: "courier", deliveryAddress: nil, paymentType: "card", isTaxFree: true,
+                promocode: "SALE", orderCash: 90, orderBonuses: 10, orderDelivery: nil, orderDiscount: nil, channel: "app",
+                custom: ["k": "v"], isGiftPackage: true
+            ),
+            source: TrackingSourceWire(type: "dynamic", code: "b"),
+            shopId: shopId
+        ) { _ in done.fulfill() }
+
+        wait(for: [done], timeout: 5)
+        let request = native.recordingTracking.purchases.first
+        XCTAssertEqual(request?.orderId, "o-1")
+        XCTAssertEqual(request?.items.first?.amount, 2)
+        XCTAssertEqual(request?.items.first?.lineId, "l-1")
+        XCTAssertEqual(request?.isTaxFree, true)
+        XCTAssertEqual(request?.isGiftPackage, true)
+        XCTAssertEqual(request?.custom?["k"] as? String, "v")
+        XCTAssertNil(request?.recommendedSource, "the contract's purchase has no free-form source")
+        XCTAssertEqual(native.recordingTracking.purchaseSources.first??.type, .dynamic)
+        XCTAssertEqual(native.recordingTracking.purchaseSources.first??.code, "b")
+    }
+
+    /// The bridge waits for each event's acceptance on its own task: a shop's events must still reach
+    /// the native SDK — and its queue — in the order Dart sent them.
+    func test_aShopsEvents_reachTheNativeSdkInTheOrderDartSentThem() {
+        let ids = (0..<50).map { "sku-\($0)" }
+        let answered = expectation(description: "answered")
+        answered.expectedFulfillmentCount = ids.count
+
+        for id in ids {
+            plugin.trackProductView(itemId: id, source: nil, shopId: shopId) { result in
+                XCTAssertTrue(Thread.isMainThread)
+                if case .failure(let error) = result { XCTFail("\(error)") }
+                answered.fulfill()
+            }
+        }
+
+        wait(for: [answered], timeout: 10)
+        XCTAssertEqual(native.recordingTracking.productViews.map(\.itemId), ids)
+    }
+
+    /// Popups and banners go the same way and answer once, on the main thread, after the events sent
+    /// before them. A tracking namespace the SDK did not make has no queue for them: `notInitialized`.
+    func test_popupAndBannerEvents_answerThroughTheSameLine() {
+        let answered = expectation(description: "answered")
+        answered.expectedFulfillmentCount = 4
+        var order: [String] = []
+        let record: (String) -> (Result<Void, Error>) -> Void = { name in
+            { result in
+                XCTAssertTrue(Thread.isMainThread)
+                if name != "productView", case .failure(let error) = result {
+                    XCTAssertEqual((error as? PigeonError)?.code, "notInitialized", name)
+                }
+                order.append(name)
+                answered.fulfill()
+            }
+        }
+
+        plugin.trackProductView(itemId: "37", source: nil, shopId: shopId, completion: record("productView"))
+        plugin.trackPopupShown(popupId: 9, shopId: shopId, completion: record("popupShown"))
+        plugin.trackBannerView(bannerId: "b1", code: "slider", shopId: shopId, completion: record("bannerView"))
+        plugin.trackBannerClick(bannerId: "b1", code: "slider", shopId: shopId, completion: record("bannerClick"))
+
+        wait(for: [answered], timeout: 10)
+        XCTAssertEqual(order, ["productView", "popupShown", "bannerView", "bannerClick"])
+    }
+
+    func test_aFailedEvent_isTheWholeErrorOfTheNativeSdk() {
+        native.recordingTracking.answer = .failure(.networkOfflineError)
+        let done = expectation(description: "answered")
+
+        plugin.trackCategoryView(categoryId: "7", shopId: shopId) { result in
+            guard case .failure(let error as PigeonError) = result else { return XCTFail("expected a failure") }
+            XCTAssertEqual(error.code, "network")
+            done.fulfill()
+        }
+
+        wait(for: [done], timeout: 5)
+    }
+
+    func test_setSource_storesTheSource_andRefusesAnUnknownOne() throws {
+        try plugin.trackSetSource(source: TrackingSourceWire(type: "chain", code: "c-1"), shopId: shopId)
+
+        XCTAssertEqual(native.recordingTracking.sources.first?.type, .chain)
+        XCTAssertThrowsError(try plugin.trackSetSource(source: TrackingSourceWire(type: "?", code: "c"), shopId: shopId)) { error in
+            XCTAssertEqual((error as? PigeonError)?.code, "invalidArgument")
+        }
+    }
+
+    func test_anEventOfAShopTheBridgeDoesNotKnow_isNotInitialized() {
+        let done = expectation(description: "answered")
+
+        plugin.trackSearch(query: "q", results: nil, shopId: "no-such-shop") { result in
+            guard case .failure(let error as PigeonError) = result else { return XCTFail("expected a failure") }
+            XCTAssertEqual(error.code, "notInitialized")
+            done.fulfill()
+        }
+
+        wait(for: [done], timeout: 5)
     }
 }

@@ -1,4 +1,6 @@
 import '../json_number.dart';
+import '../models/catalog_models.dart';
+import '../search/search_facets.dart' show parseProductParams;
 
 /// Typed response for [PersonalizationSdk.getRecommendation].
 ///
@@ -27,7 +29,23 @@ class RecommendationResponse {
   final String title;
   final List<RecommendedProduct> products;
 
-  const RecommendationResponse({required this.title, required this.products});
+  /// The block's id (`id`).
+  final int? id;
+
+  /// The link of the block's title (`link`).
+  final String? link;
+
+  /// The ids of the block's products: all there is without `extended`
+  /// ([RecommendationRequest.extended]).
+  final List<String> itemIds;
+
+  const RecommendationResponse({
+    required this.title,
+    required this.products,
+    this.id,
+    this.link,
+    this.itemIds = const [],
+  });
 
   factory RecommendationResponse.fromJson(Map<String, dynamic> json) {
     final rawProducts = json['recommends'] as List<dynamic>? ?? [];
@@ -35,6 +53,13 @@ class RecommendationResponse {
       title: json['title'] as String? ?? '',
       products: rawProducts
           .map((e) => RecommendedProduct.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      id: toIntOrNull(json['id']),
+      link: toNonEmptyStringOrNull(json['link']),
+      itemIds: rawProducts
+          .whereType<Map>()
+          .map((e) => e['id']?.toString())
+          .whereType<String>()
           .toList(),
     );
   }
@@ -97,6 +122,34 @@ class RecommendedProduct {
   /// The shop marks the product as new (`is_new`). From Android only for now.
   final bool? isNew;
 
+  /// The group of variants of the product (`group_id`).
+  final String? groupId;
+
+  /// The product's model (`model`).
+  final String? model;
+
+  /// The product's barcode (`barcode`).
+  final String? barcode;
+
+  /// The old price with kopecks (`oldprice_full`) and its display form.
+  final double? oldPriceFull;
+  final String? oldPriceFullFormatted;
+
+  /// The rating (`rating`); the API sends it only when it is not 0.
+  final int? rating;
+
+  /// How many are in stock (`stock_quantity`).
+  final int? stockQuantity;
+
+  /// The ids of the product's categories (`category_ids`).
+  final List<String>? categoryIds;
+
+  /// The product's parameters (`params`).
+  final List<ProductParam> params;
+
+  /// The locations where the product is (`location_ids`).
+  final List<String>? locationIds;
+
   const RecommendedProduct({
     required this.id,
     required this.name,
@@ -122,6 +175,16 @@ class RecommendedProduct {
     this.deeplinkAndroid,
     this.deeplinkIos,
     this.isNew,
+    this.groupId,
+    this.model,
+    this.barcode,
+    this.oldPriceFull,
+    this.oldPriceFullFormatted,
+    this.rating,
+    this.stockQuantity,
+    this.categoryIds,
+    this.params = const [],
+    this.locationIds,
   });
 
   factory RecommendedProduct.fromJson(Map<String, dynamic> json) {
@@ -156,6 +219,18 @@ class RecommendedProduct {
       deeplinkAndroid: toNonEmptyStringOrNull(json['deeplink_android']),
       deeplinkIos: toNonEmptyStringOrNull(json['deeplink_ios']),
       isNew: toBoolOrNull(json['is_new']),
+      groupId: toNonEmptyStringOrNull(json['group_id']),
+      model: toNonEmptyStringOrNull(json['model']),
+      barcode: toNonEmptyStringOrNull(json['barcode']),
+      oldPriceFull: toDoubleOrNull(json['oldprice_full']),
+      oldPriceFullFormatted: toNonEmptyStringOrNull(
+        json['oldprice_full_formatted'],
+      ),
+      rating: toIntOrNull(json['rating']),
+      stockQuantity: toIntOrNull(json['stock_quantity']),
+      categoryIds: toStringListOrNull(json['category_ids']),
+      params: parseProductParams(json['params']),
+      locationIds: toStringListOrNull(json['location_ids']),
     );
   }
 }
@@ -173,11 +248,23 @@ class ProductCategory {
   final String? parentId;
   final String? url;
 
+  /// The depth of a product's category (`level`).
+  final int? level;
+
+  /// In the facets of a listing or a search: how many products are in it.
+  final int? count;
+
+  /// In the facets of a listing or a search (`alias`).
+  final String? alias;
+
   const ProductCategory({
     required this.id,
     required this.name,
     this.parentId,
     this.url,
+    this.level,
+    this.count,
+    this.alias,
   });
 
   factory ProductCategory.fromJson(Map<String, dynamic> json) {
@@ -187,6 +274,9 @@ class ProductCategory {
       // A product's categories name the parent `parent_id`, a listing's own ones `parent`.
       parentId: (json['parent_id'] ?? json['parent']) as String?,
       url: json['url'] as String?,
+      level: toIntOrNull(json['level']),
+      count: toIntOrNull(json['count']),
+      alias: toNonEmptyStringOrNull(json['alias']),
     );
   }
 }

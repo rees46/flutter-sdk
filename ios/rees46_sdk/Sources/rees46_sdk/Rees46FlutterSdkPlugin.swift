@@ -1,47 +1,48 @@
 import Flutter
-import UIKit
-import REES46
-// The SDK's Category by name. A module-qualified `REES46.Category` breaks a synchronized copy
-// where the module and the SDK's facade enum share a name: Swift looks for Category inside the
-// enum. A bare `Category` alone is ambiguous with the Objective-C runtime's.
-import struct REES46.Category
 import Foundation
+import UIKit
 import UserNotifications
+@_spi(Bridge) import REES46
 
 public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplicationLifeCycleDelegate {
   static var sdk: PersonalizationSDK?
   static var notificationService: NotificationServiceProtocol?
   static let pushTokenKey = "rees46_flutter_push_token"
-  private var messenger: FlutterBinaryMessenger?
   private var api: PersonalizationHostApiImpl?
   private var flutterApi: PersonalizationFlutterApi?
   private var storiesApi: PersonalizationStoriesFlutterApi?
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let instance = Rees46FlutterSdkPlugin()
-    instance.messenger = registrar.messenger()
-    instance.api = PersonalizationHostApiImpl(
-      popupApi: PersonalizationPopupFlutterApi(binaryMessenger: registrar.messenger())
+    let messenger = registrar.messenger()
+    let api = PersonalizationHostApiImpl(
+      popupApi: PersonalizationPopupFlutterApi(binaryMessenger: messenger),
+      stateApi: PersonalizationStateFlutterApi(binaryMessenger: messenger)
     )
-    instance.flutterApi = PersonalizationFlutterApi(binaryMessenger: registrar.messenger())
-    let storiesApi = PersonalizationStoriesFlutterApi(binaryMessenger: registrar.messenger())
+    api.startPushSinks()
+    instance.api = api
+    instance.flutterApi = PersonalizationFlutterApi(binaryMessenger: messenger)
+    let storiesApi = PersonalizationStoriesFlutterApi(binaryMessenger: messenger)
     instance.storiesApi = storiesApi
     StoriesAudio.shared.onVolumeUp = { storiesApi.onStoriesVolumeUp { _ in } }
-    PersonalizationHostApiSetup.setUp(
-      binaryMessenger: registrar.messenger(),
-      api: instance.api
-    )
+    PersonalizationHostApiSetup.setUp(binaryMessenger: messenger, api: api)
     registrar.addApplicationDelegate(instance)
+    registrar.publish(instance)
 
-    if #available(iOS 10.0, *) {
-      UNUserNotificationCenter.current().delegate = instance
-    }
+    UNUserNotificationCenter.current().delegate = instance
+  }
+
+  public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+    api?.stop()
+    PersonalizationHostApiSetup.setUp(binaryMessenger: registrar.messenger(), api: nil)
   }
 
   public func application(
     _ application: UIApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
   ) {
+    // Kept for `notifications.getPushToken` of an app that sends the token itself
+    // (`autoSendPushToken: false`), as `getStoredPushToken` always read it.
     UserDefaults.standard.set(deviceToken, forKey: Rees46FlutterSdkPlugin.pushTokenKey)
     Rees46FlutterSdkPlugin.notificationService?
       .didRegisterForRemoteNotificationsWithDeviceToken(deviceToken: deviceToken)
@@ -60,10 +61,11 @@ public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplication
     guard let notificationService = Rees46FlutterSdkPlugin.notificationService else {
       // No notification service (the app sends the push token itself): the delivery is still
       // tracked, and the system is told the push is handled.
-      Rees46.handlePush(userInfo, event: .delivered)
+      PendingPushes.shared.handle(userInfo, event: Rees46.PushEvent.delivered)
       completionHandler(.newData)
       return true
     }
+    // The SDK's service sends `delivered`, and `opened` or `clicked` by the app's state.
     notificationService.didReceiveRemoteNotifications(application, didReceiveRemoteNotification: userInfo) { result, _ in
       completionHandler(result)
     }
@@ -71,8 +73,9 @@ public class Rees46FlutterSdkPlugin: NSObject, FlutterPlugin, FlutterApplication
   }
 }
 
-@available(iOS 10.0, *)
 extension Rees46FlutterSdkPlugin: UNUserNotificationCenterDelegate {
+  /// A tap on the notification is `clicked`; its dismissal (reported only for a category with
+  /// `customDismissAction`) is `closed`. The SDK sends each event once per message.
   public func userNotificationCenter(
     _ center: UNUserNotificationCenter,
     didReceive response: UNNotificationResponse,
@@ -82,23 +85,29 @@ extension Rees46FlutterSdkPlugin: UNUserNotificationCenterDelegate {
     var payload = Self._stringPayload(userInfo)
     payload["actionIdentifier"] = response.actionIdentifier
     flutterApi?.onPushClicked(shopId: Self._shopId(userInfo), payload: payload) { _ in }
+    // A tap that launched the app comes before Dart initialized the shop: kept until it does.
+    PendingPushes.shared.handle(userInfo, event: Self.responseEvent(response.actionIdentifier))
     completionHandler()
   }
 
+  /// A push shown while the app is open: the notification is on screen, `opened`.
   public func userNotificationCenter(
     _ center: UNUserNotificationCenter,
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
+    let userInfo = notification.request.content.userInfo
     flutterApi?.onPushDelivered(
-      shopId: Self._shopId(notification.request.content.userInfo),
-      payload: Self._stringPayload(notification.request.content.userInfo)
+      shopId: Self._shopId(userInfo),
+      payload: Self._stringPayload(userInfo)
     ) { _ in }
-    if #available(iOS 14.0, *) {
-      completionHandler([.badge, .sound, .banner, .list])
-    } else {
-      completionHandler([.badge, .sound, .alert])
-    }
+    PendingPushes.shared.handle(userInfo, event: Rees46.PushEvent.opened)
+    completionHandler([.badge, .sound, .banner, .list])
+  }
+
+  /// The event of the user's response to a notification.
+  static func responseEvent(_ actionIdentifier: String) -> Rees46.PushEvent {
+    actionIdentifier == UNNotificationDismissActionIdentifier ? .closed : .clicked
   }
 }
 
@@ -128,70 +137,274 @@ extension Rees46FlutterSdkPlugin {
   }
 }
 
+/// The host side of the Pigeon channel: each call goes to the native SDK's method of the same meaning
+/// on the shop's instance, on the new core (`Rees46.initializeBridge`), and its result goes back as the
+/// wire types. The native registry holds the instances; the bridge keeps no request, storage or queue
+/// of its own — only its subscriptions to each shop's state and session, and to the pushes, to tell
+/// Dart.
 final class PersonalizationHostApiImpl: PersonalizationHostApi {
   private let popupApi: PersonalizationPopupFlutterApi
+  private let stateApi: PersonalizationStateFlutterApi
 
+  private let lock = NSLock()
   /// One per shop: the SDK holds its popup delegate weakly.
   private var popupForwarders: [String: PopupForwarder] = [:]
+  /// Per shop, the subscriptions that tell Dart the instance's state and session.
+  private var subscriptions: [String: [Cancellable]] = [:]
+  /// The pushes and tokens of every shop.
+  private var pushSinks: [Cancellable] = []
+  /// Per shop, its tracking events in the order Dart sent them.
+  private var trackingLines: [String: TrackingLine] = [:]
 
-  init(popupApi: PersonalizationPopupFlutterApi) {
+  init(popupApi: PersonalizationPopupFlutterApi, stateApi: PersonalizationStateFlutterApi) {
     self.popupApi = popupApi
+    self.stateApi = stateApi
   }
 
-  /// Resolves the SDK instance a call targets via the multi-instance `Rees46`
-  /// facade. `shopId == nil` resolves the single default instance; an unknown or
-  /// (with no id) ambiguous shop throws, which `try?` turns into `nil` — the
-  /// caller then reports `not_initialized`. This is the F3 wiring; requires the
-  /// native `Rees46` facade (local `ios-sdk` via Podfile `:path`, or a pod
-  /// version that ships it).
-  private func sdk(_ shopId: String?) -> PersonalizationSDK? {
-    return try? Rees46.instance(for: shopId)
-  }
+  // MARK: - Instances and their state
 
-  func getStoredPushToken(shopId: String?) throws -> String? {
-    guard let deviceToken = UserDefaults.standard.data(forKey: Rees46FlutterSdkPlugin.pushTokenKey) else {
-      return nil
+  /// The shop's instance; a shop the native registry does not have — never initialized, released,
+  /// or no id while several shops are live — is `notInitialized`.
+  func instance(_ shopId: String?) throws -> PersonalizationSDK {
+    do {
+      return try Rees46.instance(for: shopId)
+    } catch {
+      throw BridgeFailure.notInitialized
     }
-    let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-    return token.isEmpty ? nil : token
   }
 
-  func initialize(config: InitConfig, completion: @escaping (Result<Void, Error>) -> Void) {
-    if config.shopId.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "shopId is required", details: nil)))
+  /// Tells Dart every push event and push token the native SDK sees, of every shop. Dart's `onToken`
+  /// hears a token the SDK got from APNs or FCM, as the contract has it: the tokens the SDK already
+  /// had, which it tells a new subscriber at once (a token the app handed over among them), are not
+  /// new — Dart's copy of the shop's tokens follows them through the snapshot all the same.
+  func startPushSinks() {
+    let events = Rees46.onPushEvent { [weak self] event, payload in
+      self?.stateApi.onPushEvent(shopId: payload.shopId, event: event.rawValue, payload: payload.toWire()) { _ in }
+    }
+    let replay = ReplayFlag()
+    let tokens = Rees46.onPushToken { [weak self] token in
+      if !replay.isOn {
+        self?.stateApi.onPushToken(token: token.toWire()) { _ in }
+      }
+      // Each initialized shop's own token may have changed with it.
+      self?.emitAll()
+    }
+    // The SDK tells the tokens it had on the main queue, before this.
+    DispatchQueue.main.async { replay.isOn = false }
+    lock.lock()
+    pushSinks = [events, tokens]
+    lock.unlock()
+  }
+
+  /// Drops every subscription: the engine went away.
+  func stop() {
+    lock.lock()
+    let all = pushSinks + subscriptions.values.flatMap { $0 }
+    pushSinks = []
+    subscriptions = [:]
+    lock.unlock()
+    all.forEach { $0.cancel() }
+    LogForwarding.shared.remove(logSink)
+  }
+
+  /// This engine's Dart side of the native log, while Dart has a log handler.
+  private lazy var logSink = LogForwarding.Sink { [weak self] message in
+    let wire = message.toWire()
+    onMain { self?.stateApi.onLog(message: wire) { _ in } }
+  }
+
+  func setLogForwarding(enabled: Bool) throws {
+    if enabled {
+      LogForwarding.shared.add(logSink)
+    } else {
+      LogForwarding.shared.remove(logSink)
+    }
+  }
+
+  /// Tells Dart the shop's state on every change of its state and session. A second initialization
+  /// of the shop (a Dart hot restart) replaces the subscriptions, the state one telling the current
+  /// state at once.
+  private func subscribe(_ sdk: PersonalizationSDK) {
+    let fresh = [
+      sdk.onStateChange { [weak self] state in self?.emit(sdk, state: state) },
+      sdk.onSessionChange { [weak self] _ in self?.emit(sdk) },
+    ]
+    lock.lock()
+    let stale = subscriptions[sdk.shopId] ?? []
+    subscriptions[sdk.shopId] = fresh
+    lock.unlock()
+    stale.forEach { $0.cancel() }
+  }
+
+  private func emit(_ sdk: PersonalizationSDK, state: Rees46.SdkState? = nil) {
+    let snapshot = Self.snapshot(sdk, state: state)
+    onMain { [stateApi] in stateApi.onSnapshot(snapshot: snapshot) { _ in } }
+  }
+
+  private func emitAll() {
+    lock.lock()
+    let shopIds = Array(subscriptions.keys)
+    lock.unlock()
+    for shopId in shopIds {
+      if let sdk = try? Rees46.instance(for: shopId) {
+        emit(sdk)
+      }
+    }
+  }
+
+  /// The shop's state as Dart mirrors it.
+  static func snapshot(_ sdk: PersonalizationSDK, state: Rees46.SdkState? = nil) -> SdkSnapshotWire {
+    let notifications = sdk.notifications
+    let tokens = [Rees46.PushProvider.apns, .fcm].compactMap { notifications.getPushToken(provider: $0) }
+    return SdkSnapshotWire(
+      shopId: sdk.shopId,
+      state: (state ?? sdk.state).rawValue,
+      deviceId: nonEmpty(sdk.deviceId),
+      sessionId: nonEmpty(sdk.sessionId),
+      segment: nonEmpty(sdk.segment),
+      agentEnabled: sdk.search.agentEnabled,
+      pushToken: notifications.getPushToken(provider: nil)?.toWire(),
+      pushTokens: tokens.map { $0.toWire() }
+    )
+  }
+
+  /// The API's host: the SDK takes a host only, so a scheme and a trailing slash go, as on Android.
+  /// A log level from Dart by its name (`debug` … `none`); nil for none or an unknown one.
+  static func logLevel(_ name: String?) -> Rees46.LogLevel? {
+    guard let name = name?.lowercased() else { return nil }
+    return Rees46.LogLevel.allCases.first { "\($0)" == name }
+  }
+
+  static func nonEmpty(_ value: String?) -> String? {
+    guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+    return trimmed
+  }
+
+  static func apiHost(_ domain: String) -> String? {
+    var host = domain.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let scheme = host.range(of: "^https?://", options: [.regularExpression, .caseInsensitive]) {
+      host.removeSubrange(scheme)
+    }
+    while host.hasSuffix("/") { host.removeLast() }
+    return host.isEmpty ? nil : host
+  }
+
+  // MARK: - Calls
+
+  /// Calls a namespace method of the shop's instance and answers Dart on the main thread: the value
+  /// as `map` makes it, or the native error.
+  private func call<Value, Wire>(
+    _ shopId: String?,
+    _ completion: @escaping (Result<Wire, Error>) -> Void,
+    map: @escaping (Value) -> Wire,
+    _ body: (PersonalizationSDK, @escaping (Result<Value, Rees46.SdkError>) -> Void) throws -> Void
+  ) {
+    let finish: (Result<Value, Rees46.SdkError>) -> Void = { result in
+      onMain {
+        switch result {
+        case .success(let value): completion(.success(map(value)))
+        case .failure(let error): completion(.failure(BridgeFailure.error(error)))
+        }
+      }
+    }
+    do {
+      try body(try instance(shopId), finish)
+    } catch {
+      let failure = BridgeFailure.error(error)
+      onMain { completion(.failure(failure)) }
+    }
+  }
+
+  /// `call` for a method with no value.
+  private func run(
+    _ shopId: String?,
+    _ completion: @escaping (Result<Void, Error>) -> Void,
+    _ body: (PersonalizationSDK, @escaping (Result<Void, Rees46.SdkError>) -> Void) throws -> Void
+  ) {
+    call(shopId, completion, map: { $0 }, body)
+  }
+
+  /// A `tracking` call, through the native `tracking.async`: Dart hears, on the main thread, once the
+  /// shop's queue accepted the event — the contract's result, as on Android — or the error that kept
+  /// the event out of the queue (`invalidArgument`, `shopBlocked`, `notInitialized`). The server's
+  /// answer comes later and is not the call's. A shop's events reach its queue in the order Dart sent
+  /// them.
+  private func track(
+    _ shopId: String?,
+    _ completion: @escaping (Result<Void, Error>) -> Void,
+    _ body: @escaping (TrackingAsyncAPI) async throws -> Void
+  ) {
+    let sdk: PersonalizationSDK
+    do {
+      sdk = try instance(shopId)
+    } catch {
+      let failure = BridgeFailure.error(error)
+      onMain { completion(.failure(failure)) }
       return
     }
+    let tracking = sdk.tracking.async
+    trackingLine(sdk.shopId).send {
+      let result: Result<Void, Error>
+      do {
+        try await body(tracking)
+        result = .success(())
+      } catch {
+        result = .failure(BridgeFailure.error(error))
+      }
+      onMain { completion(result) }
+    }
+  }
 
-    // F3: initialize (and register) the instance through the multi-instance
-    // `Rees46` facade so it is reachable by `shopId` via `Rees46.instance(for:)`.
-    var sdk = Rees46.initialize(
+  /// The line of [shopId]'s tracking events, made on first use. The released `trackEvent` and
+  /// `trackPurchase` go through it too, in the order Dart sent them among the namespace's events.
+  func trackingLine(_ shopId: String) -> TrackingLine {
+    lock.lock()
+    defer { lock.unlock() }
+    if let line = trackingLines[shopId] { return line }
+    let line = TrackingLine()
+    trackingLines[shopId] = line
+    return line
+  }
+
+  // MARK: - Root
+
+  func initialize(config: InitConfig, completion: @escaping (Result<SdkSnapshotWire, Error>) -> Void) {
+    let shopId = config.shopId.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !shopId.isEmpty else {
+      completion(.failure(BridgeFailure.error(.invalidArgument("shopId must not be empty"))))
+      return
+    }
+    // The bridges' entry: the new core. Flutter kept no A/B group of its own — the native SDK kept it,
+    // and the new core takes it from its storage — so none is handed over.
+    var sdk = Rees46.initializeBridge(
       Rees46Config(
-        shopId: config.shopId,
-        apiDomain: config.apiDomain,
+        shopId: shopId,
+        apiDomain: Self.apiHost(config.apiDomain) ?? "api.rees46.ru",
+        // Empty is the native SDK's own default host, so each SDK build keeps its own.
+        appDomain: config.appDomain.flatMap(Self.apiHost) ?? "",
         stream: config.stream,
+        deviceId: Self.nonEmpty(config.deviceId),
         enableLogs: config.enableLogs,
+        logLevel: Self.logLevel(config.logLevel) ?? (config.enableLogs ? .debug : .warning),
         autoSendPushToken: config.autoSendPushToken,
         sendAdvertisingId: config.sendAdvertisingId,
         enableAutoPopupPresentation: config.enableAutoPopupPresentation,
-        needReInitialization: config.needReInitialization
-      )
-    ) { error in
-      if let error = error {
-        completion(.failure(PigeonError(code: "init_failed", message: String(describing: error), details: nil)))
-      } else {
-        completion(.success(()))
-      }
-    }
+        needReInitialization: config.needReInitialization,
+        storageKey: Self.nonEmpty(config.storageKey)
+      ),
+      segment: nil
+    )
 
     // Dart draws popups with the UI kit: every popup is kept back from the native SDK
     // (nil — not shown, not reported, not remembered) and handed over. Dart decides
     // whether to show it, and reports it once it is on screen.
-    let forwarder = PopupForwarder(shopId: config.shopId, api: popupApi)
-    popupForwarders[config.shopId] = forwarder
+    let forwarder = PopupForwarder(shopId: shopId, api: popupApi)
+    lock.lock()
+    popupForwarders[shopId] = forwarder
+    lock.unlock()
     sdk.popupPresentationDelegate = forwarder
 
-    // Kept for the AppDelegate push path (device token / remote notification),
-    // which still uses the last-initialized instance until F4 routes by shop.
+    // Kept for the AppDelegate push path (device token / remote notification).
     Rees46FlutterSdkPlugin.sdk = sdk
 
     // The notification service asks for notification permission as it is created and sends the
@@ -203,612 +416,639 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
         notificationLogger: NotificationLogger()
       )
     }
+
+    subscribe(sdk)
+    completion(.success(Self.snapshot(sdk)))
+    // The push events that came before the shop was: a tap that launched the app, say.
+    PendingPushes.shared.release(shopId)
   }
 
   func getPlatformVersion() throws -> String {
     return "iOS " + UIDevice.current.systemVersion
   }
 
-  func getRecommendation(code: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if code.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "code is required", details: nil)))
-      return
-    }
-    let p = parseJsonObject(paramsJson)
-    let itemId = p?["item_id"] as? String
-    let categoryId = p?["category_id"] as? String
-    let locations = p?["locations"] as? String
-    let imageSize = (p?["image_size"] as? Int).map { String($0) }
-    let withLocations = p?["with_locations"] as? Bool ?? false
+  func getSnapshot(shopId: String?) throws -> SdkSnapshotWire {
+    Self.snapshot(try instance(shopId))
+  }
 
-    sdk.recommend(
-      blockId: code,
-      currentProductId: itemId,
-      currentCategoryId: categoryId,
-      locations: locations,
-      imageSize: imageSize,
-      timeOut: nil,
-      withLocations: withLocations,
-      extended: false
-    ) { result in
-      switch result {
-      case .success(let response):
-        let dict = Self._recommendationToDict(response)
-        guard let data = try? JSONSerialization.data(withJSONObject: dict),
-              let json = String(data: data, encoding: .utf8) else {
-          completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize recommendation response", details: nil)))
-          return
-        }
-        completion(.success(json))
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "recommendation_failed", message: String(describing: err), details: nil)))
+  func getSid(shopId: String?) throws -> String {
+    try instance(shopId).sessionId ?? ""
+  }
+
+  func getDid(shopId: String?) throws -> String? {
+    (try? instance(shopId))?.deviceId
+  }
+
+  func flush(shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    do {
+      try instance(shopId).flush { error in
+        onMain { completion(error.map { .failure(BridgeFailure.error($0)) } ?? .success(())) }
       }
+    } catch {
+      let failure = BridgeFailure.error(error)
+      onMain { completion(.failure(failure)) }
     }
   }
 
-  private static func _recommendationToDict(_ response: RecommenderResponse) -> [String: Any] {
-    return [
-      "title": response.title,
-      "recommends": response.recommended.map { _productToDict($0) },
-    ]
+  /// The bridge lets go of the shop before the native release, so the released instance tells Dart
+  /// nothing more: Dart's handle reads `notInitialized` by itself, and the shop's next instance owns
+  /// its snapshots. The AppDelegate's push path drops the instance too; a push of the shop then goes
+  /// to `Rees46.handlePush`. A shop the native registry does not have is released already.
+  func release(shopId: String?) throws {
+    guard let sdk = try? Rees46.instance(for: shopId) else { return }
+    lock.lock()
+    let stale = subscriptions.removeValue(forKey: sdk.shopId) ?? []
+    popupForwarders.removeValue(forKey: sdk.shopId)
+    trackingLines.removeValue(forKey: sdk.shopId)
+    lock.unlock()
+    stale.forEach { $0.cancel() }
+    if Self.same(Rees46FlutterSdkPlugin.sdk, sdk) {
+      Rees46FlutterSdkPlugin.sdk = nil
+    }
+    if Self.same((Rees46FlutterSdkPlugin.notificationService as? NotificationService)?.sdk, sdk) {
+      Rees46FlutterSdkPlugin.notificationService = nil
+    }
+    sdk.release()
   }
 
-  private static func _productToDict(_ p: Recommended) -> [String: Any] {
-    var dict: [String: Any] = [
-      "id": p.id,
-      "name": p.name,
-      "brand": p.brand,
-      "description": p.description,
-      "image_url": p.imageUrl,
-      "picture": p.resizedImageUrl,
-      "image_url_resized": p.resizedImages,
-      "url": p.url,
-      "price": p.price,
-      "price_full": p.priceFull,
-      "currency": p.currency,
-      "sales_rate": p.salesRate,
-      "relative_sales_rate": p.relativeSalesRate,
-      "categories": p.categories.map { _categoryToDict($0) },
-    ]
-    if let pf = p.priceFormatted { dict["price_formatted"] = pf }
-    if let pff = p.priceFullFormatted { dict["price_full_formatted"] = pff }
-    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
-    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
-    return dict
+  /// Whether `held` is the very instance `sdk`.
+  private static func same(_ held: PersonalizationSDK?, _ sdk: PersonalizationSDK) -> Bool {
+    guard let held = held else { return false }
+    return (held as AnyObject) === (sdk as AnyObject)
   }
 
-  /// Old price and discount as the API sends them: only for a discounted product. The
-  /// native models fill an absent value with 0 or "", which would read as a real one.
-  private static func _putDiscount(
-    _ dict: inout [String: Any],
-    oldPrice: Double,
-    oldPriceFormatted: String?,
-    discount: Int
-  ) {
-    if oldPrice > 0 { dict["oldprice"] = oldPrice }
-    if let v = oldPriceFormatted, !v.isEmpty { dict["oldprice_formatted"] = v }
-    if discount > 0 { dict["discount"] = discount }
-  }
-
-  private static func _categoryToDict(_ c: Category) -> [String: Any] {
-    var dict: [String: Any] = ["id": c.id, "name": c.name]
-    if let parentId = c.parentId { dict["parent_id"] = parentId }
-    if let url = c.url { dict["url"] = url }
-    return dict
-  }
-
-  func getProductInfo(itemId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
+  /// Answers with the shop's state after the wipe — the customer's data, the queue's files too, gone —
+  /// which holds no thread of Dart's; the new device id comes with `/init`, as a snapshot.
+  func deleteUserCredentials(shopId: String?, completion: @escaping (Result<SdkSnapshotWire, Error>) -> Void) {
+    let sdk: PersonalizationSDK
+    do {
+      sdk = try instance(shopId)
+    } catch {
+      let failure = BridgeFailure.error(error)
+      onMain { completion(.failure(failure)) }
       return
     }
-    if itemId.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "itemId is required", details: nil)))
-      return
-    }
-    sdk.getProductInfo(id: itemId) { result in
-      switch result {
-      case .success(let product):
-        let dict = Self._productInfoToDict(product)
-        guard let data = try? JSONSerialization.data(withJSONObject: dict),
-              let json = String(data: data, encoding: .utf8) else {
-          completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize product info", details: nil)))
-          return
-        }
-        completion(.success(json))
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "product_info_failed", message: String(describing: err), details: nil)))
-      }
+    Task {
+      await sdk.deleteUserCredentials()
+      onMain { completion(.success(Self.snapshot(sdk))) }
     }
   }
 
-  func getProductsList(paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    let p = parseJsonObject(paramsJson)
-    let brands = p?["brands"] as? String
-    let merchants = p?["merchants"] as? String
-    let categories = p?["categories"] as? String
-    let locations = p?["locations"] as? String
-    let limit = p?["limit"] as? Int
-    let page = p?["page"] as? Int
-    let filters = p?["filters"] as? [String: Any]
+  // MARK: - Tracking
+  //
+  // Each method goes to the native `tracking.async` of the shop's instance — the events of `tracking`,
+  // completed as the contract completes them: once the queue took the event.
 
-    sdk.getProductsList(
-      brands: brands,
-      merchants: merchants,
-      categories: categories,
-      locations: locations,
-      limit: limit,
-      page: page,
-      filters: filters
-    ) { result in
-      switch result {
-      case .success(let response):
-        let dict = Self._productsListResponseToDict(response)
-        guard let data = try? JSONSerialization.data(withJSONObject: dict),
-              let json = String(data: data, encoding: .utf8) else {
-          completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize products list response", details: nil)))
-          return
-        }
-        completion(.success(json))
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "products_list_failed", message: String(describing: err), details: nil)))
-      }
-    }
-  }
-
-  private static func _productsListResponseToDict(_ r: ProductsListResponse) -> [String: Any] {
-    // As of REES46 3.24+, ProductsListResponse.products is [Product] (not [ProductInfo]);
-    // Product carries no categories, which the Dart parser already treats as optional.
-    // The listing's own categories come with the response itself.
-    var dict: [String: Any] = [
-      "products": r.products.map { _productsListProductToDict($0) },
-      "products_total": r.productsTotal,
-      "categories": r.categories.map { _categoryToDict($0) },
-    ]
-    _addFacets(to: &dict, priceRange: r.priceRange, filters: r.filters)
-    if let brands = r.brands {
-      dict["brands"] = brands
-    }
-    return dict
-  }
-
-  /// A products list item for the Dart `Product`, whose old price and discount are
-  /// nullable: they go out only for a discounted product, as on Android. Search keeps
-  /// sending the native zeros, which its model reads as "none".
-  private static func _productsListProductToDict(_ p: Product) -> [String: Any] {
-    var dict = _searchProductToDict(p)
-    dict.removeValue(forKey: "oldprice")
-    dict.removeValue(forKey: "oldprice_formatted")
-    dict.removeValue(forKey: "discount")
-    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
-    return dict
-  }
-
-  private static func _productInfoToDict(_ p: ProductInfo) -> [String: Any] {
-    var dict: [String: Any] = [
-      "id": p.id,                          // normalised from "uniqid"
-      "name": p.name,
-      "brand": p.brand,
-      "description": p.description,
-      "image_url": p.imageUrl,
-      "image_url_resized": p.resizedImages,
-      "url": p.url,
-      "price": p.price,
-      "price_full": p.priceFull,
-      "price_formatted": p.priceFormatted,
-      "price_full_formatted": p.priceFullFormatted,
-      "currency": p.currency,
-      "sales_rate": p.salesRate,
-      "relative_sales_rate": p.relativeSalesRate,
-      "categories": p.categories.map { c -> [String: Any] in
-        var d: [String: Any] = ["id": c.id, "name": c.name]
-        if let parent = c.parentId { d["parent_id"] = parent }
-        if let url = c.url { d["url"] = url }
-        return d
-      },
-    ]
-    if !p.resizedImageUrl.isEmpty { dict["picture"] = p.resizedImageUrl }
-    _putDiscount(&dict, oldPrice: p.oldPrice, oldPriceFormatted: p.oldPriceFormatted, discount: p.discount)
-    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
-    if let isNew = p.isNew { dict["is_new"] = isNew }
-    return dict
-  }
-
-  func searchBlank(shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    sdk.searchBlank { result in
-      switch result {
-      case .success(let response):
-        let dict = Self._searchBlankResponseToDict(response)
-        guard let data = try? JSONSerialization.data(withJSONObject: dict),
-              let json = String(data: data, encoding: .utf8) else {
-          completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize search blank response", details: nil)))
-          return
-        }
-        completion(.success(json))
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "search_blank_failed", message: String(describing: err), details: nil)))
-      }
-    }
-  }
-
-  private static func _searchBlankResponseToDict(_ r: SearchBlankResponse) -> [String: Any] {
-    return [
-      "products": r.products.map { _searchProductToDict($0) },
-      "suggests": r.suggests.map { ["name": $0.name, "url": $0.url] },
-      "last_queries": r.lastQueries.map { ["name": $0.name, "url": $0.url] },
-      "popular_categories": r.popularCategories.map { ["name": $0.name, "url": $0.url] },
-    ]
-  }
-
-  func searchInstant(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if query.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "query is required", details: nil)))
-      return
-    }
-    let p = parseJsonObject(paramsJson)
-    let locations = p?["locations"] as? String
-    let excludedBrands = p?["excluded_brands"] as? [String]
-
-    // Instant search is the native `suggest` (`type=instant_search`), as on Android; `search`
-    // sent the full search.
-    sdk.suggest(
-      query: query,
-      locations: locations,
-      excludedMerchants: nil,
-      excludedBrands: excludedBrands,
-      timeOut: nil,
-      extended: nil
-    ) { result in
-      switch result {
-      case .success(let response):
-        let dict = Self._searchResponseToDict(response)
-        guard let data = try? JSONSerialization.data(withJSONObject: dict),
-              let json = String(data: data, encoding: .utf8) else {
-          completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize search instant response", details: nil)))
-          return
-        }
-        completion(.success(json))
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "search_instant_failed", message: String(describing: err), details: nil)))
-      }
-    }
-  }
-
-  func searchFull(query: String, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if query.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "query is required", details: nil)))
-      return
-    }
-    let p = parseJsonObject(paramsJson)
-    let limit = p?["limit"] as? Int
-    let page = p?["page"] as? Int
-    let categoryLimit = p?["category_limit"] as? Int
-    let brandLimit = p?["brand_limit"] as? Int
-    let categoriesInt = (p?["categories"] as? [String])?.compactMap { Int($0) }
-    let sortBy = p?["sort_by"] as? String
-    let sortDir = p?["sort_dir"] as? String
-    let locations = p?["locations"] as? String
-    let excludedBrands = p?["excluded_brands"] as? [String]
-    let brands = p?["brands"] as? String
-    let priceMin = p?["price_min"] as? Double
-    let priceMax = p?["price_max"] as? Double
-    let colors = p?["colors"] as? [String]
-    let fashionSizes = p?["fashion_sizes"] as? [String]
-    let filters = p?["filters"] as? [String: Any]
-    // The native iOS search pages by product offset, while page is 1-based as on Android:
-    // page N starts at (N - 1) * limit, and the first page (or page <= 0) has no offset. The
-    // server's default page size isn't pinned down anywhere, so a later page without a limit is
-    // rejected rather than guessed: no offset would return page 1 again, and the page number as
-    // the offset would shift by N products.
-    var offset: Int?
-    if let page = page, page > 1 {
-      guard let limit = limit, limit > 0 else {
-        completion(.failure(PigeonError(code: "bad_args", message: "page > 1 requires limit on iOS", details: nil)))
-        return
-      }
-      offset = (page - 1) * limit
-    }
-
-    sdk.search(
-      query: query,
-      limit: limit,
-      offset: offset,
-      categoryLimit: categoryLimit,
-      brandLimit: brandLimit,
-      categories: categoriesInt,
-      extended: nil,
-      sortBy: sortBy,
-      sortDir: sortDir,
-      locations: locations,
-      excludedMerchants: nil,
-      excludedBrands: excludedBrands,
-      brands: brands,
-      filters: filters,
-      priceMin: priceMin,
-      priceMax: priceMax,
-      colors: colors,
-      fashionSizes: fashionSizes,
-      exclude: nil,
-      email: nil,
-      timeOut: nil,
-      disableClarification: nil
-    ) { result in
-      switch result {
-      case .success(let response):
-        let dict = Self._searchResponseToDict(response)
-        guard let data = try? JSONSerialization.data(withJSONObject: dict),
-              let json = String(data: data, encoding: .utf8) else {
-          completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize search response", details: nil)))
-          return
-        }
-        completion(.success(json))
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "search_failed", message: String(describing: err), details: nil)))
-      }
-    }
-  }
-
-  private static func _searchResponseToDict(_ r: SearchResponse) -> [String: Any] {
-    var dict: [String: Any] = [
-      "products": r.products.map { _searchProductToDict($0) },
-      "categories": r.categories.map { _searchCategoryToDict($0) },
-      "products_total": r.productsTotal,
-      "queries": r.queries.map { ["name": $0.name, "url": $0.url] },
-    ]
-    _addFacets(to: &dict, priceRange: r.priceRange, filters: r.filters)
-    if let brands = r.brands {
-      dict["brands"] = brands
-    }
-    if let industrial = r.industrialFilters {
-      dict["industrial_filters"] = [
-        "colors": industrial.fashionColors.map { ["color": $0.color, "count": $0.count] },
-        "fashion_sizes": industrial.fashionSizes.map { ["size": $0.size, "count": $0.count] },
-      ]
-    }
-    if let locs = r.locations {
-      dict["locations"] = locs.map { loc -> [String: Any] in
-        var d: [String: Any] = ["id": loc.id, "name": loc.name]
-        if let t = loc.type { d["type"] = t }
-        return d
-      }
-    }
-    return dict
-  }
-
-  private static func _searchProductToDict(_ p: Product) -> [String: Any] {
-    var dict: [String: Any] = [
-      "id": p.id,
-      "name": p.name,
-      "brand": p.brand,
-      "description": p.description,
-      "image_url": p.imageUrl,
-      "picture": p.resizedImageUrl,
-      "image_url_resized": p.resizedImages,
-      "url": p.url,
-      "price": p.price,
-      "price_full": p.priceFull,
-      "price_formatted": p.priceFormatted,
-      "price_full_formatted": p.priceFullFormatted,
-      "currency": p.currency,
-      "sales_rate": p.salesRate,
-      "relative_sales_rate": p.relativeSalesRate,
-      "oldprice": p.oldPrice,
-      "oldprice_formatted": p.oldPriceFormatted,
-      "discount": p.discount,
-    ]
-    if !p.deeplinkIos.isEmpty { dict["deeplink_ios"] = p.deeplinkIos }
-    if let isNew = p.isNew { dict["is_new"] = isNew }
-    return dict
-  }
-
-  private static func _searchCategoryToDict(_ c: Category) -> [String: Any] {
-    var dict: [String: Any] = ["id": c.id, "name": c.name]
-    if let url = c.url { dict["url"] = url }
-    if let parent = c.parentId { dict["parent"] = parent }
-    if let count = c.count { dict["count"] = count }
-    return dict
-  }
-
-  func joinLoyalty(
-    phone: String,
-    email: String?,
-    firstName: String?,
-    lastName: String?,
+  func trackEvent(
+    event: String,
+    time: Int64?,
+    category: String?,
+    label: String?,
+    value: Int64?,
+    customFields: [String: Any?]?,
     shopId: String?,
-    completion: @escaping (Result<String, Error>) -> Void
+    completion: @escaping (Result<Void, Error>) -> Void
   ) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if phone.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "phone is required", details: nil)))
-      return
-    }
-    sdk.joinLoyalty(phone: phone, email: email, firstName: firstName, lastName: lastName) { result in
-      switch result {
-      case .success(let response):
-        var dict: [String: Any] = ["payload": response.payload]
-        if let status = response.status { dict["status"] = status }
-        Self._encodeEnvelope(dict, completion: completion)
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "join_loyalty_failed", message: String(describing: err), details: nil)))
-      }
+    track(shopId, completion) { tracking in
+      try await tracking.custom(
+        event: event,
+        time: try time.map(nativeInt),
+        category: category,
+        label: label,
+        value: try value.map(nativeInt),
+        customFields: customFields.map(nativeObject)
+      )
     }
   }
 
-  func getLoyaltyStatus(identifier: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if identifier.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "identifier is required", details: nil)))
-      return
-    }
-    sdk.getLoyaltyStatus(identifier: identifier) { result in
-      switch result {
-      case .success(let response):
-        var payload: [String: Any] = [:]
-        if let member = response.member { payload["member"] = member }
-        if let level = response.level {
-          var levelDict: [String: Any] = [:]
-          if let name = level.name { levelDict["name"] = name }
-          if let code = level.code { levelDict["code"] = code }
-          if let exp = level.expirationDate { levelDict["expiration_date"] = exp }
-          payload["level"] = levelDict
-        }
-        var dict: [String: Any] = ["payload": payload]
-        if let status = response.status { dict["status"] = status }
-        Self._encodeEnvelope(dict, completion: completion)
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "loyalty_status_failed", message: String(describing: err), details: nil)))
-      }
+  func trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.productView(itemId: itemId, source: try Self.source(source))
     }
   }
 
-  func getProfile(shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    sdk.getProfile { result in
-      switch result {
-      case .success(let response):
-        Self._encodeCatalog(Self._profileResponseToDict(response), errorCode: "get_profile_failed", completion: completion)
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "get_profile_failed", message: String(describing: err), details: nil)))
-      }
+  func trackCategoryView(categoryId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.categoryView(categoryId: categoryId)
     }
   }
 
-  func getProductCounters(item: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if item.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "item is required", details: nil)))
-      return
-    }
-    sdk.getProductCounters(item: item) { result in
-      switch result {
-      case .success(let response):
-        Self._encodeCatalog(Self._productCountersToDict(response), errorCode: "product_counters_failed", completion: completion)
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "product_counters_failed", message: String(describing: err), details: nil)))
-      }
+  func trackSearch(query: String, results: [String]?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.search(query: query, results: results)
     }
   }
 
-  func getCategory(category: String, limit: Int64?, page: Int64?, paramsJson: String?, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if category.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "category is required", details: nil)))
-      return
-    }
-    let p = parseJsonObject(paramsJson)
-    let brands = (p?["brands"] as? String).flatMap { $0.isEmpty ? nil : $0 }
-    let locations = (p?["locations"] as? String).flatMap { $0.isEmpty ? nil : $0 }
-    let filters = (p?["filters"] as? [String: Any]).flatMap { $0.isEmpty ? nil : $0 }
-    let sortBy = (p?["sort_by"] as? String).flatMap { $0.isEmpty ? nil : $0 }
-    let sortDir = (p?["sort_dir"] as? String).flatMap { $0.isEmpty ? nil : $0 }
-    sdk.getCategory(
-      category: category,
-      limit: limit.map { Int($0) },
-      page: page.map { Int($0) },
-      brands: brands,
-      locations: locations,
-      filters: filters,
-      priceMin: p?["price_min"] as? Double,
-      priceMax: p?["price_max"] as? Double,
-      sortBy: sortBy,
-      sortDir: sortDir
-    ) { result in
-      switch result {
-      case .success(let response):
-        Self._encodeCatalog(Self._categoryResponseToDict(response), errorCode: "get_category_failed", completion: completion)
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "get_category_failed", message: String(describing: err), details: nil)))
-      }
+  func trackAddToCart(item: TrackingItemWire, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.addToCart(item: item.native, source: try Self.source(source))
     }
   }
 
-  func getCollection(collectionId: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if collectionId.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "collectionId is required", details: nil)))
-      return
-    }
-    sdk.getCollection(
-      collectionId: collectionId,
-      location: nil,
-      email: nil,
-      phone: nil,
-      externalId: nil,
-      loyaltyId: nil
-    ) { result in
-      switch result {
-      case .success(let response):
-        Self._encodeCatalog(Self._collectionResponseToDict(response), errorCode: "get_collection_failed", completion: completion)
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "get_collection_failed", message: String(describing: err), details: nil)))
-      }
+  func trackSyncCart(items: [TrackingItemWire], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.syncCart(items: items.map(\.native))
     }
   }
 
-  func getStories(code: String, shopId: String?, completion: @escaping (Result<String, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    if code.isEmpty {
-      completion(.failure(PigeonError(code: "bad_args", message: "code is required", details: nil)))
-      return
-    }
-    // The same request `getStories(code:)` sends, through the SDK's public raw entry point,
-    // so the server JSON reaches Dart as is — the payload the Android bridge hands over.
-    // `StoryContent` keeps most of the fields internal and drops the rest, so it cannot be
-    // re-encoded. Queued on the session queue like `getStories`: it waits for the init that
-    // provides the device id.
-    sdk.sessionQueue.addOperation {
-      let params: [String: String] = ["shop_id": sdk.shopId, "did": sdk.deviceId]
-      sdk.getRequest(path: "stories/\(code)", params: params, false) { result in
-        switch result {
-        case .success(let dict):
-          Self._encodeCatalog(dict, errorCode: "get_stories_failed", completion: completion)
-        case .failure(let err):
-          completion(.failure(PigeonError(code: "get_stories_failed", message: String(describing: err), details: nil)))
-        }
-      }
+  func trackRemoveFromCart(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.removeFromCart(itemId: itemId)
     }
   }
+
+  func trackAddToFavorites(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.addToFavorites(itemId: itemId, source: try Self.source(source))
+    }
+  }
+
+  func trackSyncFavorites(itemIds: [String], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.syncFavorites(itemIds: itemIds)
+    }
+  }
+
+  func trackRemoveFromFavorites(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.removeFromFavorites(itemId: itemId)
+    }
+  }
+
+  func trackStoryView(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.storyView(storyId: storyId, slideId: slideId, code: code)
+    }
+  }
+
+  func trackStoryClick(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.storyClick(storyId: storyId, slideId: slideId, code: code)
+    }
+  }
+
+  func trackBannerView(bannerId: String, code: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.bannerView(bannerId: bannerId, code: code)
+    }
+  }
+
+  func trackBannerClick(bannerId: String, code: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.bannerClick(bannerId: bannerId, code: code)
+    }
+  }
+
+  func trackSetSource(source: TrackingSourceWire, shopId: String?) throws {
+    let sdk = try instance(shopId)
+    guard let native = source.native else {
+      throw BridgeFailure.error(.invalidArgument("unknown source type: \(source.type)"))
+    }
+    sdk.tracking.setSource(native)
+  }
+
+  func trackPurchase(
+    request: PurchaseTrackingRequestWire,
+    source: TrackingSourceWire?,
+    shopId: String?,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    let native = PurchaseTrackingRequest(
+      orderId: request.orderId,
+      orderPrice: request.orderPrice,
+      items: request.items.map(\.native),
+      deliveryType: request.deliveryType,
+      deliveryAddress: request.deliveryAddress,
+      paymentType: request.paymentType,
+      isTaxFree: request.isTaxFree,
+      promocode: request.promocode,
+      orderCash: request.orderCash,
+      orderBonuses: request.orderBonuses,
+      orderDelivery: request.orderDelivery,
+      orderDiscount: request.orderDiscount,
+      channel: request.channel,
+      custom: request.custom.map(nativeObject),
+      isGiftPackage: request.isGiftPackage
+    )
+    track(shopId, completion) { tracking in
+      try await tracking.purchase(native, source: try Self.source(source))
+    }
+  }
+
+  func trackPopupShown(popupId: Int64, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    track(shopId, completion) { tracking in
+      try await tracking.popupShown(popupId: try nativeInt(popupId))
+    }
+  }
+
+  /// A source Dart sent: none, or one the native SDK knows; an unknown type is refused.
+  private static func source(_ wire: TrackingSourceWire?) throws -> TrackingSource? {
+    guard let wire = wire else { return nil }
+    guard let native = wire.native else {
+      throw BridgeFailure.invalidArgument("unknown source type: \(wire.type)")
+    }
+    return native
+  }
+
+  // MARK: - products, collections, recommendations
+
+  func productsGetInfo(itemId: String, shopId: String?, completion: @escaping (Result<ProductWire?, Error>) -> Void) {
+    call(shopId, completion, map: { $0?.toWire() }) { sdk, done in
+      sdk.products.getInfo(itemId: itemId, completion: done)
+    }
+  }
+
+  func productsGetList(request: ProductsListRequestWire, shopId: String?, completion: @escaping (Result<ProductsListResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.products.getList(try request.native(), completion: done)
+    }
+  }
+
+  func productsGetCounters(itemId: String, shopId: String?, completion: @escaping (Result<ProductCountersResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.products.getCounters(itemId: itemId, completion: done)
+    }
+  }
+
+  func productsGetCategory(categoryId: String, request: ProductsListRequestWire, shopId: String?, completion: @escaping (Result<ProductsListResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.products.getCategory(categoryId: categoryId, request: try request.nativeCategory(), completion: done)
+    }
+  }
+
+  func collectionsGet(collectionId: String, shopId: String?, completion: @escaping (Result<CollectionResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.collections.get(collectionId: collectionId, completion: done)
+    }
+  }
+
+  func recommendationsGet(code: String, request: RecommendationRequestWire, shopId: String?, completion: @escaping (Result<RecommendationResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.recommendations.get(code: code, request: try request.native(), completion: done)
+    }
+  }
+
+  // MARK: - search
+
+  func searchAgentEnabled(shopId: String?) throws -> Bool {
+    try instance(shopId).search.agentEnabled
+  }
+
+  func searchBlank(shopId: String?, completion: @escaping (Result<SearchBlankResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.search.blank(completion: done)
+    }
+  }
+
+  func searchInstant(query: String, locations: [String]?, excludedMerchants: [String]?, excludedBrands: [String]?, shopId: String?, completion: @escaping (Result<SearchInstantResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.search.instant(
+        query: query,
+        locations: locations,
+        excludedMerchants: excludedMerchants,
+        excludedBrands: excludedBrands,
+        completion: done
+      )
+    }
+  }
+
+  func searchFull(query: String, request: SearchFullRequestWire, shopId: String?, completion: @escaping (Result<SearchFullResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.search.full(query: query, request: try request.native(), completion: done)
+    }
+  }
+
+  func searchAgentDialog(sessionId: Int64?, locations: [String]?, shopId: String?, completion: @escaping (Result<AgentDialogResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.search.agentDialog(sessionId: try sessionId.map(nativeInt), locations: locations, completion: done)
+    }
+  }
+
+  func searchAgent(message: String, sessionId: Int64?, locations: [String]?, shopId: String?, completion: @escaping (Result<AgentResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.search.agent(message: message, sessionId: try sessionId.map(nativeInt), locations: locations, completion: done)
+    }
+  }
+
+  // MARK: - cart, profile
+
+  func cartGet(shopId: String?, completion: @escaping (Result<[CartItemWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.cart.get(completion: done)
+    }
+  }
+
+  func cartClear(shopSecret: String, email: String?, phone: String?, loyaltyId: String?, externalId: String?, telegramId: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.cart.clear(
+        shopSecret: shopSecret,
+        email: email,
+        phone: phone,
+        loyaltyId: loyaltyId,
+        externalId: externalId,
+        telegramId: telegramId,
+        completion: done
+      )
+    }
+  }
+
+  func profileGet(shopId: String?, completion: @escaping (Result<ProfileWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.profile.get(completion: done)
+    }
+  }
+
+  func profileSet(request: ProfileUpdateRequestWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.profile.set(try request.native(), completion: done)
+    }
+  }
+
+  func profileGetLastOrder(shopId: String?, completion: @escaping (Result<[ProductWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.profile.getLastOrder(completion: done)
+    }
+  }
+
+  func profileGetOrders(shopSecret: String, did: String?, email: String?, phone: String?, loyaltyId: String?, externalId: String?, dateFrom: String?, shopId: String?, completion: @escaping (Result<[OrderWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.profile.getOrders(
+        shopSecret: shopSecret,
+        did: did,
+        email: email,
+        phone: phone,
+        loyaltyId: loyaltyId,
+        externalId: externalId,
+        dateFrom: dateFrom,
+        completion: done
+      )
+    }
+  }
+
+  // MARK: - subscriptions, segments
+
+  func subscriptionsManage(request: SubscriptionsUpdateRequestWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.subscriptions.manage(request.native, completion: done)
+    }
+  }
+
+  func subscriptionsCheck(shopId: String?, completion: @escaping (Result<SubscriptionStatusWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.subscriptions.check(completion: done)
+    }
+  }
+
+  func subscriptionsSubscribeForPriceDrop(itemId: String, currentPrice: Double, email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.subscriptions.subscribeForPriceDrop(itemId: itemId, currentPrice: currentPrice, email: email, phone: phone, completion: done)
+    }
+  }
+
+  func subscriptionsUnsubscribeFromPriceDrop(itemIds: [String], email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.subscriptions.unsubscribeFromPriceDrop(itemIds: itemIds, email: email, phone: phone, completion: done)
+    }
+  }
+
+  func subscriptionsSubscribeForBackInStock(itemId: String, properties: BackInStockPropertiesWire?, email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.subscriptions.subscribeForBackInStock(
+        itemId: itemId,
+        properties: properties?.native,
+        email: email,
+        phone: phone,
+        completion: done
+      )
+    }
+  }
+
+  func subscriptionsUnsubscribeFromBackInStock(itemIds: [String], email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.subscriptions.unsubscribeFromBackInStock(itemIds: itemIds, email: email, phone: phone, completion: done)
+    }
+  }
+
+  func segmentsAdd(segmentId: Int64, email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.segments.add(segmentId: try nativeInt(segmentId), email: email, phone: phone, completion: done)
+    }
+  }
+
+  func segmentsRemove(segmentId: Int64, email: String?, phone: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.segments.remove(segmentId: try nativeInt(segmentId), email: email, phone: phone, completion: done)
+    }
+  }
+
+  func segmentsGet(shopId: String?, completion: @escaping (Result<[SegmentWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.segments.get(completion: done)
+    }
+  }
+
+  // MARK: - notifications
+
+  func notificationsTrackDelivered(code: String, type: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.notifications.trackDelivered(code: code, type: type, completion: done)
+    }
+  }
+
+  func notificationsTrackOpened(code: String, type: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.notifications.trackOpened(code: code, type: type, completion: done)
+    }
+  }
+
+  func notificationsTrackClicked(code: String, type: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.notifications.trackClicked(code: code, type: type, completion: done)
+    }
+  }
+
+  func notificationsTrackClosed(code: String, type: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    run(shopId, completion) { sdk, done in
+      sdk.notifications.trackClosed(code: code, type: type, completion: done)
+    }
+  }
+
+  /// The SDK tells no listener about a token the app hands over: Dart's copy of the shop's tokens is
+  /// refreshed here, before the call completes.
+  func notificationsSetPushToken(token: String, provider: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    let refreshed: (Result<Void, Error>) -> Void = { [weak self] result in
+      if let self = self, let sdk = try? self.instance(shopId) {
+        self.emit(sdk)
+      }
+      completion(result)
+    }
+    run(shopId, refreshed) { sdk, done in
+      sdk.notifications.setPushToken(token, provider: try nativePushProvider(provider), completion: done)
+    }
+  }
+
+  func notificationsGetHistory(shopSecret: String, type: String, phone: String?, email: String?, externalId: String?, loyaltyId: String?, channel: String?, limit: Int64?, page: Int64?, dateFrom: String?, did: String?, shopId: String?, completion: @escaping (Result<NotificationHistoryWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.notifications.getHistory(
+        shopSecret: shopSecret,
+        type: type,
+        phone: phone,
+        email: email,
+        externalId: externalId,
+        loyaltyId: loyaltyId,
+        channel: channel,
+        limit: try limit.map(nativeInt),
+        page: try page.map(nativeInt),
+        dateFrom: dateFrom,
+        did: did,
+        completion: done
+      )
+    }
+  }
+
+  func handlePush(payload: [String: String], event: String, completion: @escaping (Result<Void, Error>) -> Void) {
+    guard let native = Self.pushEvent(event) else {
+      completion(.failure(BridgeFailure.error(.invalidArgument("unknown push event: \(event)"))))
+      return
+    }
+    Rees46.handlePush(payload as [AnyHashable: Any], event: native)
+    completion(.success(()))
+  }
+
+  /// The contract's `PushEvent` by its name, as Dart sends it: `delivered`, `opened`, `clicked`,
+  /// `closed`.
+  static func pushEvent(_ name: String) -> Rees46.PushEvent? {
+    switch name {
+    case "delivered": return .delivered
+    case "opened": return .opened
+    case "clicked": return .clicked
+    case "closed": return .closed
+    default: return nil
+    }
+  }
+
+  // MARK: - stories, predict, loyalty, sliders
+
+  func storiesGet(code: String, shopId: String?, completion: @escaping (Result<StoriesBlockWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.stories.get(code: code, completion: done)
+    }
+  }
+
+  func predictGetProbabilityToPurchase(shopId: String?, completion: @escaping (Result<PurchaseProbabilityWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.predict.getProbabilityToPurchase(completion: done)
+    }
+  }
+
+  func loyaltyJoin(phone: String, firstName: String?, lastName: String?, gender: String?, birthday: String?, shopId: String?, completion: @escaping (Result<LoyaltyMemberWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.loyalty.join(
+        phone: phone,
+        firstName: firstName,
+        lastName: lastName,
+        gender: try gender.map(nativeGender),
+        birthday: birthday,
+        completion: done
+      )
+    }
+  }
+
+  func loyaltyGetStatus(phone: String, shopId: String?, completion: @escaping (Result<LoyaltyStatusWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.loyalty.getStatus(phone: phone, completion: done)
+    }
+  }
+
+  func loyaltyGetPromotions(locationId: String?, promoCodes: [String]?, chargeBonuses: Bool?, currentTime: String?, shopId: String?, completion: @escaping (Result<[LoyaltyPromotionWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.loyalty.getPromotions(
+        locationId: locationId,
+        promoCodes: promoCodes,
+        chargeBonuses: chargeBonuses,
+        currentTime: currentTime,
+        completion: done
+      )
+    }
+  }
+
+  func slidersGet(code: String, tags: [String]?, locationId: String?, shopId: String?, completion: @escaping (Result<SliderWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.sliders.get(code: code, tags: tags, locationId: locationId, completion: done)
+    }
+  }
+
+  // MARK: - reviews
+
+  func reviewsCreateNps(rate: Int64, channel: String, category: String, orderId: String?, comment: String?, label: String?, shopId: String?, completion: @escaping (Result<PollReviewWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.reviews.createNps(
+        rate: try nativeInt(rate), channel: channel, category: category,
+        orderId: orderId, comment: comment, label: label, completion: done
+      )
+    }
+  }
+
+  func reviewsCreateCsat(rate: Int64, channel: String, campaign: String, orderId: String?, comment: String?, label: String?, shopId: String?, completion: @escaping (Result<PollReviewWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.reviews.createCsat(
+        rate: try nativeInt(rate), channel: channel, campaign: campaign,
+        orderId: orderId, comment: comment, label: label, completion: done
+      )
+    }
+  }
+
+  func reviewsCreateCes(rate: Int64, channel: String, campaign: String, orderId: String?, comment: String?, label: String?, shopId: String?, completion: @escaping (Result<PollReviewWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.reviews.createCes(
+        rate: try nativeInt(rate), channel: channel, campaign: campaign,
+        orderId: orderId, comment: comment, label: label, completion: done
+      )
+    }
+  }
+
+  func reviewsGetNpsCategories(shopId: String?, completion: @escaping (Result<[NpsCategoryWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.reviews.getNpsCategories(completion: done)
+    }
+  }
+
+  func reviewsGetNpsChannels(shopId: String?, completion: @escaping (Result<[PollChannelWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.reviews.getNpsChannels(completion: done)
+    }
+  }
+
+  func reviewsGetCsatCampaigns(shopId: String?, completion: @escaping (Result<[CsatCampaignWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.reviews.getCsatCampaigns(completion: done)
+    }
+  }
+
+  func reviewsGetCesCampaigns(shopId: String?, completion: @escaping (Result<[CesCampaignWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.reviews.getCesCampaigns(completion: done)
+    }
+  }
+
+  func reviewsGetProductReviews(itemId: String, limit: Int64?, offset: Int64?, shopId: String?, completion: @escaping (Result<ProductReviewsResponseWire, Error>) -> Void) {
+    call(shopId, completion, map: { $0.toWire() }) { sdk, done in
+      sdk.reviews.getProductReviews(
+        itemId: itemId,
+        limit: try limit.map(nativeInt),
+        offset: try offset.map(nativeInt),
+        completion: done
+      )
+    }
+  }
+
+  func reviewsGetClientReviews(orderId: String, shopId: String?, completion: @escaping (Result<[ClientReviewWire], Error>) -> Void) {
+    call(shopId, completion, map: { $0.map { $0.toWire() } }) { sdk, done in
+      sdk.reviews.getClientReviews(orderId: orderId, completion: done)
+    }
+  }
+
+  // MARK: - UI plumbing (the kit's own needs, not the SDK contract)
 
   func openUrl(url: String, completion: @escaping (Result<Bool, Error>) -> Void) {
     guard let target = URL(string: url), target.scheme?.isEmpty == false else {
@@ -912,368 +1152,6 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     StoriesAudio.shared.end()
   }
 
-  private static func _profileResponseToDict(_ p: GetProfileResponse) -> [String: Any] {
-    var d: [String: Any] = [:]
-    if let v = p.id { d["id"] = v }
-    if let v = p.email { d["email"] = v }
-    if let v = p.phone { d["phone"] = v }
-    if let v = p.firstName { d["first_name"] = v }
-    if let v = p.lastName { d["last_name"] = v }
-    if let v = p.hasEmail { d["has_email"] = v }
-    if let v = p.emailRegisteredAt { d["email_registered_at"] = v }
-    if let v = p.gender { d["gender"] = v }
-    if let v = p.computedGender { d["computed_gender"] = v }
-    if let v = p.boughtSomething { d["bought_something"] = v }
-    if JSONSerialization.isValidJSONObject(p.customProperties) {
-      d["custom_properties"] = p.customProperties
-    }
-    return d
-  }
-
-  private static func _productCountersToDict(_ r: ProductCountersResponse) -> [String: Any] {
-    func counterDict(_ c: ProductCounter?) -> [String: Any]? {
-      guard let c = c else { return nil }
-      return ["view": c.view, "cart": c.cart, "purchase": c.purchase]
-    }
-    var d: [String: Any] = [:]
-    if let v = counterDict(r.daily) { d["daily"] = v }
-    if let v = counterDict(r.now) { d["now"] = v }
-    if let t = r.triggers {
-      d["triggers"] = ["back_in_stock": t.backInStock, "price_drop": t.priceDrop]
-    }
-    return d
-  }
-
-  /// The facets of a listing — its price range and the shop's filters — as the Dart models read
-  /// them. The search, the products list and the category send the same shape.
-  private static func _addFacets(to dict: inout [String: Any], priceRange: PriceRange?, filters: [String: Filter]?) {
-    if let pr = priceRange {
-      dict["price_range"] = ["min": pr.min, "max": pr.max]
-    }
-    if let filters = filters {
-      dict["filters"] = filters.mapValues { ["count": $0.count, "values": $0.values] as [String: Any] }
-    }
-  }
-
-  /// The category listing for the Dart `CategoryResponse`: the facets and the price range go
-  /// along, as in the search and the products list.
-  static func _categoryResponseToDict(_ r: CategoryResponse) -> [String: Any] {
-    var dict: [String: Any] = [
-      "products_total": r.productsTotal,
-      "products": r.products.map { _categoryProductToDict($0) },
-      "brands": r.brands.compactMap { b -> [String: Any]? in
-        guard let name = b.name, !name.isEmpty else { return nil }
-        var d: [String: Any] = ["name": name]
-        if let count = b.count { d["count"] = count }
-        return d
-      },
-    ]
-    _addFacets(to: &dict, priceRange: r.priceRange, filters: r.filters)
-    return dict
-  }
-
-  private static func _collectionResponseToDict(_ r: CollectionResponse) -> [String: Any] {
-    return ["products": r.products.map { _categoryProductToDict($0) }]
-  }
-
-  private static func _categoryProductToDict(_ p: CategoryProduct) -> [String: Any] {
-    var d: [String: Any] = [:]
-    if let v = p.id { d["id"] = v }
-    if let v = p.name { d["name"] = v }
-    if let v = p.brand { d["brand"] = v }
-    if let v = p.price { d["price"] = v }
-    if let v = p.priceFormatted { d["price_formatted"] = v }
-    if let v = p.priceFull { d["price_full"] = v }
-    if let v = p.priceFullFormatted { d["price_full_formatted"] = v }
-    if let v = p.currency { d["currency"] = v }
-    if let v = p.imageUrl { d["image_url"] = v }
-    if let v = p.url { d["url"] = v }
-    if let v = p.picture { d["picture"] = v }
-    return d
-  }
-
-  /// Serializes a catalog response dictionary to a JSON string, mirroring the
-  /// other JSON-returning host methods.
-  private static func _encodeCatalog(
-    _ dict: [String: Any],
-    errorCode: String,
-    completion: @escaping (Result<String, Error>) -> Void
-  ) {
-    guard JSONSerialization.isValidJSONObject(dict),
-          let data = try? JSONSerialization.data(withJSONObject: dict),
-          let json = String(data: data, encoding: .utf8) else {
-      completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize \(errorCode) response", details: nil)))
-      return
-    }
-    completion(.success(json))
-  }
-
-  /// Serializes a loyalty response envelope `{ "status": ..., "payload": ... }`
-  /// to a JSON string, mirroring the other JSON-returning host methods.
-  private static func _encodeEnvelope(
-    _ dict: [String: Any],
-    completion: @escaping (Result<String, Error>) -> Void
-  ) {
-    guard JSONSerialization.isValidJSONObject(dict),
-          let data = try? JSONSerialization.data(withJSONObject: dict),
-          let json = String(data: data, encoding: .utf8) else {
-      completion(.failure(PigeonError(code: "serialization_failed", message: "Failed to serialize loyalty response", details: nil)))
-      return
-    }
-    completion(.success(json))
-  }
-
-  func getSid(shopId: String?) throws -> String {
-    guard let sdk = sdk(shopId) else {
-      throw PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)
-    }
-    return sdk.userSeance
-  }
-
-  func getDid(shopId: String?) throws -> String? {
-    return sdk(shopId)?.deviceId
-  }
-
-  func setProfile(params: ProfileParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    // As of REES46 3.24+, `setProfileData` takes individual named parameters
-    // instead of a `ProfileData` value.
-    var gender: Gender?
-    if let genderStr = params.gender {
-      gender = genderStr == "m" ? .male : .female
-    }
-    var birthday: Date?
-    if let birthdayStr = params.birthday {
-      let fmt = DateFormatter()
-      fmt.dateFormat = "yyyy-MM-dd"
-      birthday = fmt.date(from: birthdayStr)
-    }
-    var customProperties: [String: Any?]?
-    if let json = params.customPropertiesJson,
-       let data = json.data(using: .utf8),
-       let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-      customProperties = obj
-    }
-    sdk.setProfileData(
-      userEmail: params.email,
-      userPhone: params.phone,
-      userLoyaltyId: params.loyaltyId,
-      birthday: birthday,
-      age: params.age.map { Int($0) },
-      firstName: params.firstName,
-      lastName: params.lastName,
-      location: params.location,
-      gender: gender,
-      advertisingId: params.advertisingId,
-      fbID: params.fbId,
-      vkID: params.vkId,
-      telegramId: params.telegramId,
-      loyaltyCardLocation: params.loyaltyCardLocation,
-      loyaltyStatus: params.loyaltyStatus,
-      loyaltyBonuses: params.loyaltyBonuses.map { Int($0) },
-      loyaltyBonusesToNextLevel: params.loyaltyBonusesToNextLevel.map { Int($0) },
-      boughtSomething: params.boughtSomething,
-      userId: params.userId,
-      customProperties: customProperties
-    ) { result in
-      switch result {
-      case .success:
-        completion(.success(()))
-      case .failure(let err):
-        completion(.failure(PigeonError(code: "set_profile_failed", message: String(describing: err), details: nil)))
-      }
-    }
-  }
-
-  func manageSubscription(params: ManageSubscriptionParamsWire, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    guard let sdk = sdk(shopId) else {
-      completion(.failure(PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    sdk.manageSubscription(
-      email: params.email,
-      phone: params.phone,
-      userExternalId: params.externalId,
-      userLoyaltyId: params.loyaltyId,
-      telegramId: params.telegramId,
-      emailBulk: params.emailBulk,
-      emailChain: params.emailChain,
-      emailTransactional: params.emailTransactional,
-      smsBulk: params.smsBulk,
-      smsChain: params.smsChain,
-      smsTransactional: params.smsTransactional,
-      webPushBulk: params.webPushBulk,
-      webPushChain: params.webPushChain,
-      webPushTransactional: params.webPushTransactional,
-      mobilePushBulk: params.mobilePushBulk,
-      mobilePushChain: params.mobilePushChain,
-      mobilePushTransactional: params.mobilePushTransactional,
-      telegramBulk: params.telegramBulk,
-      telegramChain: params.telegramChain,
-      telegramTransactional: params.telegramTransactional,
-      whatsappBulk: params.whatsappBulk,
-      whatsappChain: params.whatsappChain,
-      whatsappTransactional: params.whatsappTransactional,
-      maxBulk: params.maxBulk,
-      maxChain: params.maxChain,
-      maxTransactional: params.maxTransactional,
-      walletBulk: params.walletBulk,
-      completion: { result in
-        switch result {
-        case .success:
-          completion(.success(()))
-        case .failure(let err):
-          completion(.failure(PigeonError(code: "manage_subscription_failed", message: String(describing: err), details: nil)))
-        }
-      }
-    )
-  }
-
-  // MARK: - Tracking namespace
-  //
-  // Most methods hand straight to the native `tracking` namespace of the resolved instance;
-  // `trackEvent`, `trackPopupShown` and `trackPurchase` go to the SDK's own methods of those
-  // names, which send the same requests. The wire models are translated one to one.
-
-  func trackProductView(
-    itemId: String,
-    source: TrackingSourceWire?,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.productView(itemId: itemId, source: source?.native) { self.report($0, completion) }
-    }
-  }
-
-  func trackCategoryView(
-    categoryId: String,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.categoryView(categoryId: categoryId) { self.report($0, completion) }
-    }
-  }
-
-  func trackSearch(
-    query: String,
-    results: [String]?,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.search(query: query, results: results) { self.report($0, completion) }
-    }
-  }
-
-  func trackAddToCart(
-    item: TrackingItemWire,
-    source: TrackingSourceWire?,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.addToCart(item: item.native, source: source?.native) { self.report($0, completion) }
-    }
-  }
-
-  func trackSyncCart(
-    items: [TrackingItemWire],
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.syncCart(items: items.map { $0.native }) { self.report($0, completion) }
-    }
-  }
-
-  func trackRemoveFromCart(
-    itemId: String,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.removeFromCart(itemId: itemId) { self.report($0, completion) }
-    }
-  }
-
-  func trackAddToFavorites(
-    itemId: String,
-    source: TrackingSourceWire?,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.addToFavorites(itemId: itemId, source: source?.native) { self.report($0, completion) }
-    }
-  }
-
-  func trackSyncFavorites(
-    itemIds: [String],
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.syncFavorites(itemIds: itemIds) { self.report($0, completion) }
-    }
-  }
-
-  func trackRemoveFromFavorites(
-    itemId: String,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.removeFromFavorites(itemId: itemId) { self.report($0, completion) }
-    }
-  }
-
-  func trackStoryView(
-    storyId: String,
-    slideId: String,
-    code: String?,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.storyView(storyId: storyId, slideId: slideId, code: code) {
-        self.report($0, completion)
-      }
-    }
-  }
-
-  func trackStoryClick(
-    storyId: String,
-    slideId: String,
-    code: String?,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    withTracking(shopId, completion) { tracking in
-      tracking.storyClick(storyId: storyId, slideId: slideId, code: code) {
-        self.report($0, completion)
-      }
-    }
-  }
-
-  func trackPopupShown(
-    popupId: Int64,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    guard let sdk = sdk(shopId) else {
-      completion(
-        .failure(
-          PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    sdk.trackPopupShown(popupId: Int(popupId)) { self.report($0, completion) }
-  }
-
   func openNotificationSettings() throws {
     // The app's notification settings where iOS has a link to them, its Settings page before.
     let target: String
@@ -1286,219 +1164,6 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     DispatchQueue.main.async {
       UIApplication.shared.open(url, options: [:], completionHandler: nil)
     }
-  }
-
-  func trackSetSource(source: TrackingSourceWire, shopId: String?) throws {
-    guard let sdk = sdk(shopId) else {
-      throw PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)
-    }
-    guard let native = source.native else {
-      throw PigeonError(
-        code: "bad_args", message: "unknown source type: \(source.type)", details: nil)
-    }
-    sdk.tracking.setSource(native)
-  }
-
-  /// Resolves the instance, reports a resolution failure through `completion`, then tracks.
-  private func withTracking(
-    _ shopId: String?,
-    _ completion: @escaping (Result<Void, Error>) -> Void,
-    _ body: (TrackingAPI) -> Void
-  ) {
-    guard let sdk = sdk(shopId) else {
-      completion(
-        .failure(
-          PigeonError(code: "not_initialized", message: "SDK is not initialized", details: nil)))
-      return
-    }
-    body(sdk.tracking)
-  }
-
-  private func report(
-    _ result: Result<Void, SdkError>,
-    _ completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    switch result {
-    case .success:
-      completion(.success(()))
-    case .failure(let error):
-      completion(
-        .failure(
-          PigeonError(code: "track_failed", message: "\(error)", details: nil)))
-    }
-  }
-
-  func trackEvent(
-    event: String,
-    time: Int64?,
-    category: String?,
-    label: String?,
-    value: Int64?,
-    customFieldsJson: String?,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    guard let sdk = sdk(shopId) else {
-      completion(
-        .failure(
-          PigeonError(
-            code: "not_initialized",
-            message: "SDK is not initialized",
-            details: nil)))
-      return
-    }
-    if event.isEmpty {
-      completion(
-        .failure(PigeonError(code: "bad_args", message: "event is required", details: nil)))
-      return
-    }
-    let timeInt: Int? = time.map { Int(truncatingIfNeeded: $0) }
-    let valueInt: Int? = value.map { Int(truncatingIfNeeded: $0) }
-    let customFields = parseJsonObject(customFieldsJson)
-    sdk.trackEvent(
-      event: event,
-      time: timeInt,
-      category: category,
-      label: label,
-      value: valueInt,
-      customFields: customFields
-    ) { result in
-      switch result {
-      case .success:
-        completion(.success(()))
-      case .failure(let err):
-        completion(
-          .failure(
-            PigeonError(
-              code: "track_event_failed",
-              message: String(describing: err),
-              details: nil)))
-      }
-    }
-  }
-
-  func trackPurchase(
-    orderId: String,
-    orderPrice: Double,
-    items: [PurchaseLineItemWire],
-    deliveryType: String?,
-    deliveryAddress: String?,
-    paymentType: String?,
-    isTaxFree: Bool,
-    isGiftPackage: Bool,
-    promocode: String?,
-    orderCash: Double?,
-    orderBonuses: Double?,
-    orderDelivery: Double?,
-    orderDiscount: Double?,
-    channel: String?,
-    customJson: String?,
-    recommendedSourceJson: String?,
-    stream: String?,
-    segment: String?,
-    shopId: String?,
-    completion: @escaping (Result<Void, Error>) -> Void
-  ) {
-    guard let sdk = sdk(shopId) else {
-      completion(
-        .failure(
-          PigeonError(
-            code: "not_initialized",
-            message: "SDK is not initialized",
-            details: nil)))
-      return
-    }
-    if orderId.isEmpty {
-      completion(
-        .failure(PigeonError(code: "bad_args", message: "orderId is required", details: nil)))
-      return
-    }
-    if items.isEmpty {
-      completion(
-        .failure(PigeonError(code: "bad_args", message: "items must be non-empty", details: nil)))
-      return
-    }
-    let itemRequests: [PurchaseItemRequest] = items.map { wire in
-      PurchaseItemRequest(
-        id: wire.id,
-        amount: Int(wire.amount),
-        price: wire.price,
-        quantity: nil,
-        lineId: wire.lineId,
-        fashionSize: wire.fashionSize
-      )
-    }
-    let request = PurchaseTrackingRequest(
-      orderId: orderId,
-      orderPrice: orderPrice,
-      items: itemRequests,
-      deliveryType: deliveryType,
-      deliveryAddress: deliveryAddress,
-      paymentType: paymentType,
-      isTaxFree: isTaxFree,
-      promocode: promocode,
-      orderCash: orderCash,
-      orderBonuses: orderBonuses,
-      orderDelivery: orderDelivery,
-      orderDiscount: orderDiscount,
-      channel: channel,
-      custom: parseJsonObject(customJson),
-      recommendedSource: parseJsonObject(recommendedSourceJson),
-      stream: stream,
-      segment: segment,
-      isGiftPackage: isGiftPackage
-    )
-    sdk.trackPurchase(request, recommendedBy: nil) { result in
-      switch result {
-      case .success:
-        completion(.success(()))
-      case .failure(let err):
-        completion(
-          .failure(
-            PigeonError(
-              code: "track_purchase_failed",
-              message: String(describing: err),
-              details: nil)))
-      }
-    }
-  }
-
-  func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void) {
-    // Flutter PushEvent index: 0=received, 1=delivered, 2=clicked.
-    let pushEvent: PushEvent
-    switch event {
-    case 1: pushEvent = .delivered
-    case 2: pushEvent = .clicked
-    default: pushEvent = .received
-    }
-    Rees46.handlePush(payload as [AnyHashable: Any], event: pushEvent)
-    completion(.success(()))
-  }
-
-  private func parseJsonObject(_ json: String?) -> [String: Any]? {
-    guard let json, !json.isEmpty, let data = json.data(using: .utf8) else { return nil }
-    let obj = try? JSONSerialization.jsonObject(with: data)
-    return obj as? [String: Any]
-  }
-}
-
-extension TrackingItemWire {
-  var native: TrackingItem {
-    TrackingItem(
-      id: id,
-      quantity: Int(quantity),
-      price: price,
-      fashionSize: fashionSize
-    )
-  }
-}
-
-extension TrackingSourceWire {
-  /// An unknown source type is dropped rather than guessed — Dart only sends known values, and the
-  /// Dart, Android and iOS `TrackingSourceType` enums carry the same set.
-  var native: TrackingSource? {
-    guard let type = TrackingSourceType(rawValue: type) else { return nil }
-    return TrackingSource(type: type, code: code)
   }
 }
 
@@ -1538,3 +1203,25 @@ final class PopupForwarder: PopupPresentationDelegate {
   }
 }
 
+/// One shop's tracking events, one after another in the order they came: each goes to the SDK once
+/// the one before it was accepted or refused, so the shop's queue takes them in Dart's order. An
+/// `async` call of the SDK would otherwise start on whichever thread is free first.
+final class TrackingLine {
+  private let lock = NSLock()
+  private var last: Task<Void, Never>?
+
+  func send(_ event: @escaping () async -> Void) {
+    lock.lock()
+    defer { lock.unlock() }
+    let previous = last
+    last = Task {
+      await previous?.value
+      await event()
+    }
+  }
+}
+
+/// Whether the SDK is still telling a new token subscriber the tokens it had.
+final class ReplayFlag {
+  var isOn = true
+}

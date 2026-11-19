@@ -45,7 +45,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   };
 
   @override
-  Future<String> getCategory(
+  Future<String> legacyGetCategory(
     String category,
     int? limit,
     int? page,

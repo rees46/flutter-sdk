@@ -1,6 +1,11 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/handle_channel.dart';
+import '../core/native_events.dart';
+import '../core/sdk_logs.dart';
+import '../models/push_models.dart';
 import '../personalization_sdk.dart';
+import '../pigeon/personalization_api.g.dart' as pigeon;
 import '../popups/in_app_popup.dart';
 import '../popups/popup_presenter.dart';
 import 'instance_resolver.dart';
@@ -54,14 +59,18 @@ class REES46 {
   /// [getInstance] for the shop.
   final Map<String, REES46Config> _pending = <String, REES46Config>{};
 
+  /// The configuration each live shop was initialized with.
+  final Map<String, REES46Config> _configs = <String, REES46Config>{};
+
   REES46SdkFactory _factory = _defaultFactory;
 
   static PersonalizationSdk _defaultFactory(REES46Config config) {
     final sdk = PersonalizationSdk(shopId: config.shopId);
-    // The handle goes back at once; the outcome is in [PersonalizationSdk.ready].
-    // Listened to here, a failed init is not an unhandled error when the app does
-    // not await `ready`.
-    sdk.initialize(config.toSdkInitConfig()).catchError((Object error) {
+    // The handle goes back at once; the outcome is in [PersonalizationSdk.ready],
+    // which also fails when the native start did. Listened to here, a failed init
+    // is not an unhandled error when the app does not await `ready`.
+    sdk.initialize(config.toSdkInitConfig()).ignore();
+    sdk.ready.catchError((Object error) {
       debugPrint('REES46: init of shop ${config.shopId} failed: $error');
     });
     return sdk;
@@ -72,9 +81,12 @@ class REES46 {
   // ---------------------------------------------------------------------------
 
   /// Initializes an SDK instance for [config] immediately and returns it. The
-  /// instance is registered, so it is also reachable via [getInstance]. Any
-  /// pending registration for the same shop is cleared. The native init goes on
-  /// after the handle is back; its outcome is [PersonalizationSdk.ready].
+  /// instance is registered, so it is also reachable via [getInstance] until it is
+  /// [PersonalizationSdk.release]d. Any pending registration for the same shop is
+  /// cleared. A shop that is initialized already keeps its instance: the call
+  /// returns that handle, as the native SDKs do, and a [config] that differs from
+  /// the one it was made with is logged (`already_initialized`) and not applied. The native init goes on after the handle is back; its outcome is
+  /// [PersonalizationSdk.ready].
   static PersonalizationSdk initialize(REES46Config config) =>
       _instance._initialize(config);
 
@@ -91,8 +103,10 @@ class REES46 {
   /// on first use. With no [shopId], returns the single instance when exactly
   /// one shop is registered.
   ///
-  /// Throws [AmbiguousShopException] when [shopId] is null and more than one
-  /// shop is registered; [UnknownShopIdException] when the shop is unknown.
+  /// Throws a [Rees46Exception] (contract `Rees46Error`): an
+  /// [AmbiguousShopException] (`ambiguousShop`) when [shopId] is null and more
+  /// than one shop is registered; an [UnknownShopIdException] (`unknownShop`)
+  /// when the shop is unknown.
   static PersonalizationSdk getInstance([String? shopId]) =>
       _instance._getInstance(shopId);
 
@@ -132,6 +146,26 @@ class REES46 {
   static set onPopup(void Function(InAppPopup popup)? handler) =>
       PopupPresenter.sharedOnPopup = handler;
 
+  /// The app's callbacks on the pushes of every shop: [PushPayload.shopId] tells the
+  /// shop. A shop's own callback of an event (`notifications.setCallbacks`) wins
+  /// over the one here. Replaces the callbacks set before; null clears them.
+  static void setPushCallbacks(PushCallbacks? callbacks) =>
+      NativeEvents.instance.sharedPushCallbacks = callbacks;
+
+  /// The app's receiver of the SDK's log messages, of every shop: each message
+  /// that passes its shop's `logLevel` — the native SDKs' and those of the SDK's
+  /// own Dart code, under the code of their area — for example to forward it to
+  /// the app's crash reporter. Messages carry no personal data. An exception the
+  /// handler throws is caught. Replaces the handler set before; null removes it.
+  static void setLogHandler(void Function(SdkLogMessage message)? handler) {
+    SdkLogs.handler = handler;
+    pigeon.PersonalizationHostApi()
+        .setLogForwarding(handler != null)
+        .catchError((Object error) {
+          debugPrint('REES46: setLogHandler — $error');
+        });
+  }
+
   /// Shops that are live (initialized), sorted.
   static List<String> get liveShopIds => _instance._live.keys.toList()..sort();
 
@@ -144,11 +178,47 @@ class REES46 {
   // ---------------------------------------------------------------------------
 
   PersonalizationSdk _initialize(REES46Config config) {
+    final shopId = config.shopId;
+    _pending.remove(shopId);
+    // One instance per shop, as natively: a second handle would share the native
+    // instance, and releasing either would stop it under the other.
+    final live = _live[shopId];
+    if (live != null) {
+      if (!_sameConfig(_configs[shopId], config)) {
+        debugPrint(
+          'REES46: invalid_config (already_initialized): shop $shopId is '
+          'initialized already with another configuration; the instance is kept',
+        );
+      }
+      return live;
+    }
     final sdk = _factory(config);
-    _live[config.shopId] = sdk;
-    _pending.remove(config.shopId);
+    _live[shopId] = sdk;
+    _configs[shopId] = config;
+    // A released handle leaves the registry; the shop can be initialized again.
+    HandleReleases.listen(sdk, () {
+      if (identical(_live[shopId], sdk)) {
+        _live.remove(shopId);
+        _configs.remove(shopId);
+      }
+    });
     return sdk;
   }
+
+  static bool _sameConfig(REES46Config? a, REES46Config b) =>
+      a != null &&
+      a.apiDomain == b.apiDomain &&
+      a.appDomain == b.appDomain &&
+      a.stream == b.stream &&
+      a.deviceId == b.deviceId &&
+      // ignore: deprecated_member_use_from_same_package
+      a.enableLogs == b.enableLogs &&
+      a.logLevel == b.logLevel &&
+      a.autoSendPushToken == b.autoSendPushToken &&
+      a.sendAdvertisingId == b.sendAdvertisingId &&
+      a.enableAutoPopupPresentation == b.enableAutoPopupPresentation &&
+      a.needReInitialization == b.needReInitialization &&
+      a.storageKey == b.storageKey;
 
   void _registerShops(List<REES46Config> configs, {required bool eagerInit}) {
     for (final config in configs) {
@@ -236,7 +306,9 @@ class REES46 {
   static void reset() {
     _instance._live.clear();
     _instance._pending.clear();
+    _instance._configs.clear();
     _instance._factory = _defaultFactory;
     PopupPresenter.sharedOnPopup = null;
+    NativeEvents.instance.reset();
   }
 }

@@ -43,7 +43,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Object? failure;
 
   @override
-  Future<String> getRecommendation(
+  Future<String> legacyGetRecommendation(
     String code,
     String? paramsJson,
     String? shopId,
@@ -55,7 +55,10 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   }
 
   @override
-  Future<String> getCollection(String collectionId, String? shopId) async {
+  Future<String> legacyGetCollection(
+    String collectionId,
+    String? shopId,
+  ) async {
     collections.add(collectionId);
     await hold?.future;
     if (failure != null) throw failure!;

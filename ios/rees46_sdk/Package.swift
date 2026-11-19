@@ -6,14 +6,14 @@ import PackageDescription
 let package = Package(
     name: "rees46_sdk",
     platforms: [
-        .iOS("13.0")
+        .iOS("15.0")
     ],
     products: [
         .library(name: "rees46-sdk", targets: ["rees46_sdk"])
     ],
     dependencies: [
         // Keep in step with the dependency in ../rees46_sdk.podspec.
-        .package(url: "https://github.com/rees46/ios-sdk.git", exact: "3.37.3")
+        .package(url: "https://github.com/rees46/ios-sdk.git", exact: "3.40.1")
     ],
     targets: [
         .target(

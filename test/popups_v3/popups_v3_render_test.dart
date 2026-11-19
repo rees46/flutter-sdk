@@ -94,7 +94,7 @@ class RecordingActions implements PopupV3Actions {
 /// (в виджет-тестах они не грузятся).
 class _RecommendationsHostApi extends FakeHostApi {
   @override
-  Future<String> getRecommendation(
+  Future<String> legacyGetRecommendation(
     String code,
     String? paramsJson,
     String? shopId,

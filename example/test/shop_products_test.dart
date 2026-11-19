@@ -1,30 +1,45 @@
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/models.dart';
 import 'package:rees46_sdk_example/shop/shop_products.dart';
 
-Product _product(Map<String, dynamic> fields) => Product.fromJson({
-  'id': '868',
-  'name': 'Headphones',
-  'brand': 'Logitech',
-  'image_url': 'https://example.org/full.jpg',
-  'price': 900,
-  'price_formatted': '900 ₸',
-  'currency': '₸',
-  ...fields,
-});
+Product _product({
+  String id = '868',
+  String? priceFormatted = '900 ₸',
+  double? oldPrice,
+  String? oldPriceFormatted,
+  int? discountPercent,
+  String? discountFormatted,
+  String? picture,
+  List<ProductCategory>? categories,
+}) => Product(
+  id: id,
+  name: 'Headphones',
+  brand: 'Logitech',
+  url: '',
+  imageUrl: 'https://example.org/full.jpg',
+  picture: picture,
+  price: 900,
+  priceFormatted: priceFormatted,
+  oldPrice: oldPrice,
+  oldPriceFormatted: oldPriceFormatted,
+  currency: '₸',
+  discountPercent: discountPercent,
+  discountFormatted: discountFormatted,
+  categories: categories,
+);
 
 void main() {
   group('shopCard', () {
     test('a discounted product: old price and the formatted discount', () {
       final card = shopCard(
-        _product({
-          'oldprice': 1000,
-          'oldprice_formatted': '1 000 ₸',
-          'discount': 10,
-          'discount_formatted': '10%',
-          'picture': 'https://example.org/small.jpg',
-        }),
+        _product(
+          oldPrice: 1000,
+          oldPriceFormatted: '1 000 ₸',
+          discountPercent: 10,
+          discountFormatted: '10%',
+          picture: 'https://example.org/small.jpg',
+        ),
         actionText: 'Add to cart',
       );
       expect(card.price, '900 ₸');
@@ -40,76 +55,79 @@ void main() {
 
     test('no old price and no badge when the old price is not above', () {
       final card = shopCard(
-        _product({
-          'oldprice': 900,
-          'oldprice_formatted': '900 ₸',
-          'discount': 10,
-        }),
+        _product(
+          oldPrice: 900,
+          oldPriceFormatted: '900 ₸',
+          discountPercent: 10,
+        ),
       );
       expect(card.oldPrice, isNull);
       expect(card.discount, isNull);
     });
 
-    test('a zero or boolean discount is no discount', () {
-      final old = {'oldprice': 1000, 'oldprice_formatted': '1 000 ₸'};
+    test('a zero discount is no discount', () {
       expect(
         shopCard(
-          _product({...old, 'discount': 0, 'discount_formatted': '0%'}),
+          _product(
+            oldPrice: 1000,
+            oldPriceFormatted: '1 000 ₸',
+            discountPercent: 0,
+            discountFormatted: '0%',
+          ),
         ).discount,
         isNull,
       );
-      expect(shopCard(_product({...old, 'discount': true})).discount, isNull);
     });
 
-    test('discount_percent alone gives "N%", never discount_formatted', () {
+    test('without discountFormatted the badge is "N%"', () {
       final card = shopCard(
-        _product({
-          'oldprice': 1000,
-          'oldprice_formatted': '1 000 ₸',
-          'discount': 0,
-          'discount_formatted': '0%',
-          'discount_percent': 12,
-        }),
+        _product(
+          oldPrice: 1000,
+          oldPriceFormatted: '1 000 ₸',
+          discountPercent: 12,
+        ),
       );
       expect(card.discount, '-12%');
     });
 
     test('a formatted discount with a minus gets exactly one', () {
       final card = shopCard(
-        _product({
-          'oldprice': 1000,
-          'oldprice_formatted': '1 000 ₸',
-          'discount': 10,
-          'discount_formatted': '-10%',
-        }),
+        _product(
+          oldPrice: 1000,
+          oldPriceFormatted: '1 000 ₸',
+          discountPercent: 10,
+          discountFormatted: '-10%',
+        ),
       );
       expect(card.discount, '-10%');
     });
 
-    test('price and image fall back to price + currency and image_url', () {
-      final card = shopCard(_product({'price_formatted': null}));
+    test('price and image fall back to price + currency and imageUrl', () {
+      final card = shopCard(_product(priceFormatted: null));
       expect(card.price, '900.0 ₸');
       expect((card.image! as NetworkImage).url, 'https://example.org/full.jpg');
     });
   });
 
   test('shopTopCategories takes the listing categories first', () {
-    final response = ProductsListResponse.fromJson({
-      'products_total': 1,
-      'categories': [
-        {'id': 'laptops', 'name': 'Laptops'},
-        {'id': 'gaming', 'name': 'Gaming laptops', 'parent_id': 'laptops'},
-        {'id': 'kitchen', 'name': 'Kitchen'},
+    final response = ProductsListResponse(
+      productsTotal: 1,
+      categories: const [
+        ProductCategory(id: 'laptops', name: 'Laptops'),
+        ProductCategory(
+          id: 'gaming',
+          name: 'Gaming laptops',
+          parentId: 'laptops',
+        ),
+        ProductCategory(id: 'kitchen', name: 'Kitchen'),
       ],
-      'products': [
-        {
-          'id': '1',
-          'categories': [
-            {'id': 'phones', 'name': 'Phones'},
-          ],
-        },
+      products: [
+        _product(
+          id: '1',
+          categories: const [ProductCategory(id: 'phones', name: 'Phones')],
+        ),
       ],
-    });
+    );
     expect(shopTopCategories(response).map((c) => c.id), [
       'laptops',
       'kitchen',
@@ -117,25 +135,29 @@ void main() {
   });
 
   test('without listing categories they come from the products', () {
-    final response = ProductsListResponse.fromJson({
-      'products_total': 2,
-      'products': [
-        {
-          'id': '1',
-          'categories': [
-            {'id': 'phones', 'name': 'Phones'},
-            {'id': 'headphones', 'name': 'Headphones', 'parent_id': 'phones'},
+    final response = ProductsListResponse(
+      productsTotal: 2,
+      products: [
+        _product(
+          id: '1',
+          categories: const [
+            ProductCategory(id: 'phones', name: 'Phones'),
+            ProductCategory(
+              id: 'headphones',
+              name: 'Headphones',
+              parentId: 'phones',
+            ),
           ],
-        },
-        {
-          'id': '2',
-          'categories': [
-            {'id': 'kitchen', 'name': 'Kitchen'},
-            {'id': 'phones', 'name': 'Phones'},
+        ),
+        _product(
+          id: '2',
+          categories: const [
+            ProductCategory(id: 'kitchen', name: 'Kitchen'),
+            ProductCategory(id: 'phones', name: 'Phones'),
           ],
-        },
+        ),
       ],
-    });
+    );
     expect(shopTopCategories(response).map((c) => c.id), ['phones', 'kitchen']);
   });
 }

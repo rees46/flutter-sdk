@@ -97,7 +97,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Map<String, List<String>> seen = <String, List<String>>{};
 
   @override
-  Future<String> getStories(String code, String? shopId) async {
+  Future<String> legacyGetStories(String code, String? shopId) async {
     await hold?.future;
     final json = answer;
     if (json == null) throw PlatformException(code: 'get_stories_failed');
