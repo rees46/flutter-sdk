@@ -672,11 +672,13 @@ class Rees46FlutterSdkPlugin :
         provider: String,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
-    ) = call(shopId, callback) {
+    ) = call(shopId, callback) { sdk ->
         val native = pushProvider(provider)
         // A token the app hands over is not one the SDK got from its provider: Dart's onToken does not hear it.
         tokenReports.appSet(native, token)
-        it.notifications.setPushToken(token, native, done(callback))
+        // Nothing tells the plugin about it either: Dart's copy of the shop's tokens is refreshed before the
+        // call completes.
+        sdk.notifications.setPushToken(token, native, completion(callback) { emit(snapshotOf(sdk)) })
     }
 
     override fun notificationsGetHistory(
