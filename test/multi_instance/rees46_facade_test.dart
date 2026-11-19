@@ -175,6 +175,26 @@ void main() {
         throwsA(isA<UnknownShopIdException>()),
       );
     });
+
+    test('both are the contract\'s facade error, Rees46Exception', () {
+      REES46.initialize(cfg('a'));
+      REES46.initialize(cfg('b'));
+      Rees46ErrorType? caught(void Function() call) {
+        try {
+          call();
+        } on Rees46Exception catch (e) {
+          expect(e.message, isNotEmpty);
+          return e.type;
+        }
+        return null;
+      }
+
+      expect(
+        caught(() => REES46.getInstance('nope')),
+        Rees46ErrorType.unknownShop,
+      );
+      expect(caught(REES46.getInstance), Rees46ErrorType.ambiguousShop);
+    });
   });
 
   group('isInitialized', () {

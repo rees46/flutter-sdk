@@ -101,8 +101,10 @@ class REES46 {
   /// on first use. With no [shopId], returns the single instance when exactly
   /// one shop is registered.
   ///
-  /// Throws [AmbiguousShopException] when [shopId] is null and more than one
-  /// shop is registered; [UnknownShopIdException] when the shop is unknown.
+  /// Throws a [Rees46Exception] (contract `Rees46Error`): an
+  /// [AmbiguousShopException] (`ambiguousShop`) when [shopId] is null and more
+  /// than one shop is registered; an [UnknownShopIdException] (`unknownShop`)
+  /// when the shop is unknown.
   static PersonalizationSdk getInstance([String? shopId]) =>
       _instance._getInstance(shopId);
 
