@@ -74,6 +74,66 @@ pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.40.1'
 plugin, and drop the line once Swift Package Manager support is on — the plugin's
 package brings the SDK then, and keeping the pod would link it twice.
 
+## Migrating to 2.0
+
+2.0 runs every shop on the native SDKs' new core and adds the typed
+[namespaces](#namespaces). The released methods (`getRecommendation`, `searchFull`,
+`joinLoyalty`, `setProfile`, `trackEvent`, …) are deprecated and behave as in 1.6.4:
+the same answers, the same error codes. What an app can notice:
+
+- **Native SDKs and iOS.** The plugin builds on the Android SDK 2.54.0 and the iOS SDK
+  3.40.1, and iOS 15 is the minimum. With CocoaPods take the pod from its repository
+  with the tag `v3.40.1` ([iOS](#ios)).
+- **Errors.** The namespaces, `tracking`, `flush` and `deleteUserCredentials` throw an
+  [`SdkException`](#errors) whose `type` is `notInitialized`, `shopBlocked`,
+  `invalidArgument`, `network`, `timeout`, `http`, `decoding` or `cancelled`. It is a
+  `PlatformException` too, with `code` set to the type. The deprecated methods keep the
+  codes of 1.6.4: `bad_args`, `not_initialized` (iOS), `<method>_failed`
+  (`recommendation_failed`, `search_failed`, `track_event_failed`, …) and
+  `serialization_failed`.
+- **`ready`.** It completes once the shop works — `ready`, or `retrying` with a device
+  id from an earlier launch — and fails with `shopBlocked` when the server refused the
+  shop. A first launch without network has no device id yet, so `ready` waits for the
+  network: where the UI waits for it, give it a timeout
+  (`await sdk.ready.timeout(const Duration(seconds: 10))`). Calls never need to await it.
+- **Tracking completes on acceptance.** A `sdk.tracking.*` future completes once the
+  event is in the shop's queue on disk, not when the server answered: an event the server
+  refuses later is no error. Only `invalidArgument`, `shopBlocked` and `notInitialized`
+  fail it. The deprecated `trackEvent` and `trackPurchase` still complete with the
+  server's answer.
+- **Default stream.** Without `stream` in the configuration events go with
+  `stream: flutter`; 1.6.4 sent `android` or `ios`. Set `stream` to keep the reports
+  split by platform.
+- **Push events on the wire.** Android reports a push that arrived as `track/delivered`
+  (1.6.4 sent `track/received`, which the server counts as an open), the notification the
+  plugin drew as `track/opened`, a tap as `track/clicked` and a dismissal as
+  `track/closed`. iOS reports `opened` for a push shown while the app is open,
+  `delivered` from `didReceiveRemoteNotification`, and `clicked`. A host with its own
+  messaging service that calls `REES46.handlePush(payload, event)`: `PushEvent.received`
+  sends `delivered`, `PushEvent.delivered` (its notification is on screen) sends `opened`,
+  `PushEvent.clicked` sends `clicked`, on both platforms.
+- **Profile checks.** `sdk.profile.set` refuses with `invalidArgument`, before any
+  request: a custom property key outside `[a-z0-9_]`, or one that is a field of the
+  request (`email`, `first_name`, …) or a reserved one (`shop_id`, `did`, `sid`,
+  `seance`, `segment`, `stream`); a value that is not a string, number, bool, `null`, or a
+  list or map of them; an empty `email`, `phone` or `loyaltyId`; a `birthday` that is not
+  a real `YYYY-MM-DD` date; a negative `age`. The advertising id is the SDK's to send
+  (`sendAdvertisingId`), as `google_advertising_id` or `apple_advertising_id`. The
+  deprecated `setProfile` sends its fields as 1.6.4 did.
+- **New names.** The package exports new types — `Order`, `Profile`, `Gender`,
+  `Segment`, `CartItem`, `PushPayload`, `SortBy`, `SdkState`, `SdkError` and others. If
+  one clashes with a type of the app, hide it or import the package with a prefix:
+  `import 'package:rees46_sdk/rees46_sdk.dart' hide Order, Profile;`.
+- **Tests with a fake channel.** The internal Pigeon channel `PersonalizationHostApi`
+  changed: the namespaces have typed methods, the deprecated methods go through
+  `legacy…` methods (`legacyGetRecommendation`, `legacySearchFull`, …) with the JSON
+  strings of 1.6.4, and `initialize` answers with the shop's state. A fake that extends
+  it needs the new names.
+- **New on the handle.** `state` and `stateChanges`, `deviceId` and `sessionId`,
+  [`flush`, `release` and `deleteUserCredentials`](#the-instance-itself), the push
+  callbacks of each shop (`sdk.notifications.setCallbacks`). `onToken` hears a token the
+  SDK got from APNs, FCM or HMS, not one the app hands over with `setPushToken`.
+
 ## Initialize
 
 Initialize once, as early as possible — typically in `main()`, before `runApp`:
