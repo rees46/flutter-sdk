@@ -815,8 +815,9 @@ final mine = await sdk.reviews.getClientReviews('order-1024');
 
 ### Released methods
 
-The methods of earlier releases keep working as deprecated delegates of the
-namespaces, with their released types:
+The methods of earlier releases are deprecated and keep working exactly as in 1.6.4:
+each calls the native SDKs' released method, answers with the released type and the
+same values, and fails with the released error codes. Their replacements:
 
 | Released | Namespace |
 |---|---|
