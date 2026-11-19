@@ -2024,7 +2024,11 @@ abstract class PersonalizationHostApi {
   // namespaces above stay the typed contract.
 
   @async
-  String legacyGetRecommendation(String code, String? paramsJson, String? shopId);
+  String legacyGetRecommendation(
+    String code,
+    String? paramsJson,
+    String? shopId,
+  );
 
   @async
   String legacyGetProductInfo(String itemId, String? shopId);
