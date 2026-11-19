@@ -33,8 +33,13 @@ class ShopMirror {
   /// Every change of [state].
   Stream<SdkState> get states => _states.stream;
 
+  /// How many snapshots the mirror took: one the native side told while an answer
+  /// was on its way is at least as new as that answer.
+  int applied = 0;
+
   /// Applies a snapshot of the native instance.
   void apply(pigeon.SdkSnapshotWire snapshot) {
+    applied++;
     final previous = state;
     state = sdkStateFromWire(snapshot.state);
     deviceId = snapshot.deviceId;

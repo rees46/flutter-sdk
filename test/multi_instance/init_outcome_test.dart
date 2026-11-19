@@ -122,4 +122,28 @@ void main() {
     await outcome;
     expect(sdk.state, SdkState.refused);
   });
+
+  test('a state the native side told before the init answered is not taken '
+      'back by the answer', () async {
+    // The answer leaves the native side with the state it had then; a quick /init
+    // told `ready` on the state channel, which Dart reads first.
+    final answer = Completer<void>();
+    messenger.setMockMessageHandler(_initChannel, (_) async {
+      await answer.future;
+      return pigeon.PersonalizationHostApi.pigeonChannelCodec.encodeMessage(
+        <Object?>[
+          snapshotWire('quick-shop', state: 'initializing', deviceId: null),
+        ],
+      );
+    });
+
+    final sdk = REES46.initialize(const REES46Config(shopId: 'quick-shop'));
+    await pumpEventQueue();
+    await sendStateEvent('onSnapshot', <Object?>[snapshotWire('quick-shop')]);
+    answer.complete();
+
+    await expectLater(sdk.ready, completes);
+    expect(sdk.state, SdkState.ready);
+    expect(sdk.deviceId, 'did-1');
+  });
 }

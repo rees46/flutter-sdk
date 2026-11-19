@@ -270,11 +270,16 @@ class PersonalizationSdk {
   }
 
   Future<void> _start(SdkInitConfig config) async {
+    final told = NativeEvents.instance.shop(config.shopId).applied;
     final snapshot = await _initHandler.initialize(config);
     // Released while the native side started it: the shop's next instance owns the
     // mirror now.
     if (_channel.isClosed) throw SdkException(const SdkErrorNotInitialized());
-    final mirror = NativeEvents.instance.shop(config.shopId)..apply(snapshot);
+    final mirror = NativeEvents.instance.shop(config.shopId);
+    // The answer is the state when the native side started the shop. A state it
+    // told on its own channel meanwhile — a quick `/init` made it ready — is as new
+    // or newer, and the answer, which comes after it, must not take it back.
+    if (mirror.applied == told) mirror.apply(snapshot);
     await mirror.whenUsable();
   }
 
