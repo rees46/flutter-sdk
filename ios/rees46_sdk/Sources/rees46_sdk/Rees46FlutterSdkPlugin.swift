@@ -372,6 +372,60 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     (try? instance(shopId))?.deviceId
   }
 
+  func flush(shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+    do {
+      try instance(shopId).flush { error in
+        onMain { completion(error.map { .failure(BridgeFailure.error($0)) } ?? .success(())) }
+      }
+    } catch {
+      let failure = BridgeFailure.error(error)
+      onMain { completion(.failure(failure)) }
+    }
+  }
+
+  /// The bridge lets go of the shop before the native release, so the released instance tells Dart
+  /// nothing more: Dart's handle reads `notInitialized` by itself, and the shop's next instance owns
+  /// its snapshots. The AppDelegate's push path drops the instance too; a push of the shop then goes
+  /// to `Rees46.handlePush`. A shop the native registry does not have is released already.
+  func release(shopId: String?) throws {
+    guard let sdk = try? Rees46.instance(for: shopId) else { return }
+    lock.lock()
+    let stale = subscriptions.removeValue(forKey: sdk.shopId) ?? []
+    popupForwarders.removeValue(forKey: sdk.shopId)
+    lock.unlock()
+    stale.forEach { $0.cancel() }
+    if Self.same(Rees46FlutterSdkPlugin.sdk, sdk) {
+      Rees46FlutterSdkPlugin.sdk = nil
+    }
+    if Self.same((Rees46FlutterSdkPlugin.notificationService as? NotificationService)?.sdk, sdk) {
+      Rees46FlutterSdkPlugin.notificationService = nil
+    }
+    sdk.release()
+  }
+
+  /// Whether `held` is the very instance `sdk`.
+  private static func same(_ held: PersonalizationSDK?, _ sdk: PersonalizationSDK) -> Bool {
+    guard let held = held else { return false }
+    return (held as AnyObject) === (sdk as AnyObject)
+  }
+
+  /// Answers with the shop's state after the wipe — the customer's data, the queue's files too, gone —
+  /// which holds no thread of Dart's; the new device id comes with `/init`, as a snapshot.
+  func deleteUserCredentials(shopId: String?, completion: @escaping (Result<SdkSnapshotWire, Error>) -> Void) {
+    let sdk: PersonalizationSDK
+    do {
+      sdk = try instance(shopId)
+    } catch {
+      let failure = BridgeFailure.error(error)
+      onMain { completion(.failure(failure)) }
+      return
+    }
+    Task {
+      await sdk.deleteUserCredentials()
+      onMain { completion(.success(Self.snapshot(sdk))) }
+    }
+  }
+
   // MARK: - Tracking
   //
   // Each method goes to the native `tracking` namespace of the shop's instance. On the new core its

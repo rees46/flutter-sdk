@@ -254,6 +254,23 @@ class Rees46FlutterSdkPlugin :
         throw BridgeFailures.of(t)
     }
 
+    override fun flush(shopId: String?, callback: (Result<Unit>) -> Unit) =
+        call(shopId, callback) { it.flush(done(callback)) }
+
+    /**
+     * The plugin lets go of the shop before the native release, so the released instance tells Dart nothing
+     * more: Dart's handle reads `notInitialized` by itself, and the shop's next instance owns its snapshots.
+     */
+    override fun release(shopId: String?) {
+        val sdk = runCatching { sdk(shopId) }.getOrNull() ?: return
+        subscriptions.remove(sdk.shopId)?.cancel()
+        BridgeShops.release(sdk)
+    }
+
+    /** Answers with the shop's state after the wipe; the new device id comes with `/init`, as a snapshot. */
+    override fun deleteUserCredentials(shopId: String?, callback: (Result<SdkSnapshotWire>) -> Unit) =
+        call(shopId, callback) { sdk -> sdk.deleteUserCredentials(completion(callback) { snapshotOf(sdk) }) }
+
     // endregion
 
     // region tracking

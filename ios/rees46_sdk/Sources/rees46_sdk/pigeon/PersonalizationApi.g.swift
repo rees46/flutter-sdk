@@ -4312,6 +4312,18 @@ protocol PersonalizationHostApi {
   func getSid(shopId: String?) throws -> String
   /// Returns the device ID assigned by the native SDK, or null before first sync.
   func getDid(shopId: String?) throws -> String?
+  /// `flush`: sends the shop's queue now; answers once each event queued at the
+  /// call was tried. `notInitialized` for a shop the bridge does not know.
+  func flush(shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// `release`: stops the shop's instance, which leaves the native registry; its
+  /// queue stays on disk. The bridge drops what it keeps of the shop first, so the
+  /// released instance tells Dart nothing more. A shop the bridge does not know is
+  /// released already: nothing happens.
+  func release(shopId: String?) throws
+  /// `deleteUserCredentials`: forgets the shop's customer — device id, session,
+  /// queue, saved `/init` answer — and answers with the shop's state after the
+  /// wipe; the new device id comes with the next `/init`, as a snapshot.
+  func deleteUserCredentials(shopId: String?, completion: @escaping (Result<SdkSnapshotWire, Error>) -> Void)
   /// `tracking.custom`. [customFields] are the event's free-form fields.
   func trackEvent(event: String, time: Int64?, category: String?, label: String?, value: Int64?, customFields: [String: Any?]?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
   func trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
@@ -4523,6 +4535,64 @@ class PersonalizationHostApiSetup {
       }
     } else {
       getDidChannel.setMessageHandler(nil)
+    }
+    /// `flush`: sends the shop's queue now; answers once each event queued at the
+    /// call was tried. `notInitialized` for a shop the bridge does not know.
+    let flushChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.flush\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      flushChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.flush(shopId: shopIdArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      flushChannel.setMessageHandler(nil)
+    }
+    /// `release`: stops the shop's instance, which leaves the native registry; its
+    /// queue stays on disk. The bridge drops what it keeps of the shop first, so the
+    /// released instance tells Dart nothing more. A shop the bridge does not know is
+    /// released already: nothing happens.
+    let releaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.release\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      releaseChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        do {
+          try api.release(shopId: shopIdArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      releaseChannel.setMessageHandler(nil)
+    }
+    /// `deleteUserCredentials`: forgets the shop's customer — device id, session,
+    /// queue, saved `/init` answer — and answers with the shop's state after the
+    /// wipe; the new device id comes with the next `/init`, as a snapshot.
+    let deleteUserCredentialsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.deleteUserCredentials\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      deleteUserCredentialsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let shopIdArg: String? = nilOrValue(args[0])
+        api.deleteUserCredentials(shopId: shopIdArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      deleteUserCredentialsChannel.setMessageHandler(nil)
     }
     /// `tracking.custom`. [customFields] are the event's free-form fields.
     let trackEventChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)

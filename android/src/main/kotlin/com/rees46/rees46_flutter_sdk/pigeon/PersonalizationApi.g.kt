@@ -4485,6 +4485,24 @@ interface PersonalizationHostApi {
   fun getSid(shopId: String?): String
   /** Returns the device ID assigned by the native SDK, or null before first sync. */
   fun getDid(shopId: String?): String?
+  /**
+   * `flush`: sends the shop's queue now; answers once each event queued at the
+   * call was tried. `notInitialized` for a shop the bridge does not know.
+   */
+  fun flush(shopId: String?, callback: (Result<Unit>) -> Unit)
+  /**
+   * `release`: stops the shop's instance, which leaves the native registry; its
+   * queue stays on disk. The bridge drops what it keeps of the shop first, so the
+   * released instance tells Dart nothing more. A shop the bridge does not know is
+   * released already: nothing happens.
+   */
+  fun release(shopId: String?)
+  /**
+   * `deleteUserCredentials`: forgets the shop's customer — device id, session,
+   * queue, saved `/init` answer — and answers with the shop's state after the
+   * wipe; the new device id comes with the next `/init`, as a snapshot.
+   */
+  fun deleteUserCredentials(shopId: String?, callback: (Result<SdkSnapshotWire>) -> Unit)
   /** `tracking.custom`. [customFields] are the event's free-form fields. */
   fun trackEvent(event: String, time: Long?, category: String?, label: String?, value: Long?, customFields: Map<String, Any?>?, shopId: String?, callback: (Result<Unit>) -> Unit)
   fun trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
@@ -4721,6 +4739,63 @@ interface PersonalizationHostApi {
               PersonalizationApiPigeonUtils.wrapError(exception)
             }
             reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.flush$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.flush(shopIdArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.release$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            val wrapped: List<Any?> = try {
+              api.release(shopIdArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              PersonalizationApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.deleteUserCredentials$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val shopIdArg = args[0] as String?
+            api.deleteUserCredentials(shopIdArg) { result: Result<SdkSnapshotWire> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(PersonalizationApiPigeonUtils.wrapResult(data))
+              }
+            }
           }
         } else {
           channel.setMessageHandler(null)

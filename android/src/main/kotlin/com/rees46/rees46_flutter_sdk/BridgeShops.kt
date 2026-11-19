@@ -27,6 +27,15 @@ internal object BridgeShops {
     private val started = ConcurrentHashMap<String, Rees46Config>()
 
     /**
+     * How a shop starts: `Rees46.initializeBridge`. No A/B group of the bridge's own: the legacy core kept it
+     * in the native storage the new core adopts, with the device id. Tests start a fake instead.
+     */
+    @Volatile
+    internal var starter: (Context, Rees46Config) -> SDK = { context, config ->
+        Rees46.initializeBridge(context.applicationContext, config, segment = null)
+    }
+
+    /**
      * The live instance of [config]'s shop on the new core. One the plugin started with the same
      * configuration is reused; one started with another is released and started again with [config], its
      * queue resuming from disk.
@@ -40,12 +49,24 @@ internal object BridgeShops {
             if (running == config) return live
             live.release()
         }
-        // No A/B group of the bridge's own: the legacy core kept it in the native storage the new core
-        // adopts, with the device id.
-        val sdk = Rees46.initializeBridge(context.applicationContext, config, segment = null)
+        val sdk = starter(context, config)
         PopupRelay.attach(sdk, shopId)
         started[shopId] = config
         return sdk
+    }
+
+    /**
+     * Stops [sdk] (Dart's `release`): the plugin forgets its shop — no snapshot goes for it, its popups no
+     * longer reach Dart and those held for it go — and the native instance is released, its queue staying
+     * on disk. The next [start] of the shop makes a fresh instance. The shop stays in the store the
+     * cold-start provider reads: a later process registers it again, and the queue goes on from there.
+     */
+    @Synchronized
+    fun release(sdk: SDK) {
+        val shopId = sdk.shopId
+        started.remove(shopId)
+        PopupRelay.disconnect(shopId)
+        sdk.release()
     }
 
     /** The shops the plugin started in this process. */
@@ -97,6 +118,12 @@ internal object PopupRelay {
 
     /** The engine went: popups are held again until Dart connects. */
     fun disconnectAll() = sinks.clear()
+
+    /** [shopId] was released: its popups go to Dart no more, and none is held for it. */
+    fun disconnect(shopId: String) {
+        sinks.remove(shopId)
+        held.remove(shopId)
+    }
 
     /** Test-only. */
     internal fun reset() {

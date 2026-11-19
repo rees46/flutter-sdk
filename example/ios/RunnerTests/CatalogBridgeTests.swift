@@ -192,6 +192,33 @@ final class RecordingSDK: PersonalizationSDK {
     func getStories(code: String, completion: @escaping (Result<StoryContent, SdkError>) -> Void) {}
     func configuration() -> SdkConfiguration.Type { SdkConfiguration.self }
     func sendIDFARequest(idfa: UUID, completion: @escaping (Result<InitResponse, SdkError>) -> Void) {}
+
+    // MARK: Root
+
+    private(set) var flushes = 0
+    private(set) var releases = 0
+    private(set) var deletions = 0
+    /// What `flush` answers.
+    var flushError: Rees46.SdkError?
+
+    func flush(completion: @escaping (Rees46.SdkError?) -> Void) {
+        flushes += 1
+        let error = flushError
+        DispatchQueue.main.async { completion(error) }
+    }
+
+    /// Leaves the registry, as the SDK's own instance does.
+    func release() {
+        releases += 1
+        SdkRegistry.shared.unregister(self)
+    }
+
+    /// Forgets the customer as the SDK's own instance does: no device id and no session until `/init`.
+    func deleteUserCredentials() {
+        deletions += 1
+        deviceId = ""
+        userSeance = ""
+    }
 }
 
 /// Records each tracking call and answers it with `answer`.

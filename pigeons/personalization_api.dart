@@ -1501,6 +1501,23 @@ abstract class PersonalizationHostApi {
   /// Returns the device ID assigned by the native SDK, or null before first sync.
   String? getDid(String? shopId);
 
+  /// `flush`: sends the shop's queue now; answers once each event queued at the
+  /// call was tried. `notInitialized` for a shop the bridge does not know.
+  @async
+  void flush(String? shopId);
+
+  /// `release`: stops the shop's instance, which leaves the native registry; its
+  /// queue stays on disk. The bridge drops what it keeps of the shop first, so the
+  /// released instance tells Dart nothing more. A shop the bridge does not know is
+  /// released already: nothing happens.
+  void release(String? shopId);
+
+  /// `deleteUserCredentials`: forgets the shop's customer — device id, session,
+  /// queue, saved `/init` answer — and answers with the shop's state after the
+  /// wipe; the new device id comes with the next `/init`, as a snapshot.
+  @async
+  SdkSnapshotWire deleteUserCredentials(String? shopId);
+
   // region tracking
 
   /// `tracking.custom`. [customFields] are the event's free-form fields.

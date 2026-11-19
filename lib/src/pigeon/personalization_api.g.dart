@@ -5908,6 +5908,89 @@ class PersonalizationHostApi {
     }
   }
 
+  /// `flush`: sends the shop's queue now; answers once each event queued at the
+  /// call was tried. `notInitialized` for a shop the bridge does not know.
+  Future<void> flush(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.flush$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// `release`: stops the shop's instance, which leaves the native registry; its
+  /// queue stays on disk. The bridge drops what it keeps of the shop first, so the
+  /// released instance tells Dart nothing more. A shop the bridge does not know is
+  /// released already: nothing happens.
+  Future<void> release(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.release$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  /// `deleteUserCredentials`: forgets the shop's customer — device id, session,
+  /// queue, saved `/init` answer — and answers with the shop's state after the
+  /// wipe; the new device id comes with the next `/init`, as a snapshot.
+  Future<SdkSnapshotWire> deleteUserCredentials(String? shopId) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.deleteUserCredentials$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[shopId]);
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as SdkSnapshotWire?)!;
+    }
+  }
+
   /// `tracking.custom`. [customFields] are the event's free-form fields.
   Future<void> trackEvent(String event, int? time, String? category, String? label, int? value, Map<String, Object?>? customFields, String? shopId) async {
     final String pigeonVar_channelName = 'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackEvent$pigeonVar_messageChannelSuffix';
