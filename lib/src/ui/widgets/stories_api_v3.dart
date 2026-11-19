@@ -231,14 +231,10 @@ abstract final class StoriesApiV3 {
     required String slideId,
   }) async {
     if (code.isEmpty || storyId.isEmpty || slideId.isEmpty) return;
-    try {
-      if (event == StoriesV3Event.view || event == StoriesV3Event.click) {
-        await sdk.tracking.setSource(
-          TrackingSource(type: TrackingSourceType.stories, code: code),
-        );
-      }
-    } catch (error) {
-      debugPrint('PersonalizationStories: tracking source — $error');
+    if (event == StoriesV3Event.view || event == StoriesV3Event.click) {
+      sdk.tracking.setSource(
+        TrackingSource(type: TrackingSourceType.stories, code: code),
+      );
     }
     try {
       final id = await identity(sdk);

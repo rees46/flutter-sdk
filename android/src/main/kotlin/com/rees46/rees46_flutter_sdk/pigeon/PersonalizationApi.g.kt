@@ -2138,6 +2138,80 @@ data class OrderWire (
 }
 
 /**
+ * `PurchaseTrackingRequest` of the contract (tracking.md).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PurchaseTrackingRequestWire (
+  val orderId: String,
+  val orderPrice: Double,
+  val items: List<PurchaseLineItemWire>,
+  val deliveryType: String? = null,
+  val deliveryAddress: String? = null,
+  val paymentType: String? = null,
+  val isTaxFree: Boolean,
+  val promocode: String? = null,
+  val orderCash: Double? = null,
+  val orderBonuses: Double? = null,
+  val orderDelivery: Double? = null,
+  val orderDiscount: Double? = null,
+  val channel: String? = null,
+  val custom: Map<String, Any?>? = null,
+  val isGiftPackage: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PurchaseTrackingRequestWire {
+      val orderId = pigeonVar_list[0] as String
+      val orderPrice = pigeonVar_list[1] as Double
+      val items = pigeonVar_list[2] as List<PurchaseLineItemWire>
+      val deliveryType = pigeonVar_list[3] as String?
+      val deliveryAddress = pigeonVar_list[4] as String?
+      val paymentType = pigeonVar_list[5] as String?
+      val isTaxFree = pigeonVar_list[6] as Boolean
+      val promocode = pigeonVar_list[7] as String?
+      val orderCash = pigeonVar_list[8] as Double?
+      val orderBonuses = pigeonVar_list[9] as Double?
+      val orderDelivery = pigeonVar_list[10] as Double?
+      val orderDiscount = pigeonVar_list[11] as Double?
+      val channel = pigeonVar_list[12] as String?
+      val custom = pigeonVar_list[13] as Map<String, Any?>?
+      val isGiftPackage = pigeonVar_list[14] as Boolean
+      return PurchaseTrackingRequestWire(orderId, orderPrice, items, deliveryType, deliveryAddress, paymentType, isTaxFree, promocode, orderCash, orderBonuses, orderDelivery, orderDiscount, channel, custom, isGiftPackage)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      orderId,
+      orderPrice,
+      items,
+      deliveryType,
+      deliveryAddress,
+      paymentType,
+      isTaxFree,
+      promocode,
+      orderCash,
+      orderBonuses,
+      orderDelivery,
+      orderDiscount,
+      channel,
+      custom,
+      isGiftPackage,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is PurchaseTrackingRequestWire) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return PersonalizationApiPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
+
+/**
  * The released `setProfile`'s parameters (1.6.4), for the native SDKs' released profile method.
  *
  * Generated class from Pigeon that represents data sent in messages.
@@ -4090,165 +4164,170 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
       }
       172.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProfileParamsWire.fromList(it)
+          PurchaseTrackingRequestWire.fromList(it)
         }
       }
       173.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SubscriptionsUpdateRequestWire.fromList(it)
+          ProfileParamsWire.fromList(it)
         }
       }
       174.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SubscriptionStatusWire.fromList(it)
+          SubscriptionsUpdateRequestWire.fromList(it)
         }
       }
       175.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          BackInStockPropertiesWire.fromList(it)
+          SubscriptionStatusWire.fromList(it)
         }
       }
       176.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SegmentWire.fromList(it)
+          BackInStockPropertiesWire.fromList(it)
         }
       }
       177.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushTokenWire.fromList(it)
+          SegmentWire.fromList(it)
         }
       }
       178.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushActionWire.fromList(it)
+          PushTokenWire.fromList(it)
         }
       }
       179.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushTargetWire.fromList(it)
+          PushActionWire.fromList(it)
         }
       }
       180.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PushPayloadWire.fromList(it)
+          PushTargetWire.fromList(it)
         }
       }
       181.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationStatisticsWire.fromList(it)
+          PushPayloadWire.fromList(it)
         }
       }
       182.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationMessageWire.fromList(it)
+          NotificationStatisticsWire.fromList(it)
         }
       }
       183.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NotificationHistoryWire.fromList(it)
+          NotificationMessageWire.fromList(it)
         }
       }
       184.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoriesBlockWire.fromList(it)
+          NotificationHistoryWire.fromList(it)
         }
       }
       185.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryWire.fromList(it)
+          StoriesBlockWire.fromList(it)
         }
       }
       186.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StorySlideWire.fromList(it)
+          StoryWire.fromList(it)
         }
       }
       187.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryElementWire.fromList(it)
+          StorySlideWire.fromList(it)
         }
       }
       188.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          StoryProductWire.fromList(it)
+          StoryElementWire.fromList(it)
         }
       }
       189.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PurchaseProbabilityWire.fromList(it)
+          StoryProductWire.fromList(it)
         }
       }
       190.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyMemberWire.fromList(it)
+          PurchaseProbabilityWire.fromList(it)
         }
       }
       191.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyLevelWire.fromList(it)
+          LoyaltyMemberWire.fromList(it)
         }
       }
       192.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyStatusWire.fromList(it)
+          LoyaltyLevelWire.fromList(it)
         }
       }
       193.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          LoyaltyPromotionWire.fromList(it)
+          LoyaltyStatusWire.fromList(it)
         }
       }
       194.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SliderWire.fromList(it)
+          LoyaltyPromotionWire.fromList(it)
         }
       }
       195.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          SliderBannerWire.fromList(it)
+          SliderWire.fromList(it)
         }
       }
       196.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PollReviewWire.fromList(it)
+          SliderBannerWire.fromList(it)
         }
       }
       197.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          NpsCategoryWire.fromList(it)
+          PollReviewWire.fromList(it)
         }
       }
       198.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          CsatCampaignWire.fromList(it)
+          NpsCategoryWire.fromList(it)
         }
       }
       199.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          CesCampaignWire.fromList(it)
+          CsatCampaignWire.fromList(it)
         }
       }
       200.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PollChannelWire.fromList(it)
+          CesCampaignWire.fromList(it)
         }
       }
       201.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductRatingSummaryWire.fromList(it)
+          PollChannelWire.fromList(it)
         }
       }
       202.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductReviewWire.fromList(it)
+          ProductRatingSummaryWire.fromList(it)
         }
       }
       203.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ProductReviewsResponseWire.fromList(it)
+          ProductReviewWire.fromList(it)
         }
       }
       204.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ProductReviewsResponseWire.fromList(it)
+        }
+      }
+      205.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           ClientReviewWire.fromList(it)
         }
@@ -4430,136 +4509,140 @@ private open class PersonalizationApiPigeonCodec : StandardMessageCodec() {
         stream.write(171)
         writeValue(stream, value.toList())
       }
-      is ProfileParamsWire -> {
+      is PurchaseTrackingRequestWire -> {
         stream.write(172)
         writeValue(stream, value.toList())
       }
-      is SubscriptionsUpdateRequestWire -> {
+      is ProfileParamsWire -> {
         stream.write(173)
         writeValue(stream, value.toList())
       }
-      is SubscriptionStatusWire -> {
+      is SubscriptionsUpdateRequestWire -> {
         stream.write(174)
         writeValue(stream, value.toList())
       }
-      is BackInStockPropertiesWire -> {
+      is SubscriptionStatusWire -> {
         stream.write(175)
         writeValue(stream, value.toList())
       }
-      is SegmentWire -> {
+      is BackInStockPropertiesWire -> {
         stream.write(176)
         writeValue(stream, value.toList())
       }
-      is PushTokenWire -> {
+      is SegmentWire -> {
         stream.write(177)
         writeValue(stream, value.toList())
       }
-      is PushActionWire -> {
+      is PushTokenWire -> {
         stream.write(178)
         writeValue(stream, value.toList())
       }
-      is PushTargetWire -> {
+      is PushActionWire -> {
         stream.write(179)
         writeValue(stream, value.toList())
       }
-      is PushPayloadWire -> {
+      is PushTargetWire -> {
         stream.write(180)
         writeValue(stream, value.toList())
       }
-      is NotificationStatisticsWire -> {
+      is PushPayloadWire -> {
         stream.write(181)
         writeValue(stream, value.toList())
       }
-      is NotificationMessageWire -> {
+      is NotificationStatisticsWire -> {
         stream.write(182)
         writeValue(stream, value.toList())
       }
-      is NotificationHistoryWire -> {
+      is NotificationMessageWire -> {
         stream.write(183)
         writeValue(stream, value.toList())
       }
-      is StoriesBlockWire -> {
+      is NotificationHistoryWire -> {
         stream.write(184)
         writeValue(stream, value.toList())
       }
-      is StoryWire -> {
+      is StoriesBlockWire -> {
         stream.write(185)
         writeValue(stream, value.toList())
       }
-      is StorySlideWire -> {
+      is StoryWire -> {
         stream.write(186)
         writeValue(stream, value.toList())
       }
-      is StoryElementWire -> {
+      is StorySlideWire -> {
         stream.write(187)
         writeValue(stream, value.toList())
       }
-      is StoryProductWire -> {
+      is StoryElementWire -> {
         stream.write(188)
         writeValue(stream, value.toList())
       }
-      is PurchaseProbabilityWire -> {
+      is StoryProductWire -> {
         stream.write(189)
         writeValue(stream, value.toList())
       }
-      is LoyaltyMemberWire -> {
+      is PurchaseProbabilityWire -> {
         stream.write(190)
         writeValue(stream, value.toList())
       }
-      is LoyaltyLevelWire -> {
+      is LoyaltyMemberWire -> {
         stream.write(191)
         writeValue(stream, value.toList())
       }
-      is LoyaltyStatusWire -> {
+      is LoyaltyLevelWire -> {
         stream.write(192)
         writeValue(stream, value.toList())
       }
-      is LoyaltyPromotionWire -> {
+      is LoyaltyStatusWire -> {
         stream.write(193)
         writeValue(stream, value.toList())
       }
-      is SliderWire -> {
+      is LoyaltyPromotionWire -> {
         stream.write(194)
         writeValue(stream, value.toList())
       }
-      is SliderBannerWire -> {
+      is SliderWire -> {
         stream.write(195)
         writeValue(stream, value.toList())
       }
-      is PollReviewWire -> {
+      is SliderBannerWire -> {
         stream.write(196)
         writeValue(stream, value.toList())
       }
-      is NpsCategoryWire -> {
+      is PollReviewWire -> {
         stream.write(197)
         writeValue(stream, value.toList())
       }
-      is CsatCampaignWire -> {
+      is NpsCategoryWire -> {
         stream.write(198)
         writeValue(stream, value.toList())
       }
-      is CesCampaignWire -> {
+      is CsatCampaignWire -> {
         stream.write(199)
         writeValue(stream, value.toList())
       }
-      is PollChannelWire -> {
+      is CesCampaignWire -> {
         stream.write(200)
         writeValue(stream, value.toList())
       }
-      is ProductRatingSummaryWire -> {
+      is PollChannelWire -> {
         stream.write(201)
         writeValue(stream, value.toList())
       }
-      is ProductReviewWire -> {
+      is ProductRatingSummaryWire -> {
         stream.write(202)
         writeValue(stream, value.toList())
       }
-      is ProductReviewsResponseWire -> {
+      is ProductReviewWire -> {
         stream.write(203)
         writeValue(stream, value.toList())
       }
-      is ClientReviewWire -> {
+      is ProductReviewsResponseWire -> {
         stream.write(204)
+        writeValue(stream, value.toList())
+      }
+      is ClientReviewWire -> {
+        stream.write(205)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -4620,8 +4703,8 @@ interface PersonalizationHostApi {
   fun trackBannerClick(bannerId: String, code: String, shopId: String?, callback: (Result<Unit>) -> Unit)
   /** Stores the attribution source natively for the next event. */
   fun trackSetSource(source: TrackingSourceWire, shopId: String?)
-  /** `tracking.purchase`. [custom] and [recommendedSource] are free-form. */
-  fun trackPurchase(orderId: String, orderPrice: Double, items: List<PurchaseLineItemWire>, deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Boolean, isGiftPackage: Boolean, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, custom: Map<String, Any?>?, recommendedSource: Map<String, Any?>?, stream: String?, segment: String?, shopId: String?, callback: (Result<Unit>) -> Unit)
+  /** `tracking.purchase`: the contract's request and the event's own source. */
+  fun trackPurchase(request: PurchaseTrackingRequestWire, source: TrackingSourceWire?, shopId: String?, callback: (Result<Unit>) -> Unit)
   /**
    * Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`.
    * The native SDKs never show a popup themselves under the plugin, so they never
@@ -4673,11 +4756,10 @@ interface PersonalizationHostApi {
   fun notificationsGetHistory(shopSecret: String, type: String, phone: String?, email: String?, externalId: String?, loyaltyId: String?, channel: String?, limit: Long?, page: Long?, dateFrom: String?, did: String?, shopId: String?, callback: (Result<NotificationHistoryWire>) -> Unit)
   /**
    * Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-   * via the native `Rees46.handlePush`. [event] is the index of the Dart
-   * `PushEvent` enum: 0 = received (native `delivered`), 1 = delivered (native
-   * `opened`: the notification is on screen), 2 = clicked.
+   * via the native `Rees46.handlePush`. [event] is the name of the contract's
+   * `PushEvent`: `delivered`, `opened`, `clicked` or `closed`.
    */
-  fun handlePush(payload: Map<String, String>, event: Long, callback: (Result<Unit>) -> Unit)
+  fun handlePush(payload: Map<String, String>, event: String, callback: (Result<Unit>) -> Unit)
   fun storiesGet(code: String, shopId: String?, callback: (Result<StoriesBlockWire>) -> Unit)
   fun predictGetProbabilityToPurchase(shopId: String?, callback: (Result<PurchaseProbabilityWire>) -> Unit)
   /** [gender] is `m` or `f`. */
@@ -5238,26 +5320,10 @@ interface PersonalizationHostApi {
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
-            val orderIdArg = args[0] as String
-            val orderPriceArg = args[1] as Double
-            val itemsArg = args[2] as List<PurchaseLineItemWire>
-            val deliveryTypeArg = args[3] as String?
-            val deliveryAddressArg = args[4] as String?
-            val paymentTypeArg = args[5] as String?
-            val isTaxFreeArg = args[6] as Boolean
-            val isGiftPackageArg = args[7] as Boolean
-            val promocodeArg = args[8] as String?
-            val orderCashArg = args[9] as Double?
-            val orderBonusesArg = args[10] as Double?
-            val orderDeliveryArg = args[11] as Double?
-            val orderDiscountArg = args[12] as Double?
-            val channelArg = args[13] as String?
-            val customArg = args[14] as Map<String, Any?>?
-            val recommendedSourceArg = args[15] as Map<String, Any?>?
-            val streamArg = args[16] as String?
-            val segmentArg = args[17] as String?
-            val shopIdArg = args[18] as String?
-            api.trackPurchase(orderIdArg, orderPriceArg, itemsArg, deliveryTypeArg, deliveryAddressArg, paymentTypeArg, isTaxFreeArg, isGiftPackageArg, promocodeArg, orderCashArg, orderBonusesArg, orderDeliveryArg, orderDiscountArg, channelArg, customArg, recommendedSourceArg, streamArg, segmentArg, shopIdArg) { result: Result<Unit> ->
+            val requestArg = args[0] as PurchaseTrackingRequestWire
+            val sourceArg = args[1] as TrackingSourceWire?
+            val shopIdArg = args[2] as String?
+            api.trackPurchase(requestArg, sourceArg, shopIdArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(PersonalizationApiPigeonUtils.wrapError(error))
@@ -6032,7 +6098,7 @@ interface PersonalizationHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val payloadArg = args[0] as Map<String, String>
-            val eventArg = args[1] as Long
+            val eventArg = args[1] as String
             api.handlePush(payloadArg, eventArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {

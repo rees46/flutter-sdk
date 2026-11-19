@@ -47,6 +47,7 @@ import com.rees46.rees46_flutter_sdk.pigeon.ProfileParamsWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileUpdateRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
+import com.rees46.rees46_flutter_sdk.pigeon.PurchaseTrackingRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseProbabilityWire
 import com.rees46.rees46_flutter_sdk.pigeon.PushTokenWire
 import com.rees46.rees46_flutter_sdk.pigeon.RecommendationRequestWire
@@ -386,49 +387,12 @@ class Rees46FlutterSdkPlugin :
     }
 
     override fun trackPurchase(
-        orderId: String,
-        orderPrice: Double,
-        items: List<PurchaseLineItemWire>,
-        deliveryType: String?,
-        deliveryAddress: String?,
-        paymentType: String?,
-        isTaxFree: Boolean,
-        isGiftPackage: Boolean,
-        promocode: String?,
-        orderCash: Double?,
-        orderBonuses: Double?,
-        orderDelivery: Double?,
-        orderDiscount: Double?,
-        channel: String?,
-        custom: Map<String, Any?>?,
-        recommendedSource: Map<String, Any?>?,
-        stream: String?,
-        segment: String?,
+        request: PurchaseTrackingRequestWire,
+        source: TrackingSourceWire?,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
     ) = call(shopId, callback) {
-        val request = PurchaseTrackingRequest(
-            orderId = orderId,
-            orderPrice = orderPrice,
-            items = items.map { item -> item.toNative() },
-            deliveryType = deliveryType,
-            deliveryAddress = deliveryAddress,
-            paymentType = paymentType,
-            isTaxFree = isTaxFree,
-            promocode = promocode,
-            orderCash = orderCash,
-            orderBonuses = orderBonuses,
-            orderDelivery = orderDelivery,
-            orderDiscount = orderDiscount,
-            channel = channel,
-            custom = custom,
-            recommendedSource = recommendedSource?.toJsonObject(),
-            stream = stream,
-            segment = segment,
-            isGiftPackage = isGiftPackage,
-        )
-        // No per-call source: Dart stores one with `setSource`, and the native namespace attaches it.
-        it.tracking.queued.purchase(request, null, done(callback))
+        it.tracking.queued.purchase(request.toNative(), source?.toNative(), done(callback))
     }
 
     override fun trackPopupShown(popupId: Long, shopId: String?, callback: (Result<Unit>) -> Unit) =
@@ -710,15 +674,10 @@ class Rees46FlutterSdkPlugin :
      * once per message. [event] is the index of Dart's released `PushEvent`: `received` is the push reaching
      * the app (`delivered`), Dart's `delivered` is the notification on screen (`opened`), `clicked` a tap.
      */
-    override fun handlePush(payload: Map<String, String>, event: Long, callback: (Result<Unit>) -> Unit) {
-        val nativeEvent = when (event) {
-            0L -> PushEvent.DELIVERED
-            1L -> PushEvent.OPENED
-            2L -> PushEvent.CLICKED
-            else -> {
-                callback(Result.failure(BridgeFailures.invalidArgument("Unknown push event: $event")))
-                return
-            }
+    override fun handlePush(payload: Map<String, String>, event: String, callback: (Result<Unit>) -> Unit) {
+        val nativeEvent = pushEventOf(event) ?: run {
+            callback(Result.failure(BridgeFailures.invalidArgument("Unknown push event: $event")))
+            return
         }
         // Never throws; a push that is not the SDK's, or of no shop, is dropped natively.
         Rees46.handlePush(payload, nativeEvent)

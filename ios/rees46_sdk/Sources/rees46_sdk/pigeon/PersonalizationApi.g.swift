@@ -2200,6 +2200,89 @@ struct OrderWire: Hashable {
   }
 }
 
+/// `PurchaseTrackingRequest` of the contract (tracking.md).
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PurchaseTrackingRequestWire: Hashable {
+  var orderId: String
+  var orderPrice: Double
+  var items: [PurchaseLineItemWire]
+  var deliveryType: String? = nil
+  var deliveryAddress: String? = nil
+  var paymentType: String? = nil
+  var isTaxFree: Bool
+  var promocode: String? = nil
+  var orderCash: Double? = nil
+  var orderBonuses: Double? = nil
+  var orderDelivery: Double? = nil
+  var orderDiscount: Double? = nil
+  var channel: String? = nil
+  var custom: [String: Any?]? = nil
+  var isGiftPackage: Bool
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PurchaseTrackingRequestWire? {
+    let orderId = pigeonVar_list[0] as! String
+    let orderPrice = pigeonVar_list[1] as! Double
+    let items = pigeonVar_list[2] as! [PurchaseLineItemWire]
+    let deliveryType: String? = nilOrValue(pigeonVar_list[3])
+    let deliveryAddress: String? = nilOrValue(pigeonVar_list[4])
+    let paymentType: String? = nilOrValue(pigeonVar_list[5])
+    let isTaxFree = pigeonVar_list[6] as! Bool
+    let promocode: String? = nilOrValue(pigeonVar_list[7])
+    let orderCash: Double? = nilOrValue(pigeonVar_list[8])
+    let orderBonuses: Double? = nilOrValue(pigeonVar_list[9])
+    let orderDelivery: Double? = nilOrValue(pigeonVar_list[10])
+    let orderDiscount: Double? = nilOrValue(pigeonVar_list[11])
+    let channel: String? = nilOrValue(pigeonVar_list[12])
+    let custom: [String: Any?]? = nilOrValue(pigeonVar_list[13])
+    let isGiftPackage = pigeonVar_list[14] as! Bool
+
+    return PurchaseTrackingRequestWire(
+      orderId: orderId,
+      orderPrice: orderPrice,
+      items: items,
+      deliveryType: deliveryType,
+      deliveryAddress: deliveryAddress,
+      paymentType: paymentType,
+      isTaxFree: isTaxFree,
+      promocode: promocode,
+      orderCash: orderCash,
+      orderBonuses: orderBonuses,
+      orderDelivery: orderDelivery,
+      orderDiscount: orderDiscount,
+      channel: channel,
+      custom: custom,
+      isGiftPackage: isGiftPackage
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      orderId,
+      orderPrice,
+      items,
+      deliveryType,
+      deliveryAddress,
+      paymentType,
+      isTaxFree,
+      promocode,
+      orderCash,
+      orderBonuses,
+      orderDelivery,
+      orderDiscount,
+      channel,
+      custom,
+      isGiftPackage,
+    ]
+  }
+  static func == (lhs: PurchaseTrackingRequestWire, rhs: PurchaseTrackingRequestWire) -> Bool {
+    return deepEqualsPersonalizationApi(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashPersonalizationApi(value: toList(), hasher: &hasher)
+  }
+}
+
 /// The released `setProfile`'s parameters (1.6.4), for the native SDKs' released profile method.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
@@ -4085,70 +4168,72 @@ private class PersonalizationApiPigeonCodecReader: FlutterStandardReader {
     case 171:
       return OrderWire.fromList(self.readValue() as! [Any?])
     case 172:
-      return ProfileParamsWire.fromList(self.readValue() as! [Any?])
+      return PurchaseTrackingRequestWire.fromList(self.readValue() as! [Any?])
     case 173:
-      return SubscriptionsUpdateRequestWire.fromList(self.readValue() as! [Any?])
+      return ProfileParamsWire.fromList(self.readValue() as! [Any?])
     case 174:
-      return SubscriptionStatusWire.fromList(self.readValue() as! [Any?])
+      return SubscriptionsUpdateRequestWire.fromList(self.readValue() as! [Any?])
     case 175:
-      return BackInStockPropertiesWire.fromList(self.readValue() as! [Any?])
+      return SubscriptionStatusWire.fromList(self.readValue() as! [Any?])
     case 176:
-      return SegmentWire.fromList(self.readValue() as! [Any?])
+      return BackInStockPropertiesWire.fromList(self.readValue() as! [Any?])
     case 177:
-      return PushTokenWire.fromList(self.readValue() as! [Any?])
+      return SegmentWire.fromList(self.readValue() as! [Any?])
     case 178:
-      return PushActionWire.fromList(self.readValue() as! [Any?])
+      return PushTokenWire.fromList(self.readValue() as! [Any?])
     case 179:
-      return PushTargetWire.fromList(self.readValue() as! [Any?])
+      return PushActionWire.fromList(self.readValue() as! [Any?])
     case 180:
-      return PushPayloadWire.fromList(self.readValue() as! [Any?])
+      return PushTargetWire.fromList(self.readValue() as! [Any?])
     case 181:
-      return NotificationStatisticsWire.fromList(self.readValue() as! [Any?])
+      return PushPayloadWire.fromList(self.readValue() as! [Any?])
     case 182:
-      return NotificationMessageWire.fromList(self.readValue() as! [Any?])
+      return NotificationStatisticsWire.fromList(self.readValue() as! [Any?])
     case 183:
-      return NotificationHistoryWire.fromList(self.readValue() as! [Any?])
+      return NotificationMessageWire.fromList(self.readValue() as! [Any?])
     case 184:
-      return StoriesBlockWire.fromList(self.readValue() as! [Any?])
+      return NotificationHistoryWire.fromList(self.readValue() as! [Any?])
     case 185:
-      return StoryWire.fromList(self.readValue() as! [Any?])
+      return StoriesBlockWire.fromList(self.readValue() as! [Any?])
     case 186:
-      return StorySlideWire.fromList(self.readValue() as! [Any?])
+      return StoryWire.fromList(self.readValue() as! [Any?])
     case 187:
-      return StoryElementWire.fromList(self.readValue() as! [Any?])
+      return StorySlideWire.fromList(self.readValue() as! [Any?])
     case 188:
-      return StoryProductWire.fromList(self.readValue() as! [Any?])
+      return StoryElementWire.fromList(self.readValue() as! [Any?])
     case 189:
-      return PurchaseProbabilityWire.fromList(self.readValue() as! [Any?])
+      return StoryProductWire.fromList(self.readValue() as! [Any?])
     case 190:
-      return LoyaltyMemberWire.fromList(self.readValue() as! [Any?])
+      return PurchaseProbabilityWire.fromList(self.readValue() as! [Any?])
     case 191:
-      return LoyaltyLevelWire.fromList(self.readValue() as! [Any?])
+      return LoyaltyMemberWire.fromList(self.readValue() as! [Any?])
     case 192:
-      return LoyaltyStatusWire.fromList(self.readValue() as! [Any?])
+      return LoyaltyLevelWire.fromList(self.readValue() as! [Any?])
     case 193:
-      return LoyaltyPromotionWire.fromList(self.readValue() as! [Any?])
+      return LoyaltyStatusWire.fromList(self.readValue() as! [Any?])
     case 194:
-      return SliderWire.fromList(self.readValue() as! [Any?])
+      return LoyaltyPromotionWire.fromList(self.readValue() as! [Any?])
     case 195:
-      return SliderBannerWire.fromList(self.readValue() as! [Any?])
+      return SliderWire.fromList(self.readValue() as! [Any?])
     case 196:
-      return PollReviewWire.fromList(self.readValue() as! [Any?])
+      return SliderBannerWire.fromList(self.readValue() as! [Any?])
     case 197:
-      return NpsCategoryWire.fromList(self.readValue() as! [Any?])
+      return PollReviewWire.fromList(self.readValue() as! [Any?])
     case 198:
-      return CsatCampaignWire.fromList(self.readValue() as! [Any?])
+      return NpsCategoryWire.fromList(self.readValue() as! [Any?])
     case 199:
-      return CesCampaignWire.fromList(self.readValue() as! [Any?])
+      return CsatCampaignWire.fromList(self.readValue() as! [Any?])
     case 200:
-      return PollChannelWire.fromList(self.readValue() as! [Any?])
+      return CesCampaignWire.fromList(self.readValue() as! [Any?])
     case 201:
-      return ProductRatingSummaryWire.fromList(self.readValue() as! [Any?])
+      return PollChannelWire.fromList(self.readValue() as! [Any?])
     case 202:
-      return ProductReviewWire.fromList(self.readValue() as! [Any?])
+      return ProductRatingSummaryWire.fromList(self.readValue() as! [Any?])
     case 203:
-      return ProductReviewsResponseWire.fromList(self.readValue() as! [Any?])
+      return ProductReviewWire.fromList(self.readValue() as! [Any?])
     case 204:
+      return ProductReviewsResponseWire.fromList(self.readValue() as! [Any?])
+    case 205:
       return ClientReviewWire.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -4287,104 +4372,107 @@ private class PersonalizationApiPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? OrderWire {
       super.writeByte(171)
       super.writeValue(value.toList())
-    } else if let value = value as? ProfileParamsWire {
+    } else if let value = value as? PurchaseTrackingRequestWire {
       super.writeByte(172)
       super.writeValue(value.toList())
-    } else if let value = value as? SubscriptionsUpdateRequestWire {
+    } else if let value = value as? ProfileParamsWire {
       super.writeByte(173)
       super.writeValue(value.toList())
-    } else if let value = value as? SubscriptionStatusWire {
+    } else if let value = value as? SubscriptionsUpdateRequestWire {
       super.writeByte(174)
       super.writeValue(value.toList())
-    } else if let value = value as? BackInStockPropertiesWire {
+    } else if let value = value as? SubscriptionStatusWire {
       super.writeByte(175)
       super.writeValue(value.toList())
-    } else if let value = value as? SegmentWire {
+    } else if let value = value as? BackInStockPropertiesWire {
       super.writeByte(176)
       super.writeValue(value.toList())
-    } else if let value = value as? PushTokenWire {
+    } else if let value = value as? SegmentWire {
       super.writeByte(177)
       super.writeValue(value.toList())
-    } else if let value = value as? PushActionWire {
+    } else if let value = value as? PushTokenWire {
       super.writeByte(178)
       super.writeValue(value.toList())
-    } else if let value = value as? PushTargetWire {
+    } else if let value = value as? PushActionWire {
       super.writeByte(179)
       super.writeValue(value.toList())
-    } else if let value = value as? PushPayloadWire {
+    } else if let value = value as? PushTargetWire {
       super.writeByte(180)
       super.writeValue(value.toList())
-    } else if let value = value as? NotificationStatisticsWire {
+    } else if let value = value as? PushPayloadWire {
       super.writeByte(181)
       super.writeValue(value.toList())
-    } else if let value = value as? NotificationMessageWire {
+    } else if let value = value as? NotificationStatisticsWire {
       super.writeByte(182)
       super.writeValue(value.toList())
-    } else if let value = value as? NotificationHistoryWire {
+    } else if let value = value as? NotificationMessageWire {
       super.writeByte(183)
       super.writeValue(value.toList())
-    } else if let value = value as? StoriesBlockWire {
+    } else if let value = value as? NotificationHistoryWire {
       super.writeByte(184)
       super.writeValue(value.toList())
-    } else if let value = value as? StoryWire {
+    } else if let value = value as? StoriesBlockWire {
       super.writeByte(185)
       super.writeValue(value.toList())
-    } else if let value = value as? StorySlideWire {
+    } else if let value = value as? StoryWire {
       super.writeByte(186)
       super.writeValue(value.toList())
-    } else if let value = value as? StoryElementWire {
+    } else if let value = value as? StorySlideWire {
       super.writeByte(187)
       super.writeValue(value.toList())
-    } else if let value = value as? StoryProductWire {
+    } else if let value = value as? StoryElementWire {
       super.writeByte(188)
       super.writeValue(value.toList())
-    } else if let value = value as? PurchaseProbabilityWire {
+    } else if let value = value as? StoryProductWire {
       super.writeByte(189)
       super.writeValue(value.toList())
-    } else if let value = value as? LoyaltyMemberWire {
+    } else if let value = value as? PurchaseProbabilityWire {
       super.writeByte(190)
       super.writeValue(value.toList())
-    } else if let value = value as? LoyaltyLevelWire {
+    } else if let value = value as? LoyaltyMemberWire {
       super.writeByte(191)
       super.writeValue(value.toList())
-    } else if let value = value as? LoyaltyStatusWire {
+    } else if let value = value as? LoyaltyLevelWire {
       super.writeByte(192)
       super.writeValue(value.toList())
-    } else if let value = value as? LoyaltyPromotionWire {
+    } else if let value = value as? LoyaltyStatusWire {
       super.writeByte(193)
       super.writeValue(value.toList())
-    } else if let value = value as? SliderWire {
+    } else if let value = value as? LoyaltyPromotionWire {
       super.writeByte(194)
       super.writeValue(value.toList())
-    } else if let value = value as? SliderBannerWire {
+    } else if let value = value as? SliderWire {
       super.writeByte(195)
       super.writeValue(value.toList())
-    } else if let value = value as? PollReviewWire {
+    } else if let value = value as? SliderBannerWire {
       super.writeByte(196)
       super.writeValue(value.toList())
-    } else if let value = value as? NpsCategoryWire {
+    } else if let value = value as? PollReviewWire {
       super.writeByte(197)
       super.writeValue(value.toList())
-    } else if let value = value as? CsatCampaignWire {
+    } else if let value = value as? NpsCategoryWire {
       super.writeByte(198)
       super.writeValue(value.toList())
-    } else if let value = value as? CesCampaignWire {
+    } else if let value = value as? CsatCampaignWire {
       super.writeByte(199)
       super.writeValue(value.toList())
-    } else if let value = value as? PollChannelWire {
+    } else if let value = value as? CesCampaignWire {
       super.writeByte(200)
       super.writeValue(value.toList())
-    } else if let value = value as? ProductRatingSummaryWire {
+    } else if let value = value as? PollChannelWire {
       super.writeByte(201)
       super.writeValue(value.toList())
-    } else if let value = value as? ProductReviewWire {
+    } else if let value = value as? ProductRatingSummaryWire {
       super.writeByte(202)
       super.writeValue(value.toList())
-    } else if let value = value as? ProductReviewsResponseWire {
+    } else if let value = value as? ProductReviewWire {
       super.writeByte(203)
       super.writeValue(value.toList())
-    } else if let value = value as? ClientReviewWire {
+    } else if let value = value as? ProductReviewsResponseWire {
       super.writeByte(204)
+      super.writeValue(value.toList())
+    } else if let value = value as? ClientReviewWire {
+      super.writeByte(205)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -4451,8 +4539,8 @@ protocol PersonalizationHostApi {
   func trackBannerClick(bannerId: String, code: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
   /// Stores the attribution source natively for the next event.
   func trackSetSource(source: TrackingSourceWire, shopId: String?) throws
-  /// `tracking.purchase`. [custom] and [recommendedSource] are free-form.
-  func trackPurchase(orderId: String, orderPrice: Double, items: [PurchaseLineItemWire], deliveryType: String?, deliveryAddress: String?, paymentType: String?, isTaxFree: Bool, isGiftPackage: Bool, promocode: String?, orderCash: Double?, orderBonuses: Double?, orderDelivery: Double?, orderDiscount: Double?, channel: String?, custom: [String: Any?]?, recommendedSource: [String: Any?]?, stream: String?, segment: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// `tracking.purchase`: the contract's request and the event's own source.
+  func trackPurchase(request: PurchaseTrackingRequestWire, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void)
   /// Reports popup [popupId] as shown (`popup/showed`) — native `tracking.popupShown`.
   /// The native SDKs never show a popup themselves under the plugin, so they never
   /// report one either: Dart does, once it is on screen.
@@ -4499,10 +4587,9 @@ protocol PersonalizationHostApi {
   /// A server method: [shopSecret] is passed by the caller and never kept.
   func notificationsGetHistory(shopSecret: String, type: String, phone: String?, email: String?, externalId: String?, loyaltyId: String?, channel: String?, limit: Int64?, page: Int64?, dateFrom: String?, did: String?, shopId: String?, completion: @escaping (Result<NotificationHistoryWire, Error>) -> Void)
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
-  /// `PushEvent` enum: 0 = received (native `delivered`), 1 = delivered (native
-  /// `opened`: the notification is on screen), 2 = clicked.
-  func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void)
+  /// via the native `Rees46.handlePush`. [event] is the name of the contract's
+  /// `PushEvent`: `delivered`, `opened`, `clicked` or `closed`.
+  func handlePush(payload: [String: String], event: String, completion: @escaping (Result<Void, Error>) -> Void)
   func storiesGet(code: String, shopId: String?, completion: @escaping (Result<StoriesBlockWire, Error>) -> Void)
   func predictGetProbabilityToPurchase(shopId: String?, completion: @escaping (Result<PurchaseProbabilityWire, Error>) -> Void)
   /// [gender] is `m` or `f`.
@@ -5009,31 +5096,15 @@ class PersonalizationHostApiSetup {
     } else {
       trackSetSourceChannel.setMessageHandler(nil)
     }
-    /// `tracking.purchase`. [custom] and [recommendedSource] are free-form.
+    /// `tracking.purchase`: the contract's request and the event's own source.
     let trackPurchaseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.trackPurchase\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       trackPurchaseChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
-        let orderIdArg = args[0] as! String
-        let orderPriceArg = args[1] as! Double
-        let itemsArg = args[2] as! [PurchaseLineItemWire]
-        let deliveryTypeArg: String? = nilOrValue(args[3])
-        let deliveryAddressArg: String? = nilOrValue(args[4])
-        let paymentTypeArg: String? = nilOrValue(args[5])
-        let isTaxFreeArg = args[6] as! Bool
-        let isGiftPackageArg = args[7] as! Bool
-        let promocodeArg: String? = nilOrValue(args[8])
-        let orderCashArg: Double? = nilOrValue(args[9])
-        let orderBonusesArg: Double? = nilOrValue(args[10])
-        let orderDeliveryArg: Double? = nilOrValue(args[11])
-        let orderDiscountArg: Double? = nilOrValue(args[12])
-        let channelArg: String? = nilOrValue(args[13])
-        let customArg: [String: Any?]? = nilOrValue(args[14])
-        let recommendedSourceArg: [String: Any?]? = nilOrValue(args[15])
-        let streamArg: String? = nilOrValue(args[16])
-        let segmentArg: String? = nilOrValue(args[17])
-        let shopIdArg: String? = nilOrValue(args[18])
-        api.trackPurchase(orderId: orderIdArg, orderPrice: orderPriceArg, items: itemsArg, deliveryType: deliveryTypeArg, deliveryAddress: deliveryAddressArg, paymentType: paymentTypeArg, isTaxFree: isTaxFreeArg, isGiftPackage: isGiftPackageArg, promocode: promocodeArg, orderCash: orderCashArg, orderBonuses: orderBonusesArg, orderDelivery: orderDeliveryArg, orderDiscount: orderDiscountArg, channel: channelArg, custom: customArg, recommendedSource: recommendedSourceArg, stream: streamArg, segment: segmentArg, shopId: shopIdArg) { result in
+        let requestArg = args[0] as! PurchaseTrackingRequestWire
+        let sourceArg: TrackingSourceWire? = nilOrValue(args[1])
+        let shopIdArg: String? = nilOrValue(args[2])
+        api.trackPurchase(request: requestArg, source: sourceArg, shopId: shopIdArg) { result in
           switch result {
           case .success:
             reply(wrapResult(nil))
@@ -5724,15 +5795,14 @@ class PersonalizationHostApiSetup {
       notificationsGetHistoryChannel.setMessageHandler(nil)
     }
     /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-    /// via the native `Rees46.handlePush`. [event] is the index of the Dart
-    /// `PushEvent` enum: 0 = received (native `delivered`), 1 = delivered (native
-    /// `opened`: the notification is on screen), 2 = clicked.
+    /// via the native `Rees46.handlePush`. [event] is the name of the contract's
+    /// `PushEvent`: `delivered`, `opened`, `clicked` or `closed`.
     let handlePushChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       handlePushChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let payloadArg = args[0] as! [String: String]
-        let eventArg = args[1] as! Int64
+        let eventArg = args[1] as! String
         api.handlePush(payload: payloadArg, event: eventArg) { result in
           switch result {
           case .success:

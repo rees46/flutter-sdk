@@ -9,6 +9,7 @@ import com.personalization.core.SdkError
 import com.personalization.core.SdkResult
 import com.rees46.rees46_flutter_sdk.pigeon.FlutterError
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
+import com.rees46.rees46_flutter_sdk.pigeon.PurchaseTrackingRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.TrackingItemWire
 import com.rees46.rees46_flutter_sdk.pigeon.TrackingSourceWire
 import org.mockito.Mockito.mock
@@ -79,8 +80,16 @@ internal class TrackingBridgeTest {
         "popupShown" to { cb -> plugin.trackPopupShown(9L, "s", cb) },
         "purchase" to { cb ->
             plugin.trackPurchase(
-                "order-1", 1990.0, listOf(PurchaseLineItemWire("37", 1L, 1990.0)),
-                null, null, null, false, false, null, null, null, null, null, null, null, null, null, null, "s", cb,
+                PurchaseTrackingRequestWire(
+                    orderId = "order-1",
+                    orderPrice = 1990.0,
+                    items = listOf(PurchaseLineItemWire("37", 1L, 1990.0)),
+                    isTaxFree = false,
+                    isGiftPackage = false,
+                ),
+                TrackingSourceWire("dynamic", "block"),
+                "s",
+                cb,
             )
         },
     )
@@ -143,5 +152,47 @@ internal class TrackingBridgeTest {
         assertEquals("37", itemId)
         assertEquals(TrackingSourceType.DYNAMIC, native.type)
         assertEquals("block", native.code)
+    }
+
+    @Test
+    fun aPurchaseGoesWithItsOwnSource() {
+        plugin.trackPurchase(
+            PurchaseTrackingRequestWire(
+                orderId = "order-1",
+                orderPrice = 10.0,
+                items = listOf(PurchaseLineItemWire("37", 2L, 5.0, "l-1")),
+                isTaxFree = true,
+                isGiftPackage = true,
+                custom = mapOf("k" to "v"),
+            ),
+            TrackingSourceWire("dynamic", "block"),
+            "s",
+        ) { }
+        val (request, source) = reached().arguments
+        val native = request as com.personalization.api.models.purchase.PurchaseTrackingRequest
+        val nativeSource = source as com.personalization.api.models.tracking.TrackingSource
+
+        assertEquals("order-1", native.orderId)
+        assertEquals(2, native.items.single().amount)
+        assertEquals("l-1", native.items.single().lineId)
+        assertEquals(true, native.isTaxFree)
+        assertEquals(true, native.isGiftPackage)
+        assertEquals(mapOf("k" to "v"), native.custom)
+        assertEquals(TrackingSourceType.DYNAMIC, nativeSource.type)
+        assertEquals("block", nativeSource.code)
+    }
+
+    @Test
+    fun thePushEventsAreTheContractsByName() {
+        assertEquals(
+            listOf(
+                com.personalization.core.PushEvent.DELIVERED,
+                com.personalization.core.PushEvent.OPENED,
+                com.personalization.core.PushEvent.CLICKED,
+                com.personalization.core.PushEvent.CLOSED,
+                null,
+            ),
+            listOf("delivered", "opened", "clicked", "closed", "received").map(::pushEventOf),
+        )
     }
 }

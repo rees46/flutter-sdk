@@ -800,6 +800,43 @@ class OrderWire {
   });
 }
 
+/// `PurchaseTrackingRequest` of the contract (tracking.md).
+class PurchaseTrackingRequestWire {
+  final String orderId;
+  final double orderPrice;
+  final List<PurchaseLineItemWire> items;
+  final String? deliveryType;
+  final String? deliveryAddress;
+  final String? paymentType;
+  final bool isTaxFree;
+  final String? promocode;
+  final double? orderCash;
+  final double? orderBonuses;
+  final double? orderDelivery;
+  final double? orderDiscount;
+  final String? channel;
+  final Map<String, Object?>? custom;
+  final bool isGiftPackage;
+
+  const PurchaseTrackingRequestWire({
+    required this.orderId,
+    required this.orderPrice,
+    required this.items,
+    this.deliveryType,
+    this.deliveryAddress,
+    this.paymentType,
+    required this.isTaxFree,
+    this.promocode,
+    this.orderCash,
+    this.orderBonuses,
+    this.orderDelivery,
+    this.orderDiscount,
+    this.channel,
+    this.custom,
+    required this.isGiftPackage,
+  });
+}
+
 /// The released `setProfile`'s parameters (1.6.4), for the native SDKs' released profile method.
 class ProfileParamsWire {
   final String? email;
@@ -1645,27 +1682,11 @@ abstract class PersonalizationHostApi {
   /// Stores the attribution source natively for the next event.
   void trackSetSource(TrackingSourceWire source, String? shopId);
 
-  /// `tracking.purchase`. [custom] and [recommendedSource] are free-form.
+  /// `tracking.purchase`: the contract's request and the event's own source.
   @async
   void trackPurchase(
-    String orderId,
-    double orderPrice,
-    List<PurchaseLineItemWire> items,
-    String? deliveryType,
-    String? deliveryAddress,
-    String? paymentType,
-    bool isTaxFree,
-    bool isGiftPackage,
-    String? promocode,
-    double? orderCash,
-    double? orderBonuses,
-    double? orderDelivery,
-    double? orderDiscount,
-    String? channel,
-    Map<String, Object?>? custom,
-    Map<String, Object?>? recommendedSource,
-    String? stream,
-    String? segment,
+    PurchaseTrackingRequestWire request,
+    TrackingSourceWire? source,
     String? shopId,
   );
 
@@ -1904,11 +1925,10 @@ abstract class PersonalizationHostApi {
   );
 
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
-  /// `PushEvent` enum: 0 = received (native `delivered`), 1 = delivered (native
-  /// `opened`: the notification is on screen), 2 = clicked.
+  /// via the native `Rees46.handlePush`. [event] is the name of the contract's
+  /// `PushEvent`: `delivered`, `opened`, `clicked` or `closed`.
   @async
-  void handlePush(Map<String, String> payload, int event);
+  void handlePush(Map<String, String> payload, String event);
 
   // endregion
 

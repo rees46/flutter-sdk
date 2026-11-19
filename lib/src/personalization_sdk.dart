@@ -240,20 +240,24 @@ class PersonalizationSdk {
   /// host with its own messaging service calls). Prefer [REES46.handlePush],
   /// which resolves the target shop and drops unroutable pushes first.
   Future<void> handlePush(Map<String, String> payload, PushEvent event) {
-    return _api.handlePush(payload, event.index);
+    return _api.handlePush(payload, event.name);
   }
 
-  /// Fires this handle's registered push callbacks for [event]. Used by
-  /// [REES46.handlePush] to deliver an inbound push to the shop it routed to,
-  /// independent of the process-global Pigeon push channel.
+  /// Fires this handle's released push callbacks
+  /// ([setPushNotificationCallbacks]) for [event], as 1.6.4 did: a push that
+  /// reached the app is `onReceived`, its notification on screen `onDelivered`, a
+  /// tap `onClicked`; a dismissal has no released callback. Used by
+  /// [REES46.handlePush] for the shop it routed to.
   void dispatchInboundPush(PushEvent event, Map<String, String?> payload) {
     switch (event) {
-      case PushEvent.received:
-        _pushCallbacks.onPushReceived(payload);
       case PushEvent.delivered:
+        _pushCallbacks.onPushReceived(payload);
+      case PushEvent.opened:
         _pushCallbacks.onPushDelivered(payload);
       case PushEvent.clicked:
         _pushCallbacks.onPushClicked(payload);
+      case PushEvent.closed:
+        break;
     }
   }
 

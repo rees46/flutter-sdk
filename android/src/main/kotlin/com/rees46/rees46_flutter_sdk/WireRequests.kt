@@ -2,6 +2,7 @@ package com.rees46.rees46_flutter_sdk
 
 import com.personalization.LogLevel
 import com.personalization.PushProvider
+import com.personalization.core.PushEvent
 import com.personalization.Rees46Config
 import com.personalization.api.models.products.CategoryRequest
 import com.personalization.api.models.products.ProductsListRequest
@@ -12,6 +13,7 @@ import com.personalization.api.models.profile.ProfileCar
 import com.personalization.api.models.profile.ProfileKid
 import com.personalization.api.models.profile.ProfileUpdateRequest
 import com.personalization.api.models.purchase.PurchaseItemRequest
+import com.personalization.api.models.purchase.PurchaseTrackingRequest
 import com.personalization.api.models.recommendations.RecommendationRequest
 import com.personalization.api.models.search.SearchFullRequest
 import com.personalization.api.models.subscriptions.BackInStockProperties
@@ -26,6 +28,7 @@ import com.rees46.rees46_flutter_sdk.pigeon.ProfileCarWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileKidWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileUpdateRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.PurchaseLineItemWire
+import com.rees46.rees46_flutter_sdk.pigeon.PurchaseTrackingRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.RecommendationRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.SearchFullRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.SubscriptionsUpdateRequestWire
@@ -225,3 +228,30 @@ private fun toJsonValue(value: Any?): Any = when (value) {
     is List<*> -> org.json.JSONArray().also { array -> value.forEach { array.put(toJsonValue(it)) } }
     else -> value
 }
+
+/** The contract's `PushEvent` by its name, as Dart sends it; null for another name. */
+internal fun pushEventOf(name: String): PushEvent? = when (name) {
+    "delivered" -> PushEvent.DELIVERED
+    "opened" -> PushEvent.OPENED
+    "clicked" -> PushEvent.CLICKED
+    "closed" -> PushEvent.CLOSED
+    else -> null
+}
+
+internal fun PurchaseTrackingRequestWire.toNative(): PurchaseTrackingRequest = PurchaseTrackingRequest(
+    orderId = orderId,
+    orderPrice = orderPrice,
+    items = items.map { it.toNative() },
+    deliveryType = deliveryType,
+    deliveryAddress = deliveryAddress,
+    paymentType = paymentType,
+    isTaxFree = isTaxFree,
+    promocode = promocode,
+    orderCash = orderCash,
+    orderBonuses = orderBonuses,
+    orderDelivery = orderDelivery,
+    orderDiscount = orderDiscount,
+    channel = channel,
+    custom = custom,
+    isGiftPackage = isGiftPackage,
+)

@@ -2815,6 +2815,119 @@ class OrderWire {
   int get hashCode => Object.hashAll(_toList());
 }
 
+/// `PurchaseTrackingRequest` of the contract (tracking.md).
+class PurchaseTrackingRequestWire {
+  PurchaseTrackingRequestWire({
+    required this.orderId,
+    required this.orderPrice,
+    required this.items,
+    this.deliveryType,
+    this.deliveryAddress,
+    this.paymentType,
+    required this.isTaxFree,
+    this.promocode,
+    this.orderCash,
+    this.orderBonuses,
+    this.orderDelivery,
+    this.orderDiscount,
+    this.channel,
+    this.custom,
+    required this.isGiftPackage,
+  });
+
+  String orderId;
+
+  double orderPrice;
+
+  List<PurchaseLineItemWire> items;
+
+  String? deliveryType;
+
+  String? deliveryAddress;
+
+  String? paymentType;
+
+  bool isTaxFree;
+
+  String? promocode;
+
+  double? orderCash;
+
+  double? orderBonuses;
+
+  double? orderDelivery;
+
+  double? orderDiscount;
+
+  String? channel;
+
+  Map<String, Object?>? custom;
+
+  bool isGiftPackage;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      orderId,
+      orderPrice,
+      items,
+      deliveryType,
+      deliveryAddress,
+      paymentType,
+      isTaxFree,
+      promocode,
+      orderCash,
+      orderBonuses,
+      orderDelivery,
+      orderDiscount,
+      channel,
+      custom,
+      isGiftPackage,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static PurchaseTrackingRequestWire decode(Object result) {
+    result as List<Object?>;
+    return PurchaseTrackingRequestWire(
+      orderId: result[0]! as String,
+      orderPrice: result[1]! as double,
+      items: (result[2] as List<Object?>?)!.cast<PurchaseLineItemWire>(),
+      deliveryType: result[3] as String?,
+      deliveryAddress: result[4] as String?,
+      paymentType: result[5] as String?,
+      isTaxFree: result[6]! as bool,
+      promocode: result[7] as String?,
+      orderCash: result[8] as double?,
+      orderBonuses: result[9] as double?,
+      orderDelivery: result[10] as double?,
+      orderDiscount: result[11] as double?,
+      channel: result[12] as String?,
+      custom: (result[13] as Map<Object?, Object?>?)?.cast<String, Object?>(),
+      isGiftPackage: result[14]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PurchaseTrackingRequestWire ||
+        other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList());
+}
+
 /// The released `setProfile`'s parameters (1.6.4), for the native SDKs' released profile method.
 class ProfileParamsWire {
   ProfileParamsWire({
@@ -5354,104 +5467,107 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is OrderWire) {
       buffer.putUint8(171);
       writeValue(buffer, value.encode());
-    } else if (value is ProfileParamsWire) {
+    } else if (value is PurchaseTrackingRequestWire) {
       buffer.putUint8(172);
       writeValue(buffer, value.encode());
-    } else if (value is SubscriptionsUpdateRequestWire) {
+    } else if (value is ProfileParamsWire) {
       buffer.putUint8(173);
       writeValue(buffer, value.encode());
-    } else if (value is SubscriptionStatusWire) {
+    } else if (value is SubscriptionsUpdateRequestWire) {
       buffer.putUint8(174);
       writeValue(buffer, value.encode());
-    } else if (value is BackInStockPropertiesWire) {
+    } else if (value is SubscriptionStatusWire) {
       buffer.putUint8(175);
       writeValue(buffer, value.encode());
-    } else if (value is SegmentWire) {
+    } else if (value is BackInStockPropertiesWire) {
       buffer.putUint8(176);
       writeValue(buffer, value.encode());
-    } else if (value is PushTokenWire) {
+    } else if (value is SegmentWire) {
       buffer.putUint8(177);
       writeValue(buffer, value.encode());
-    } else if (value is PushActionWire) {
+    } else if (value is PushTokenWire) {
       buffer.putUint8(178);
       writeValue(buffer, value.encode());
-    } else if (value is PushTargetWire) {
+    } else if (value is PushActionWire) {
       buffer.putUint8(179);
       writeValue(buffer, value.encode());
-    } else if (value is PushPayloadWire) {
+    } else if (value is PushTargetWire) {
       buffer.putUint8(180);
       writeValue(buffer, value.encode());
-    } else if (value is NotificationStatisticsWire) {
+    } else if (value is PushPayloadWire) {
       buffer.putUint8(181);
       writeValue(buffer, value.encode());
-    } else if (value is NotificationMessageWire) {
+    } else if (value is NotificationStatisticsWire) {
       buffer.putUint8(182);
       writeValue(buffer, value.encode());
-    } else if (value is NotificationHistoryWire) {
+    } else if (value is NotificationMessageWire) {
       buffer.putUint8(183);
       writeValue(buffer, value.encode());
-    } else if (value is StoriesBlockWire) {
+    } else if (value is NotificationHistoryWire) {
       buffer.putUint8(184);
       writeValue(buffer, value.encode());
-    } else if (value is StoryWire) {
+    } else if (value is StoriesBlockWire) {
       buffer.putUint8(185);
       writeValue(buffer, value.encode());
-    } else if (value is StorySlideWire) {
+    } else if (value is StoryWire) {
       buffer.putUint8(186);
       writeValue(buffer, value.encode());
-    } else if (value is StoryElementWire) {
+    } else if (value is StorySlideWire) {
       buffer.putUint8(187);
       writeValue(buffer, value.encode());
-    } else if (value is StoryProductWire) {
+    } else if (value is StoryElementWire) {
       buffer.putUint8(188);
       writeValue(buffer, value.encode());
-    } else if (value is PurchaseProbabilityWire) {
+    } else if (value is StoryProductWire) {
       buffer.putUint8(189);
       writeValue(buffer, value.encode());
-    } else if (value is LoyaltyMemberWire) {
+    } else if (value is PurchaseProbabilityWire) {
       buffer.putUint8(190);
       writeValue(buffer, value.encode());
-    } else if (value is LoyaltyLevelWire) {
+    } else if (value is LoyaltyMemberWire) {
       buffer.putUint8(191);
       writeValue(buffer, value.encode());
-    } else if (value is LoyaltyStatusWire) {
+    } else if (value is LoyaltyLevelWire) {
       buffer.putUint8(192);
       writeValue(buffer, value.encode());
-    } else if (value is LoyaltyPromotionWire) {
+    } else if (value is LoyaltyStatusWire) {
       buffer.putUint8(193);
       writeValue(buffer, value.encode());
-    } else if (value is SliderWire) {
+    } else if (value is LoyaltyPromotionWire) {
       buffer.putUint8(194);
       writeValue(buffer, value.encode());
-    } else if (value is SliderBannerWire) {
+    } else if (value is SliderWire) {
       buffer.putUint8(195);
       writeValue(buffer, value.encode());
-    } else if (value is PollReviewWire) {
+    } else if (value is SliderBannerWire) {
       buffer.putUint8(196);
       writeValue(buffer, value.encode());
-    } else if (value is NpsCategoryWire) {
+    } else if (value is PollReviewWire) {
       buffer.putUint8(197);
       writeValue(buffer, value.encode());
-    } else if (value is CsatCampaignWire) {
+    } else if (value is NpsCategoryWire) {
       buffer.putUint8(198);
       writeValue(buffer, value.encode());
-    } else if (value is CesCampaignWire) {
+    } else if (value is CsatCampaignWire) {
       buffer.putUint8(199);
       writeValue(buffer, value.encode());
-    } else if (value is PollChannelWire) {
+    } else if (value is CesCampaignWire) {
       buffer.putUint8(200);
       writeValue(buffer, value.encode());
-    } else if (value is ProductRatingSummaryWire) {
+    } else if (value is PollChannelWire) {
       buffer.putUint8(201);
       writeValue(buffer, value.encode());
-    } else if (value is ProductReviewWire) {
+    } else if (value is ProductRatingSummaryWire) {
       buffer.putUint8(202);
       writeValue(buffer, value.encode());
-    } else if (value is ProductReviewsResponseWire) {
+    } else if (value is ProductReviewWire) {
       buffer.putUint8(203);
       writeValue(buffer, value.encode());
-    } else if (value is ClientReviewWire) {
+    } else if (value is ProductReviewsResponseWire) {
       buffer.putUint8(204);
+      writeValue(buffer, value.encode());
+    } else if (value is ClientReviewWire) {
+      buffer.putUint8(205);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -5548,70 +5664,72 @@ class _PigeonCodec extends StandardMessageCodec {
       case 171:
         return OrderWire.decode(readValue(buffer)!);
       case 172:
-        return ProfileParamsWire.decode(readValue(buffer)!);
+        return PurchaseTrackingRequestWire.decode(readValue(buffer)!);
       case 173:
-        return SubscriptionsUpdateRequestWire.decode(readValue(buffer)!);
+        return ProfileParamsWire.decode(readValue(buffer)!);
       case 174:
-        return SubscriptionStatusWire.decode(readValue(buffer)!);
+        return SubscriptionsUpdateRequestWire.decode(readValue(buffer)!);
       case 175:
-        return BackInStockPropertiesWire.decode(readValue(buffer)!);
+        return SubscriptionStatusWire.decode(readValue(buffer)!);
       case 176:
-        return SegmentWire.decode(readValue(buffer)!);
+        return BackInStockPropertiesWire.decode(readValue(buffer)!);
       case 177:
-        return PushTokenWire.decode(readValue(buffer)!);
+        return SegmentWire.decode(readValue(buffer)!);
       case 178:
-        return PushActionWire.decode(readValue(buffer)!);
+        return PushTokenWire.decode(readValue(buffer)!);
       case 179:
-        return PushTargetWire.decode(readValue(buffer)!);
+        return PushActionWire.decode(readValue(buffer)!);
       case 180:
-        return PushPayloadWire.decode(readValue(buffer)!);
+        return PushTargetWire.decode(readValue(buffer)!);
       case 181:
-        return NotificationStatisticsWire.decode(readValue(buffer)!);
+        return PushPayloadWire.decode(readValue(buffer)!);
       case 182:
-        return NotificationMessageWire.decode(readValue(buffer)!);
+        return NotificationStatisticsWire.decode(readValue(buffer)!);
       case 183:
-        return NotificationHistoryWire.decode(readValue(buffer)!);
+        return NotificationMessageWire.decode(readValue(buffer)!);
       case 184:
-        return StoriesBlockWire.decode(readValue(buffer)!);
+        return NotificationHistoryWire.decode(readValue(buffer)!);
       case 185:
-        return StoryWire.decode(readValue(buffer)!);
+        return StoriesBlockWire.decode(readValue(buffer)!);
       case 186:
-        return StorySlideWire.decode(readValue(buffer)!);
+        return StoryWire.decode(readValue(buffer)!);
       case 187:
-        return StoryElementWire.decode(readValue(buffer)!);
+        return StorySlideWire.decode(readValue(buffer)!);
       case 188:
-        return StoryProductWire.decode(readValue(buffer)!);
+        return StoryElementWire.decode(readValue(buffer)!);
       case 189:
-        return PurchaseProbabilityWire.decode(readValue(buffer)!);
+        return StoryProductWire.decode(readValue(buffer)!);
       case 190:
-        return LoyaltyMemberWire.decode(readValue(buffer)!);
+        return PurchaseProbabilityWire.decode(readValue(buffer)!);
       case 191:
-        return LoyaltyLevelWire.decode(readValue(buffer)!);
+        return LoyaltyMemberWire.decode(readValue(buffer)!);
       case 192:
-        return LoyaltyStatusWire.decode(readValue(buffer)!);
+        return LoyaltyLevelWire.decode(readValue(buffer)!);
       case 193:
-        return LoyaltyPromotionWire.decode(readValue(buffer)!);
+        return LoyaltyStatusWire.decode(readValue(buffer)!);
       case 194:
-        return SliderWire.decode(readValue(buffer)!);
+        return LoyaltyPromotionWire.decode(readValue(buffer)!);
       case 195:
-        return SliderBannerWire.decode(readValue(buffer)!);
+        return SliderWire.decode(readValue(buffer)!);
       case 196:
-        return PollReviewWire.decode(readValue(buffer)!);
+        return SliderBannerWire.decode(readValue(buffer)!);
       case 197:
-        return NpsCategoryWire.decode(readValue(buffer)!);
+        return PollReviewWire.decode(readValue(buffer)!);
       case 198:
-        return CsatCampaignWire.decode(readValue(buffer)!);
+        return NpsCategoryWire.decode(readValue(buffer)!);
       case 199:
-        return CesCampaignWire.decode(readValue(buffer)!);
+        return CsatCampaignWire.decode(readValue(buffer)!);
       case 200:
-        return PollChannelWire.decode(readValue(buffer)!);
+        return CesCampaignWire.decode(readValue(buffer)!);
       case 201:
-        return ProductRatingSummaryWire.decode(readValue(buffer)!);
+        return PollChannelWire.decode(readValue(buffer)!);
       case 202:
-        return ProductReviewWire.decode(readValue(buffer)!);
+        return ProductRatingSummaryWire.decode(readValue(buffer)!);
       case 203:
-        return ProductReviewsResponseWire.decode(readValue(buffer)!);
+        return ProductReviewWire.decode(readValue(buffer)!);
       case 204:
+        return ProductReviewsResponseWire.decode(readValue(buffer)!);
+      case 205:
         return ClientReviewWire.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -6344,26 +6462,10 @@ class PersonalizationHostApi {
     }
   }
 
-  /// `tracking.purchase`. [custom] and [recommendedSource] are free-form.
+  /// `tracking.purchase`: the contract's request and the event's own source.
   Future<void> trackPurchase(
-    String orderId,
-    double orderPrice,
-    List<PurchaseLineItemWire> items,
-    String? deliveryType,
-    String? deliveryAddress,
-    String? paymentType,
-    bool isTaxFree,
-    bool isGiftPackage,
-    String? promocode,
-    double? orderCash,
-    double? orderBonuses,
-    double? orderDelivery,
-    double? orderDiscount,
-    String? channel,
-    Map<String, Object?>? custom,
-    Map<String, Object?>? recommendedSource,
-    String? stream,
-    String? segment,
+    PurchaseTrackingRequestWire request,
+    TrackingSourceWire? source,
     String? shopId,
   ) async {
     final String pigeonVar_channelName =
@@ -6374,28 +6476,9 @@ class PersonalizationHostApi {
           pigeonChannelCodec,
           binaryMessenger: pigeonVar_binaryMessenger,
         );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel
-        .send(<Object?>[
-          orderId,
-          orderPrice,
-          items,
-          deliveryType,
-          deliveryAddress,
-          paymentType,
-          isTaxFree,
-          isGiftPackage,
-          promocode,
-          orderCash,
-          orderBonuses,
-          orderDelivery,
-          orderDiscount,
-          channel,
-          custom,
-          recommendedSource,
-          stream,
-          segment,
-          shopId,
-        ]);
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[request, source, shopId],
+    );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -7613,10 +7696,9 @@ class PersonalizationHostApi {
   }
 
   /// Routes a push to the shop it belongs to (payload `shop_id`) and tracks it
-  /// via the native `Rees46.handlePush`. [event] is the index of the Dart
-  /// `PushEvent` enum: 0 = received (native `delivered`), 1 = delivered (native
-  /// `opened`: the notification is on screen), 2 = clicked.
-  Future<void> handlePush(Map<String, String> payload, int event) async {
+  /// via the native `Rees46.handlePush`. [event] is the name of the contract's
+  /// `PushEvent`: `delivered`, `opened`, `clicked` or `closed`.
+  Future<void> handlePush(Map<String, String> payload, String event) async {
     final String pigeonVar_channelName =
         'dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.handlePush$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel =

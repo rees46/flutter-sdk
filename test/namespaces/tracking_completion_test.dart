@@ -18,16 +18,18 @@ final _events = <String, Future<void> Function(TrackingApi tracking)>{
   'trackAddToFavorites': (t) => t.addToFavorites('37'),
   'trackSyncFavorites': (t) => t.syncFavorites(const ['37']),
   'trackRemoveFromFavorites': (t) => t.removeFromFavorites('37'),
-  'trackStoryView': (t) => t.storyView(storyId: '1', slideId: '2'),
-  'trackStoryClick': (t) => t.storyClick(storyId: '1', slideId: '2'),
+  'trackStoryView': (t) => t.storyView('1', '2'),
+  'trackStoryClick': (t) => t.storyClick('1', '2'),
   'trackBannerView': (t) => t.bannerView('b1', 'slider'),
   'trackBannerClick': (t) => t.bannerClick('b1', 'slider'),
   'trackPopupShown': (t) => t.popupShown(9),
   'trackEvent': (t) => t.custom('an_event_the_shop_does_not_know'),
   'trackPurchase': (t) => t.purchase(
-    orderId: 'order-1',
-    orderPrice: 1990,
-    items: const [PurchaseLineItem(id: '37', amount: 1, price: 1990)],
+    const PurchaseTrackingRequest(
+      orderId: 'order-1',
+      orderPrice: 1990,
+      items: [PurchaseItem(id: '37', amount: 1, price: 1990)],
+    ),
   ),
 };
 

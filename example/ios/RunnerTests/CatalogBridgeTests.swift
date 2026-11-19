@@ -109,16 +109,17 @@ final class CatalogBridgeTests: XCTestCase {
     }
 
     func test_dartPushEvents_areTheNativeOnes() {
-        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent(0), .delivered, "Dart's received")
-        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent(1), .opened, "Dart's delivered: on screen")
-        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent(2), .clicked)
-        XCTAssertNil(PersonalizationHostApiImpl.pushEvent(3))
+        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent("delivered"), .delivered)
+        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent("opened"), .opened)
+        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent("clicked"), .clicked)
+        XCTAssertEqual(PersonalizationHostApiImpl.pushEvent("closed"), .closed)
+        XCTAssertNil(PersonalizationHostApiImpl.pushEvent("received"))
     }
 
     func test_handlePush_withAnUnknownEvent_isAnInvalidArgument() {
         var answer: Result<Void, Error>?
 
-        plugin.handlePush(payload: ["id": "c", "type": "bulk"], event: 7) { answer = $0 }
+        plugin.handlePush(payload: ["id": "c", "type": "bulk"], event: "received") { answer = $0 }
 
         guard case .failure(let error as PigeonError)? = answer else {
             return XCTFail("expected a failure")
@@ -234,6 +235,7 @@ final class RecordingTracking: TrackingAPI {
     private(set) var productViews: [(itemId: String, source: TrackingSource?)] = []
     private(set) var customs: [Custom] = []
     private(set) var purchases: [PurchaseTrackingRequest] = []
+    private(set) var purchaseSources: [TrackingSource?] = []
     private(set) var sources: [TrackingSource] = []
 
     func productView(itemId: String, source: TrackingSource?, completion: @escaping (Result<Void, SdkError>) -> Void) {
@@ -252,6 +254,7 @@ final class RecordingTracking: TrackingAPI {
     func storyClick(storyId: String, slideId: String, code: String?, completion: @escaping (Result<Void, SdkError>) -> Void) { completion(answer) }
     func purchase(_ request: PurchaseTrackingRequest, source: TrackingSource?, completion: @escaping (Result<Void, SdkError>) -> Void) {
         purchases.append(request)
+        purchaseSources.append(source)
         completion(answer)
     }
     func custom(event: String, time: Int?, category: String?, label: String?, value: Int?, customFields: [String: Any]?, completion: @escaping (Result<Void, SdkError>) -> Void) {

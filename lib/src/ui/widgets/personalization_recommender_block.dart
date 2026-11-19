@@ -398,19 +398,13 @@ class _PersonalizationRecommenderBlockState
   ) {
     final code = widget.code;
     final sdk = _sdk;
-    if (code != null && sdk != null) unawaited(_trackSource(sdk, code));
-    callback?.call(product);
-  }
-
-  /// Источник `dynamic` для следующих событий; сбой трекинга нажатию не мешает.
-  static Future<void> _trackSource(PersonalizationSdk sdk, String code) async {
-    try {
-      await sdk.tracking.setSource(
+    // Источник `dynamic` для следующих событий; сбой трекинга нажатию не мешает.
+    if (code != null && sdk != null) {
+      sdk.tracking.setSource(
         TrackingSource(type: TrackingSourceType.dynamicBlock, code: code),
       );
-    } catch (error) {
-      debugPrint('PersonalizationRecommenderBlock: setSource failed — $error');
     }
+    callback?.call(product);
   }
 
   @override

@@ -169,7 +169,7 @@ final List<_TrackingDemo> _trackingDemos = [
     key: 'tracking_set_source',
     label: 'Tracking: set source',
     method: 'setSource',
-    call: (tracking) => tracking.setSource(
+    call: (tracking) async => tracking.setSource(
       const TrackingSource(
         type: TrackingSourceType.dynamicBlock,
         code: _demoSourceCode,
@@ -780,9 +780,11 @@ class _InitPageState extends State<InitPage> {
     if (_initState != InitState.initialized) return;
     try {
       await _sdk.tracking.purchase(
-        orderId: 'example-order-1',
-        orderPrice: 99.0,
-        items: const [PurchaseLineItem(id: 'sku-1', amount: 1, price: 99.0)],
+        const PurchaseTrackingRequest(
+          orderId: 'example-order-1',
+          orderPrice: 99.0,
+          items: [PurchaseItem(id: 'sku-1', amount: 1, price: 99.0)],
+        ),
       );
       if (!mounted) return;
       ScaffoldMessenger.of(

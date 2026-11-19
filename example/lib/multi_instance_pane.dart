@@ -129,7 +129,7 @@ class _MultiInstancePaneState extends State<MultiInstancePane> {
       'title': note,
       'body': note,
     };
-    final routed = await REES46.handlePush(payload, PushEvent.received);
+    final routed = await REES46.handlePush(payload, PushEvent.delivered);
     final result = routed != null ? 'routed:$routed' : 'dropped';
     setState(() => _lastPushResult = result);
     _addLog('injected shop_id=${shopId ?? '—'} → $result');

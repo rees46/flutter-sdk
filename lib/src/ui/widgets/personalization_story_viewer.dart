@@ -481,7 +481,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         _trackV3(StoriesV3Event.view, story, slide);
       } else if (storyTrackableId(story.id) && storyTrackableId(slide.id)) {
         sdk.tracking
-            .storyView(storyId: story.id, slideId: slide.id, code: widget.code)
+            .storyView(story.id, slide.id, code: widget.code)
             .catchError((Object error) {
               debugPrint('PersonalizationStoryViewer: storyView — $error');
             });
@@ -508,11 +508,11 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         !storyTrackableId(slide.id)) {
       return;
     }
-    sdk.tracking
-        .storyClick(storyId: story.id, slideId: slide.id, code: widget.code)
-        .catchError((Object error) {
-          debugPrint('PersonalizationStoryViewer: storyClick — $error');
-        });
+    sdk.tracking.storyClick(story.id, slide.id, code: widget.code).catchError((
+      Object error,
+    ) {
+      debugPrint('PersonalizationStoryViewer: storyClick — $error');
+    });
   }
 
   // Хост API v3 просмотра: режима над ним, без него — глобальный; `null` — старый API.

@@ -576,50 +576,30 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
   }
 
   func trackPurchase(
-    orderId: String,
-    orderPrice: Double,
-    items: [PurchaseLineItemWire],
-    deliveryType: String?,
-    deliveryAddress: String?,
-    paymentType: String?,
-    isTaxFree: Bool,
-    isGiftPackage: Bool,
-    promocode: String?,
-    orderCash: Double?,
-    orderBonuses: Double?,
-    orderDelivery: Double?,
-    orderDiscount: Double?,
-    channel: String?,
-    custom: [String: Any?]?,
-    recommendedSource: [String: Any?]?,
-    stream: String?,
-    segment: String?,
+    request: PurchaseTrackingRequestWire,
+    source: TrackingSourceWire?,
     shopId: String?,
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
-    let request = PurchaseTrackingRequest(
-      orderId: orderId,
-      orderPrice: orderPrice,
-      items: items.map(\.native),
-      deliveryType: deliveryType,
-      deliveryAddress: deliveryAddress,
-      paymentType: paymentType,
-      isTaxFree: isTaxFree,
-      promocode: promocode,
-      orderCash: orderCash,
-      orderBonuses: orderBonuses,
-      orderDelivery: orderDelivery,
-      orderDiscount: orderDiscount,
-      channel: channel,
-      custom: custom.map(nativeObject),
-      recommendedSource: recommendedSource.map(nativeObject),
-      stream: stream,
-      segment: segment,
-      isGiftPackage: isGiftPackage
+    let native = PurchaseTrackingRequest(
+      orderId: request.orderId,
+      orderPrice: request.orderPrice,
+      items: request.items.map(\.native),
+      deliveryType: request.deliveryType,
+      deliveryAddress: request.deliveryAddress,
+      paymentType: request.paymentType,
+      isTaxFree: request.isTaxFree,
+      promocode: request.promocode,
+      orderCash: request.orderCash,
+      orderBonuses: request.orderBonuses,
+      orderDelivery: request.orderDelivery,
+      orderDiscount: request.orderDiscount,
+      channel: request.channel,
+      custom: request.custom.map(nativeObject),
+      isGiftPackage: request.isGiftPackage
     )
-    // No per-call source: Dart only stores one through `setSource`, which the SDK attaches itself.
     track(shopId, completion) { tracking in
-      try await tracking.purchase(request, source: nil)
+      try await tracking.purchase(native, source: try Self.source(source))
     }
   }
 
@@ -916,7 +896,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     }
   }
 
-  func handlePush(payload: [String: String], event: Int64, completion: @escaping (Result<Void, Error>) -> Void) {
+  func handlePush(payload: [String: String], event: String, completion: @escaping (Result<Void, Error>) -> Void) {
     guard let native = Self.pushEvent(event) else {
       completion(.failure(BridgeFailure.error(.invalidArgument("unknown push event: \(event)"))))
       return
@@ -925,13 +905,14 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     completion(.success(()))
   }
 
-  /// The index of Dart's `PushEvent`: `received` is the native `delivered`, Dart's `delivered` (the
-  /// notification is on screen) the native `opened`, `clicked` the same.
-  static func pushEvent(_ index: Int64) -> Rees46.PushEvent? {
-    switch index {
-    case 0: return .delivered
-    case 1: return .opened
-    case 2: return .clicked
+  /// The contract's `PushEvent` by its name, as Dart sends it: `delivered`, `opened`, `clicked`,
+  /// `closed`.
+  static func pushEvent(_ name: String) -> Rees46.PushEvent? {
+    switch name {
+    case "delivered": return .delivered
+    case "opened": return .opened
+    case "clicked": return .clicked
+    case "closed": return .closed
     default: return nil
     }
   }

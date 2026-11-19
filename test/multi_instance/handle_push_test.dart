@@ -59,17 +59,17 @@ void main() {
     REES46.initialize(cfg('A'));
     REES46.initialize(cfg('B'));
 
-    final routed = await REES46.handlePush(push('B'), PushEvent.received);
+    final routed = await REES46.handlePush(push('B'), PushEvent.delivered);
 
     expect(routed, 'B');
     expect(nativeCalls, hasLength(1));
-    expect(nativeCalls.single[1], PushEvent.received.index); // event index
+    expect(nativeCalls.single[1], 'delivered'); // the event's name
   });
 
   test('unknown shop is dropped — no native call', () async {
     REES46.initialize(cfg('A'));
 
-    final routed = await REES46.handlePush(push('zzz'), PushEvent.received);
+    final routed = await REES46.handlePush(push('zzz'), PushEvent.delivered);
 
     expect(routed, isNull);
     expect(nativeCalls, isEmpty);
@@ -78,7 +78,7 @@ void main() {
   test('no shop_id with a single live shop falls back to it', () async {
     REES46.initialize(cfg('A'));
 
-    final routed = await REES46.handlePush(push(null), PushEvent.received);
+    final routed = await REES46.handlePush(push(null), PushEvent.delivered);
 
     expect(routed, 'A');
     expect(nativeCalls, hasLength(1));
@@ -88,7 +88,7 @@ void main() {
     REES46.initialize(cfg('A'));
     REES46.initialize(cfg('B'));
 
-    final routed = await REES46.handlePush(push(null), PushEvent.received);
+    final routed = await REES46.handlePush(push(null), PushEvent.delivered);
 
     expect(routed, isNull);
     expect(nativeCalls, isEmpty);
@@ -98,7 +98,7 @@ void main() {
     REES46.registerShops([cfg('A')]);
     expect(REES46.liveShopIds, isEmpty);
 
-    final routed = await REES46.handlePush(push('A'), PushEvent.received);
+    final routed = await REES46.handlePush(push('A'), PushEvent.delivered);
 
     expect(routed, 'A');
     expect(REES46.liveShopIds, ['A']); // materialized on the push
@@ -112,10 +112,33 @@ void main() {
     handles['A']!.setPushNotificationCallbacks(onReceived: (p) => gotA = p);
     handles['B']!.setPushNotificationCallbacks(onReceived: (p) => gotB = p);
 
-    await REES46.handlePush(push('B'), PushEvent.received);
+    await REES46.handlePush(push('B'), PushEvent.delivered);
 
     expect(gotB, isNotNull);
     expect(gotB!['shop_id'], 'B');
     expect(gotA, isNull);
+  });
+
+  test('the events reach native by name, and the released callbacks hear them '
+      'as in 1.6.4', () async {
+    REES46.initialize(cfg('A'));
+    final heard = <String>[];
+    handles['A']!.setPushNotificationCallbacks(
+      onReceived: (_) => heard.add('onReceived'),
+      onDelivered: (_) => heard.add('onDelivered'),
+      onClicked: (_) => heard.add('onClicked'),
+    );
+
+    for (final event in PushEvent.values) {
+      await REES46.handlePush(push('A'), event);
+    }
+
+    expect(nativeCalls.map((c) => c[1]), [
+      'delivered',
+      'opened',
+      'clicked',
+      'closed',
+    ]);
+    expect(heard, ['onReceived', 'onDelivered', 'onClicked']);
   });
 }

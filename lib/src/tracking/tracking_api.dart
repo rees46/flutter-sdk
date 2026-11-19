@@ -1,7 +1,10 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show debugPrint;
+
 import '../errors/sdk_error.dart';
 import '../pigeon/personalization_api.g.dart' as pigeon;
 import '../popups_v3/popups_v3_hooks.dart';
-import 'purchase_line_item.dart';
 import 'tracking_models.dart';
 
 /// Standard tracking events — the `tracking` namespace of the SDK.
@@ -29,32 +32,25 @@ class TrackingApi {
   final void Function(int popupId)? _onPopupShown;
 
   /// Product page opened (`view`).
-  Future<void> productView(String itemId, {TrackingSource? source}) {
-    _requireNonEmpty(itemId, 'itemId');
-    return sdkCall(() => _api.trackProductView(itemId, source?._wire, _shopId));
-  }
+  Future<void> productView(String itemId, {TrackingSource? source}) => _send({
+    'itemId': itemId,
+  }, () => _api.trackProductView(itemId, source?._wire, _shopId));
 
   /// Category listing opened (`category`).
-  Future<void> categoryView(String categoryId) {
-    _requireNonEmpty(categoryId, 'categoryId');
-    return sdkCall(() => _api.trackCategoryView(categoryId, _shopId));
-  }
+  Future<void> categoryView(String categoryId) => _send({
+    'categoryId': categoryId,
+  }, () => _api.trackCategoryView(categoryId, _shopId));
 
   /// Search query issued by the user (`search`).
   ///
   /// Pass [results] when the host runs its own search and knows the ids it showed.
-  Future<void> search(String query, {List<String>? results}) {
-    _requireNonEmpty(query, 'query');
-    return sdkCall(() => _api.trackSearch(query, results, _shopId));
-  }
+  Future<void> search(String query, {List<String>? results}) =>
+      _send({'query': query}, () => _api.trackSearch(query, results, _shopId));
 
   /// One product added to the cart (`cart`).
-  Future<void> addToCart(TrackingItem item, {TrackingSource? source}) {
-    _requireNonEmpty(item.id, 'item.id');
-    return sdkCall(
-      () => _api.trackAddToCart(item._wire, source?._wire, _shopId),
-    );
-  }
+  Future<void> addToCart(TrackingItem item, {TrackingSource? source}) => _send({
+    'item.id': item.id,
+  }, () => _api.trackAddToCart(item._wire, source?._wire, _shopId));
 
   /// Full cart contents after a change (`cart` with `full_cart`).
   ///
@@ -67,18 +63,15 @@ class TrackingApi {
   }
 
   /// One product removed from the cart (`remove_from_cart`).
-  Future<void> removeFromCart(String itemId) {
-    _requireNonEmpty(itemId, 'itemId');
-    return sdkCall(() => _api.trackRemoveFromCart(itemId, _shopId));
-  }
+  Future<void> removeFromCart(String itemId) => _send({
+    'itemId': itemId,
+  }, () => _api.trackRemoveFromCart(itemId, _shopId));
 
   /// One product added to favorites (`wish`).
-  Future<void> addToFavorites(String itemId, {TrackingSource? source}) {
-    _requireNonEmpty(itemId, 'itemId');
-    return sdkCall(
-      () => _api.trackAddToFavorites(itemId, source?._wire, _shopId),
-    );
-  }
+  Future<void> addToFavorites(String itemId, {TrackingSource? source}) => _send(
+    {'itemId': itemId},
+    () => _api.trackAddToFavorites(itemId, source?._wire, _shopId),
+  );
 
   /// Full favorites contents after a change (`wish` with `full_wish`).
   ///
@@ -88,35 +81,20 @@ class TrackingApi {
   }
 
   /// One product removed from favorites (`remove_wish`).
-  Future<void> removeFromFavorites(String itemId) {
-    _requireNonEmpty(itemId, 'itemId');
-    return sdkCall(() => _api.trackRemoveFromFavorites(itemId, _shopId));
-  }
+  Future<void> removeFromFavorites(String itemId) => _send({
+    'itemId': itemId,
+  }, () => _api.trackRemoveFromFavorites(itemId, _shopId));
 
-  /// A story slide was shown (`track/stories`, `view`).
+  /// Slide [slideId] of story [storyId] was shown (`track/stories`, `view`).
   ///
   /// [code] is the stories block code; when omitted the native SDK uses the block it last
   /// loaded.
-  Future<void> storyView({
-    required String storyId,
-    required String slideId,
-    String? code,
-  }) {
-    _requireNonEmpty(storyId, 'storyId');
-    _requireNonEmpty(slideId, 'slideId');
-    return sdkCall(() => _api.trackStoryView(storyId, slideId, code, _shopId));
-  }
+  Future<void> storyView(String storyId, String slideId, {String? code}) =>
+      sdkCall(() => _api.trackStoryView(storyId, slideId, code, _shopId));
 
-  /// A story slide was tapped (`track/stories`, `click`).
-  Future<void> storyClick({
-    required String storyId,
-    required String slideId,
-    String? code,
-  }) {
-    _requireNonEmpty(storyId, 'storyId');
-    _requireNonEmpty(slideId, 'slideId');
-    return sdkCall(() => _api.trackStoryClick(storyId, slideId, code, _shopId));
-  }
+  /// Slide [slideId] of story [storyId] was tapped (`track/stories`, `click`).
+  Future<void> storyClick(String storyId, String slideId, {String? code}) =>
+      sdkCall(() => _api.trackStoryClick(storyId, slideId, code, _shopId));
 
   /// A banner of a slider was shown (`track/slider`, `view`): once, when it first
   /// became visible in this showing of the slider. [bannerId] and [code] are the
@@ -141,70 +119,56 @@ class TrackingApi {
     return sdkCall(() => _api.trackPopupShown(popupId, _shopId));
   }
 
-  /// Stores the attribution source for subsequent events.
+  /// Stores the attribution source for 48 hours: it goes as `source` with the shop's
+  /// `/push` events until it ends or is replaced.
   ///
   /// Use it when the source outlives a single call — a user entering the catalog from a
   /// recommender block. For a single event prefer the `source` parameter.
-  Future<void> setSource(TrackingSource source) {
-    return sdkCall(() => _api.trackSetSource(source._wire, _shopId));
+  void setSource(TrackingSource source) {
+    unawaited(
+      _api.trackSetSource(source._wire, _shopId).catchError((Object error) {
+        debugPrint('REES46: tracking.setSource failed: $error');
+      }),
+    );
   }
 
-  /// Completed order (`purchase`).
-  Future<void> purchase({
-    required String orderId,
-    required double orderPrice,
-    required List<PurchaseLineItem> items,
-    String? deliveryType,
-    String? deliveryAddress,
-    String? paymentType,
-    bool isTaxFree = false,
-    bool isGiftPackage = false,
-    String? promocode,
-    double? orderCash,
-    double? orderBonuses,
-    double? orderDelivery,
-    double? orderDiscount,
-    String? channel,
-    Map<String, Object?>? custom,
-    Map<String, Object?>? recommendedSource,
-    String? stream,
-    String? segment,
+  /// A completed order (`purchase`): [request] with its lines, and the order's own
+  /// [source] (`recommended_by`). An empty `orderId` or no lines is
+  /// `invalidArgument`.
+  Future<void> purchase(
+    PurchaseTrackingRequest request, {
+    TrackingSource? source,
   }) {
-    _requireNonEmpty(orderId, 'orderId');
-    if (items.isEmpty) {
-      throw ArgumentError.value(items, 'items', 'must be non-empty');
-    }
     PopupsV3Hooks.purchase(this);
     return sdkCall(
       () => _api.trackPurchase(
-        orderId,
-        orderPrice,
-        items
-            .map(
-              (e) => pigeon.PurchaseLineItemWire(
-                id: e.id,
-                amount: e.amount,
-                price: e.price,
-                lineId: e.lineId,
-                fashionSize: e.fashionSize,
+        pigeon.PurchaseTrackingRequestWire(
+          orderId: request.orderId,
+          orderPrice: request.orderPrice,
+          items: [
+            for (final item in request.items)
+              pigeon.PurchaseLineItemWire(
+                id: item.id,
+                amount: item.amount,
+                price: item.price,
+                lineId: item.lineId,
+                fashionSize: item.fashionSize,
               ),
-            )
-            .toList(),
-        deliveryType,
-        deliveryAddress,
-        paymentType,
-        isTaxFree,
-        isGiftPackage,
-        promocode,
-        orderCash,
-        orderBonuses,
-        orderDelivery,
-        orderDiscount,
-        channel,
-        custom,
-        recommendedSource,
-        stream,
-        segment,
+          ],
+          deliveryType: request.deliveryType,
+          deliveryAddress: request.deliveryAddress,
+          paymentType: request.paymentType,
+          isTaxFree: request.isTaxFree,
+          promocode: request.promocode,
+          orderCash: request.orderCash,
+          orderBonuses: request.orderBonuses,
+          orderDelivery: request.orderDelivery,
+          orderDiscount: request.orderDiscount,
+          channel: request.channel,
+          custom: request.custom,
+          isGiftPackage: request.isGiftPackage,
+        ),
+        source?._wire,
         _shopId,
       ),
     );
@@ -222,9 +186,9 @@ class TrackingApi {
     int? value,
     Map<String, Object?>? customFields,
   }) {
-    _requireNonEmpty(event, 'event');
     PopupsV3Hooks.trackEvent(this, event);
-    return sdkCall(
+    return _send(
+      {'event': event},
       () => _api.trackEvent(
         event,
         time,
@@ -237,10 +201,20 @@ class TrackingApi {
     );
   }
 
-  void _requireNonEmpty(String value, String name) {
-    if (value.isEmpty) {
-      throw ArgumentError.value(value, name, 'must be non-empty');
+  /// [call] once each of [required] is non-empty; an empty one fails the call with
+  /// `invalidArgument`, as the native SDKs do, and nothing is sent.
+  Future<void> _send(
+    Map<String, String> required,
+    Future<void> Function() call,
+  ) {
+    for (final MapEntry(:key, :value) in required.entries) {
+      if (value.isEmpty) {
+        return Future<void>.error(
+          SdkException(SdkErrorInvalidArgument('$key must not be empty')),
+        );
+      }
     }
+    return sdkCall(call);
   }
 }
 

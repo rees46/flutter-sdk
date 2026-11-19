@@ -153,11 +153,14 @@ final class TrackingBridgeTests: XCTestCase {
         let done = expectation(description: "answered")
 
         plugin.trackPurchase(
-            orderId: "o-1", orderPrice: 100, items: [PurchaseLineItemWire(id: "37", amount: 2, price: 50, lineId: "l-1")],
-            deliveryType: "courier", deliveryAddress: nil, paymentType: "card", isTaxFree: true, isGiftPackage: true,
-            promocode: "SALE", orderCash: 90, orderBonuses: 10, orderDelivery: nil, orderDiscount: nil, channel: "app",
-            custom: ["k": "v"], recommendedSource: ["source": ["from": "dynamic", "code": "b"]],
-            stream: nil, segment: nil, shopId: shopId
+            request: PurchaseTrackingRequestWire(
+                orderId: "o-1", orderPrice: 100, items: [PurchaseLineItemWire(id: "37", amount: 2, price: 50, lineId: "l-1")],
+                deliveryType: "courier", deliveryAddress: nil, paymentType: "card", isTaxFree: true,
+                promocode: "SALE", orderCash: 90, orderBonuses: 10, orderDelivery: nil, orderDiscount: nil, channel: "app",
+                custom: ["k": "v"], isGiftPackage: true
+            ),
+            source: TrackingSourceWire(type: "dynamic", code: "b"),
+            shopId: shopId
         ) { _ in done.fulfill() }
 
         wait(for: [done], timeout: 5)
@@ -168,7 +171,9 @@ final class TrackingBridgeTests: XCTestCase {
         XCTAssertEqual(request?.isTaxFree, true)
         XCTAssertEqual(request?.isGiftPackage, true)
         XCTAssertEqual(request?.custom?["k"] as? String, "v")
-        XCTAssertEqual((request?.recommendedSource?["source"] as? [String: Any])?["code"] as? String, "b")
+        XCTAssertNil(request?.recommendedSource, "the contract's purchase has no free-form source")
+        XCTAssertEqual(native.recordingTracking.purchaseSources.first??.type, .dynamic)
+        XCTAssertEqual(native.recordingTracking.purchaseSources.first??.code, "b")
     }
 
     /// The bridge waits for each event's acceptance on its own task: a shop's events must still reach
