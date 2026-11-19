@@ -11,6 +11,7 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.personalization.Rees46
 import com.personalization.core.PushEvent
@@ -78,13 +79,19 @@ object Rees46PushNotifier {
     }
 
     /**
-     * Builds and posts the notification; true once it is posted. Must run off the main thread (downloads
-     * images). [shopId], the shop the push routed to, rides on the tap's intent so the click finds it.
+     * Builds and posts the notification; true once it is posted, false when the app may not show it — the
+     * notifications are off for the app (on Android 13+ also without the `POST_NOTIFICATIONS` permission) or
+     * its channel is blocked — so nothing reports it shown. Must run off the main thread (downloads images).
+     * [shopId], the shop the push routed to, rides on the tap's and the dismissal's intents.
      */
     fun show(context: Context, data: NotificationData, shopId: String? = null): Boolean {
         Log.d(TAG, "show() title=${data.title} body=${data.body} image=${data.image}")
         try {
             ensureChannel(context)
+            if (!canPost(context)) {
+                Log.d(TAG, "notifications are off for the app or its channel: nothing posted")
+                return false
+            }
 
             val bigPicture = data.image?.split(",")?.firstOrNull()?.trim()
                 ?.takeIf { it.isNotEmpty() }?.let(::loadBitmap)
@@ -109,6 +116,8 @@ object Rees46PushNotifier {
             }
 
             val id = (data.title.orEmpty() + data.body.orEmpty()).hashCode()
+            // Dismissed without a tap: track/closed.
+            pushData(shopId, data)?.let { builder.setDeleteIntent(Rees46PushDismissReceiver.intent(context, id, it)) }
             val manager = ContextCompat.getSystemService(context, NotificationManager::class.java)
             if (manager == null) {
                 Log.e(TAG, "NotificationManager unavailable — cannot post notification")
@@ -121,6 +130,17 @@ object Rees46PushNotifier {
             Log.e(TAG, "Failed to post notification", t)
             return false
         }
+    }
+
+    /** Whether the app may post to its push channel: notifications on, and the channel not blocked. */
+    private fun canPost(context: Context): Boolean {
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = ContextCompat.getSystemService(context, NotificationManager::class.java)
+                ?.getNotificationChannel(CHANNEL_ID)
+            if (channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE) return false
+        }
+        return true
     }
 
     /**

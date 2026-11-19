@@ -104,6 +104,8 @@ class Rees46FlutterSdkPlugin :
     /** The SDK's push events and new tokens of every shop, for Dart. */
     private var pushSinks: List<Cancellable> = emptyList()
 
+    /** Which tokens Dart's `onToken` hears. */
+    private val tokenReports = TokenReports()
 
     private val onNewIntentListener =
         object : PluginRegistry.NewIntentListener {
@@ -119,6 +121,8 @@ class Rees46FlutterSdkPlugin :
         flutterApi = PersonalizationFlutterApi(flutterPluginBinding.binaryMessenger)
         popupApi = PersonalizationPopupFlutterApi(flutterPluginBinding.binaryMessenger)
         stateApi = PersonalizationStateFlutterApi(flutterPluginBinding.binaryMessenger)
+        // The tokens the SDK already had come at once to a new subscriber: they are not new.
+        tokenReports.beginReplay()
         pushSinks = listOf(
             Rees46.onPushEvent { event, payload ->
                 val wire = runCatching { payload.toWire() }.getOrNull() ?: return@onPushEvent
@@ -127,13 +131,16 @@ class Rees46FlutterSdkPlugin :
                 }
             },
             Rees46.onPushToken { token ->
-                runCatching { stateApi?.onPushToken(token.toWire()) { } }
+                if (tokenReports.isNew(token.provider, token.token)) {
+                    runCatching { stateApi?.onPushToken(token.toWire()) { } }
+                }
                 // The shops' snapshots carry the token: they changed.
                 BridgeShops.shopIds().forEach { shopId ->
                     runCatching { Rees46.instance(shopId) }.getOrNull()?.let { emit(snapshotOf(it)) }
                 }
             },
         )
+        android.os.Handler(android.os.Looper.getMainLooper()).post { tokenReports.endReplay() }
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -665,7 +672,12 @@ class Rees46FlutterSdkPlugin :
         provider: String,
         shopId: String?,
         callback: (Result<Unit>) -> Unit,
-    ) = call(shopId, callback) { it.notifications.setPushToken(token, pushProvider(provider), done(callback)) }
+    ) = call(shopId, callback) {
+        val native = pushProvider(provider)
+        // A token the app hands over is not one the SDK got from its provider: Dart's onToken does not hear it.
+        tokenReports.appSet(native, token)
+        it.notifications.setPushToken(token, native, done(callback))
+    }
 
     override fun notificationsGetHistory(
         shopSecret: String,

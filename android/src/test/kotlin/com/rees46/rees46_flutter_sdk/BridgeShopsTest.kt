@@ -155,3 +155,21 @@ internal class BridgeShopsTest {
         assertEquals(listOf("held"), second)
     }
 }
+
+/** Dart's onToken hears a token the SDK got from its provider, as the contract has it, and no other. */
+internal class TokenReportsTest {
+
+    @Test
+    fun aTokenTheAppHandedOverOrTheSdkAlreadyHadIsNotNew() {
+        val reports = TokenReports()
+
+        reports.beginReplay()
+        assertEquals(false, reports.isNew(com.personalization.PushProvider.FCM, "stored"))
+        reports.endReplay()
+
+        reports.appSet(com.personalization.PushProvider.FCM, "app-token")
+        assertEquals(false, reports.isNew(com.personalization.PushProvider.FCM, "app-token"))
+        assertEquals(true, reports.isNew(com.personalization.PushProvider.HMS, "app-token"))
+        assertEquals(true, reports.isNew(com.personalization.PushProvider.FCM, "from-fcm"))
+    }
+}

@@ -160,3 +160,35 @@ internal fun snapshotOf(sdk: SDK, state: SdkState = sdk.state): SdkSnapshotWire 
         },
     )
 }
+
+/**
+ * Which push tokens Dart's `onToken` hears: a token the SDK got from its provider, as the contract has it — not
+ * one the app handed over itself (`notifications.setPushToken`), and not the tokens the SDK already had when the
+ * plugin subscribed, which it tells a new subscriber at once. Dart's copy of the shop's tokens follows every one
+ * of them all the same, through the shop's snapshot.
+ */
+internal class TokenReports {
+    private val appSet = ConcurrentHashMap.newKeySet<String>()
+
+    @Volatile
+    private var replaying = false
+
+    /** Dart handed [token] of [provider] over itself. */
+    fun appSet(provider: PushProvider, token: String) {
+        appSet += key(provider, token)
+    }
+
+    /** The SDK tells the tokens it already had from now until [endReplay]. */
+    fun beginReplay() {
+        replaying = true
+    }
+
+    fun endReplay() {
+        replaying = false
+    }
+
+    /** Whether the token is one the SDK got from [provider] now, for Dart's `onToken`. */
+    fun isNew(provider: PushProvider, token: String): Boolean = !replaying && key(provider, token) !in appSet
+
+    private fun key(provider: PushProvider, token: String) = "${provider.name}:$token"
+}
