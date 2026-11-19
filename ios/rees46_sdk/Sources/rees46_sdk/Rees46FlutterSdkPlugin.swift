@@ -152,6 +152,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
   private var subscriptions: [String: [Cancellable]] = [:]
   /// The pushes and tokens of every shop.
   private var pushSinks: [Cancellable] = []
+  /// Per shop, its tracking events in the order Dart sent them.
+  private var trackingLines: [String: TrackingLine] = [:]
 
   init(popupApi: PersonalizationPopupFlutterApi, stateApi: PersonalizationStateFlutterApi) {
     self.popupApi = popupApi
@@ -287,23 +289,45 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     call(shopId, completion, map: { $0 }, body)
   }
 
-  /// A `tracking` call, whose completion carries the SDK's old error: the whole error behind it is
-  /// read on the thread the SDK answers on, before the answer goes to the main thread.
+  /// A `tracking` call, through the native `tracking.async`: Dart hears, on the main thread, once the
+  /// shop's queue accepted the event — the contract's result, as on Android — or the error that kept
+  /// the event out of the queue (`invalidArgument`, `shopBlocked`, `notInitialized`). The server's
+  /// answer comes later and is not the call's. A shop's events reach its queue in the order Dart sent
+  /// them.
   private func track(
     _ shopId: String?,
     _ completion: @escaping (Result<Void, Error>) -> Void,
-    _ body: (TrackingAPI, @escaping (Result<Void, LegacySdkError>) -> Void) throws -> Void
+    _ body: @escaping (TrackingAsyncAPI) async throws -> Void
   ) {
-    let finish: (Result<Void, LegacySdkError>) -> Void = { result in
-      let mapped: Result<Void, Error> = result.mapError { BridgeFailure.error(legacy: $0) }
-      onMain { completion(mapped) }
-    }
+    let sdk: PersonalizationSDK
     do {
-      try body(try instance(shopId).tracking, finish)
+      sdk = try instance(shopId)
     } catch {
       let failure = BridgeFailure.error(error)
       onMain { completion(.failure(failure)) }
+      return
     }
+    let tracking = sdk.tracking.async
+    trackingLine(sdk.shopId).send {
+      let result: Result<Void, Error>
+      do {
+        try await body(tracking)
+        result = .success(())
+      } catch {
+        result = .failure(BridgeFailure.error(error))
+      }
+      onMain { completion(result) }
+    }
+  }
+
+  /// The line of [shopId]'s tracking events, made on first use.
+  private func trackingLine(_ shopId: String) -> TrackingLine {
+    lock.lock()
+    defer { lock.unlock() }
+    if let line = trackingLines[shopId] { return line }
+    let line = TrackingLine()
+    trackingLines[shopId] = line
+    return line
   }
 
   // MARK: - Root
@@ -392,6 +416,7 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     lock.lock()
     let stale = subscriptions.removeValue(forKey: sdk.shopId) ?? []
     popupForwarders.removeValue(forKey: sdk.shopId)
+    trackingLines.removeValue(forKey: sdk.shopId)
     lock.unlock()
     stale.forEach { $0.cancel() }
     if Self.same(Rees46FlutterSdkPlugin.sdk, sdk) {
@@ -428,8 +453,8 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
 
   // MARK: - Tracking
   //
-  // Each method goes to the native `tracking` namespace of the shop's instance. On the new core its
-  // completion comes once the queue took the event.
+  // Each method goes to the native `tracking.async` of the shop's instance — the events of `tracking`,
+  // completed as the contract completes them: once the queue took the event.
 
   func trackEvent(
     event: String,
@@ -441,94 +466,93 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     shopId: String?,
     completion: @escaping (Result<Void, Error>) -> Void
   ) {
-    track(shopId, completion) { tracking, done in
-      tracking.custom(
+    track(shopId, completion) { tracking in
+      try await tracking.custom(
         event: event,
         time: try time.map(nativeInt),
         category: category,
         label: label,
         value: try value.map(nativeInt),
-        customFields: customFields.map(nativeObject),
-        completion: done
+        customFields: customFields.map(nativeObject)
       )
     }
   }
 
   func trackProductView(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.productView(itemId: itemId, source: try Self.source(source), completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.productView(itemId: itemId, source: try Self.source(source))
     }
   }
 
   func trackCategoryView(categoryId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.categoryView(categoryId: categoryId, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.categoryView(categoryId: categoryId)
     }
   }
 
   func trackSearch(query: String, results: [String]?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.search(query: query, results: results, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.search(query: query, results: results)
     }
   }
 
   func trackAddToCart(item: TrackingItemWire, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.addToCart(item: item.native, source: try Self.source(source), completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.addToCart(item: item.native, source: try Self.source(source))
     }
   }
 
   func trackSyncCart(items: [TrackingItemWire], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.syncCart(items: items.map(\.native), completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.syncCart(items: items.map(\.native))
     }
   }
 
   func trackRemoveFromCart(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.removeFromCart(itemId: itemId, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.removeFromCart(itemId: itemId)
     }
   }
 
   func trackAddToFavorites(itemId: String, source: TrackingSourceWire?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.addToFavorites(itemId: itemId, source: try Self.source(source), completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.addToFavorites(itemId: itemId, source: try Self.source(source))
     }
   }
 
   func trackSyncFavorites(itemIds: [String], shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.syncFavorites(itemIds: itemIds, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.syncFavorites(itemIds: itemIds)
     }
   }
 
   func trackRemoveFromFavorites(itemId: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.removeFromFavorites(itemId: itemId, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.removeFromFavorites(itemId: itemId)
     }
   }
 
   func trackStoryView(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.storyView(storyId: storyId, slideId: slideId, code: code, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.storyView(storyId: storyId, slideId: slideId, code: code)
     }
   }
 
   func trackStoryClick(storyId: String, slideId: String, code: String?, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    track(shopId, completion) { tracking, done in
-      tracking.storyClick(storyId: storyId, slideId: slideId, code: code, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.storyClick(storyId: storyId, slideId: slideId, code: code)
     }
   }
 
   func trackBannerView(bannerId: String, code: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    run(shopId, completion) { sdk, done in
-      sdk.tracking.bannerView(bannerId: bannerId, code: code, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.bannerView(bannerId: bannerId, code: code)
     }
   }
 
   func trackBannerClick(bannerId: String, code: String, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    run(shopId, completion) { sdk, done in
-      sdk.tracking.bannerClick(bannerId: bannerId, code: code, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.bannerClick(bannerId: bannerId, code: code)
     }
   }
 
@@ -583,14 +607,14 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
       isGiftPackage: isGiftPackage
     )
     // No per-call source: Dart only stores one through `setSource`, which the SDK attaches itself.
-    track(shopId, completion) { tracking, done in
-      tracking.purchase(request, source: nil, completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.purchase(request, source: nil)
     }
   }
 
   func trackPopupShown(popupId: Int64, shopId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-    run(shopId, completion) { sdk, done in
-      sdk.tracking.popupShown(popupId: try nativeInt(popupId), completion: done)
+    track(shopId, completion) { tracking in
+      try await tracking.popupShown(popupId: try nativeInt(popupId))
     }
   }
 
@@ -1169,3 +1193,20 @@ final class PopupForwarder: PopupPresentationDelegate {
   }
 }
 
+/// One shop's tracking events, one after another in the order they came: each goes to the SDK once
+/// the one before it was accepted or refused, so the shop's queue takes them in Dart's order. An
+/// `async` call of the SDK would otherwise start on whichever thread is free first.
+final class TrackingLine {
+  private let lock = NSLock()
+  private var last: Task<Void, Never>?
+
+  func send(_ event: @escaping () async -> Void) {
+    lock.lock()
+    defer { lock.unlock() }
+    let previous = last
+    last = Task {
+      await previous?.value
+      await event()
+    }
+  }
+}

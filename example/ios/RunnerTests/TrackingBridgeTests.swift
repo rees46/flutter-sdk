@@ -171,6 +171,51 @@ final class TrackingBridgeTests: XCTestCase {
         XCTAssertEqual((request?.recommendedSource?["source"] as? [String: Any])?["code"] as? String, "b")
     }
 
+    /// The bridge waits for each event's acceptance on its own task: a shop's events must still reach
+    /// the native SDK — and its queue — in the order Dart sent them.
+    func test_aShopsEvents_reachTheNativeSdkInTheOrderDartSentThem() {
+        let ids = (0..<50).map { "sku-\($0)" }
+        let answered = expectation(description: "answered")
+        answered.expectedFulfillmentCount = ids.count
+
+        for id in ids {
+            plugin.trackProductView(itemId: id, source: nil, shopId: shopId) { result in
+                XCTAssertTrue(Thread.isMainThread)
+                if case .failure(let error) = result { XCTFail("\(error)") }
+                answered.fulfill()
+            }
+        }
+
+        wait(for: [answered], timeout: 10)
+        XCTAssertEqual(native.recordingTracking.productViews.map(\.itemId), ids)
+    }
+
+    /// Popups and banners go the same way and answer once, on the main thread, after the events sent
+    /// before them. A tracking namespace the SDK did not make has no queue for them: `notInitialized`.
+    func test_popupAndBannerEvents_answerThroughTheSameLine() {
+        let answered = expectation(description: "answered")
+        answered.expectedFulfillmentCount = 4
+        var order: [String] = []
+        let record: (String) -> (Result<Void, Error>) -> Void = { name in
+            { result in
+                XCTAssertTrue(Thread.isMainThread)
+                if name != "productView", case .failure(let error) = result {
+                    XCTAssertEqual((error as? PigeonError)?.code, "notInitialized", name)
+                }
+                order.append(name)
+                answered.fulfill()
+            }
+        }
+
+        plugin.trackProductView(itemId: "37", source: nil, shopId: shopId, completion: record("productView"))
+        plugin.trackPopupShown(popupId: 9, shopId: shopId, completion: record("popupShown"))
+        plugin.trackBannerView(bannerId: "b1", code: "slider", shopId: shopId, completion: record("bannerView"))
+        plugin.trackBannerClick(bannerId: "b1", code: "slider", shopId: shopId, completion: record("bannerClick"))
+
+        wait(for: [answered], timeout: 10)
+        XCTAssertEqual(order, ["productView", "popupShown", "bannerView", "bannerClick"])
+    }
+
     func test_aFailedEvent_isTheWholeErrorOfTheNativeSdk() {
         native.recordingTracking.answer = .failure(.networkOfflineError)
         let done = expectation(description: "answered")
