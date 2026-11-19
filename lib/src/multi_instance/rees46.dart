@@ -64,10 +64,11 @@ class REES46 {
 
   static PersonalizationSdk _defaultFactory(REES46Config config) {
     final sdk = PersonalizationSdk(shopId: config.shopId);
-    // The handle goes back at once; the outcome is in [PersonalizationSdk.ready].
-    // Listened to here, a failed init is not an unhandled error when the app does
-    // not await `ready`.
-    sdk.initialize(config.toSdkInitConfig()).catchError((Object error) {
+    // The handle goes back at once; the outcome is in [PersonalizationSdk.ready],
+    // which also fails when the native start did. Listened to here, a failed init
+    // is not an unhandled error when the app does not await `ready`.
+    sdk.initialize(config.toSdkInitConfig()).ignore();
+    sdk.ready.catchError((Object error) {
       debugPrint('REES46: init of shop ${config.shopId} failed: $error');
     });
     return sdk;

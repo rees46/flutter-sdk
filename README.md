@@ -96,6 +96,12 @@ the same answers, the same error codes. What an app can notice:
   shop. A first launch without network has no device id yet, so `ready` waits for the
   network: where the UI waits for it, give it a timeout
   (`await sdk.ready.timeout(const Duration(seconds: 10))`). Calls never need to await it.
+  The deprecated `PersonalizationSdk().initialize(config)` completes as in 1.6.4, once
+  the native SDK took the configuration: it does not wait for the network and does not
+  fail for a refused shop — that is `ready`'s.
+- **One handle per shop.** `REES46.initialize` of a shop that is initialized already
+  returns its handle, as the native SDKs do; a different configuration is logged
+  (`already_initialized`) and not applied. Release the handle to start the shop anew.
 - **Tracking completes on acceptance.** A `sdk.tracking.*` future completes once the
   event is in the shop's queue on disk, not when the server answered: an event the server
   refuses later is no error. Only `invalidArgument`, `shopBlocked` and `notInitialized`

@@ -14,11 +14,20 @@ import 'from_wire.dart';
 /// accepted, not once the server has it. One event of one message goes once per
 /// process; a repeat sends nothing and ends in success.
 class NotificationsApi {
-  NotificationsApi(this._api, this._shopId, this._mirror);
+  NotificationsApi(
+    this._api,
+    this._shopId,
+    this._mirror, {
+    void Function(PushCallbacks callbacks)? onEarlyCallbacks,
+  }) : _onEarlyCallbacks = onEarlyCallbacks;
 
   final pigeon.PersonalizationHostApi _api;
   final String? _shopId;
   final ShopMirror? Function() _mirror;
+
+  /// Keeps callbacks set before the handle knows its shop (a handle made without
+  /// a shop id, before `initialize`): they become the shop's at `initialize`.
+  final void Function(PushCallbacks callbacks)? _onEarlyCallbacks;
 
   /// The push of message [code] (the push's `id`) of mailing [type] (`bulk`,
   /// `chain`, `transactional`, `digest`) reached the app (`track/delivered`).
@@ -68,10 +77,16 @@ class NotificationsApi {
   );
 
   /// This shop's push callbacks; a new call replaces the ones before,
-  /// `PushCallbacks()` clears them. They win over `REES46.setPushCallbacks`.
+  /// `PushCallbacks()` clears them. They win over `REES46.setPushCallbacks`. Set
+  /// on a handle made without a shop id before its `initialize`, they are kept
+  /// and become the shop's there.
   void setCallbacks(PushCallbacks callbacks) {
     final mirror = _mirror();
-    if (mirror != null) mirror.pushCallbacks = callbacks;
+    if (mirror != null) {
+      mirror.pushCallbacks = callbacks;
+    } else {
+      _onEarlyCallbacks?.call(callbacks);
+    }
   }
 
   /// The messages the shop sent the customer (`GET /notifications`): mailings of

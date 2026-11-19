@@ -13,6 +13,7 @@ import 'core/native_events.dart';
 import 'errors/sdk_error.dart';
 import 'init/sdk_init_handler.dart';
 import 'loyalty/loyalty_response.dart';
+import 'models/push_models.dart' show PushCallbacks;
 import 'models/values.dart';
 import 'multi_instance/push_dispatcher.dart';
 import 'multi_instance/push_event.dart';
@@ -129,6 +130,7 @@ class PersonalizationSdk {
     _api,
     shopId,
     _mirror,
+    onEarlyCallbacks: (callbacks) => _earlyPushCallbacks = callbacks,
   );
 
   /// The stories blocks.
@@ -261,6 +263,11 @@ class PersonalizationSdk {
     }
   }
 
+  /// Starts the shop of [config] on the native SDK. Completes, as in 1.6.4, once
+  /// the native SDK took the configuration and its first answer is applied —
+  /// without waiting for `/init`, so a first launch without network does not hang
+  /// here. Whether the shop works, and a refused shop's `shopBlocked`, are
+  /// [ready]'s. Fails only when the native SDK could not start the shop.
   Future<void> initialize(SdkInitConfig config) {
     if (_channel.isClosed) {
       return Future<void>.error(SdkException(const SdkErrorNotInitialized()));
@@ -270,10 +277,21 @@ class PersonalizationSdk {
     PopupDispatcher.instance.register(config.shopId, _popups);
     PopupsV3Hooks.initialized(tracking, config);
     _stateShopId = config.shopId;
-    return _ready = _start(config);
+    final early = _earlyPushCallbacks;
+    if (early != null) {
+      // Set on this handle before it knew its shop: the shop's callbacks now.
+      NativeEvents.instance.shop(config.shopId).pushCallbacks = early;
+      _earlyPushCallbacks = null;
+    }
+    final started = _start(config);
+    final ready = _ready = started.then((mirror) => mirror.whenUsable());
+    // An app that never awaits `ready` is not left with an unhandled error; one
+    // that does still gets it.
+    ready.ignore();
+    return started.then((_) {});
   }
 
-  Future<void> _start(SdkInitConfig config) async {
+  Future<ShopMirror> _start(SdkInitConfig config) async {
     final told = NativeEvents.instance.shop(config.shopId).applied;
     final snapshot = await _initHandler.initialize(config);
     // Released while the native side started it: the shop's next instance owns the
@@ -284,8 +302,12 @@ class PersonalizationSdk {
     // told on its own channel meanwhile — a quick `/init` made it ready — is as new
     // or newer, and the answer, which comes after it, must not take it back.
     if (mirror.applied == told) mirror.apply(snapshot);
-    await mirror.whenUsable();
+    return mirror;
   }
+
+  /// Push callbacks set through [notifications] before [initialize] told this
+  /// handle its shop; [initialize] hands them to the shop.
+  PushCallbacks? _earlyPushCallbacks;
 
   Future<void>? _ready;
 
