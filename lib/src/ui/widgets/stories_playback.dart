@@ -56,6 +56,37 @@ enum StoriesStep {
   close,
 }
 
+/// Сторис новой ленты за жизнь её объектов в процессе — как в вебе: с какого слайда
+/// открыть (`start_position` сервера, дальше — где остановились) и ушли ли с неё вперёд
+/// (тогда она просмотрена, как при `viewed` сервера). Новая лента — новые объекты сторис
+/// и снова то, что считает сервер.
+abstract final class StoriesServerProgress {
+  static final Expando<int> _positions = Expando<int>('storiesPosition');
+  static final Expando<bool> _left = Expando<bool>('storiesLeftForward');
+
+  /// С какого слайда открыть [story]: где остановились, иначе `start_position`.
+  static int startOf(Story story) {
+    if (story.slides.isEmpty) return 0;
+    return (_positions[story] ?? story.startPosition).clamp(
+      0,
+      story.slides.length - 1,
+    );
+  }
+
+  /// Сторис просмотрена: так говорит сервер или с неё ушли вперёд.
+  static bool viewedOf(Story story) => story.viewed || (_left[story] ?? false);
+
+  /// Показан слайд [slide] сторис [story].
+  static void showed(Story story, int slide) => _positions[story] = slide;
+
+  /// С [story] ушли вперёд: просмотрена; [finished] — досмотрели до конца, в следующий
+  /// раз — с начала.
+  static void leftForward(Story story, {bool finished = false}) {
+    _left[story] = true;
+    if (finished) _positions[story] = 0;
+  }
+}
+
 /// Логика просмотра сторис без UI: какая сторис и какой слайд текущие, с какого слайда
 /// открывать сторис, почему слайд стоит, открыта ли шторка, сколько прошло времени.
 ///
@@ -74,6 +105,11 @@ enum StoriesStep {
 /// - время слайда копится только из реально прошедших промежутков и только пока ничто
 ///   его не держит — от масштаба анимаций системы оно не зависит.
 ///
+/// Новая лента ([serverStart]), как в вебе: сторис открывается со слайда
+/// [StoriesServerProgress.startOf], просмотренной становится, когда с неё ушли вперёд
+/// (досмотрели последний слайд или перелистнули на следующую); просмотренное устройства не
+/// решает.
+///
 /// Сторис без слайдов отбрасываются при создании.
 class StoriesPlayback {
   /// [initialSlide] — слайд начальной сторис в обход правил стартового слайда (ссылка
@@ -83,6 +119,7 @@ class StoriesPlayback {
     int initialStory = 0,
     int? initialSlide,
     Map<String, Set<String>> seen = const <String, Set<String>>{},
+    this.serverStart = false,
   }) : stories = List<Story>.unmodifiable(
          stories.where((story) => story.slides.isNotEmpty),
        ),
@@ -100,6 +137,9 @@ class StoriesPlayback {
 
   /// Сторис со слайдами в порядке ленты.
   final List<Story> stories;
+
+  /// Новая лента: стартовый слайд и просмотренность — [StoriesServerProgress].
+  final bool serverStart;
 
   final Map<String, Set<String>> _seen;
   final Set<StoriesPauseReason> _reasons = <StoriesPauseReason>{};
@@ -188,6 +228,7 @@ class StoriesPlayback {
     if (initial != null && index == _story && !_entered) {
       return initial.clamp(0, story.slides.length - 1);
     }
+    if (serverStart) return StoriesServerProgress.startOf(story);
     return startSlideOf(story, _seen[story.id] ?? const <String>{});
   }
 
@@ -200,6 +241,10 @@ class StoriesPlayback {
     if (stories.isEmpty) return false;
     final target = index.clamp(0, stories.length - 1);
     if (_entered && target == _story) return false;
+    // Перелистнули вперёд — с прежней ушли вперёд.
+    if (serverStart && _entered && target > _story) {
+      StoriesServerProgress.leftForward(story);
+    }
     _story = target;
     _slide = startSlideFor(target);
     _initialSlide = null;
@@ -215,6 +260,7 @@ class StoriesPlayback {
       _enter();
       return StoriesStep.slide;
     }
+    if (serverStart) StoriesServerProgress.leftForward(story, finished: true);
     if (_story < stories.length - 1) {
       _turnTo(_story + 1);
       return StoriesStep.turn;
@@ -357,6 +403,7 @@ class StoriesPlayback {
       ..remove(StoriesPauseReason.poll)
       ..add(StoriesPauseReason.loading);
     (_seen[story.id] ??= <String>{}).add(slide.id);
+    if (serverStart) StoriesServerProgress.showed(story, _slide);
   }
 }
 

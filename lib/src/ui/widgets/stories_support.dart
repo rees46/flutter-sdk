@@ -5,6 +5,7 @@ import '../../stories/stories_response.dart';
 import '../components/personalization_product.dart';
 import '../components/personalization_story_price.dart';
 import '../components/personalization_story_text_block.dart';
+import '../personalization_typography.dart';
 import 'stories_image.dart';
 
 /// Как получить картинку по адресу из данных сторис. Не задан — свой загрузчик SDK: качает
@@ -49,14 +50,27 @@ enum StoryMedia {
   video,
 }
 
-/// Медиа слайда решает непустой `background`, а не тип слайда: товарный слайд с фото —
-/// тоже медиа-слайд, а `image` без адреса — нет.
-StoryMedia storyMediaOf(StorySlide slide) {
+/// Медиа слайда. Старая лента: решает непустой `background`, а не тип слайда — товарный
+/// слайд с фото тоже медиа-слайд, а `image` без адреса — нет. Новая лента ([byType]): как
+/// в вебе, решает тип — `image` и `video` медиа, товарный слайд — нет.
+StoryMedia storyMediaOf(StorySlide slide, {bool byType = false}) {
+  if (byType) {
+    return switch (slide.type) {
+      StorySlideType.image => StoryMedia.image,
+      StorySlideType.video => StoryMedia.video,
+      StorySlideType.product => StoryMedia.none,
+    };
+  }
   if (slide.background.trim().isEmpty) return StoryMedia.none;
   return slide.type == StorySlideType.video
       ? StoryMedia.video
       : StoryMedia.image;
 }
+
+/// Цвет слайда новой ленты без медиа: `background_color`, как в вебе; не задан — `null`,
+/// слайд на Background/Card кита.
+Color? storySlideColor(StorySlide slide) =>
+    parseStoryColor(slide.backgroundColor);
 
 /// Цвет полей вокруг вписанного медиа: `background_color` слайда, без него чёрный. Это
 /// единственное место, где цвет админки идёт в дело: слайд без медиа всегда на
@@ -99,8 +113,8 @@ StoryProductsElement? storyProducts(StorySlide slide) {
 
 /// Плотность затемнения сверху и снизу. Оно есть на каждом слайде: 50% — только у
 /// медиа без товара и без непустых текстов (голое фото или видео), иначе 30%.
-double storyScrimOpacity(StorySlide slide) =>
-    storyMediaOf(slide) != StoryMedia.none &&
+double storyScrimOpacity(StorySlide slide, {bool byType = false}) =>
+    storyMediaOf(slide, byType: byType) != StoryMedia.none &&
         storyProductElement(slide) == null &&
         storyTextBlocks(slide).isEmpty
     ? 0.5
@@ -258,6 +272,24 @@ String storyProductLink(StoryProduct product) {
   return own.isNotEmpty ? own : product.url;
 }
 
+/// Ссылка шапки слайда для текущей платформы: своя, иначе общая `link`.
+String storyHeaderLink(StoryHeaderElement header) {
+  final own = switch (defaultTargetPlatform) {
+    TargetPlatform.android => header.linkAndroid,
+    TargetPlatform.iOS => header.linkIos,
+    _ => '',
+  };
+  return own.isNotEmpty ? own : header.link;
+}
+
+/// Шапка слайда новой ленты (`header`), если ей есть что показать; нет — `null`.
+StoryHeaderElement? storyHeaderOf(StorySlide slide) {
+  for (final element in slide.elements) {
+    if (element is StoryHeaderElement && element.isNotEmpty) return element;
+  }
+  return null;
+}
+
 /// Куда ведёт кнопка товарного слайда: своя ссылка кнопки (платформенная, затем общая),
 /// без неё — товар слайда (диплинк, затем `url`).
 String storySlideButtonLink(StoryButtonElement button, StoryProduct? product) {
@@ -276,21 +308,31 @@ TextAlign storyTextAlign(String value) => switch (value.trim().toLowerCase()) {
 
 /// Текстовый блок сервера → [PersonalizationStoryTextBlock].
 ///
-/// Шрифт `serif` / `monospaced` — системные семейства с запасными для iOS, где имён
-/// `serif` и `monospace` нет; `sans-serif` и пусто — шрифт темы. Межстрочный не задан —
-/// заготовка макета для этого кегля ([PersonalizationStoryTextBlock.presetLineHeight]).
-PersonalizationStoryTextBlock storyTextBlock(StoryTextBlockElement element) {
-  final (family, fallback) = switch (element.fontType) {
+/// Шрифт `serif` / `monospace` (и `monospaced`) — системные семейства с запасными для
+/// iOS, где имён `serif` и `monospace` нет; `sans-serif` и пусто — шрифт темы.
+/// Межстрочный не задан — заготовка макета для этого кегля
+/// ([PersonalizationStoryTextBlock.presetLineHeight]). С [bodySize] (новая лента) без
+/// `font_size` — кегль основного текста кита ([PersonalizationTypography.baseDefault]), а
+/// не 14.
+PersonalizationStoryTextBlock storyTextBlock(
+  StoryTextBlockElement element, {
+  bool bodySize = false,
+}) {
+  final (family, fallback) = switch (element.fontType.trim().toLowerCase()) {
     'serif' => ('serif', const <String>['Georgia', 'Times New Roman']),
+    'monospace' ||
     'monospaced' => ('monospace', const <String>['Menlo', 'Courier']),
     _ => (null, null),
   };
+  final fontSize = bodySize && !element.hasFontSize
+      ? PersonalizationTypography.baseDefault.fontSize!
+      : element.fontSize;
   return PersonalizationStoryTextBlock(
     text: element.text,
-    fontSize: element.fontSize,
+    fontSize: fontSize,
     lineHeight: element.lineSpacing > 0
         ? element.lineSpacing
-        : PersonalizationStoryTextBlock.presetLineHeight(element.fontSize),
+        : PersonalizationStoryTextBlock.presetLineHeight(fontSize),
     color: parseStoryColor(element.textColor),
     background: element.backgroundOpacity > 0
         ? parseStoryColor(

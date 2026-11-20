@@ -312,7 +312,8 @@ void main() {
 
   group('text', () {
     final text = _poll('mini_poll', kind: 'text', maxLength: 10);
-    final stories = _stories(<List<Map<String, dynamic>>>[
+    // New story objects for each test: the session of the new feed is theirs.
+    List<Story> stories() => _stories(<List<Map<String, dynamic>>>[
       <Map<String, dynamic>>[
         _slide('1', <Map<String, dynamic>>[text]),
         _slide('2'),
@@ -329,7 +330,7 @@ void main() {
     testWidgets(
       'keyboard: the card above it, the slide stays; limit, error, retry',
       (tester) async {
-        await open(tester, stories);
+        await open(tester, stories());
         final slideText = tester.getRect(find.text('Slide 1'));
         final down = tester.getRect(card);
         await tester.tap(find.byType(TextField));
@@ -382,7 +383,7 @@ void main() {
     testWidgets('a tap past the card with the keyboard only hides it', (
       tester,
     ) async {
-      await open(tester, stories);
+      await open(tester, stories());
       await tester.tap(find.byType(TextField));
       await tester.pump();
       await showKeyboard(tester);

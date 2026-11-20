@@ -30,6 +30,8 @@ const Set<String> _v3Names = <String>{
   'StoryPollResults',
   'StoryPollLabels',
   'StoryPollElement',
+  'StoryHeaderElement',
+  'StoryTextBlockV3',
   'StoryPollsTransport',
   'StoryPollReply',
 };

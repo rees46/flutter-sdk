@@ -16,6 +16,7 @@ import '../components/personalization_story_sound_button.dart';
 import '../components/personalization_story_used_products.dart';
 import '../components/personalization_toast.dart';
 import '../personalization_theme.dart';
+import '../personalization_typography.dart';
 import 'personalization_story_viewer.dart';
 import 'stories_gif_player.dart';
 import 'stories_poll.dart';
@@ -47,6 +48,12 @@ import 'stories_support.dart';
 ///   тоже, но целиком между шапкой и нижними кнопками; не влезает — прокрутка в ней.
 ///   Открыта клавиатура — карточка над ней (+16), слайд не сжимается, тап мимо
 ///   карточки только прячет клавиатуру.
+///
+/// Новая лента ([v3]), как в вебе: медиа решает тип слайда; слайд без медиа — цвета
+/// `background_color` (без него — Background/Card), токены — по его яркости; текстовый
+/// блок без `font_size` — кеглем основного текста кита; шапка `header` (иконка, заголовок,
+/// подзаголовок) под шапкой просмотра, нажатие — [onHeader]; кнопка звука — только у
+/// видео со звуком ([hasAudio]).
 ///
 /// Живой ([live]) — только текущий слайд осевшей страницы: у него часы, видео, касания и
 /// шторка. Соседние страницы показывают свой стартовый слайд неподвижно.
@@ -80,6 +87,9 @@ class StorySlideView extends StatelessWidget {
     this.pollShopId = '',
     this.pollDid = '',
     this.onPollHold,
+    this.v3 = false,
+    this.hasAudio = true,
+    this.onHeader,
   });
 
   final Story story;
@@ -133,20 +143,46 @@ class StorySlideView extends StatelessWidget {
   /// Опрос держит слайд (`true`) или отпускает.
   final ValueChanged<bool>? onPollHold;
 
+  /// Слайд новой ленты (API v3): правила веба, см. описание класса.
+  final bool v3;
+
+  /// У видео слайда есть звук: без него у новой ленты нет кнопки звука.
+  final bool hasAudio;
+
+  /// Нажата шапка `header` слайда новой ленты.
+  final ValueChanged<StoryHeaderElement>? onHeader;
+
   /// Удержание дольше этого — пауза, а не касание.
   static const Duration holdDelay = Duration(milliseconds: 200);
 
   StorySlide get slide => story.slides[slideIndex];
 
+  StoryMedia _media(StorySlide slide) => storyMediaOf(slide, byType: v3);
+
+  /// Свой цвет слайда без медиа (новая лента); нет — `null`.
+  Color? _slideColor(StorySlide slide) => v3 ? storySlideColor(slide) : null;
+
   @override
   Widget build(BuildContext context) {
     final slide = this.slide;
-    final media = storyMediaOf(slide) != StoryMedia.none;
+    final media = _media(slide) != StoryMedia.none;
     final body = Builder(builder: (context) => _body(context, slide, media));
-    // Слайды с медиа — тёмные токены кита: текст и кнопки лежат на фото или видео.
-    return media
-        ? PersonalizationBrightness(brightness: Brightness.dark, child: body)
-        : body;
+    // Слайды с медиа — тёмные токены кита: текст и кнопки лежат на фото или видео. Свой
+    // цвет слайда без медиа — токены по его яркости.
+    final color = media ? null : _slideColor(slide);
+    if (media) {
+      return PersonalizationBrightness(
+        brightness: Brightness.dark,
+        child: body,
+      );
+    }
+    if (color == null) return body;
+    return PersonalizationBrightness(
+      brightness: color.computeLuminance() > 0.5
+          ? Brightness.light
+          : Brightness.dark,
+      child: body,
+    );
   }
 
   Widget _body(BuildContext context, StorySlide slide, bool media) {
@@ -166,7 +202,9 @@ class StorySlideView extends StatelessWidget {
         builder: (context, constraints) => _gestures(
           width: constraints.maxWidth,
           child: ColoredBox(
-            color: media ? storyLetterbox(slide) : colors.backgroundCard,
+            color: media
+                ? storyLetterbox(slide)
+                : _slideColor(slide) ?? colors.backgroundCard,
             child: Stack(
               fit: StackFit.expand,
               children: <Widget>[
@@ -230,7 +268,7 @@ class StorySlideView extends StatelessWidget {
             RawImage(image: gif.frame, fit: BoxFit.contain),
       );
     }
-    final url = storyMediaOf(slide) == StoryMedia.video
+    final url = _media(slide) == StoryMedia.video
         ? slide.preview
         : slide.background;
     final image = storyImage(url, config.imageProvider);
@@ -248,7 +286,7 @@ class StorySlideView extends StatelessWidget {
   Widget _scrim(StorySlide slide) {
     final shade = const Color(
       0xFF000000,
-    ).withValues(alpha: storyScrimOpacity(slide));
+    ).withValues(alpha: storyScrimOpacity(slide, byType: v3));
     const clear = Color(0x00000000);
     return IgnorePointer(
       child: DecoratedBox(
@@ -306,9 +344,9 @@ class StorySlideView extends StatelessWidget {
     child: _keyboardShield(_navigation()),
   );
 
-  /// Кнопка звука — только у видео.
+  /// Кнопка звука — только у видео, у новой ленты — только со звуком.
   Widget? _sound(StorySlide slide) {
-    if (storyMediaOf(slide) != StoryMedia.video) return null;
+    if (_media(slide) != StoryMedia.video || (v3 && !hasAudio)) return null;
     return PersonalizationStorySoundButton(
       muted: muted,
       onPressed: onToggleMute,
@@ -419,6 +457,8 @@ class StorySlideView extends StatelessWidget {
           bottom: _hasRow(slide) ? 64 : 16,
           child: _primaryButtons(buttons),
         ),
+        if (_storyHeader(context, slide) case final header?)
+          Positioned(left: 16, right: 16, top: _blockTop, child: header),
         ..._poll(context, slide, bottom: bottom),
         ..._bottomRow(slide),
         _header(),
@@ -426,8 +466,79 @@ class StorySlideView extends StatelessWidget {
     );
   }
 
+  /// Шапка `header` слайда новой ленты: иконка в круге, заголовок и подзаголовок кита;
+  /// нажатие — [onHeader]. Нечего показать или не новая лента — `null`.
+  Widget? _storyHeader(BuildContext context, StorySlide slide) {
+    final header = v3 ? storyHeaderOf(slide) : null;
+    if (header == null) return null;
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
+    TextStyle style(TextStyle token, Color color) => token.copyWith(
+      color: color,
+      decoration: TextDecoration.none,
+      fontFamily: theme.fontFamily.familyFor(token.fontWeight!),
+      package: theme.fontFamily.package,
+    );
+    final icon = storyImage(header.icon, config.imageProvider);
+    final title = header.title.trim();
+    final subtitle = header.subtitle.trim();
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: live ? () => onHeader?.call(header) : null,
+        child: Row(
+          children: <Widget>[
+            if (icon != null) ...<Widget>[
+              ClipOval(
+                child: SizedBox.square(
+                  dimension: 32,
+                  child: Image(
+                    image: icon,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        ColoredBox(color: colors.neutral50),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  if (title.isNotEmpty)
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style(
+                        PersonalizationTypography.smEmphasized,
+                        colors.textPrimary,
+                      ),
+                    ),
+                  if (subtitle.isNotEmpty)
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style(
+                        PersonalizationTypography.xsDefault,
+                        colors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _textBlock(BuildContext context, StoryTextBlockElement element) {
-    final block = storyTextBlock(element);
+    final block = storyTextBlock(element, bodySize: v3);
     final code = element.promocode;
     if (code == null || !live) return block;
     // Блок с промокодом копирует его: тост сверху и `click` в трекинг.
@@ -482,6 +593,10 @@ class StorySlideView extends StatelessWidget {
           // Место шапки: сама она поверх всего ([_header]).
           const SizedBox(height: PersonalizationStoryNavigation.height),
           const SizedBox(height: 16),
+          if (_storyHeader(context, slide) case final header?) ...<Widget>[
+            header,
+            const SizedBox(height: 16),
+          ],
           if (product.brand.isNotEmpty) ...<Widget>[
             Text(
               product.brand,

@@ -303,7 +303,7 @@ void main() {
 
     await tester.tap(_share);
     await tester.pump();
-    expect(api.shared, <String>['$_link39&r46_slide=39_0']);
+    expect(api.shared, <String>[_link39]);
     expect(api.anchors.single, share);
     expect(server.events, <String>['view 39/39_0', 'share 39/39_0']);
     await tester.tap(_share);
@@ -337,9 +337,7 @@ void main() {
     await open(tester, 'Products');
     await tester.tap(_share);
     await tester.pump();
-    expect(api.shared, <String>[
-      'demoapp://shop.example/?r46_story=39&r46_slide=39_0',
-    ]);
+    expect(api.shared, <String>['demoapp://shop.example/?r46_story=39']);
     expect(server.events, <String>['view 39/39_0', 'share 39/39_0']);
   });
 
@@ -352,7 +350,7 @@ void main() {
     await gesture.up();
     await tester.pump();
     expect(api.shared, <String>[
-      '$_link39&r46_slide=39_1',
+      _link39,
     ], reason: 'a long press is a press, on the slide it is on');
   });
 
@@ -593,7 +591,7 @@ void main() {
       // Its "Share" carries the slide again.
       await tester.tap(_share);
       await tester.pump();
-      expect(api.shared, <String>['$_link39&r46_slide=39_1']);
+      expect(api.shared, <String>[_link39]);
     });
 
     testWidgets('a link slide missing from the answer — start_position', (

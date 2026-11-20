@@ -213,6 +213,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     initialStory: widget.initialStory,
     initialSlide: widget.initialSlide,
     seen: _initialSeen(),
+    // Новая лента — стартовый слайд и просмотренность по серверу, как в вебе. Режим —
+    // без подписки: создаётся до didChangeDependencies.
+    serverStart:
+        StoriesApiV3.host(StoriesV3Scope.peek(context)?.apiV3Domain) != null,
   );
   late final PageController _pages = PageController(
     initialPage: _playback.storyIndex,
@@ -481,7 +485,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _load(generation);
     final sdk = widget.sdk;
     if (sdk != null) {
-      StoriesSeenStore.instance.mark(sdk, story.id, slide.id);
+      // Новой ленте просмотренное устройства не нужно: её ведёт сервер.
+      if (!_playback.serverStart) {
+        StoriesSeenStore.instance.mark(sdk, story.id, slide.id);
+      }
       if (_v3Code != null) {
         _trackV3(StoriesV3Event.view, story, slide);
       } else if (storyTrackableId(story.id) && storyTrackableId(slide.id)) {
@@ -522,6 +529,12 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   // Хост API v3 просмотра: режима над ним, без него — глобальный; `null` — старый API.
   String? get _v3Host => StoriesApiV3.host(_v3?.apiV3Domain);
+
+  // Сторис новой ленты: правила веба — медиа по типу слайда, кнопка без ссылки ничего не
+  // открывает, копирование промокода без `click`, шапка `header`.
+  bool get _byType => _v3Host != null;
+
+  StoryMedia _mediaOf(StorySlide slide) => storyMediaOf(slide, byType: _byType);
 
   // Код блока для событий v3: у просмотра есть хост API v3, SDK и код; иначе `null` —
   // старый трекинг через мост.
@@ -607,7 +620,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _disposeGif();
     _sync();
     final slide = _playback.slide;
-    switch (storyMediaOf(slide)) {
+    // Новая лента решает медиа по типу: у слайда без адреса грузить нечего.
+    if (slide.background.trim().isEmpty) return _ready(generation);
+    switch (_mediaOf(slide)) {
       case StoryMedia.none:
         _ready(generation);
       case StoryMedia.image:
@@ -715,7 +730,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _timeout?.cancel();
     _playback.mediaFailed(generation);
     _sync();
-    if (storyMediaOf(_playback.slide) == StoryMedia.video) {
+    if (_mediaOf(_playback.slide) == StoryMedia.video) {
       // Видео повторяет загрузку и само.
       _autoRetry?.cancel();
       _autoRetry = _timer(_videoRetry, _retry);
@@ -725,7 +740,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   void _retry() {
     final slide = _playback.slide;
-    if (storyMediaOf(slide) == StoryMedia.image) {
+    if (_mediaOf(slide) == StoryMedia.image) {
       storyImage(slide.background, widget.imageProvider)?.evict();
       StoriesImageBytes.instance.evict(slide.background);
     }
@@ -778,7 +793,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     } else {
       return;
     }
-    switch (storyMediaOf(next)) {
+    if (next.background.trim().isEmpty) return;
+    switch (_mediaOf(next)) {
       case StoryMedia.none:
         break;
       case StoryMedia.image:
@@ -818,13 +834,21 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   }
 
   /// Кнопка слайда: своя ссылка, у товарного слайда без неё — товар. Кнопка без ссылки на
-  /// медиа-слайде — только `click`: просмотр остаётся открытым.
+  /// медиа-слайде — только `click`: просмотр остаётся открытым. У новой ленты, как в
+  /// вебе, кнопка без ссылки — только `click` и на товарном слайде.
   void _button(StoryButtonElement button) {
     _clicked();
     final product = storyProductElement(_playback.slide)?.item;
     final own = storyButtonLink(button);
     if (own.isNotEmpty) return _closeThen(() => _openLink(own));
-    if (product != null) _closeThen(() => _goTo(product));
+    if (product != null && !_byType) _closeThen(() => _goTo(product));
+  }
+
+  /// Шапка слайда новой ленты: `click`, потом её ссылка, если она есть.
+  void _header(StoryHeaderElement header) {
+    _clicked();
+    final link = storyHeaderLink(header);
+    if (link.isNotEmpty) _closeThen(() => _openLink(link));
   }
 
   void _product(StoryProduct product) {
@@ -832,8 +856,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _closeThen(() => _goTo(product));
   }
 
+  /// Промокод скопирован: хосту; старая лента ещё и шлёт `click`, новая, как веб, — нет.
   void _promo(String code) {
-    _clicked();
+    if (!_byType) _clicked();
     widget.onPromoCopied?.call(code);
   }
 
@@ -966,6 +991,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onPollHold: (held) {
         if (mounted) _setPaused(StoriesPauseReason.poll, held);
       },
+      v3: _byType,
+      onHeader: _header,
     );
   }
 }

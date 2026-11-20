@@ -8,8 +8,7 @@ extension StoryShareV3 on Story {
   bool get shareable => _shareable;
 
   /// "Share" link of the campaign (`share_url`, API v3); empty when not sent. Product
-  /// campaigns have only this one, their slides have none: a slide shares it with its
-  /// id in `r46_slide`.
+  /// campaigns have only this one, their slides have none: they share it as it is.
   String get shareUrl => _shareUrl;
 }
 
