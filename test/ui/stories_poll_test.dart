@@ -147,8 +147,9 @@ void main() {
       expect(transport.calls.single.$2, 'gift_recipient');
       expect(transport.calls.single.$3, <String, Object>{
         'option_ids': <int>[2],
-        'story_id': 5,
-        'slide_id': '101',
+        'source_type': 'stories',
+        'source_id': '5',
+        'source_item_id': '101',
       });
       expect(poll.sending, isTrue);
       expect(poll.selected, <int>{2});
@@ -269,8 +270,9 @@ void main() {
           ..submitChoices();
         expect(transport.calls.single.$3, <String, Object>{
           'option_ids': <int>[1, 3],
-          'story_id': 5,
-          'slide_id': '101',
+          'source_type': 'stories',
+          'source_id': '5',
+          'source_item_id': '101',
         });
         await reply(
           0,
@@ -304,8 +306,9 @@ void main() {
         ..submitText();
       expect(transport.calls.single.$3, <String, Object>{
         'text': 'Мастер и',
-        'story_id': 5,
-        'slide_id': '101',
+        'source_type': 'stories',
+        'source_id': '5',
+        'source_item_id': '101',
       });
       expect(poll.canSubmit, isFalse, reason: 'off while sending');
       await reply(

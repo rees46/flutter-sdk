@@ -274,32 +274,92 @@ void main() {
       );
     });
 
-    test('the event: the campaign id a number, the slide id a string', () {
-      expect(
-        StoriesApiV3.eventBody(
+    test(
+      'the event: who asks, the campaign id a number, the slide a string',
+      () {
+        const id = (
           shopId: 'shop',
           did: 'did',
-          event: StoriesV3Event.sharedOpen,
-          storyId: '40',
-          slideId: '37',
-        ),
-        <String, Object>{
-          'shop_id': 'shop',
-          'did': 'did',
-          'event': 'shared_open',
-          'story_id': 40,
-          'slide_id': '37',
-        },
-      );
-      final virtual = StoriesApiV3.eventBody(
+          sid: 'sid',
+          segment: 'A',
+          stream: 'flutter',
+          testMode: false,
+        );
+        expect(
+          StoriesApiV3.eventBody(
+            id,
+            event: StoriesV3Event.sharedOpen,
+            storyId: '40',
+            slideId: '37',
+          ),
+          <String, Object>{
+            'shop_id': 'shop',
+            'did': 'did',
+            'sid': 'sid',
+            'segment': 'A',
+            'stream': 'flutter',
+            'event': 'shared_open',
+            'story_id': 40,
+            'slide_id': '37',
+          },
+        );
+        final virtual = StoriesApiV3.eventBody(
+          (
+            shopId: 'shop',
+            did: 'did',
+            sid: '',
+            segment: '',
+            stream: 'qa',
+            testMode: true,
+          ),
+          event: StoriesV3Event.view,
+          storyId: '39',
+          slideId: '39_0',
+        );
+        expect(virtual['story_id'], 39);
+        expect(virtual['slide_id'], '39_0');
+        expect(virtual['testmode'], true);
+        expect(virtual['segment'], '', reason: 'an unknown group is empty');
+        expect(
+          StoriesApiV3.eventBody(
+            id,
+            event: StoriesV3Event.click,
+            storyId: 'promo',
+            slideId: '1',
+          )['story_id'],
+          'promo',
+          reason: 'not a number — a string',
+        );
+      },
+    );
+
+    test('the feed query: who asks, testmode only in test mode', () {
+      const id = (
         shopId: 'shop',
         did: 'did',
-        event: StoriesV3Event.view,
-        storyId: '39',
-        slideId: '39_0',
+        sid: 'sid',
+        segment: 'B',
+        stream: 'flutter',
+        testMode: false,
       );
-      expect(virtual['story_id'], 39);
-      expect(virtual['slide_id'], '39_0');
+      expect(StoriesApiV3.identityQuery(id), <String, String>{
+        'shop_id': 'shop',
+        'did': 'did',
+        'sid': 'sid',
+        'segment': 'B',
+        'stream': 'flutter',
+      });
+      expect(
+        StoriesApiV3.identityQuery((
+          shopId: 'shop',
+          did: 'did',
+          sid: 'sid',
+          segment: 'B',
+          stream: 'flutter',
+          testMode: true,
+        ))['testmode'],
+        'true',
+      );
     });
 
     test('addresses go to the v3 host, the scheme is optional', () {

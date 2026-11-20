@@ -1210,9 +1210,11 @@ void main() {
         'shop_id': 'shop',
         'did': 'did-1',
         'sid': 'sid-1',
+        'stream': 'flutter',
         'option_ids': <int>[2],
-        'story_id': 1,
-        'slide_id': '1',
+        'source_type': 'stories',
+        'source_id': '1',
+        'source_item_id': '1',
       });
       expect(find.text('Спасибо!'), findsOneWidget);
       await closeViewer(tester);
