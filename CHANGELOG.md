@@ -1,3 +1,20 @@
+# [2.1.0](https://github.com/rees46/flutter-sdk/compare/v2.0.0...v2.1.0) (2026-11-20)
+
+
+### Bug Fixes
+
+* **popups:** a server popup goes to onPopup or on screen as the native SDK hands it over, since the native SDKs now wait out its delay before they do, so it no longer waits the delay twice ([d89cafc](https://github.com/rees46/flutter-sdk/commit/d89cafc3e31870bea3ce133eedc183985ea22e12))
+* **segments:** Segment.type is a string, empty when the server gives a segment none, as the contract and the native SDKs 2.55.0 and 3.41.0 have it, instead of nullable ([f6873e2](https://github.com/rees46/flutter-sdk/commit/f6873e22d1ab6dd78cfee63650573dc8736c34ed))
+
+
+### Features
+
+* **tracking:** the bridges build on the Android SDK 2.55.0 and the iOS SDK 3.41.0, and slider and agentSearch go to the native SDKs as their bridge-only raw sources, in an event's recommended_by and in setSource, instead of being refused ([6f5e8c8](https://github.com/rees46/flutter-sdk/commit/6f5e8c87602a988b188c58ee80526a7fbc4dfc1b))
+
+
+
+
+
 # [2.0.0](https://github.com/rees46/flutter-sdk/compare/v1.6.4...v2.0.0) (2026-11-19)
 
 
