@@ -16,8 +16,8 @@ part of 'personalization_stories.dart';
 ///
 /// Опросы слайдов — тоже только с API v3: ответы уходят на хост блока, а
 /// [pollsTransport] их подменяет (тесты, офлайн-демо). Просмотр под
-/// [PersonalizationStoriesV3] со своим [pollsTransport] рисует опросы и без API v3. Ответы
-/// сессии помнят все блоки, `show` и [handleLink] — до конца процесса.
+/// [PersonalizationStoriesV3] со своим [pollsTransport] рисует опросы и без API v3. Ответ
+/// хранится на устройстве по `did` 90 дней, как в вебе; ответ из ленты важнее него.
 ///
 /// ```dart
 /// PersonalizationStoriesV3(
@@ -33,9 +33,9 @@ class PersonalizationStoriesV3 extends StatelessWidget {
     this.shareLabel = 'Share',
     this.shareUrlTransform,
     this.pollsTransport,
-    this.pollReanswerText = 'Answer again',
-    this.pollSubmitText = 'Send',
-    this.pollErrorText = 'Failed to send the answer. Please try again',
+    this.pollReanswerText,
+    this.pollSubmitText,
+    this.pollErrorText,
     required this.child,
   }) : ownApiV3Domain = apiV3Domain;
 
@@ -56,10 +56,12 @@ class PersonalizationStoriesV3 extends StatelessWidget {
   final StoryPollsTransport? pollsTransport;
 
   /// Тексты карточки опроса: ссылка «Ответить заново», кнопка отправки без своей подписи
-  /// опроса и ошибка отправки. Непустые `labels` опроса от сервера важнее.
-  final String pollReanswerText;
-  final String pollSubmitText;
-  final String pollErrorText;
+  /// опроса (и кнопка комментария к оценке шкалы) и ошибка отправки. Непустые `labels`
+  /// опроса от сервера важнее; `null` или пусто — встроенные по языку устройства
+  /// (русские или английские).
+  final String? pollReanswerText;
+  final String? pollSubmitText;
+  final String? pollErrorText;
 
   /// Поддерево в режиме v3.
   final Widget child;
@@ -81,9 +83,9 @@ class PersonalizationStoriesV3 extends StatelessWidget {
       shareUrlTransform: shareUrlTransform,
       pollsTransport: pollsTransport,
       pollTexts: StoryPollTexts(
-        reanswer: pollReanswerText,
-        error: pollErrorText,
-        submit: pollSubmitText,
+        reanswer: pollReanswerText ?? '',
+        error: pollErrorText ?? '',
+        submit: pollSubmitText ?? '',
       ),
     ),
     child: child,
@@ -133,9 +135,9 @@ class PersonalizationStoriesV3 extends StatelessWidget {
     iconBuilder,
     String Function(String url)? shareUrlTransform,
     StoryPollsTransport? pollsTransport,
-    String pollReanswerText = 'Answer again',
-    String pollSubmitText = 'Send',
-    String pollErrorText = 'Failed to send the answer. Please try again',
+    String? pollReanswerText,
+    String? pollSubmitText,
+    String? pollErrorText,
     String? apiV3Domain,
   }) {
     final link = parseStoriesShareLink(url);
@@ -172,9 +174,9 @@ class PersonalizationStoriesV3 extends StatelessWidget {
       shareUrlTransform: shareUrlTransform,
       pollsTransport: pollsTransport,
       pollTexts: StoryPollTexts(
-        reanswer: pollReanswerText,
-        error: pollErrorText,
-        submit: pollSubmitText,
+        reanswer: pollReanswerText ?? '',
+        error: pollErrorText ?? '',
+        submit: pollSubmitText ?? '',
       ),
     );
     unawaited(

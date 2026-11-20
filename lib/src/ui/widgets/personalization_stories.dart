@@ -534,6 +534,9 @@ Future<List<Story>> _fetch(
   } else {
     request = sdk.getStories(code);
   }
+  // Сохранённые ответы опросов открываются заранее, но ленту не держат: карточка,
+  // показанная раньше, возьмёт их, когда хранилище откроется.
+  if (host != null) unawaited(StoryPollStore.instance.load());
   // Просмотренное читается вместе с блоком; ошибка блока приходит как есть.
   final results = await Future.wait<Object>(<Future<Object>>[
     request,

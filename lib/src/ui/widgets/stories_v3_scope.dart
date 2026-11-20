@@ -47,9 +47,7 @@ class StoriesV3Options {
       other.shareLabel == shareLabel &&
       other.shareUrlTransform == shareUrlTransform &&
       other.pollsTransport == pollsTransport &&
-      other.pollTexts.reanswer == pollTexts.reanswer &&
-      other.pollTexts.error == pollTexts.error &&
-      other.pollTexts.submit == pollTexts.submit;
+      other.pollTexts == pollTexts;
 
   @override
   int get hashCode => Object.hash(
@@ -57,9 +55,7 @@ class StoriesV3Options {
     shareLabel,
     shareUrlTransform,
     pollsTransport,
-    pollTexts.reanswer,
-    pollTexts.error,
-    pollTexts.submit,
+    pollTexts,
   );
 }
 

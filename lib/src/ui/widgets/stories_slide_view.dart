@@ -78,6 +78,7 @@ class StorySlideView extends StatelessWidget {
     this.pollsTransport,
     this.pollTexts = const StoryPollTexts(),
     this.pollShopId = '',
+    this.pollDid = '',
     this.onPollHold,
   });
 
@@ -125,8 +126,9 @@ class StorySlideView extends StatelessWidget {
   /// Тексты карточки опроса от хоста.
   final StoryPollTexts pollTexts;
 
-  /// Магазин — ключ хранилища ответов опросов сессии.
+  /// Магазин и устройство (`did`) — ключ сохранённых ответов опросов.
   final String pollShopId;
+  final String pollDid;
 
   /// Опрос держит слайд (`true`) или отпускает.
   final ValueChanged<bool>? onPollHold;
@@ -643,6 +645,7 @@ class StorySlideView extends StatelessWidget {
                   slideId: slide.id,
                   transport: transport,
                   shopId: pollShopId,
+                  did: pollDid,
                   texts: pollTexts,
                   live: live,
                   onHold: onPollHold,
@@ -684,10 +687,12 @@ class StorySlideView extends StatelessWidget {
 /// слайда (зажато 0…100, не число — 0), потом сдвиг, чтобы блок целиком был между [top]
 /// и местом нижних кнопок [bottom]; выше этого места — от его верха.
 ///
-/// Карточка опроса ([poll]) — по центру, шириной [PersonalizationStoryPoll.widthFor];
-/// не влезает — ниже высотой, прокрутка внутри. Клавиатура перекрывает слайд снизу на
-/// [keyboard] — карточка поднимается над ней на 16. Текстовый блок — во всю ширину с
-/// полями 16, своей высоты.
+/// Карточка опроса ([poll]) — как в вебе: по центру, шириной
+/// [PersonalizationStoryPoll.widthFor], верх на [yOffset]%, а не влезает — поднимается,
+/// чтобы низ был на 16 выше низа слайда, но не выше его верха; шапку и нижние кнопки
+/// она может накрыть. Выше слайда — ниже высотой, прокрутка внутри. Клавиатура
+/// перекрывает слайд снизу на [keyboard] — карточка поднимается над ней на 16.
+/// Текстовый блок — во всю ширину с полями 16, своей высоты.
 ///
 /// Раскладка — в области SafeArea: [above] и [below] — отступы её от краёв слайда.
 class _SlideBlockLayout extends SingleChildLayoutDelegate {
@@ -711,16 +716,22 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
 
   static const double _aboveKeyboard = 16;
 
+  /// Зазор карточки опроса до низа слайда.
+  static const double _pollMargin = 16;
+
   /// Поля текстового блока слева и справа.
   static const double _textEdge = 16;
 
+  /// Выше этого верх блока не поднимается: у опроса — верх слайда.
+  double get _top => poll ? 0 : top;
+
   /// Ниже этого низ блока не опускается.
   double _limit(Size size) {
-    var limit = size.height - bottom;
+    var limit = poll ? size.height - _pollMargin : size.height - bottom;
     if (keyboard > 0) {
       limit = math.min(limit, size.height - keyboard - _aboveKeyboard);
     }
-    return math.max(top, limit);
+    return math.max(_top, limit);
   }
 
   @override
@@ -735,7 +746,7 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
     return BoxConstraints(
       minWidth: width,
       maxWidth: width,
-      maxHeight: math.max(0, _limit(size) - top),
+      maxHeight: math.max(0, _limit(size) - _top),
     );
   }
 
@@ -744,7 +755,7 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
     final slide = above + size.height + below;
     final percent = yOffset.isFinite ? yOffset.clamp(0, 100) : 0;
     final wanted = slide * percent / 100 - above;
-    final y = math.max(top, math.min(wanted, _limit(size) - childSize.height));
+    final y = math.max(_top, math.min(wanted, _limit(size) - childSize.height));
     return Offset((size.width - childSize.width) / 2, y);
   }
 

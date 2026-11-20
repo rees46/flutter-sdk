@@ -205,7 +205,7 @@ class PersonalizationStoryViewer extends StatefulWidget {
 //   без него — на хост API v3 просмотра ([StoriesPollsApi], нужен `sdk`); нет ни того ни
 //   другого — опросы не рисуются. Свой транспорт рисует их и без API v3. Пока карточку
 //   держат пальцем, в фокусе её поле или идёт отправка — пауза; касания карточки слайд не
-//   листают. Ответы помнятся до конца процесса ([StoryPollStore]).
+//   листают. Ответы помнятся на устройстве по did 90 дней ([StoryPollStore]).
 class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final StoriesPlayback _playback = StoriesPlayback(
@@ -962,6 +962,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       pollShopId: widget.sdk == null
           ? ''
           : StoriesSeenStore.shopOf(widget.sdk!),
+      pollDid: widget.sdk == null ? '' : StoriesApiV3.knownDid(widget.sdk!),
       onPollHold: (held) {
         if (mounted) _setPaused(StoriesPauseReason.poll, held);
       },
