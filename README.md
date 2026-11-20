@@ -938,6 +938,38 @@ same values, and fails with the released error codes. Their replacements:
 | `getStoredPushToken`, `setPushNotificationCallbacks` | `notifications.getPushToken`, `notifications.setCallbacks` |
 | `trackEvent`, `trackPurchase` | `tracking.custom`, `tracking.purchase` |
 
+## Stories over API v3: shared links
+
+Stories over API v3 are behind the v3 gate: not part of the public API yet, reached
+only through `package:rees46_sdk/src/v3/personalization_v3.dart`.
+
+The "Share" button of a slide shares a link to the shop's site:
+
+```
+https://<shop domain>/<path>?r46_stories=<block code>&r46_story=<story id>[&r46_slide=<slide id>]
+```
+
+To open such a link in the app instead of the browser, the app claims the shop's domain:
+
+- iOS — Universal Links: the `Associated Domains` capability with
+  `applinks:<shop domain>`, and `https://<shop domain>/.well-known/apple-app-site-association`
+  listing the app (`<team id>.<bundle id>`) and the paths of the links.
+- Android — App Links: an `intent-filter` with `android:autoVerify="true"` for
+  `https://<shop domain>` on the activity that opens links, and
+  `https://<shop domain>/.well-known/assetlinks.json` with the app's package name and the
+  SHA-256 fingerprint of its signing certificate.
+
+The app gets the URL as any deep link (for example through its router or an app-links
+plugin) and hands it over:
+
+```dart
+// ignore: implementation_imports
+import 'package:rees46_sdk/src/v3/personalization_v3.dart';
+
+final handled = PersonalizationStoriesV3.handleLink(context, url);
+// false — not a stories link (or no apiV3Domain): open it as usual.
+```
+
 ## Example app
 
 A full demo — tracking, recommendations, search, catalog, loyalty, popups, push
