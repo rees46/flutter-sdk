@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../pigeon/personalization_api.g.dart' as pigeon;
 
 /// Звук сторис на весь процесс.
 ///
 /// - При первом открытии звук выключен; выбор пользователя помнится до конца процесса и
-///   переходит на следующие открытия ([muted]).
+///   переходит на следующие открытия ([muted]). Просмотр новой ленты, как веб, ещё и
+///   хранит выбор кнопки звука на устройстве ([restore], [toggle] с `remember`).
 /// - Кнопка громкости «вверх» включает звук: на Android клавиша сама доходит до
 ///   Flutter ([HardwareKeyboard]), на iOS плагин следит за громкостью аудиосессии и
 ///   сообщает о росте через `PersonalizationStoriesFlutterApi`.
@@ -61,7 +65,42 @@ class StoriesSound implements pigeon.PersonalizationStoriesFlutterApi {
       ? _call(() => api.updateStoriesAudio(muted.value))
       : Future<void>.value();
 
-  void toggle() => muted.value = !muted.value;
+  /// Ключ выбора кнопки звука на устройстве.
+  static const String mutedKey = 'personalization.stories.muted';
+
+  /// Кнопка звука: переключить; [remember] — сохранить выбор на устройстве.
+  void toggle({bool remember = false}) {
+    muted.value = !muted.value;
+    if (remember) unawaited(_remember(muted.value));
+  }
+
+  /// Взять выбор кнопки звука с устройства; его нет — звук как был.
+  Future<void> restore() async {
+    try {
+      final stored = (await SharedPreferences.getInstance()).getBool(mutedKey);
+      if (stored != null) muted.value = stored;
+    } catch (error) {
+      debugPrint('PersonalizationStories: sound choice unavailable — $error');
+    }
+  }
+
+  static Future<void> _remember(bool value) async {
+    try {
+      await (await SharedPreferences.getInstance()).setBool(mutedKey, value);
+    } catch (error) {
+      debugPrint('PersonalizationStories: sound choice not saved — $error');
+    }
+  }
+
+  /// Есть ли звук у видео [source] (адрес или файл кэша); не прочитать — `null`.
+  Future<bool?> hasAudio(String source) async {
+    try {
+      return await api.storiesVideoHasAudio(source);
+    } catch (error) {
+      debugPrint('PersonalizationStories: audio of $source — $error');
+      return null;
+    }
+  }
 
   @override
   void onStoriesVolumeUp() => muted.value = false;

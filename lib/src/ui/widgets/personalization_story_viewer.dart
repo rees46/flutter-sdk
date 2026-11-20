@@ -272,6 +272,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     StoriesSound.instance.attach();
+    // Новая лента, как веб, берёт выбор кнопки звука с устройства.
+    if (_playback.serverStart) unawaited(StoriesSound.instance.restore());
     StoriesSound.instance.muted.addListener(_onMuted);
     widget.paused?.addListener(_onHostPause);
     _onHostPause();
@@ -679,6 +681,17 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   /// Видео из кэша, а нет файла — сразу по сети, пока кэш заполняется в фоне: загрузка
   /// целиком не ждётся. Готово — когда плеер готов играть.
+  /// Новая лента: у видео живого слайда есть звук (или его не прочитать) — кнопка звука.
+  bool _videoSound = false;
+
+  /// Звук видео захода [generation] из файла кэша [file] или по адресу [url]: кнопка
+  /// звука новой ленты — только у видео со звуком, как в вебе; не прочитать — есть.
+  Future<void> _probeSound(String url, String? file, int generation) async {
+    final sound = await StoriesSound.instance.hasAudio(file ?? url);
+    if (!_current(generation) || _videoSound == (sound ?? true)) return;
+    setState(() => _videoSound = sound ?? true);
+  }
+
   Future<void> _loadVideo(String url, int generation) async {
     try {
       await StoriesSound.instance.beforeVideo();
@@ -704,6 +717,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       _playback.useVideoDuration(video.value.duration);
       _videoReady = true;
       _videoPlaying = false;
+      if (_byType) unawaited(_probeSound(url, file?.path, generation));
       _ready(generation);
     } catch (error) {
       debugPrint('PersonalizationStoryViewer: video $url — $error');
@@ -771,6 +785,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _video = null;
     _videoReady = false;
     _videoPlaying = false;
+    _videoSound = false;
     if (video == null) return;
     video.removeListener(_onVideo);
     video.dispose();
@@ -976,7 +991,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onClose: _close,
       onShare: _v3Code == null ? null : _share,
       shareLabel: _v3?.shareLabel ?? 'Share',
-      onToggleMute: StoriesSound.instance.toggle,
+      onToggleMute: () => StoriesSound.instance.toggle(remember: _byType),
       onSheet: _sheet,
       onButton: _button,
       onProduct: _product,
@@ -992,6 +1007,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
         if (mounted) _setPaused(StoriesPauseReason.poll, held);
       },
       v3: _byType,
+      hasAudio: live && _videoSound,
       onHeader: _header,
     );
   }

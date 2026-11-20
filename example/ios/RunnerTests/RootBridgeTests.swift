@@ -218,3 +218,96 @@ final class PendingPushesTests: XCTestCase {
         XCTAssertEqual(pending.count("shop-a"), PendingPushes.limit)
     }
 }
+
+/// Whether a stories video has sound: read off the main thread, answered on it; a source that
+/// cannot be read is `nil`.
+final class StoriesVideoAudioTests: XCTestCase {
+
+    private var original: ((URL) async throws -> Bool)!
+
+    override func setUp() {
+        super.setUp()
+        original = StoriesVideoAudio.loader
+    }
+
+    override func tearDown() {
+        StoriesVideoAudio.loader = original
+        super.tearDown()
+    }
+
+    private func answer(_ source: String, through plugin: Bool = false) -> Bool?? {
+        let done = expectation(description: "answer")
+        var result: Bool??
+        let reply: (Bool?) -> Void = { value in
+            XCTAssertTrue(Thread.isMainThread)
+            result = .some(value)
+            done.fulfill()
+        }
+        if plugin {
+            let impl = PersonalizationHostApiImpl(
+                popupApi: PersonalizationPopupFlutterApi(binaryMessenger: SilentMessenger()),
+                stateApi: PersonalizationStateFlutterApi(binaryMessenger: SilentMessenger())
+            )
+            impl.storiesVideoHasAudio(source: source) { reply(try? $0.get()) }
+            wait(for: [done], timeout: 5)
+            impl.stop()
+        } else {
+            StoriesVideoAudio.hasAudio(source: source, completion: reply)
+            wait(for: [done], timeout: 5)
+        }
+        return result
+    }
+
+    func test_urls_http_andFile_asTheyAre_aPath_asAFile() {
+        XCTAssertEqual(StoriesVideoAudio.url(for: "https://cdn.example/v.mp4")?.absoluteString,
+                       "https://cdn.example/v.mp4")
+        XCTAssertEqual(StoriesVideoAudio.url(for: "file:///tmp/v.mp4")?.path, "/tmp/v.mp4")
+        let path = StoriesVideoAudio.url(for: "/var/cache/stories/v.mp4")
+        XCTAssertTrue(path?.isFileURL ?? false)
+        XCTAssertEqual(path?.path, "/var/cache/stories/v.mp4")
+        XCTAssertNil(StoriesVideoAudio.url(for: ""))
+    }
+
+    func test_theLoaderDecides_aFailureIsNil() {
+        var loaded: [String] = []
+        StoriesVideoAudio.loader = { url in
+            loaded.append(url.absoluteString)
+            if url.absoluteString.hasSuffix("broken.mp4") { throw URLError(.badServerResponse) }
+            return url.absoluteString.hasSuffix("sound.mp4")
+        }
+        XCTAssertEqual(answer("https://cdn.example/sound.mp4"), .some(true))
+        XCTAssertEqual(answer("https://cdn.example/mute.mp4", through: true), .some(false))
+        XCTAssertEqual(answer("https://cdn.example/broken.mp4"), .some(nil))
+        XCTAssertEqual(answer(""), .some(nil))
+        XCTAssertEqual(loaded.count, 3)
+    }
+
+    func test_aRealFile_audioIsSeen_aNonMediaFileHasNone() throws {
+        // A one-second silent WAV: an audio track AVFoundation reads.
+        let rate = 8000
+        var wav = Data()
+        func append<T: FixedWidthInteger>(_ value: T) {
+            var little = value.littleEndian
+            wav.append(Data(bytes: &little, count: MemoryLayout<T>.size))
+        }
+        wav.append("RIFF".data(using: .ascii)!)
+        append(UInt32(36 + rate * 2))
+        wav.append("WAVEfmt ".data(using: .ascii)!)
+        append(UInt32(16)); append(UInt16(1)); append(UInt16(1))
+        append(UInt32(rate)); append(UInt32(rate * 2)); append(UInt16(2)); append(UInt16(16))
+        wav.append("data".data(using: .ascii)!)
+        append(UInt32(rate * 2))
+        wav.append(Data(count: rate * 2))
+        let directory = FileManager.default.temporaryDirectory
+        let sound = directory.appendingPathComponent("stories-audio-test.wav")
+        let text = directory.appendingPathComponent("stories-audio-test.txt")
+        try wav.write(to: sound)
+        try Data("not a video".utf8).write(to: text)
+        defer {
+            try? FileManager.default.removeItem(at: sound)
+            try? FileManager.default.removeItem(at: text)
+        }
+        XCTAssertEqual(answer(sound.path), .some(true))
+        XCTAssertNotEqual(answer(text.path), .some(true))
+    }
+}

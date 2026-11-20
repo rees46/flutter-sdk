@@ -4728,6 +4728,12 @@ protocol PersonalizationHostApi {
   /// The viewer closed: restores the session saved by [beginStoriesAudio] and stops
   /// watching the volume. iOS only; a no-op on Android.
   func endStoriesAudio() throws
+  /// Whether the video at [source] — an `http(s)` URL or a file path of the stories'
+  /// video cache — has an audio track: the stories viewer shows its sound button only
+  /// then, as the web SDK does. Read off the main thread from the container's track
+  /// list (Android `MediaMetadataRetriever`, iOS `AVURLAsset`); null when it cannot be
+  /// read.
+  func storiesVideoHasAudio(source: String, completion: @escaping (Result<Bool?, Error>) -> Void)
   /// Opens the system settings where the user turns notifications on for the app: the
   /// app's notification settings on Android, the app's page in Settings on iOS. What the
   /// native popups do for their push-subscription button.
@@ -6675,6 +6681,28 @@ class PersonalizationHostApiSetup {
       }
     } else {
       endStoriesAudioChannel.setMessageHandler(nil)
+    }
+    /// Whether the video at [source] — an `http(s)` URL or a file path of the stories'
+    /// video cache — has an audio track: the stories viewer shows its sound button only
+    /// then, as the web SDK does. Read off the main thread from the container's track
+    /// list (Android `MediaMetadataRetriever`, iOS `AVURLAsset`); null when it cannot be
+    /// read.
+    let storiesVideoHasAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.personalization_flutter_sdk.PersonalizationHostApi.storiesVideoHasAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      storiesVideoHasAudioChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let sourceArg = args[0] as! String
+        api.storiesVideoHasAudio(source: sourceArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      storiesVideoHasAudioChannel.setMessageHandler(nil)
     }
     /// Opens the system settings where the user turns notifications on for the app: the
     /// app's notification settings on Android, the app's page in Settings on iOS. What the
