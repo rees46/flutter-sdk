@@ -159,16 +159,12 @@ extension TrackingItemWire {
 }
 
 extension TrackingSourceWire {
-  /// An unknown source type is dropped rather than guessed — Dart only sends known values, and the
-  /// Dart, Android and iOS `TrackingSourceType` enums carry the same set.
+  /// The native source of the contract's type by its wire value — `slider` and `agent_search` among
+  /// them, which go as that value; nil for a value the contract does not have, which the callers refuse
+  /// as `invalidArgument`.
   var native: TrackingSource? {
-    // The contract's `slider` and `agent_search` wait for the native SDK's bridge source.
-    guard !Self.notYetNative.contains(type), let type = TrackingSourceType(rawValue: type) else { return nil }
-    return TrackingSource(type: type, code: code)
+    try? TrackingSource(rawType: type, code: code)
   }
-
-  /// The contract's source types the native SDK cannot send yet: `invalidArgument` until it can.
-  static let notYetNative: Set<String> = ["slider", "agent_search"]
 }
 
 extension PurchaseLineItemWire {

@@ -65,13 +65,17 @@ final class TrackingBridgeTests: XCTestCase {
         "instant_search", "full_search", "stories", "web_push_digest",
     ]
 
+    /// The contract's values the native enum gets only in its major: they go by their wire value.
+    private let rawOnlyValues = ["slider", "agent_search"]
+
     func test_everySourceTypeDartCanSend_resolvesToANativeOne() {
-        for value in wireValues {
+        for value in wireValues + rawOnlyValues {
             let native = TrackingSourceWire(type: value, code: "block-1").native
             XCTAssertNotNil(native, "\(value) did not resolve — the bridge would drop it silently")
-            XCTAssertEqual(native?.type.rawValue, value)
+            XCTAssertEqual(native?.rawType, value)
             XCTAssertEqual(native?.code, "block-1")
         }
+        XCTAssertEqual(TrackingSourceWire(type: "chain", code: "c").native?.type, .chain)
     }
 
     /// `stories` has no case in the older `RecommendedByCase`, which is why the bridge used to drop

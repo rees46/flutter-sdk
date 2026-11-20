@@ -155,6 +155,29 @@ internal class TrackingBridgeTest {
     }
 
     @Test
+    fun theContractsSliderAndAgentSearchGoOnEventsAndSetSource() {
+        plugin.trackProductView("37", TrackingSourceWire("slider", "main_slider"), "s") { }
+        val event = reached().arguments[1] as com.personalization.api.models.tracking.TrackingSource
+        assertEquals("slider", event.wireType)
+        assertEquals("main_slider", event.code)
+
+        plugin.trackSetSource(TrackingSourceWire("agent_search", "session-9"), "s")
+        val stored = mockingDetails(tracking).invocations.single { it.method.name == "setSource" }
+            .arguments[0] as com.personalization.api.models.tracking.TrackingSource
+        assertEquals("agent_search", stored.wireType)
+        assertEquals("session-9", stored.code)
+    }
+
+    @Test
+    fun aSourceTypeTheContractDoesNotHaveIsInvalidArgument() {
+        val results = mutableListOf<Result<Unit>>()
+        plugin.trackProductView("37", TrackingSourceWire("agentSearch", "x"), "s") { results += it }
+
+        assertEquals("invalidArgument", (results.single().exceptionOrNull() as FlutterError).code)
+        assertTrue(mockingDetails(queued).invocations.isEmpty())
+    }
+
+    @Test
     fun aPurchaseGoesWithItsOwnSource() {
         plugin.trackPurchase(
             PurchaseTrackingRequestWire(

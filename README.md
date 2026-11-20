@@ -67,7 +67,7 @@ repository. The tag is the version the plugin requires — the `REES46` dependen
 [`ios/rees46_sdk.podspec`](ios/rees46_sdk.podspec):
 
 ```ruby
-pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.40.1'
+pod 'REES46', :git => 'https://github.com/rees46/ios-sdk.git', :tag => 'v3.41.0'
 ```
 
 `pod install` then runs as part of `flutter run`. Update the tag together with the
@@ -81,9 +81,9 @@ package brings the SDK then, and keeping the pod would link it twice.
 `joinLoyalty`, `setProfile`, `trackEvent`, …) are deprecated and behave as in 1.6.4:
 the same answers, the same error codes. What an app can notice:
 
-- **Native SDKs and iOS.** The plugin builds on the Android SDK 2.54.0 and the iOS SDK
-  3.40.1, and iOS 15 is the minimum. With CocoaPods take the pod from its repository
-  with the tag `v3.40.1` ([iOS](#ios)).
+- **Native SDKs and iOS.** The plugin builds on the Android SDK 2.55.0 and the iOS SDK
+  3.41.0, and iOS 15 is the minimum. With CocoaPods take the pod from its repository
+  with the tag `v3.41.0` ([iOS](#ios)).
 - **Errors.** The namespaces, `tracking`, `flush` and `deleteUserCredentials` throw an
   [`SdkException`](#errors) whose `type` is `notInitialized`, `shopBlocked`,
   `invalidArgument`, `network`, `timeout`, `http`, `decoding` or `cancelled`. It is a
@@ -171,8 +171,8 @@ the same answers, the same error codes. What an app can notice:
   discount. The UI kit and the deprecated `getStories` keep the released classes of the
   same names.
 - **Tracking sources.** `TrackingSourceType` gains `slider` and `agentSearch`
-  (`agent_search`), which an exhaustive `switch` needs to handle. Until the native SDKs
-  take them, an event or `setSource` with either fails with `invalidArgument`.
+  (`agent_search`), which an exhaustive `switch` needs to handle. Both go on events
+  (`recommended_by`) and in `setSource`, as the other types do.
 - **New on the handle.** `state` and `stateChanges`, `deviceId` and `sessionId`,
   [`flush`, `release` and `deleteUserCredentials`](#the-instance-itself), the push
   callbacks of each shop (`sdk.notifications.setCallbacks`). `onToken` hears a token the
@@ -624,6 +624,11 @@ A per-call `source` wins over the stored one.
 | `fullSearch` | `full_search` | Full search results page |
 | `stories` | `stories` | Stories block |
 | `webPushDigest` | `web_push_digest` | Web push digest |
+| `slider` | `slider` | A banner of a [slider](#sliders) |
+| `agentSearch` | `agent_search` | An answer of the AI search agent |
+
+`transactional` and `webPushDigest` name where a stored source came from: `setSource`
+takes them, an event's own `source` with either is `invalidArgument`.
 
 ## Namespaces
 

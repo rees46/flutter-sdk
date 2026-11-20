@@ -162,11 +162,22 @@ final class CatalogBridgeTests: XCTestCase {
         XCTAssertEqual(LoyaltyLevel(json: ["code": "gold", "name": "Gold"]).toWire()?.code, "gold")
     }
 
-    /// The contract's `slider` and `agent_search` wait for the native SDK: refused, not guessed.
-    func test_sourcesTheNativeSdkCannotSendYet_areRefused() {
-        XCTAssertNil(TrackingSourceWire(type: "slider", code: "c").native)
-        XCTAssertNil(TrackingSourceWire(type: "agent_search", code: "c").native)
-        XCTAssertNotNil(TrackingSourceWire(type: "stories", code: "c").native)
+    /// The contract's `slider` and `agent_search` go as their wire values, on events and in `setSource`.
+    func test_sliderAndAgentSearch_goOnEventsAndSetSource() throws {
+        let done = expectation(description: "answered")
+        plugin.trackProductView(itemId: "37", source: TrackingSourceWire(type: "slider", code: "main_slider"), shopId: shopId) { _ in
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 5)
+        XCTAssertEqual(native.recordingTracking.productViews.first?.source?.rawType, "slider")
+
+        try plugin.trackSetSource(source: TrackingSourceWire(type: "agent_search", code: "session-9"), shopId: shopId)
+        XCTAssertEqual(native.recordingTracking.sources.first?.rawType, "agent_search")
+        XCTAssertEqual(native.recordingTracking.sources.first?.code, "session-9")
+
+        XCTAssertThrowsError(try plugin.trackSetSource(source: TrackingSourceWire(type: "agentSearch", code: "x"), shopId: shopId)) { error in
+            XCTAssertEqual((error as? PigeonError)?.code, "invalidArgument")
+        }
     }
 
     /// The native log reaches each engine whose Dart has a handler; the native handler is set only while
