@@ -12,6 +12,8 @@ import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_slide_view.dart';
+import 'package:rees46_sdk/src/ui/widgets/stories_sound.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const String _code = 'block';
 
@@ -447,6 +449,32 @@ void main() {
     testWidgets('the old feed: for every video', (tester) async {
       await slide(tester, v3: false, hasAudio: false);
       expect(button, findsOneWidget);
+    });
+
+    testWidgets('the new feed takes the choice saved for its own shop', (
+      tester,
+    ) async {
+      final sound = StoriesSound.instance;
+      addTearDown(() => sound.muted.value = true);
+      stories.add(_story(1, <Map<String, dynamic>>[_slide('10')]));
+
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        StoriesSound.mutedKey('shop'): false,
+      });
+      await bar(tester);
+      await open(tester, 'Story 1');
+      expect(sound.muted.value, isFalse, reason: 'saved for this shop');
+      await close(tester);
+
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        StoriesSound.mutedKey('other'): false,
+      });
+      await open(tester, 'Story 1');
+      expect(
+        sound.muted.value,
+        isTrue,
+        reason: 'nothing saved for this shop: muted, as the web',
+      );
     });
   });
 

@@ -273,7 +273,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     WidgetsBinding.instance.addObserver(this);
     StoriesSound.instance.attach();
     // Новая лента, как веб, берёт выбор кнопки звука с устройства.
-    if (_playback.serverStart) unawaited(StoriesSound.instance.restore());
+    if (_playback.serverStart) {
+      unawaited(StoriesSound.instance.restore(_shopId));
+    }
     StoriesSound.instance.muted.addListener(_onMuted);
     widget.paused?.addListener(_onHostPause);
     _onHostPause();
@@ -970,6 +972,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     );
   }
 
+  /// Магазин просмотра (`''` — без SDK): его ответы опросов и выбор кнопки звука.
+  String get _shopId =>
+      widget.sdk == null ? '' : StoriesSeenStore.shopOf(widget.sdk!);
+
   Widget _page(BuildContext context, int index) {
     final story = _playback.stories[index];
     final live = _playback.entered && index == _playback.storyIndex;
@@ -991,7 +997,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onClose: _close,
       onShare: _v3Code == null ? null : _share,
       shareLabel: _v3?.shareLabel ?? 'Share',
-      onToggleMute: () => StoriesSound.instance.toggle(remember: _byType),
+      onToggleMute: () =>
+          StoriesSound.instance.toggle(rememberFor: _byType ? _shopId : null),
       onSheet: _sheet,
       onButton: _button,
       onProduct: _product,
@@ -999,9 +1006,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onRetry: _retry,
       pollsTransport: _polls,
       pollTexts: _v3?.pollTexts ?? const StoryPollTexts(),
-      pollShopId: widget.sdk == null
-          ? ''
-          : StoriesSeenStore.shopOf(widget.sdk!),
+      pollShopId: _shopId,
       pollDid: widget.sdk == null ? '' : StoriesApiV3.knownDid(widget.sdk!),
       onPollHold: (held) {
         if (mounted) _setPaused(StoriesPauseReason.poll, held);

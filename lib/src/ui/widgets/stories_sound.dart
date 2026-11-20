@@ -10,7 +10,8 @@ import '../../pigeon/personalization_api.g.dart' as pigeon;
 ///
 /// - При первом открытии звук выключен; выбор пользователя помнится до конца процесса и
 ///   переходит на следующие открытия ([muted]). Просмотр новой ленты, как веб, ещё и
-///   хранит выбор кнопки звука на устройстве ([restore], [toggle] с `remember`).
+///   хранит выбор кнопки звука на устройстве — у каждого магазина свой, как у веба у
+///   каждого сайта ([restore], [toggle] с `rememberFor`).
 /// - Кнопка громкости «вверх» включает звук: на Android клавиша сама доходит до
 ///   Flutter ([HardwareKeyboard]), на iOS плагин следит за громкостью аудиосессии и
 ///   сообщает о росте через `PersonalizationStoriesFlutterApi`.
@@ -65,28 +66,34 @@ class StoriesSound implements pigeon.PersonalizationStoriesFlutterApi {
       ? _call(() => api.updateStoriesAudio(muted.value))
       : Future<void>.value();
 
-  /// Ключ выбора кнопки звука на устройстве.
-  static const String mutedKey = 'personalization.stories.muted';
+  /// Ключ выбора кнопки звука магазина [shopId] на устройстве.
+  static String mutedKey(String shopId) =>
+      'personalization.stories.muted.$shopId';
 
-  /// Кнопка звука: переключить; [remember] — сохранить выбор на устройстве.
-  void toggle({bool remember = false}) {
+  /// Кнопка звука: переключить; [rememberFor] — магазин, для которого сохранить выбор на
+  /// устройстве (`null` — не сохранять).
+  void toggle({String? rememberFor}) {
     muted.value = !muted.value;
-    if (remember) unawaited(_remember(muted.value));
+    if (rememberFor != null) unawaited(_remember(rememberFor, muted.value));
   }
 
-  /// Взять выбор кнопки звука с устройства; его нет — звук как был.
-  Future<void> restore() async {
+  /// Взять выбор кнопки звука магазина [shopId] с устройства; его нет — звук выключен,
+  /// как у веба. Устройство не ответило — звук как был.
+  Future<void> restore(String shopId) async {
     try {
-      final stored = (await SharedPreferences.getInstance()).getBool(mutedKey);
-      if (stored != null) muted.value = stored;
+      final preferences = await SharedPreferences.getInstance();
+      muted.value = preferences.getBool(mutedKey(shopId)) ?? true;
     } catch (error) {
       debugPrint('PersonalizationStories: sound choice unavailable — $error');
     }
   }
 
-  static Future<void> _remember(bool value) async {
+  static Future<void> _remember(String shopId, bool value) async {
     try {
-      await (await SharedPreferences.getInstance()).setBool(mutedKey, value);
+      await (await SharedPreferences.getInstance()).setBool(
+        mutedKey(shopId),
+        value,
+      );
     } catch (error) {
       debugPrint('PersonalizationStories: sound choice not saved — $error');
     }

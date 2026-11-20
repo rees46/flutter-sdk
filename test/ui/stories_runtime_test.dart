@@ -112,27 +112,44 @@ void main() {
     expect(sound.muted.value, isTrue, reason: 'the choice outlives a viewer');
   });
 
-  test('the new feed keeps the sound button choice on the device', () async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    final sound = StoriesSound.instance;
-    addTearDown(() => sound.muted.value = true);
-    await sound.restore();
-    expect(sound.muted.value, isTrue, reason: 'muted by default');
-    sound.toggle(remember: true);
-    await Future<void>.delayed(Duration.zero);
-    final preferences = await SharedPreferences.getInstance();
-    expect(preferences.getBool(StoriesSound.mutedKey), isFalse);
-    sound.muted.value = true;
-    await sound.restore();
-    expect(sound.muted.value, isFalse, reason: 'the stored choice');
-    sound.toggle();
-    await Future<void>.delayed(Duration.zero);
-    expect(
-      preferences.getBool(StoriesSound.mutedKey),
-      isFalse,
-      reason: 'the old feed does not store it',
-    );
-  });
+  test(
+    'the new feed keeps the sound button choice on the device per shop',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sound = StoriesSound.instance;
+      addTearDown(() => sound.muted.value = true);
+      await sound.restore('shop-a');
+      expect(sound.muted.value, isTrue, reason: 'muted by default');
+      sound.toggle(rememberFor: 'shop-a');
+      await Future<void>.delayed(Duration.zero);
+      final preferences = await SharedPreferences.getInstance();
+      expect(
+        StoriesSound.mutedKey('shop-a'),
+        'personalization.stories.muted.shop-a',
+      );
+      expect(preferences.getBool(StoriesSound.mutedKey('shop-a')), isFalse);
+      sound.muted.value = true;
+      await sound.restore('shop-a');
+      expect(sound.muted.value, isFalse, reason: 'the stored choice');
+
+      await sound.restore('shop-b');
+      expect(
+        sound.muted.value,
+        isTrue,
+        reason: 'another shop has its own choice: none — muted, as the web',
+      );
+      expect(preferences.getBool(StoriesSound.mutedKey('shop-b')), isNull);
+
+      sound.toggle();
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        preferences.getBool(StoriesSound.mutedKey('shop-b')),
+        isNull,
+        reason: 'the old feed does not store it',
+      );
+      expect(preferences.getBool(StoriesSound.mutedKey('shop-a')), isFalse);
+    },
+  );
 
   test(
     'the audio of a video: the platform answers, a failure is unknown',
