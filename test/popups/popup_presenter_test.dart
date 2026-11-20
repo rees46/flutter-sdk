@@ -125,14 +125,12 @@ void main() {
     expect(h.tracked, isEmpty);
   });
 
-  testWidgets('waits out the delay the shop set', (tester) async {
+  testWidgets('the native SDK waited out the delay: shown at once', (
+    tester,
+  ) async {
     final h = await _pumpApp(tester);
 
     h.presenter.receive(_popup(delay: const Duration(seconds: 3)));
-    await tester.pump(const Duration(seconds: 2));
-    expect(find.text('Title 1'), findsNothing);
-
-    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
     expect(find.text('Title 1'), findsOneWidget);
   });
