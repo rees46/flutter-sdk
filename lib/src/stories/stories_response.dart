@@ -4,6 +4,7 @@ import '../json_number.dart';
 
 part 'stories_poll.dart';
 part 'stories_share_v3.dart';
+part 'stories_header_v3.dart';
 
 // The `payload` of API v3 (`/api/v3/storefront/stories/{code}`) has the same keys and
 // is parsed here too.
@@ -182,8 +183,8 @@ class StorySlide {
   }
 }
 
-/// An element placed on a slide. Unknown types and `header` (not drawn by the kit) are
-/// dropped while parsing, and so is a `poll` of a kind the kit does not draw.
+/// An element placed on a slide. Unknown types are dropped while parsing, and so is a
+/// `poll` of a kind the kit does not draw.
 sealed class StoryElement {
   const StoryElement();
 
@@ -195,6 +196,7 @@ sealed class StoryElement {
       'products' => StoryProductsElement.fromJson(json),
       'text_block' => StoryTextBlockElement.fromJson(json),
       'poll' => StoryPollElement.tryParse(json),
+      'header' => StoryHeaderElement.fromJson(json),
       _ => null,
     };
   }
@@ -287,7 +289,7 @@ class StoryTextBlockElement extends StoryElement {
   /// Font size in logical pixels; 14 when not set, as in the native SDKs.
   final double fontSize;
 
-  /// `serif`, `sans-serif`, `monospaced` or empty.
+  /// `serif`, `sans-serif`, `monospace` (or `monospaced`) or empty.
   final String fontType;
   final bool bold;
   final bool italic;
@@ -315,6 +317,9 @@ class StoryTextBlockElement extends StoryElement {
 
   static const double defaultFontSize = 14;
 
+  // The server sent `font_size`: behind the v3 gate, read through [StoryTextBlockV3].
+  final bool _hasFontSize;
+
   const StoryTextBlockElement({
     required this.text,
     this.fontSize = defaultFontSize,
@@ -328,16 +333,34 @@ class StoryTextBlockElement extends StoryElement {
     this.lineSpacing = 0,
     this.yOffset = 0,
     this.promocode,
+  }) : _hasFontSize = true;
+
+  const StoryTextBlockElement._json(
+    this._hasFontSize, {
+    required this.text,
+    required this.fontSize,
+    required this.fontType,
+    required this.bold,
+    required this.italic,
+    required this.textAlign,
+    required this.textColor,
+    required this.backgroundColor,
+    required this.backgroundOpacity,
+    required this.lineSpacing,
+    required this.yOffset,
+    required this.promocode,
   });
 
   factory StoryTextBlockElement.fromJson(Map<String, dynamic> json) {
     final promocode = json['promocode'];
-    return StoryTextBlockElement(
+    final fontSize = toDoubleOrNull(json['font_size']);
+    return StoryTextBlockElement._json(
+      fontSize != null,
       text: json['text_input'] as String? ?? '',
-      fontSize: toDoubleOrNull(json['font_size']) ?? defaultFontSize,
+      fontSize: fontSize ?? defaultFontSize,
       fontType: json['font_type'] as String? ?? '',
       bold: json['bold'] == true || json['text_bold'] == true,
-      italic: json['italic'] == true,
+      italic: json['italic'] == true || json['text_italic'] == true,
       textAlign: json['text_align'] as String? ?? '',
       textColor: json['text_color'] as String? ?? '',
       backgroundColor: json['text_background_color'] as String? ?? '',

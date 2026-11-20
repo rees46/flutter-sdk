@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../pigeon/personalization_api.g.dart' as pigeon;
 
 /// Звук сторис на весь процесс.
 ///
 /// - При первом открытии звук выключен; выбор пользователя помнится до конца процесса и
-///   переходит на следующие открытия ([muted]).
+///   переходит на следующие открытия ([muted]). Просмотр новой ленты, как веб, ещё и
+///   хранит выбор кнопки звука на устройстве — у каждого магазина свой, как у веба у
+///   каждого сайта ([restore], [toggle] с `rememberFor`).
 /// - Кнопка громкости «вверх» включает звук: на Android клавиша сама доходит до
 ///   Flutter ([HardwareKeyboard]), на iOS плагин следит за громкостью аудиосессии и
 ///   сообщает о росте через `PersonalizationStoriesFlutterApi`.
@@ -61,7 +66,48 @@ class StoriesSound implements pigeon.PersonalizationStoriesFlutterApi {
       ? _call(() => api.updateStoriesAudio(muted.value))
       : Future<void>.value();
 
-  void toggle() => muted.value = !muted.value;
+  /// Ключ выбора кнопки звука магазина [shopId] на устройстве.
+  static String mutedKey(String shopId) =>
+      'personalization.stories.muted.$shopId';
+
+  /// Кнопка звука: переключить; [rememberFor] — магазин, для которого сохранить выбор на
+  /// устройстве (`null` — не сохранять).
+  void toggle({String? rememberFor}) {
+    muted.value = !muted.value;
+    if (rememberFor != null) unawaited(_remember(rememberFor, muted.value));
+  }
+
+  /// Взять выбор кнопки звука магазина [shopId] с устройства; его нет — звук выключен,
+  /// как у веба. Устройство не ответило — звук как был.
+  Future<void> restore(String shopId) async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      muted.value = preferences.getBool(mutedKey(shopId)) ?? true;
+    } catch (error) {
+      debugPrint('PersonalizationStories: sound choice unavailable — $error');
+    }
+  }
+
+  static Future<void> _remember(String shopId, bool value) async {
+    try {
+      await (await SharedPreferences.getInstance()).setBool(
+        mutedKey(shopId),
+        value,
+      );
+    } catch (error) {
+      debugPrint('PersonalizationStories: sound choice not saved — $error');
+    }
+  }
+
+  /// Есть ли звук у видео [source] (адрес или файл кэша); не прочитать — `null`.
+  Future<bool?> hasAudio(String source) async {
+    try {
+      return await api.storiesVideoHasAudio(source);
+    } catch (error) {
+      debugPrint('PersonalizationStories: audio of $source — $error');
+      return null;
+    }
+  }
 
   @override
   void onStoriesVolumeUp() => muted.value = false;

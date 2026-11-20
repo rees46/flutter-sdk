@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/personalization_sdk.dart'
     show PersonalizationStoryViewerBridge;
@@ -37,6 +38,15 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
 
   @override
   Future<void> endStoriesAudio() async => audio.add('end');
+
+  final List<String> probed = <String>[];
+
+  @override
+  Future<bool?> storiesVideoHasAudio(String source) async {
+    probed.add(source);
+    if (source.endsWith('broken.mp4')) throw PlatformException(code: 'x');
+    return source.endsWith('sound.mp4');
+  }
 
   final List<String> shares = <String>[];
 
@@ -101,6 +111,62 @@ void main() {
     expect(api.audio, <String>['begin', 'muted', 'sound', 'muted', 'end']);
     expect(sound.muted.value, isTrue, reason: 'the choice outlives a viewer');
   });
+
+  test(
+    'the new feed keeps the sound button choice on the device per shop',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sound = StoriesSound.instance;
+      addTearDown(() => sound.muted.value = true);
+      await sound.restore('shop-a');
+      expect(sound.muted.value, isTrue, reason: 'muted by default');
+      sound.toggle(rememberFor: 'shop-a');
+      await Future<void>.delayed(Duration.zero);
+      final preferences = await SharedPreferences.getInstance();
+      expect(
+        StoriesSound.mutedKey('shop-a'),
+        'personalization.stories.muted.shop-a',
+      );
+      expect(preferences.getBool(StoriesSound.mutedKey('shop-a')), isFalse);
+      sound.muted.value = true;
+      await sound.restore('shop-a');
+      expect(sound.muted.value, isFalse, reason: 'the stored choice');
+
+      await sound.restore('shop-b');
+      expect(
+        sound.muted.value,
+        isTrue,
+        reason: 'another shop has its own choice: none — muted, as the web',
+      );
+      expect(preferences.getBool(StoriesSound.mutedKey('shop-b')), isNull);
+
+      sound.toggle();
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        preferences.getBool(StoriesSound.mutedKey('shop-b')),
+        isNull,
+        reason: 'the old feed does not store it',
+      );
+      expect(preferences.getBool(StoriesSound.mutedKey('shop-a')), isFalse);
+    },
+  );
+
+  test(
+    'the audio of a video: the platform answers, a failure is unknown',
+    () async {
+      final api = _FakeHostApi();
+      StoriesSound.api = api;
+      final sound = StoriesSound.instance;
+      expect(await sound.hasAudio('/cache/sound.mp4'), isTrue);
+      expect(await sound.hasAudio('https://cdn.example/mute.mp4'), isFalse);
+      expect(await sound.hasAudio('https://cdn.example/broken.mp4'), isNull);
+      expect(api.probed, <String>[
+        '/cache/sound.mp4',
+        'https://cdn.example/mute.mp4',
+        'https://cdn.example/broken.mp4',
+      ]);
+    },
+  );
 
   test('share hands the link and the button frame to the platform', () async {
     final api = _FakeHostApi();

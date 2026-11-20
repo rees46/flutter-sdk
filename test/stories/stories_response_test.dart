@@ -231,9 +231,12 @@ void main() {
       expect(product.image, 'https://pictures.example/180/135478.jpg');
     });
 
-    test('products, text block; header dropped', () {
+    test('products, text block; header parsed for the new feed', () {
       final elements = block.stories[1].slides[1].elements;
-      expect(elements, hasLength(3), reason: 'header is not drawn by the kit');
+      expect(elements, hasLength(4));
+      final header = elements.whereType<StoryHeaderElement>().single;
+      expect(header.title, 'dropped');
+      expect((header.icon, header.subtitle, header.link), ('', '', ''));
 
       final products = elements.whereType<StoryProductsElement>().single;
       expect(products.showLabel, 'Товары для геймеров');

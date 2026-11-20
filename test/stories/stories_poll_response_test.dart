@@ -129,6 +129,50 @@ void main() {
     expect(const StoryPollAnswer(text: ' ').isAnswered, isTrue);
   });
 
+  test('a band question and a comment of the answer; JSON both ways', () {
+    final scale = _poll(
+      _slide(<Map<String, dynamic>>[
+        <String, dynamic>{
+          'type': 'poll',
+          'poll_type': 'csat',
+          'poll': <String, dynamic>{
+            'code': 'support',
+            'bands': <Object?>[
+              <String, dynamic>{
+                'from': 1,
+                'to': 3,
+                'question': 'Что не так?',
+                'success': 'Жаль',
+              },
+              <String, dynamic>{'from': 4, 'to': 5, 'question': null},
+            ],
+          },
+          'answer': <String, dynamic>{'rate': 2, 'comment': 'Долго'},
+        },
+      ]),
+    )!;
+    expect(scale.bands.first.question, 'Что не так?');
+    expect(scale.bands.last.question, isNull);
+    expect(scale.answer!.comment, 'Долго');
+    expect(scale.answer!.toJson(), <String, Object>{
+      'rate': 2,
+      'comment': 'Долго',
+    });
+    final answer = StoryPollAnswer.tryParse(
+      const StoryPollAnswer(id: 7, optionIds: <int>[1, 2], text: 'a').toJson(),
+    )!;
+    expect((answer.id, answer.text), (7, 'a'));
+    expect(answer.optionIds, <int>[1, 2]);
+    final results = StoryPollResults.tryParse(
+      const StoryPollResults(
+        total: 3,
+        options: <({int id, double percent})>[(id: 1, percent: 33.3)],
+      ).toJson(),
+    )!;
+    expect((results.total, results.percentOf(1)), (3, 33));
+    expect(const StoryPollResults().toJson(), <String, Object>{'total': 0});
+  });
+
   test('any numeric rate is an answer, a fractional one too', () {
     StoryPollAnswer? rate(Object? value) =>
         StoryPollAnswer.tryParse(<String, dynamic>{'rate': value});

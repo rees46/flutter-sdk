@@ -30,6 +30,43 @@ enum StoriesSeenStore {
   }
 }
 
+/// Whether a stories video has an audio track: the viewer shows its sound button only then, as
+/// the web SDK does. The asset's tracks load off the main thread (a network video reads its
+/// header over the network); the answer comes on the main queue, where Pigeon replies.
+enum StoriesVideoAudio {
+  /// Reads whether the asset at the URL has an audio track. Tests replace it.
+  static var loader: (URL) async throws -> Bool = { url in
+    !(try await AVURLAsset(url: url).loadTracks(withMediaType: .audio)).isEmpty
+  }
+
+  /// `http(s)` and `file` addresses as they are; anything else is a file path.
+  static func url(for source: String) -> URL? {
+    let lower = source.lowercased()
+    if lower.hasPrefix("http://") || lower.hasPrefix("https://") || lower.hasPrefix("file://") {
+      return URL(string: source)
+    }
+    return source.isEmpty ? nil : URL(fileURLWithPath: source)
+  }
+
+  /// Answers `completion` on the main queue: `nil` when the source cannot be read.
+  static func hasAudio(source: String, completion: @escaping (Bool?) -> Void) {
+    guard let url = url(for: source) else {
+      DispatchQueue.main.async { completion(nil) }
+      return
+    }
+    let load = loader
+    Task.detached {
+      let answer: Bool?
+      do {
+        answer = try await load(url)
+      } catch {
+        answer = nil
+      }
+      DispatchQueue.main.async { completion(answer) }
+    }
+  }
+}
+
 /// The audio session while the stories viewer plays video.
 ///
 /// - `begin` saves the app's session before the first video, `end` puts it back when the

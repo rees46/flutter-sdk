@@ -5,7 +5,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/src/core/native_events.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
+import 'package:rees46_sdk/src/popups_v3/popups_v3.dart';
+import 'package:rees46_sdk/src/popups_v3/popups_v3_hooks.dart';
 import 'package:rees46_sdk/src/stories/stories_response.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_polls_api.dart';
@@ -55,31 +58,69 @@ void main() {
   });
 
   group('bodies', () {
-    test(
-      'a mini poll: the campaign as a number, the slide always a string',
-      () {
-        expect(
-          storyPollAnswerBody(
-            optionIds: <int>[2],
-            storyId: '5',
-            slideId: '101',
-          ),
-          <String, Object>{
-            'option_ids': <int>[2],
-            'story_id': 5,
-            'slide_id': '101',
-          },
-        );
-        expect(
-          storyPollAnswerBody(text: 'Мастер', storyId: '39', slideId: '39_0'),
-          <String, Object>{
-            'text': 'Мастер',
-            'story_id': 39,
-            'slide_id': '39_0',
-          },
-        );
-      },
-    );
+    test('a mini poll: the source as strings, no story_id / slide_id', () {
+      expect(
+        storyPollAnswerBody(optionIds: <int>[2], storyId: '5', slideId: '101'),
+        <String, Object>{
+          'option_ids': <int>[2],
+          'source_type': 'stories',
+          'source_id': '5',
+          'source_item_id': '101',
+        },
+      );
+      expect(
+        storyPollAnswerBody(text: 'Мастер', storyId: '39', slideId: '39_0'),
+        <String, Object>{
+          'text': 'Мастер',
+          'source_type': 'stories',
+          'source_id': '39',
+          'source_item_id': '39_0',
+        },
+      );
+    });
+
+    test('no story — no source; no slide — no source_item_id', () {
+      expect(
+        storyPollAnswerBody(optionIds: <int>[1], storyId: '', slideId: '7'),
+        <String, Object>{
+          'option_ids': <int>[1],
+        },
+      );
+      expect(storyPollSource(storyId: '5', slideId: ''), <String, Object>{
+        'source_type': 'stories',
+        'source_id': '5',
+      });
+    });
+
+    test('a review: the same rate with a comment, the source as strings', () {
+      expect(
+        storyPollReviewBody(
+          _poll(StoryPollType.nps),
+          3,
+          comment: 'Долго',
+          storyId: '5',
+          slideId: '12_0',
+        ),
+        <String, Object>{
+          'channel': 'stories',
+          'category': 'delivery',
+          'rate': 3,
+          'comment': 'Долго',
+          'source_type': 'stories',
+          'source_id': '5',
+          'source_item_id': '12_0',
+        },
+      );
+      expect(
+        storyPollReviewBody(_poll(StoryPollType.csat), 4, comment: ''),
+        <String, Object>{
+          'channel': 'stories',
+          'campaign': 'delivery',
+          'rate': 4,
+        },
+        reason: 'an empty comment and no story are not sent',
+      );
+    });
 
     test('no code and a blank channel go as they are', () {
       expect(
@@ -153,9 +194,11 @@ void main() {
         'shop_id': 'shop',
         'did': 'did-1',
         'sid': 'sid-1',
+        'stream': 'flutter',
         'option_ids': <int>[2],
-        'story_id': 5,
-        'slide_id': '101',
+        'source_type': 'stories',
+        'source_id': '5',
+        'source_item_id': '101',
       });
       expect(result.answer!.id, 77);
       expect(result.answer!.optionIds, <int>[2]);
@@ -254,10 +297,55 @@ void main() {
       'shop_id': 'shop',
       'did': 'did-1',
       'sid': 'sid-1',
+      'stream': 'flutter',
       'channel': 'stories',
       'category': 'delivery',
       'rate': 3,
     });
+  });
+
+  group('identity', () {
+    tearDown(PopupsV3.reset);
+
+    test(
+      'the configured stream and test mode; no segment, as the web',
+      () async {
+        PopupsV3Hooks.initialized(
+          sdk.tracking,
+          const SdkInitConfig(shopId: 'shop', stream: ' android-tv '),
+        );
+        sdk.popups.testMode = true;
+        NativeEvents.instance.shop('shop').segment = 'B';
+        addTearDown(() => NativeEvents.instance.shop('shop').segment = null);
+        await polls.review(StoryPollType.nps, <String, Object>{'rate': 1});
+        expect(requests.single.body, <String, dynamic>{
+          'shop_id': 'shop',
+          'did': 'did-1',
+          'sid': 'sid-1',
+          'stream': 'android-tv',
+          'testmode': true,
+          'rate': 1,
+        });
+      },
+    );
+
+    test(
+      'the bridge copies of did and sid win over asking the bridge',
+      () async {
+        final mirror = NativeEvents.instance.shop('shop')
+          ..deviceId = 'did-mirror'
+          ..sessionId = 'sid-mirror';
+        addTearDown(() {
+          mirror
+            ..deviceId = null
+            ..sessionId = null;
+        });
+        await polls.answerMiniPoll('x', <String, Object>{'text': 'a'});
+        expect(requests.single.body['did'], 'did-mirror');
+        expect(requests.single.body['sid'], 'sid-mirror');
+        expect(StoriesApiV3.knownDid(sdk), 'did-mirror');
+      },
+    );
   });
 
   group('errors', () {

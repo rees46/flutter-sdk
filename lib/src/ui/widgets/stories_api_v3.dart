@@ -5,7 +5,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../../init/sdk_init_handler.dart';
 import '../../personalization_sdk.dart';
+import '../../popups_v3/popups_v3.dart';
+import '../../popups_v3/popups_v3_hooks.dart';
 import '../../stories/stories_response.dart';
 import '../../tracking/tracking_models.dart';
 import 'stories_seen_store.dart';
@@ -23,6 +26,16 @@ enum StoriesV3Event {
   /// Значение поля `event`.
   final String wire;
 }
+
+/// Кто спрашивает API v3 ([StoriesApiV3.identity]).
+typedef StoriesV3Identity = ({
+  String shopId,
+  String did,
+  String sid,
+  String segment,
+  String stream,
+  bool testMode,
+});
 
 /// Ответ HTTP: код и тело.
 typedef StoriesV3Response = ({int status, String body});
@@ -56,8 +69,9 @@ class StoriesV3Exception implements Exception {
 /// - события — `POST /api/v3/storefront/stories/{code}/events`;
 /// - ответы опросов слайдов — [post] (`/api/v3/polls/...`, `StoriesPollsApi`).
 ///
-/// Запросу нужны `shop_id` и `did`, `sid` не нужен. Без `did` сервер отвечает 400, а SDK
-/// получает его при init: запрос ждёт его ([identity]).
+/// Запросы несут `shop_id`, `did`, `sid`, `segment`, `stream` и `testmode`, как веб
+/// ([identity]). Без `did` сервер отвечает 400, а SDK получает его при init: запрос ждёт
+/// его.
 abstract final class StoriesApiV3 {
   /// Глобальный хост API v3 без схемы (`app.rees46.ru`) — для блоков без своего;
   /// `null` или пусто — старый API.
@@ -102,8 +116,15 @@ abstract final class StoriesApiV3 {
   ]) {
     return Uri.parse('https://$host').replace(
       pathSegments: <String>['api', 'v3', ...segments],
-      // Пустой запрос — без «?» на конце.
-      queryParameters: query.isEmpty ? null : query,
+      // Пустой запрос — без «?» на конце. Пустое значение — `key=`, как в вебе (сам
+      // `Uri` пишет просто `key`).
+      query: query.isEmpty
+          ? null
+          : <String>[
+              for (final MapEntry(:key, :value) in query.entries)
+                '${Uri.encodeQueryComponent(key)}='
+                    '${Uri.encodeQueryComponent(value)}',
+            ].join('&'),
     );
   }
 
@@ -154,28 +175,94 @@ abstract final class StoriesApiV3 {
     return Map<String, dynamic>.from(json);
   }
 
-  /// `shop_id` и `did` магазина [sdk]. `did` спрашивается раз в [didPoll], пока SDK его
-  /// не получит; не дождались за [timeout] — [TimeoutException].
-  static Future<({String shopId, String did})> identity(
+  /// Последний `did` каждого магазина, которым ходили запросы: ключ сохранённых ответов
+  /// опросов, когда копии моста ещё нет ([knownDid]).
+  static final Map<String, String> _dids = <String, String>{};
+
+  /// Кто спрашивает: магазин, устройство и сеанс, группа A/B устройства, поток и
+  /// тестовый режим. `did` берётся из копии моста, без неё спрашивается раз в
+  /// [didPoll], пока SDK его не получит; не дождались за [timeout] —
+  /// [TimeoutException]. `sid` — сеанс моста (нет — пустая строка), `segment` —
+  /// `segments.getAbGroup()` (до init пустой), `stream` — поток init (по умолчанию
+  /// `flutter`), тестовый режим — у попапов v3 (`sdk.popups.testMode`).
+  static Future<StoriesV3Identity> identity(
     PersonalizationSdk sdk, {
     Duration timeout = didTimeout,
   }) async {
     final shop = StoriesSeenStore.shopOf(sdk);
     if (shop.isEmpty) throw StateError('stories API v3: unknown shop_id');
+    final did = await _did(sdk, timeout);
+    _dids[shop] = did;
+    var segment = '';
+    try {
+      segment = sdk.segments.getAbGroup();
+    } catch (_) {
+      // Группы ещё нет — пустая строка, как без согласия в вебе.
+    }
+    return (
+      shopId: shop,
+      did: did,
+      sid: await _sid(sdk),
+      segment: segment,
+      stream: streamOf(sdk),
+      testMode: PopupsV3.testModeOf(sdk),
+    );
+  }
+
+  /// `did` магазина [sdk] сейчас, без ожидания: копия моста, иначе последний, с которым
+  /// ходили запросы; не знаем — пустая строка.
+  static String knownDid(PersonalizationSdk sdk) {
+    final mirrored = sdk.deviceId ?? '';
+    if (mirrored.isNotEmpty) return mirrored;
+    return _dids[StoriesSeenStore.shopOf(sdk)] ?? '';
+  }
+
+  /// Поток магазина [sdk] из init; не задан — `flutter`.
+  static String streamOf(PersonalizationSdk sdk) {
+    final stream = PopupsV3Hooks.configOf(sdk.tracking)?.stream?.trim() ?? '';
+    return stream.isEmpty ? SdkInitHandler.defaultStream : stream;
+  }
+
+  static Future<String> _did(PersonalizationSdk sdk, Duration timeout) async {
     for (var waited = Duration.zero; ; waited += didPoll) {
-      String? did;
-      try {
-        did = await sdk.getDid();
-      } catch (_) {
-        // Инстанс ещё не готов — спросим снова.
+      var did = sdk.deviceId;
+      if (did == null || did.isEmpty) {
+        try {
+          did = await sdk.getDid();
+        } catch (_) {
+          // Инстанс ещё не готов — спросим снова.
+        }
       }
-      if (did != null && did.isNotEmpty) return (shopId: shop, did: did);
+      if (did != null && did.isNotEmpty) return did;
       if (waited >= timeout) {
         throw TimeoutException('stories API v3: no did', timeout);
       }
       await Future<void>.delayed(didPoll);
     }
   }
+
+  static Future<String> _sid(PersonalizationSdk sdk) async {
+    final mirrored = sdk.sessionId ?? '';
+    if (mirrored.isNotEmpty) return mirrored;
+    try {
+      return await sdk.getSid();
+    } catch (_) {
+      // Нет сеанса — пустой `sid`.
+      return '';
+    }
+  }
+
+  /// Параметры ленты и сторис по ссылке: `shop_id`, `did`, `sid`, `segment`, `stream` и
+  /// `testmode=true` только в тестовом режиме.
+  static Map<String, String> identityQuery(StoriesV3Identity id) =>
+      <String, String>{
+        'shop_id': id.shopId,
+        'did': id.did,
+        'sid': id.sid,
+        'segment': id.segment,
+        'stream': id.stream,
+        if (id.testMode) 'testmode': 'true',
+      };
 
   /// Лента блока [code] с хоста [host].
   static Future<StoriesBlock> feed(
@@ -186,11 +273,7 @@ abstract final class StoriesApiV3 {
     final id = await identity(sdk);
     final response = await send(
       'GET',
-      uri(
-        host,
-        <String>[code],
-        <String, String>{'shop_id': id.shopId, 'did': id.did},
-      ),
+      uri(host, <String>[code], identityQuery(id)),
       null,
     );
     return parseResponse(response);
@@ -210,8 +293,7 @@ abstract final class StoriesApiV3 {
         host,
         <String>[link.code, 'story', link.storyId],
         <String, String>{
-          'shop_id': id.shopId,
-          'did': id.did,
+          ...identityQuery(id),
           if (link.slideId != null) 'slide_id': link.slideId!,
         },
       ),
@@ -243,13 +325,7 @@ abstract final class StoriesApiV3 {
         'POST',
         uri(host, <String>[code, 'events'], const <String, String>{}),
         jsonEncode(
-          eventBody(
-            shopId: id.shopId,
-            did: id.did,
-            event: event,
-            storyId: storyId,
-            slideId: slideId,
-          ),
+          eventBody(id, event: event, storyId: storyId, slideId: slideId),
         ),
       );
       if (response.status < 200 || response.status >= 300) {
@@ -270,18 +346,23 @@ abstract final class StoriesApiV3 {
     }
   }
 
-  /// Тело события: id кампании — числом, как в ленте; id слайда — всегда строкой.
-  static Map<String, Object> eventBody({
-    required String shopId,
-    required String did,
+  /// Тело события: кто спрашивает ([identityQuery], `testmode` — `true`), событие, id
+  /// кампании — числом, если он числовой, как в ленте; id слайда — всегда строкой
+  /// (`12_0` тоже).
+  static Map<String, Object> eventBody(
+    StoriesV3Identity id, {
     required StoriesV3Event event,
     required String storyId,
     required String slideId,
   }) {
     final number = int.tryParse(storyId);
     return <String, Object>{
-      'shop_id': shopId,
-      'did': did,
+      'shop_id': id.shopId,
+      'did': id.did,
+      'sid': id.sid,
+      'segment': id.segment,
+      'stream': id.stream,
+      if (id.testMode) 'testmode': true,
       'event': event.wire,
       'story_id': number != null && '$number' == storyId ? number : storyId,
       'slide_id': slideId,

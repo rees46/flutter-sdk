@@ -133,65 +133,18 @@ void main() {
       ],
     });
 
-    test('prefers the slide link, falls back to the campaign link with the '
-        'slide in it', () {
+    test('prefers the slide link, falls back to the campaign link as it is, '
+        'as the web', () {
       expect(
         storySlideShareUrl(story, story.slides[0]),
         'https://shop.test/?r46_slide=1',
       );
       expect(
         storySlideShareUrl(story, story.slides[1]),
-        'https://shop.test/?r46_story=5&r46_slide=5_0',
-        reason: 'a product slide has no link of its own',
+        'https://shop.test/?r46_story=5',
+        reason: 'a product slide has no link of its own; no r46_slide added',
       );
     });
-
-    test(
-      'the campaign link takes r46_slide once, the rest stays as it was',
-      () {
-        const campaign = 'https://shop.test/?r46_story=5';
-        expect(
-          storyCampaignSlideUrl(campaign, '37'),
-          'https://shop.test/?r46_story=5&r46_slide=37',
-        );
-        expect(
-          storyCampaignSlideUrl(
-            'https://shop.test/p?q=a%20b&r46_story=5#top',
-            '5_2',
-          ),
-          'https://shop.test/p?q=a%20b&r46_story=5&r46_slide=5_2#top',
-          reason: 'before the fragment, nothing re-encoded',
-        );
-        expect(
-          storyCampaignSlideUrl('https://shop.test/promo', '5_2'),
-          'https://shop.test/promo?r46_slide=5_2',
-        );
-        expect(
-          storyCampaignSlideUrl('https://shop.test/?', '7'),
-          'https://shop.test/?r46_slide=7',
-        );
-        expect(
-          storyCampaignSlideUrl('$campaign&r46_slide=7', '5_2'),
-          '$campaign&r46_slide=7',
-          reason: 'r46_slide is there already',
-        );
-        for (final id in <String>[
-          'x',
-          '',
-          '1_',
-          '12345678901',
-          '1_12345',
-          '1;2',
-        ]) {
-          expect(
-            storyCampaignSlideUrl(campaign, id),
-            campaign,
-            reason: 'a link does not carry "$id"',
-          );
-        }
-        expect(storyCampaignSlideUrl('', '37'), '');
-      },
-    );
 
     test('nothing when sharing is off or the link is not http(s)', () {
       Story make(Map<String, dynamic> json) => Story.fromJson(<String, dynamic>{
@@ -214,7 +167,7 @@ void main() {
       final upper = make(<String, dynamic>{'share_url': 'HTTPS://shop.test/'});
       expect(
         storySlideShareUrl(upper, upper.slides.single),
-        'HTTPS://shop.test/?r46_slide=1',
+        'HTTPS://shop.test/',
       );
     });
   });
@@ -274,32 +227,92 @@ void main() {
       );
     });
 
-    test('the event: the campaign id a number, the slide id a string', () {
-      expect(
-        StoriesApiV3.eventBody(
+    test(
+      'the event: who asks, the campaign id a number, the slide a string',
+      () {
+        const id = (
           shopId: 'shop',
           did: 'did',
-          event: StoriesV3Event.sharedOpen,
-          storyId: '40',
-          slideId: '37',
-        ),
-        <String, Object>{
-          'shop_id': 'shop',
-          'did': 'did',
-          'event': 'shared_open',
-          'story_id': 40,
-          'slide_id': '37',
-        },
-      );
-      final virtual = StoriesApiV3.eventBody(
+          sid: 'sid',
+          segment: 'A',
+          stream: 'flutter',
+          testMode: false,
+        );
+        expect(
+          StoriesApiV3.eventBody(
+            id,
+            event: StoriesV3Event.sharedOpen,
+            storyId: '40',
+            slideId: '37',
+          ),
+          <String, Object>{
+            'shop_id': 'shop',
+            'did': 'did',
+            'sid': 'sid',
+            'segment': 'A',
+            'stream': 'flutter',
+            'event': 'shared_open',
+            'story_id': 40,
+            'slide_id': '37',
+          },
+        );
+        final virtual = StoriesApiV3.eventBody(
+          (
+            shopId: 'shop',
+            did: 'did',
+            sid: '',
+            segment: '',
+            stream: 'qa',
+            testMode: true,
+          ),
+          event: StoriesV3Event.view,
+          storyId: '39',
+          slideId: '39_0',
+        );
+        expect(virtual['story_id'], 39);
+        expect(virtual['slide_id'], '39_0');
+        expect(virtual['testmode'], true);
+        expect(virtual['segment'], '', reason: 'an unknown group is empty');
+        expect(
+          StoriesApiV3.eventBody(
+            id,
+            event: StoriesV3Event.click,
+            storyId: 'promo',
+            slideId: '1',
+          )['story_id'],
+          'promo',
+          reason: 'not a number — a string',
+        );
+      },
+    );
+
+    test('the feed query: who asks, testmode only in test mode', () {
+      const id = (
         shopId: 'shop',
         did: 'did',
-        event: StoriesV3Event.view,
-        storyId: '39',
-        slideId: '39_0',
+        sid: 'sid',
+        segment: 'B',
+        stream: 'flutter',
+        testMode: false,
       );
-      expect(virtual['story_id'], 39);
-      expect(virtual['slide_id'], '39_0');
+      expect(StoriesApiV3.identityQuery(id), <String, String>{
+        'shop_id': 'shop',
+        'did': 'did',
+        'sid': 'sid',
+        'segment': 'B',
+        'stream': 'flutter',
+      });
+      expect(
+        StoriesApiV3.identityQuery((
+          shopId: 'shop',
+          did: 'did',
+          sid: 'sid',
+          segment: 'B',
+          stream: 'flutter',
+          testMode: true,
+        ))['testmode'],
+        'true',
+      );
     });
 
     test('addresses go to the v3 host, the scheme is optional', () {

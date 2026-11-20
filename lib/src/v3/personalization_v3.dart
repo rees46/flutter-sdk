@@ -36,7 +36,9 @@ export '../stories/stories_response.dart'
         StoryPollAnswer,
         StoryPollResults,
         StoryPollLabels,
-        StoryPollElement;
+        StoryPollElement,
+        StoryHeaderElement,
+        StoryTextBlockV3;
 // Опросы слайдов: шов транспорта ответов (тесты, офлайн-демо). Карточка и её логика —
 // внутренности просмотра.
 export '../ui/widgets/stories_polls_api.dart'

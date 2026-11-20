@@ -16,6 +16,7 @@ import '../components/personalization_story_sound_button.dart';
 import '../components/personalization_story_used_products.dart';
 import '../components/personalization_toast.dart';
 import '../personalization_theme.dart';
+import '../personalization_typography.dart';
 import 'personalization_story_viewer.dart';
 import 'stories_gif_player.dart';
 import 'stories_poll.dart';
@@ -48,6 +49,12 @@ import 'stories_support.dart';
 ///   Открыта клавиатура — карточка над ней (+16), слайд не сжимается, тап мимо
 ///   карточки только прячет клавиатуру.
 ///
+/// Новая лента ([v3]), как в вебе: медиа решает тип слайда; слайд без медиа — цвета
+/// `background_color` (без него — Background/Card), токены — по его яркости; текстовый
+/// блок без `font_size` — кеглем основного текста кита; шапка `header` (иконка, заголовок,
+/// подзаголовок) под шапкой просмотра, нажатие — [onHeader]; кнопка звука — только у
+/// видео со звуком ([hasAudio]).
+///
 /// Живой ([live]) — только текущий слайд осевшей страницы: у него часы, видео, касания и
 /// шторка. Соседние страницы показывают свой стартовый слайд неподвижно.
 class StorySlideView extends StatelessWidget {
@@ -78,7 +85,11 @@ class StorySlideView extends StatelessWidget {
     this.pollsTransport,
     this.pollTexts = const StoryPollTexts(),
     this.pollShopId = '',
+    this.pollDid = '',
     this.onPollHold,
+    this.v3 = false,
+    this.hasAudio = true,
+    this.onHeader,
   });
 
   final Story story;
@@ -125,26 +136,53 @@ class StorySlideView extends StatelessWidget {
   /// Тексты карточки опроса от хоста.
   final StoryPollTexts pollTexts;
 
-  /// Магазин — ключ хранилища ответов опросов сессии.
+  /// Магазин и устройство (`did`) — ключ сохранённых ответов опросов.
   final String pollShopId;
+  final String pollDid;
 
   /// Опрос держит слайд (`true`) или отпускает.
   final ValueChanged<bool>? onPollHold;
+
+  /// Слайд новой ленты (API v3): правила веба, см. описание класса.
+  final bool v3;
+
+  /// У видео слайда есть звук: без него у новой ленты нет кнопки звука.
+  final bool hasAudio;
+
+  /// Нажата шапка `header` слайда новой ленты.
+  final ValueChanged<StoryHeaderElement>? onHeader;
 
   /// Удержание дольше этого — пауза, а не касание.
   static const Duration holdDelay = Duration(milliseconds: 200);
 
   StorySlide get slide => story.slides[slideIndex];
 
+  StoryMedia _media(StorySlide slide) => storyMediaOf(slide, byType: v3);
+
+  /// Свой цвет слайда без медиа (новая лента); нет — `null`.
+  Color? _slideColor(StorySlide slide) => v3 ? storySlideColor(slide) : null;
+
   @override
   Widget build(BuildContext context) {
     final slide = this.slide;
-    final media = storyMediaOf(slide) != StoryMedia.none;
+    final media = _media(slide) != StoryMedia.none;
     final body = Builder(builder: (context) => _body(context, slide, media));
-    // Слайды с медиа — тёмные токены кита: текст и кнопки лежат на фото или видео.
-    return media
-        ? PersonalizationBrightness(brightness: Brightness.dark, child: body)
-        : body;
+    // Слайды с медиа — тёмные токены кита: текст и кнопки лежат на фото или видео. Свой
+    // цвет слайда без медиа — токены по его яркости.
+    final color = media ? null : _slideColor(slide);
+    if (media) {
+      return PersonalizationBrightness(
+        brightness: Brightness.dark,
+        child: body,
+      );
+    }
+    if (color == null) return body;
+    return PersonalizationBrightness(
+      brightness: color.computeLuminance() > 0.5
+          ? Brightness.light
+          : Brightness.dark,
+      child: body,
+    );
   }
 
   Widget _body(BuildContext context, StorySlide slide, bool media) {
@@ -164,7 +202,9 @@ class StorySlideView extends StatelessWidget {
         builder: (context, constraints) => _gestures(
           width: constraints.maxWidth,
           child: ColoredBox(
-            color: media ? storyLetterbox(slide) : colors.backgroundCard,
+            color: media
+                ? storyLetterbox(slide)
+                : _slideColor(slide) ?? colors.backgroundCard,
             child: Stack(
               fit: StackFit.expand,
               children: <Widget>[
@@ -228,7 +268,7 @@ class StorySlideView extends StatelessWidget {
             RawImage(image: gif.frame, fit: BoxFit.contain),
       );
     }
-    final url = storyMediaOf(slide) == StoryMedia.video
+    final url = _media(slide) == StoryMedia.video
         ? slide.preview
         : slide.background;
     final image = storyImage(url, config.imageProvider);
@@ -246,7 +286,7 @@ class StorySlideView extends StatelessWidget {
   Widget _scrim(StorySlide slide) {
     final shade = const Color(
       0xFF000000,
-    ).withValues(alpha: storyScrimOpacity(slide));
+    ).withValues(alpha: storyScrimOpacity(slide, byType: v3));
     const clear = Color(0x00000000);
     return IgnorePointer(
       child: DecoratedBox(
@@ -304,9 +344,9 @@ class StorySlideView extends StatelessWidget {
     child: _keyboardShield(_navigation()),
   );
 
-  /// Кнопка звука — только у видео.
+  /// Кнопка звука — только у видео, у новой ленты — только со звуком.
   Widget? _sound(StorySlide slide) {
-    if (storyMediaOf(slide) != StoryMedia.video) return null;
+    if (_media(slide) != StoryMedia.video || (v3 && !hasAudio)) return null;
     return PersonalizationStorySoundButton(
       muted: muted,
       onPressed: onToggleMute,
@@ -417,6 +457,8 @@ class StorySlideView extends StatelessWidget {
           bottom: _hasRow(slide) ? 64 : 16,
           child: _primaryButtons(buttons),
         ),
+        if (_storyHeader(context, slide) case final header?)
+          Positioned(left: 16, right: 16, top: _blockTop, child: header),
         ..._poll(context, slide, bottom: bottom),
         ..._bottomRow(slide),
         _header(),
@@ -424,8 +466,79 @@ class StorySlideView extends StatelessWidget {
     );
   }
 
+  /// Шапка `header` слайда новой ленты: иконка в круге, заголовок и подзаголовок кита;
+  /// нажатие — [onHeader]. Нечего показать или не новая лента — `null`.
+  Widget? _storyHeader(BuildContext context, StorySlide slide) {
+    final header = v3 ? storyHeaderOf(slide) : null;
+    if (header == null) return null;
+    final theme = PersonalizationTheme.of(context);
+    final colors = theme.colors;
+    TextStyle style(TextStyle token, Color color) => token.copyWith(
+      color: color,
+      decoration: TextDecoration.none,
+      fontFamily: theme.fontFamily.familyFor(token.fontWeight!),
+      package: theme.fontFamily.package,
+    );
+    final icon = storyImage(header.icon, config.imageProvider);
+    final title = header.title.trim();
+    final subtitle = header.subtitle.trim();
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: live ? () => onHeader?.call(header) : null,
+        child: Row(
+          children: <Widget>[
+            if (icon != null) ...<Widget>[
+              ClipOval(
+                child: SizedBox.square(
+                  dimension: 32,
+                  child: Image(
+                    image: icon,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        ColoredBox(color: colors.neutral50),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  if (title.isNotEmpty)
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style(
+                        PersonalizationTypography.smEmphasized,
+                        colors.textPrimary,
+                      ),
+                    ),
+                  if (subtitle.isNotEmpty)
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style(
+                        PersonalizationTypography.xsDefault,
+                        colors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _textBlock(BuildContext context, StoryTextBlockElement element) {
-    final block = storyTextBlock(element);
+    final block = storyTextBlock(element, bodySize: v3);
     final code = element.promocode;
     if (code == null || !live) return block;
     // Блок с промокодом копирует его: тост сверху и `click` в трекинг.
@@ -446,9 +559,10 @@ class StorySlideView extends StatelessWidget {
 
   /// Товарный слайд: шапка (бренд SemiBold 20, название SemiBold 16, межстрочный 140%,
   /// шаг 8), белая карточка картинки (скругление 12, поля 16, квадрат по ширине — на
-  /// низком экране ужимается), цена, кнопки слайда; без своих кнопок — одна
-  /// [PersonalizationStoryViewer.productButtonText], ведёт к товару. Товар открывают
-  /// только кнопки: шапка и картинка не нажимаются, касание по ним листает, как по слайду.
+  /// низком экране ужимается), цена, кнопки слайда; без своих кнопок у старой ленты — одна
+  /// [PersonalizationStoryViewer.productButtonText], ведёт к товару, у новой, как в вебе,
+  /// — никакой. Товар открывают только кнопки: шапка и картинка не нажимаются, касание по
+  /// ним листает, как по слайду.
   Widget _productContent(
     BuildContext context,
     StorySlide slide,
@@ -461,6 +575,8 @@ class StorySlideView extends StatelessWidget {
     final price = storyPriceOf(product, slidePromo: storySlidePromocode(slide));
     final image = storyImage(product.image, config.imageProvider);
     final buttons = storyButtons(slide);
+    // Кнопка кита «к товару» вместо своих — только у старой ленты: в вебе её нет.
+    final more = buttons.isEmpty && !v3;
 
     TextStyle header(double size) => TextStyle(
       fontSize: size,
@@ -480,6 +596,10 @@ class StorySlideView extends StatelessWidget {
           // Место шапки: сама она поверх всего ([_header]).
           const SizedBox(height: PersonalizationStoryNavigation.height),
           const SizedBox(height: 16),
+          if (_storyHeader(context, slide) case final header?) ...<Widget>[
+            header,
+            const SizedBox(height: 16),
+          ],
           if (product.brand.isNotEmpty) ...<Widget>[
             Text(
               product.brand,
@@ -532,7 +652,7 @@ class StorySlideView extends StatelessWidget {
           ),
           if (buttons.isNotEmpty)
             _primaryButtons(buttons)
-          else
+          else if (more)
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: PersonalizationButton(
@@ -549,7 +669,7 @@ class StorySlideView extends StatelessWidget {
       slide,
       bottom:
           (_hasRow(slide) ? 64 : 16) +
-          math.max(1, buttons.length) * _buttonSpace(context),
+          (more ? 1 : buttons.length) * _buttonSpace(context),
     );
     return Stack(
       fit: StackFit.expand,
@@ -643,6 +763,7 @@ class StorySlideView extends StatelessWidget {
                   slideId: slide.id,
                   transport: transport,
                   shopId: pollShopId,
+                  did: pollDid,
                   texts: pollTexts,
                   live: live,
                   onHold: onPollHold,
@@ -684,10 +805,12 @@ class StorySlideView extends StatelessWidget {
 /// слайда (зажато 0…100, не число — 0), потом сдвиг, чтобы блок целиком был между [top]
 /// и местом нижних кнопок [bottom]; выше этого места — от его верха.
 ///
-/// Карточка опроса ([poll]) — по центру, шириной [PersonalizationStoryPoll.widthFor];
-/// не влезает — ниже высотой, прокрутка внутри. Клавиатура перекрывает слайд снизу на
-/// [keyboard] — карточка поднимается над ней на 16. Текстовый блок — во всю ширину с
-/// полями 16, своей высоты.
+/// Карточка опроса ([poll]) — как в вебе: по центру, шириной
+/// [PersonalizationStoryPoll.widthFor], верх на [yOffset]%, а не влезает — поднимается,
+/// чтобы низ был на 16 выше низа слайда, но не выше его верха; шапку и нижние кнопки
+/// она может накрыть. Выше слайда — ниже высотой, прокрутка внутри. Клавиатура
+/// перекрывает слайд снизу на [keyboard] — карточка поднимается над ней на 16.
+/// Текстовый блок — во всю ширину с полями 16, своей высоты.
 ///
 /// Раскладка — в области SafeArea: [above] и [below] — отступы её от краёв слайда.
 class _SlideBlockLayout extends SingleChildLayoutDelegate {
@@ -711,16 +834,22 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
 
   static const double _aboveKeyboard = 16;
 
+  /// Зазор карточки опроса до низа слайда.
+  static const double _pollMargin = 16;
+
   /// Поля текстового блока слева и справа.
   static const double _textEdge = 16;
 
+  /// Выше этого верх блока не поднимается: у опроса — верх слайда.
+  double get _top => poll ? 0 : top;
+
   /// Ниже этого низ блока не опускается.
   double _limit(Size size) {
-    var limit = size.height - bottom;
+    var limit = poll ? size.height - _pollMargin : size.height - bottom;
     if (keyboard > 0) {
       limit = math.min(limit, size.height - keyboard - _aboveKeyboard);
     }
-    return math.max(top, limit);
+    return math.max(_top, limit);
   }
 
   @override
@@ -735,7 +864,7 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
     return BoxConstraints(
       minWidth: width,
       maxWidth: width,
-      maxHeight: math.max(0, _limit(size) - top),
+      maxHeight: math.max(0, _limit(size) - _top),
     );
   }
 
@@ -744,7 +873,7 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
     final slide = above + size.height + below;
     final percent = yOffset.isFinite ? yOffset.clamp(0, 100) : 0;
     final wanted = slide * percent / 100 - above;
-    final y = math.max(top, math.min(wanted, _limit(size) - childSize.height));
+    final y = math.max(_top, math.min(wanted, _limit(size) - childSize.height));
     return Offset((size.width - childSize.width) / 2, y);
   }
 

@@ -534,6 +534,9 @@ Future<List<Story>> _fetch(
   } else {
     request = sdk.getStories(code);
   }
+  // Сохранённые ответы опросов открываются заранее, но ленту не держат: карточка,
+  // показанная раньше, возьмёт их, когда хранилище откроется.
+  if (host != null) unawaited(StoryPollStore.instance.load());
   // Просмотренное читается вместе с блоком; ошибка блока приходит как есть.
   final results = await Future.wait<Object>(<Future<Object>>[
     request,
@@ -666,6 +669,9 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
       );
     } finally {
       _presenting = false;
+      // Кольца — по тому, чем просмотр кончился (у новой ленты сторис просмотрена, когда
+      // её досмотрели).
+      if (mounted) setState(() {});
     }
   }
 
@@ -678,15 +684,37 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
     final sdk = _sdk;
     if (stories.isEmpty || sdk == null) return const SizedBox.shrink();
     final seen = StoriesSeenStore.instance.seen(sdk);
+    final server = StoriesApiV3.host(_v3?.apiV3Domain) != null;
     return PersonalizationStoriesBar(
       padding: widget.padding,
       items: <PersonalizationStoryItem>[
         for (final story in stories)
-          _item(story, seen[story.id] ?? const <String>{}),
+          server
+              ? _serverItem(story)
+              : _item(story, seen[story.id] ?? const <String>{}),
       ],
       onItemTap: (item) =>
           _open(stories.indexWhere((story) => story.id == item.id)),
       iconBuilder: widget.iconBuilder,
+    );
+  }
+
+  /// Сторис новой ленты: просмотрена, как в вебе, по `viewed` сервера или когда с неё
+  /// ушли вперёд; дуги горят до слайда, с которого она откроется.
+  PersonalizationStoryItem _serverItem(Story story) {
+    final viewed = StoriesServerProgress.viewedOf(story);
+    final start = StoriesServerProgress.startOf(story);
+    return PersonalizationStoryItem(
+      id: story.id,
+      label: story.name,
+      image: storyImage(story.avatar, widget.imageProvider),
+      pinned: story.pinned,
+      viewed: viewed,
+      segments: story.slides.length,
+      seenSegments: <int>{
+        for (var i = 0; i < story.slides.length; i++)
+          if (viewed || i < start) i,
+      },
     );
   }
 

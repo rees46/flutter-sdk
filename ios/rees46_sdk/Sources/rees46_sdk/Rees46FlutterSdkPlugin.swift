@@ -1148,6 +1148,10 @@ final class PersonalizationHostApiImpl: PersonalizationHostApi {
     StoriesAudio.shared.update(muted: muted)
   }
 
+  func storiesVideoHasAudio(source: String, completion: @escaping (Result<Bool?, Error>) -> Void) {
+    StoriesVideoAudio.hasAudio(source: source) { completion(.success($0)) }
+  }
+
   func endStoriesAudio() throws {
     StoriesAudio.shared.end()
   }
