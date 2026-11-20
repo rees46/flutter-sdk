@@ -559,9 +559,10 @@ class StorySlideView extends StatelessWidget {
 
   /// Товарный слайд: шапка (бренд SemiBold 20, название SemiBold 16, межстрочный 140%,
   /// шаг 8), белая карточка картинки (скругление 12, поля 16, квадрат по ширине — на
-  /// низком экране ужимается), цена, кнопки слайда; без своих кнопок — одна
-  /// [PersonalizationStoryViewer.productButtonText], ведёт к товару. Товар открывают
-  /// только кнопки: шапка и картинка не нажимаются, касание по ним листает, как по слайду.
+  /// низком экране ужимается), цена, кнопки слайда; без своих кнопок у старой ленты — одна
+  /// [PersonalizationStoryViewer.productButtonText], ведёт к товару, у новой, как в вебе,
+  /// — никакой. Товар открывают только кнопки: шапка и картинка не нажимаются, касание по
+  /// ним листает, как по слайду.
   Widget _productContent(
     BuildContext context,
     StorySlide slide,
@@ -574,6 +575,8 @@ class StorySlideView extends StatelessWidget {
     final price = storyPriceOf(product, slidePromo: storySlidePromocode(slide));
     final image = storyImage(product.image, config.imageProvider);
     final buttons = storyButtons(slide);
+    // Кнопка кита «к товару» вместо своих — только у старой ленты: в вебе её нет.
+    final more = buttons.isEmpty && !v3;
 
     TextStyle header(double size) => TextStyle(
       fontSize: size,
@@ -649,7 +652,7 @@ class StorySlideView extends StatelessWidget {
           ),
           if (buttons.isNotEmpty)
             _primaryButtons(buttons)
-          else
+          else if (more)
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: PersonalizationButton(
@@ -666,7 +669,7 @@ class StorySlideView extends StatelessWidget {
       slide,
       bottom:
           (_hasRow(slide) ? 64 : 16) +
-          math.max(1, buttons.length) * _buttonSpace(context),
+          (more ? 1 : buttons.length) * _buttonSpace(context),
     );
     return Stack(
       fit: StackFit.expand,

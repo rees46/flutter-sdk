@@ -310,12 +310,12 @@ void main() {
   });
 
   group('slides', () {
-    // The slide's own box: the nearest coloured box around its text.
-    Color? slideColor(WidgetTester tester) => tester
+    // The slide's own box: the nearest coloured box around its [text].
+    Color? slideColor(WidgetTester tester, [String text = 'Slide ']) => tester
         .widget<ColoredBox>(
           find
               .ancestor(
-                of: find.textContaining('Slide '),
+                of: find.textContaining(text),
                 matching: find.byType(ColoredBox),
               )
               .first,
@@ -332,13 +332,14 @@ void main() {
             type: '',
             background: 'https://cdn.example/a.jpg',
             color: '#112233',
+            elements: <Map<String, dynamic>>[_product('p1')],
           ),
         ]),
         _story(2, <Map<String, dynamic>>[_slide('20', color: '#445566')]),
       ]);
       await bar(tester);
       await open(tester, 'Story 1');
-      expect(slideColor(tester), const Color(0xFF112233));
+      expect(slideColor(tester, 'Product p1'), const Color(0xFF112233));
       expect(
         find.descendant(
           of: find.byType(PersonalizationStoryViewer),
@@ -557,6 +558,37 @@ void main() {
       },
     );
 
+    testWidgets('a product slide without buttons: no More info, as the web', (
+      tester,
+    ) async {
+      stories.add(
+        _story(1, <Map<String, dynamic>>[
+          _slide(
+            '10',
+            type: '',
+            duration: 30,
+            elements: <Map<String, dynamic>>[_product('p1')],
+          ),
+        ]),
+      );
+      await bar(tester);
+      await open(tester, 'Story 1');
+      expect(find.text('Product p1'), findsOneWidget);
+      expect(find.text('More info'), findsNothing);
+      await close(tester);
+
+      await bar(tester, v3: false);
+      await open(tester, 'Story 1');
+      expect(
+        find.text('More info'),
+        findsOneWidget,
+        reason: 'the old feed keeps the kit button',
+      );
+      await tester.tap(find.text('More info'));
+      await settle(tester);
+      expect(products, <String>['p1']);
+    });
+
     testWidgets('copying a promo code sends no click', (tester) async {
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
@@ -585,6 +617,66 @@ void main() {
       expect(promos, <String>['SALE10']);
       expect(sent(), <String>['view 1/10']);
       await tester.pump(const Duration(seconds: 3));
+    });
+  });
+  group('a slide with no media and no product is skipped, as the web', () {
+    Map<String, dynamic> skipped(String id) =>
+        _slide(id, type: '', duration: 30, color: '#112233');
+
+    testWidgets('going forward and back passes it, with no view', (
+      tester,
+    ) async {
+      stories.add(
+        _story(1, <Map<String, dynamic>>[
+          _slide('10', duration: 30),
+          skipped('11'),
+          _slide('12', duration: 30),
+        ]),
+      );
+      await bar(tester);
+      await open(tester, 'Story 1');
+      final viewer = tester.getRect(find.byType(PersonalizationStoryViewer));
+      await tester.tapAt(Offset(viewer.right - 10, viewer.center.dy));
+      await settle(tester);
+      expect(find.text('Slide 12'), findsOneWidget);
+      await tester.tapAt(Offset(viewer.left + 10, viewer.center.dy));
+      await settle(tester);
+      expect(find.text('Slide 10'), findsOneWidget);
+      expect(sent(), <String>['view 1/10', 'view 1/12', 'view 1/10']);
+    });
+
+    testWidgets('a story opens past it; a story of such slides only is not '
+        'shown', (tester) async {
+      stories.addAll(<Map<String, dynamic>>[
+        _story(1, <Map<String, dynamic>>[skipped('10')]),
+        _story(2, <Map<String, dynamic>>[
+          _slide('20', duration: 30),
+          skipped('21'),
+          _slide('22', duration: 30),
+        ], start: 1),
+      ]);
+      await bar(tester);
+      await open(tester, 'Story 2');
+      expect(find.text('Slide 22'), findsOneWidget);
+      await close(tester);
+      await open(tester, 'Story 1');
+      expect(find.text('Slide 22'), findsOneWidget, reason: 'the next story');
+      expect(sent(), <String>['view 2/22', 'view 2/22']);
+    });
+
+    testWidgets('the old feed shows it', (tester) async {
+      stories.add(
+        _story(1, <Map<String, dynamic>>[
+          _slide('10', duration: 30),
+          skipped('11'),
+        ]),
+      );
+      await bar(tester, v3: false);
+      await open(tester, 'Story 1');
+      final viewer = tester.getRect(find.byType(PersonalizationStoryViewer));
+      await tester.tapAt(Offset(viewer.right - 10, viewer.center.dy));
+      await settle(tester);
+      expect(find.text('Slide 11'), findsOneWidget);
     });
   });
 }

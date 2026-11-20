@@ -87,6 +87,12 @@ abstract final class StoriesServerProgress {
   }
 }
 
+/// Слайд новой ленты, который не показывается, как в вебе: не фото и не видео, и без
+/// элемента товара (`product`) — его пропускают по ходу листания, без `view`.
+bool storySlideSkipped(StorySlide slide) =>
+    slide.type == StorySlideType.product &&
+    !slide.elements.any((element) => element is StoryProductElement);
+
 /// Логика просмотра сторис без UI: какая сторис и какой слайд текущие, с какого слайда
 /// открывать сторис, почему слайд стоит, открыта ли шторка, сколько прошло времени.
 ///
@@ -108,9 +114,11 @@ abstract final class StoriesServerProgress {
 /// Новая лента ([serverStart]), как в вебе: сторис открывается со слайда
 /// [StoriesServerProgress.startOf], просмотренной становится, когда с неё ушли вперёд
 /// (досмотрели последний слайд или перелистнули на следующую); просмотренное устройства не
-/// решает.
+/// решает. Слайды без медиа и без товара пропускаются ([storySlideSkipped]): листание
+/// идёт мимо них в свою сторону, сторис открывается с ближайшего показываемого слайда
+/// после стартового (после него нет — с первого показываемого).
 ///
-/// Сторис без слайдов отбрасываются при создании.
+/// Сторис без слайдов (у новой ленты — без показываемых) отбрасываются при создании.
 class StoriesPlayback {
   /// [initialSlide] — слайд начальной сторис в обход правил стартового слайда (ссылка
   /// «Поделиться» открывает слайд ссылки); действует до первого захода на неё.
@@ -121,7 +129,7 @@ class StoriesPlayback {
     Map<String, Set<String>> seen = const <String, Set<String>>{},
     this.serverStart = false,
   }) : stories = List<Story>.unmodifiable(
-         stories.where((story) => story.slides.isNotEmpty),
+         stories.where((story) => _playable(story, serverStart)),
        ),
        _seen = <String, Set<String>>{
          for (final entry in seen.entries) entry.key: <String>{...entry.value},
@@ -129,10 +137,28 @@ class StoriesPlayback {
     // Начальный индекс дан по исходному списку: сторис без слайдов перед ним выпали.
     var kept = 0;
     for (var i = 0; i < stories.length && i < initialStory; i++) {
-      if (stories[i].slides.isNotEmpty) kept++;
+      if (_playable(stories[i], serverStart)) kept++;
     }
     _story = this.stories.isEmpty ? 0 : kept.clamp(0, this.stories.length - 1);
     _initialSlide = this.stories.isEmpty ? null : initialSlide;
+  }
+
+  /// Сторис есть что показать: у новой ленты — хоть один не пропускаемый слайд.
+  static bool _playable(Story story, bool serverStart) => serverStart
+      ? story.slides.any((slide) => !storySlideSkipped(slide))
+      : story.slides.isNotEmpty;
+
+  /// Слайд [index] сторис [story] показывается (у новой ленты — не пропускается).
+  bool _shown(Story story, int index) =>
+      !serverStart || !storySlideSkipped(story.slides[index]);
+
+  /// Ближайший показываемый слайд [story] от [from] в сторону [step] (+1 / −1); нет —
+  /// `null`.
+  int? _nearest(Story story, int from, int step) {
+    for (var i = from; i >= 0 && i < story.slides.length; i += step) {
+      if (_shown(story, i)) return i;
+    }
+    return null;
   }
 
   /// Сторис со слайдами в порядке ленты.
@@ -225,11 +251,15 @@ class StoriesPlayback {
   int startSlideFor(int index) {
     final story = stories[index];
     final initial = _initialSlide;
+    final int start;
     if (initial != null && index == _story && !_entered) {
-      return initial.clamp(0, story.slides.length - 1);
+      start = initial.clamp(0, story.slides.length - 1);
+    } else if (serverStart) {
+      start = StoriesServerProgress.startOf(story);
+    } else {
+      return startSlideOf(story, _seen[story.id] ?? const <String>{});
     }
-    if (serverStart) return StoriesServerProgress.startOf(story);
-    return startSlideOf(story, _seen[story.id] ?? const <String>{});
+    return _nearest(story, start, 1) ?? _nearest(story, 0, 1) ?? start;
   }
 
   /// Страница осела на сторис [index] (листанием, программно или при открытии).
@@ -255,8 +285,8 @@ class StoriesPlayback {
   /// Вперёд: следующий слайд, следующая сторис или закрыть.
   StoriesStep next() {
     if (!_entered || _sheet || _turnTarget != null) return StoriesStep.none;
-    if (_slide < story.slides.length - 1) {
-      _slide++;
+    if (_nearest(story, _slide + 1, 1) case final following?) {
+      _slide = following;
       _enter();
       return StoriesStep.slide;
     }
@@ -271,8 +301,8 @@ class StoriesPlayback {
   /// Назад: предыдущий слайд, предыдущая сторис или перезапуск первого слайда.
   StoriesStep previous() {
     if (!_entered || _sheet || _turnTarget != null) return StoriesStep.none;
-    if (_slide > 0) {
-      _slide--;
+    if (_nearest(story, _slide - 1, -1) case final before?) {
+      _slide = before;
       _enter();
       return StoriesStep.slide;
     }

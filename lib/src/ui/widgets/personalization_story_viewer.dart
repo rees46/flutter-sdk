@@ -138,7 +138,8 @@ class PersonalizationStoryViewer extends StatefulWidget {
   /// Промокод скопирован.
   final ValueChanged<String>? onPromoCopied;
 
-  /// Подпись кнопки товарного слайда, когда у слайда своих кнопок нет.
+  /// Подпись кнопки товарного слайда старой ленты, когда у слайда своих кнопок нет; у
+  /// новой ленты, как в вебе, такой кнопки нет.
   final String productButtonText;
 
   /// Подпись над промокодом, когда в админке у товара нет своей.
