@@ -153,7 +153,7 @@ SubscriptionStatus subscriptionStatusFromWire(
 );
 
 Segment segmentFromWire(pigeon.SegmentWire w) =>
-    Segment(id: w.id, type: w.type);
+    Segment(id: w.id, type: w.type ?? '');
 
 PushToken pushTokenFromWire(pigeon.PushTokenWire w) =>
     PushToken(token: w.token, provider: pushProviderFromWire(w.provider));

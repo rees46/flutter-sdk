@@ -323,7 +323,7 @@ void main() {
       final segments = await sdk.segments.get();
       expect(adds.single, [12, 'e', null, 's']);
       expect(removes.single, [12, null, 'p', 's']);
-      expect(segments.map((s) => (s.id, s.type)), [(12, 'static'), (13, null)]);
+      expect(segments.map((s) => (s.id, s.type)), [(12, 'static'), (13, '')]);
       expect(hooks.changes, ['segment.add', 'segment.remove']);
     });
 

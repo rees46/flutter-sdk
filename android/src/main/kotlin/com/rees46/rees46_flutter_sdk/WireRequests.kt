@@ -20,7 +20,6 @@ import com.personalization.api.models.subscriptions.BackInStockProperties
 import com.personalization.api.models.subscriptions.SubscriptionsUpdateRequest
 import com.personalization.api.models.tracking.TrackingItem
 import com.personalization.api.models.tracking.TrackingSource
-import com.personalization.api.models.tracking.TrackingSourceType
 import com.rees46.rees46_flutter_sdk.pigeon.BackInStockPropertiesWire
 import com.rees46.rees46_flutter_sdk.pigeon.InitConfig
 import com.rees46.rees46_flutter_sdk.pigeon.ProductsListRequestWire
@@ -207,16 +206,11 @@ internal fun BackInStockPropertiesWire.toNative(): BackInStockProperties =
 internal fun TrackingItemWire.toNative(): TrackingItem =
     TrackingItem(id = id, quantity = quantity.toInt(), price = price, fashionSize = fashionSize)
 
-internal fun TrackingSourceWire.toNative(): TrackingSource {
-    // The contract's `slider` and `agent_search` wait for the native SDK's bridge source.
-    if (type in NOT_YET_NATIVE_SOURCES) throw IllegalArgumentException("Source type $type is not supported yet")
-    val sourceType = TrackingSourceType.entries.firstOrNull { it.value == type }
-        ?: throw IllegalArgumentException("Unknown source type: $type")
-    return TrackingSource(type = sourceType, code = code)
-}
-
-/** The contract's source types the native SDK cannot send yet: `invalidArgument` until it can. */
-internal val NOT_YET_NATIVE_SOURCES = setOf("slider", "agent_search")
+/**
+ * The native source of the contract's type by its wire value — `slider` and `agent_search` among them, which go
+ * as that value; any other value is `invalidArgument`.
+ */
+internal fun TrackingSourceWire.toNative(): TrackingSource = TrackingSource.fromWire(type, code)
 
 internal fun PurchaseLineItemWire.toNative(): PurchaseItemRequest = PurchaseItemRequest(
     id = id,

@@ -6,6 +6,7 @@ import com.personalization.api.models.products.SortBy
 import com.personalization.api.models.products.SortDirection
 import com.personalization.api.models.profile.Gender
 import com.personalization.api.models.tracking.TrackingSourceType
+import com.personalization.core.SdkException
 import com.rees46.rees46_flutter_sdk.pigeon.InitConfig
 import com.rees46.rees46_flutter_sdk.pigeon.ProductsListRequestWire
 import com.rees46.rees46_flutter_sdk.pigeon.ProfileCarWire
@@ -55,10 +56,13 @@ internal class WireRequestsTest {
     }
 
     @Test
-    fun sourcesTheNativeSdkCannotSendYetAreRefused() {
-        assertFailsWith<IllegalArgumentException> { TrackingSourceWire("slider", "c").toNative() }
-        assertFailsWith<IllegalArgumentException> { TrackingSourceWire("agent_search", "c").toNative() }
-        assertEquals("stories", TrackingSourceWire("stories", "c").toNative().type.value)
+    fun theContractsSliderAndAgentSearchGoAsTheirWireValues() {
+        assertEquals("slider", TrackingSourceWire("slider", "c").toNative().wireType)
+        assertEquals("agent_search", TrackingSourceWire("agent_search", "c").toNative().wireType)
+        assertEquals("c", TrackingSourceWire("slider", "c").toNative().code)
+        assertEquals("stories", TrackingSourceWire("stories", "c").toNative().wireType)
+        val refused = assertFailsWith<SdkException> { TrackingSourceWire("agentSearch", "c").toNative() }
+        assertEquals("invalidArgument", BridgeFailures.of(refused).code)
     }
 
     @Test
@@ -176,7 +180,7 @@ internal class WireRequestsTest {
     @Test
     fun trackingModelsAndProvidersConvertAndUnknownValuesAreRefused() {
         assertEquals(TrackingSourceType.INSTANT_SEARCH, TrackingSourceWire(type = "instant_search", code = "q").toNative().type)
-        assertFailsWith<IllegalArgumentException> { TrackingSourceWire(type = "slider", code = "x").toNative() }
+        assertFailsWith<SdkException> { TrackingSourceWire(type = "gcm", code = "x").toNative() }
         assertEquals(4, TrackingItemWire(id = "37", quantity = 4).toNative().quantity)
         assertEquals(PushProvider.HMS, pushProvider("hms"))
         assertFailsWith<IllegalArgumentException> { pushProvider("apns") }

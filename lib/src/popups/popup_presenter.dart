@@ -15,8 +15,8 @@ import 'in_app_popup.dart';
 ///
 /// Follows the native SDKs: a popup shown within the last minute is dropped when the
 /// server sends it again, one popup is on screen at a time, and a popup that never reached
-/// the screen is neither reported nor remembered. Unlike them it waits out the delay the
-/// shop set, as the React Native SDK does.
+/// the screen is neither reported nor remembered. The delay the shop set is the native
+/// SDK's: it hands a popup over once its delay passed.
 ///
 /// The handles of several shops share the screen: one popup is on it at a time whichever
 /// shop it came for, and [sharedOnPopup] takes the popups of every handle without an
@@ -60,7 +60,6 @@ class PopupPresenter {
   static const Duration _navigatorPoll = Duration(milliseconds: 100);
 
   final Map<int, DateTime> _shownAt = <int, DateTime>{};
-  final Set<int> _delayed = <int>{};
 
   // One queue for the app, not one per handle: popups of two shops would otherwise open
   // over each other.
@@ -80,32 +79,29 @@ class PopupPresenter {
   /// Shows the next queued popup once the screen is free again.
   static void resume() => _next();
 
-  /// A popup from the server: waits out its delay, then goes to [onPopup] or on screen.
+  /// A popup from the server, its delay waited out by the native SDK: it goes to
+  /// [onPopup] or on screen.
   void receive(InAppPopup popup) {
     // An init response without a popup still gives one on iOS: the SDK builds it from an
     // empty object, so it carries the model's defaults (id 0, no position, no
     // components). Its own views skip it for want of a title; here a popup with nothing
     // to show is dropped as well.
     if (!popup.hasContent) return;
-    if (_isRepeat(popup.id) || !_delayed.add(popup.id)) return;
-    Timer(popup.delay, () {
-      _delayed.remove(popup.id);
-      if (_isRepeat(popup.id)) return;
-      final handler = onPopup ?? sharedOnPopup;
-      if (handler != null) {
-        try {
-          handler(popup);
-        } catch (error, stack) {
-          _log('popup ${popup.id}: onPopup failed — $error\n$stack');
-        }
-        return;
+    if (_isRepeat(popup.id)) return;
+    final handler = onPopup ?? sharedOnPopup;
+    if (handler != null) {
+      try {
+        handler(popup);
+      } catch (error, stack) {
+        _log('popup ${popup.id}: onPopup failed — $error\n$stack');
       }
-      if (!autoPresentation) {
-        _log('popup ${popup.id} not shown: automatic presentation is off');
-        return;
-      }
-      unawaited(present(popup));
-    });
+      return;
+    }
+    if (!autoPresentation) {
+      _log('popup ${popup.id} not shown: automatic presentation is off');
+      return;
+    }
+    unawaited(present(popup));
   }
 
   /// Shows [popup] after the one on screen, if any, whichever shop that one came for.
