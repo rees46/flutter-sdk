@@ -89,7 +89,7 @@ class StoryPollAnswer {
   /// Ответ на вопрос полосы оценки; `null` — его не давали.
   final String? comment;
 
-  /// Ответ есть: непустые варианты, непустой текст или оценка.
+  /// Ответ есть, как `hasAnswer` веба: непустые варианты, непустой текст или оценка.
   bool get isAnswered =>
       (optionIds?.isNotEmpty ?? false) ||
       (text?.isNotEmpty ?? false) ||

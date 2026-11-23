@@ -141,9 +141,10 @@ typedef StoryPollPlace = ({
 /// - запись — `{answer, results, saved_at}` (мс эпохи) в SharedPreferences под ключом
 ///   `personalization.storiesPolls.<магазин>.stories_poll_<did>_<вид>_<код>_<сторис>_<слайд>`
 ///   ([keyOf]); без `did` ничего не читается и не пишется;
-/// - живёт 90 дней ([ttl]): старше или без даты — удаляется при чтении;
-/// - что показать ([stateOf]): отправленное в этом процессе (так веб меняет элемент
-///   ленты в кэше) < ответ ленты < сохранённое < ничего; лента важнее сохранённого.
+/// - живёт 90 дней ([ttl]): старше, без даты или нечитаемая — удаляется при чтении;
+/// - что показать ([stateOf]): ответ, отправленный с этого же элемента ленты (так веб
+///   меняет элемент ленты в кэше), > ответ свежей ленты > ответ, отправленный раньше в
+///   этом процессе с того же места > сохранённое > ничего.
 class StoryPollStore {
   StoryPollStore({DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
 
@@ -157,6 +158,13 @@ class StoryPollStore {
 
   final DateTime Function() _clock;
   final Expando<StoryPollState> _sent = Expando<StoryPollState>('storyPoll');
+
+  /// Отправленное в этом процессе по месту опроса — и без `did`.
+  final Map<String, StoryPollState> _process = <String, StoryPollState>{};
+
+  static String _placeKey(StoryPollElement poll, StoryPollPlace place) =>
+      '${place.shopId}\u0000${place.did}\u0000${poll.pollType.wire}\u0000'
+      '${poll.code}\u0000${place.storyId}\u0000${place.slideId}';
   SharedPreferences? _preferences;
   Future<void>? _opening;
 
@@ -183,18 +191,20 @@ class StoryPollStore {
         '${poll.pollType.wire}_${poll.code}_${place.storyId}_${place.slideId}';
   }
 
-  /// Что показать у опроса [poll] сейчас: отправленное в процессе, ответ ленты,
-  /// сохранённое на устройстве ([saved]); ничего — ответ и итоги ленты как есть.
+  /// Что показать у опроса [poll] сейчас: отправленное с этого элемента, ответ свежей
+  /// ленты, отправленное раньше в процессе с того же места, сохранённое на устройстве
+  /// ([saved]); ничего — ответ и итоги ленты как есть.
   StoryPollState stateOf(StoryPollElement poll, StoryPollPlace place) {
     final sent = _sent[poll];
     if (sent != null) return sent;
     final feed = (answer: poll.answer, results: poll.results);
     if (poll.answer != null) return feed;
-    return saved(poll, place) ?? feed;
+    return _process[_placeKey(poll, place)] ?? saved(poll, place) ?? feed;
   }
 
-  /// Ответ [poll] отправлен в этом процессе.
-  bool sentOf(StoryPollElement poll) => _sent[poll] != null;
+  /// Ответ [poll] отправлен в этом процессе — с этого элемента или с его места.
+  bool sentOf(StoryPollElement poll, StoryPollPlace place) =>
+      _sent[poll] != null || _process.containsKey(_placeKey(poll, place));
 
   /// Сохранённая запись опроса [poll]; нет, без `did`, хранилище не открыто, битая —
   /// `null`. Старше [ttl] или без даты — удаляется.
@@ -206,11 +216,12 @@ class StoryPollStore {
       final raw = preferences.getString(key);
       if (raw == null) return null;
       final value = jsonDecode(raw);
-      if (value is! Map || value['answer'] is! Map) return null;
-      final savedAt = value['saved_at'];
-      if (savedAt is! num ||
+      final savedAt = value is Map ? value['saved_at'] : null;
+      if (value is! Map ||
+          value['answer'] is! Map ||
+          savedAt is! num ||
           _clock().millisecondsSinceEpoch - savedAt > ttl.inMilliseconds) {
-        preferences.remove(key).ignore();
+        _drop(preferences, key);
         return null;
       }
       return (
@@ -218,8 +229,18 @@ class StoryPollStore {
         results: StoryPollResults.tryParse(value['results']),
       );
     } catch (error) {
-      debugPrint('PersonalizationStories: saved poll answer skipped — $error');
+      // Не прочитать — запись удаляется, как устаревшая.
+      debugPrint('PersonalizationStories: saved poll answer dropped — $error');
+      _drop(preferences, key);
       return null;
+    }
+  }
+
+  static void _drop(SharedPreferences preferences, String key) {
+    try {
+      preferences.remove(key).ignore();
+    } catch (_) {
+      // Хранилище не удаляет — запись останется до следующего чтения.
     }
   }
 
@@ -232,6 +253,7 @@ class StoryPollStore {
     StoryPollState state,
   ) {
     _sent[poll] = state;
+    _process[_placeKey(poll, place)] = state;
     final key = keyOf(poll, place);
     if (key == null) return;
     final String record;
@@ -273,9 +295,9 @@ abstract final class StoryPollPointers {
 
 /// Логика карточки опроса — как `createPoll` веб-SDK, без UI.
 ///
-/// - Состояния: форма и отвеченное ([answered]). Что показать сначала — [StoryPollStore]:
-///   отправленное в процессе, ответ ленты, сохранённое на устройстве; отвечено, когда
-///   ответ отправлен в процессе или в нём есть варианты, текст или оценка.
+/// - Состояния: форма и отвеченное ([answered]). Что показать сначала — [StoryPollStore]
+///   ([StoryPollStore.stateOf]); отвечено, как `hasAnswer` веба, когда в ответе есть
+///   варианты, непустой текст или оценка (после удачной отправки — сразу).
 /// - Выбор одного и шкала отправляются нажатием ([choose], [rate]); выбор сразу
 ///   подсвечен, при ошибке откатывается к прежнему. Выбор нескольких и текст — кнопкой
 ///   ([submitChoices], [submitText]); варианты уходят в порядке опроса, текст — без
@@ -312,7 +334,7 @@ class StoryPollController extends ChangeNotifier {
     // карточку не трогали.
     if (!_store.ready && did.isNotEmpty && poll.answer == null) {
       _store.load().then((_) {
-        if (_disposed || _touched || _store.sentOf(poll)) return;
+        if (_disposed || _touched || _store.sentOf(poll, _place)) return;
         final saved = _store.saved(poll, _place);
         if (saved == null) return;
         _show(saved);
@@ -410,10 +432,11 @@ class StoryPollController extends ChangeNotifier {
   /// Слайд держится.
   bool get holding => _held;
 
+  /// Отвечено — как `hasAnswer` веба: в ответе есть варианты, непустой текст или оценка.
   void _show(StoryPollState state) {
     _answer = state.answer;
     _results = state.results;
-    _answered = _store.sentOf(poll) || (_answer?.isAnswered ?? false);
+    _answered = _answer?.isAnswered ?? false;
     _resetForm();
   }
 

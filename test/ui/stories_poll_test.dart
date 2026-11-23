@@ -226,11 +226,17 @@ void main() {
     });
 
     test('an answer of the reply without ids is still the answer', () async {
-      final poll = mount(_mini(StoryMiniPollKind.singleChoice))..choose(2);
+      final element = _mini(StoryMiniPollKind.singleChoice);
+      final poll = mount(element)..choose(2);
       await reply(0, const StoryPollReply(answer: StoryPollAnswer(id: 77)));
       expect(poll.answered, isTrue, reason: 'answered after any success');
       expect(poll.answer!.id, 77);
       expect(poll.answer!.optionIds, isNull, reason: 'not the sent one');
+      expect(
+        mount(element).answered,
+        isFalse,
+        reason: 'shown again: answered only as hasAnswer of the web',
+      );
     });
 
     test(
@@ -1008,11 +1014,72 @@ void main() {
         expect(preferences.getKeys(), isEmpty);
         expect(mountAt(element, did: '').answer!.text, 'Книга');
         expect(
-          mountAt(_mini(StoryMiniPollKind.text), did: '').answered,
-          isFalse,
+          mountAt(_mini(StoryMiniPollKind.text), did: '').answer!.text,
+          'Книга',
+          reason: 'a new feed without an answer: the one sent in this process',
         );
       },
     );
+
+    test(
+      'precedence: a fresh feed > sent earlier in this process > saved',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          key: jsonEncode(<String, dynamic>{
+            'answer': <String, dynamic>{
+              'option_ids': <int>[1],
+            },
+            'saved_at': now.millisecondsSinceEpoch,
+          }),
+        });
+        store = StoryPollStore.instance = StoryPollStore(clock: () => now);
+        await store.load();
+        final saved = (await SharedPreferences.getInstance()).getString(key)!;
+        expect(
+          mountAt(_mini(StoryMiniPollKind.singleChoice)).answer!.optionIds,
+          <int>[1],
+          reason: 'only the saved one',
+        );
+        mountAt(_mini(StoryMiniPollKind.singleChoice, allowReanswer: true))
+          ..reanswer()
+          ..choose(3);
+        await reply(0);
+        // The device still holds the old record (another copy wrote it, say).
+        await (await SharedPreferences.getInstance()).setString(key, saved);
+        expect(
+          mountAt(_mini(StoryMiniPollKind.singleChoice)).answer!.optionIds,
+          <int>[3],
+          reason: 'sent in this process wins over the saved record',
+        );
+        expect(
+          mountAt(
+            _mini(StoryMiniPollKind.singleChoice, answer: _answered),
+          ).answer!.optionIds,
+          <int>[2],
+          reason: 'a fresh feed wins over both',
+        );
+      },
+    );
+
+    test('unreadable records are deleted on read', () async {
+      for (final raw in <String>[
+        'not json',
+        '[1, 2]',
+        '{"answer": "a", "saved_at": 1}',
+        '{"results": null}',
+      ]) {
+        SharedPreferences.setMockInitialValues(<String, Object>{key: raw});
+        store = StoryPollStore.instance = StoryPollStore(clock: () => now);
+        await store.load();
+        expect(mountAt(_mini(StoryMiniPollKind.text)).answered, isFalse);
+        await pumpEventQueue();
+        expect(
+          (await SharedPreferences.getInstance()).getKeys(),
+          isEmpty,
+          reason: raw,
+        );
+      }
+    });
 
     test('90 days: older or undated records are deleted on read', () async {
       Future<StoryPollController> withRecord(Object? savedAt) async {
