@@ -102,7 +102,8 @@ class PersonalizationStoryViewer extends StatefulWidget {
   final int initialStory;
 
   /// Слайд начальной сторис в обход правила «первый непросмотренный»; `null` — по
-  /// правилам. Так ссылка «Поделиться» открывает свой слайд.
+  /// правилам. Так ссылка «Поделиться» открывает свой слайд. У новой ленты — только слайд
+  /// первого открытия: дальше сторис открывается по её правилам.
   final int? initialSlide;
 
   /// Уже просмотренные слайды: id слайдов по id сторис. По ним выбирается стартовый слайд
@@ -283,8 +284,11 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _requests = widget.storyRequests?.listen(_onStoryRequest);
     _onLifecycle(WidgetsBinding.instance.lifecycleState);
     // Первая страница осела сразу: заход после кадра — загрузка картинки читает контекст.
+    // Показать нечего (у новой ленты все сторис с начальной досмотрены) — просмотр
+    // закрывается, пустым он не стоит.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_playback.isEmpty) _settled(_playback.storyIndex);
+      if (!mounted) return;
+      _playback.isEmpty ? _close() : _settled(_playback.storyIndex);
     });
   }
 
@@ -406,12 +410,19 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   // --- Навигация ----------------------------------------------------------------------
 
-  /// Страница осела на [index]: заход на сторис или просто конец листания.
+  /// Страница осела на [index]: заход на сторис, просто конец листания или — у новой
+  /// ленты на сторис, которую не открыть, — листание дальше или закрытие.
   void _settled(int index) {
-    if (_playback.settle(index)) {
-      _entered();
-    } else {
-      _sync();
+    switch (_playback.settle(index)) {
+      case StoriesStep.slide:
+        _entered();
+      case StoriesStep.none:
+        _sync();
+      case final step:
+        // Не посреди уведомления прокрутки: листание и закрытие — следом.
+        scheduleMicrotask(() {
+          if (mounted) _step(step);
+        });
     }
     setState(() {});
   }
@@ -925,7 +936,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   @override
   Widget build(BuildContext context) {
-    if (_playback.isEmpty) return const ColoredBox(color: Color(0xFF000000));
+    // Показать нечего — просмотр закрывается после кадра; пустого экрана нет.
+    if (_playback.isEmpty) return const SizedBox.shrink();
     final sheet = _playback.sheetOpen;
     return PopScope(
       // Системное «назад» сперва сворачивает шторку товаров.

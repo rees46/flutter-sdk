@@ -380,49 +380,57 @@ Future<void> _openLink(
   }
   if (!context.mounted) return;
   final story = stories.first;
-  // Слайд ссылки, если он есть в ответе: `start_position` сервер ставит только по своим
-  // слайдам, виртуальные слайды товарных кампаний (`39_2`) он не знает.
+  // Слайд ссылки, если он есть в ответе, — слайд первого открытия: `start_position`
+  // сервер ставит только по своим слайдам, виртуальные слайды товарных кампаний (`39_2`)
+  // он не знает. Дальше, как у любой сторис, — где остановились.
   final linked = link.slideId == null
       ? -1
       : story.slides.indexWhere((slide) => slide.id == link.slideId);
-  final start = linked >= 0
-      ? linked
-      : story.startPosition.clamp(0, story.slides.length - 1);
   var opened = false;
+  // `shared_open` — один раз, после показа, как в вебе: кампания ссылки и слайд, с
+  // которого её открыли (досмотрена сразу — с начала).
+  void sharedOpen([StorySlide? shown]) {
+    if (opened) return;
+    opened = true;
+    unawaited(
+      StoriesApiV3.track(
+        resolved,
+        v3.apiV3Domain!,
+        code: link.code,
+        event: StoriesV3Event.sharedOpen,
+        storyId: story.id,
+        slideId:
+            (shown ?? story.slides[StoriesServerProgress.startOf(story)]).id,
+      ),
+    );
+  }
+
   _closeOpenViewer();
-  await _present(
+  final shown = await _present(
     context,
     config: config,
     v3: v3,
     sdk: resolved,
     stories: stories,
     index: 0,
-    initialSlide: start,
+    initialSlide: linked >= 0 ? linked : null,
     controller: controller,
     onRoute: (route) => _openLinks[link.key] = route,
-    onSlideShown: (_, _) {
-      // `shared_open` — один раз, после показа: кампания и слайд, с которого начали.
-      if (opened) return;
-      opened = true;
-      unawaited(
-        StoriesApiV3.track(
-          resolved,
-          v3.apiV3Domain!,
-          code: link.code,
-          event: StoriesV3Event.sharedOpen,
-          storyId: story.id,
-          slideId: story.slides[start].id,
-        ),
-      );
-    },
+    onSlideShown: (shownStory, slide) => sharedOpen(
+      identical(shownStory, story) ? shownStory.slides[slide] : null,
+    ),
   );
+  // Показать было нечего — просмотр не открывался, а кампанию всё равно открыли.
+  if (!shown) sharedOpen();
 }
 
 // Открыть просмотр [stories] со сторис [index] поверх корневого навигатора; тексты и
 // колбэки — из [config], режим API v3 — из [v3] (`null` — его нет). Пока просмотр
 // открыт, [controller] ставит его на паузу и листает. Завершается, когда просмотр
-// закроют.
-Future<void> _present(
+// закроют: `true`. Новая лента открывает сторис по правилам веба
+// ([StoriesServerProgress.open]): [initialSlide] — слайд её первого открытия; открыть
+// нечего (сторис с [index] досмотрены) — просмотр не открывается, `false`.
+Future<bool> _present(
   BuildContext context, {
   required PersonalizationStories config,
   required StoriesV3Options? v3,
@@ -434,11 +442,28 @@ Future<void> _present(
   void Function(Story story, int slideIndex)? onSlideShown,
   ValueChanged<Route<void>>? onRoute,
 }) async {
+  var start = index;
+  var slide = initialSlide;
+  if (StoriesApiV3.host(v3?.apiV3Domain) != null) {
+    // Как в вебе: сторис, которую показать нечем, досмотрена — просмотрена, открывается
+    // следующая; после последней пустой просмотр не открывается.
+    final story = stories[index];
+    if (slide != null) {
+      StoriesServerProgress.showed(
+        story,
+        slide.clamp(0, story.slides.length - 1),
+      );
+      slide = null;
+    }
+    final opened = StoriesServerProgress.open(stories, index);
+    if (opened == null) return false;
+    start = opened;
+  }
   final session = controller?._begin(stories);
   Widget viewer = PersonalizationStoryViewer(
     stories: stories,
-    initialStory: index,
-    initialSlide: initialSlide,
+    initialStory: start,
+    initialSlide: slide,
     seen: sdk == null
         ? const <String, Set<String>>{}
         : StoriesSeenStore.instance.seen(sdk),
@@ -485,6 +510,7 @@ Future<void> _present(
     if (_openViewer == route) _openViewer = null;
     if (session != null) controller?._end(session);
   }
+  return true;
 }
 
 /// SDK по [sdk] или [shopId]. Магазин ещё не зарегистрирован — ждём регистрации до
