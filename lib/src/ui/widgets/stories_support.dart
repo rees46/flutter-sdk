@@ -6,6 +6,7 @@ import '../components/personalization_product.dart';
 import '../components/personalization_story_price.dart';
 import '../components/personalization_story_text_block.dart';
 import '../personalization_typography.dart';
+import '../popups_v3/css_color.dart';
 import 'stories_image.dart';
 
 /// Как получить картинку по адресу из данных сторис. Не задан — свой загрузчик SDK: качает
@@ -38,6 +39,22 @@ Color? parseStoryColor(String value, {double opacity = 1}) {
   return color.withValues(alpha: color.a * opacity.clamp(0, 1));
 }
 
+/// Цвет новой ленты — одним разбором для слайда и текстовых блоков, как его читает CSS
+/// веба: `#RGB`, `#RRGGBB`, `#RRGGBBAA` (альфа в конце) и `rgb()` / `rgba()`; остальное —
+/// `null`.
+Color? parseStoryCssColor(String value) {
+  final text = value.trim().toLowerCase();
+  if (text.startsWith('#')) {
+    final digits = text.length - 1;
+    if (digits != 3 && digits != 6 && digits != 8) return null;
+    return parseCssColor(text);
+  }
+  if (text.startsWith('rgb(') || text.startsWith('rgba(')) {
+    return parseCssColor(text);
+  }
+  return null;
+}
+
 /// Что слайд показывает фоном.
 enum StoryMedia {
   /// Ничего: фон Background/Card темы приложения.
@@ -67,16 +84,19 @@ StoryMedia storyMediaOf(StorySlide slide, {bool byType = false}) {
       : StoryMedia.image;
 }
 
-/// Цвет слайда новой ленты без медиа: `background_color`, как в вебе; не задан — `null`,
-/// слайд на Background/Card кита.
+/// Цвет слайда новой ленты без медиа: `background_color`, как в вебе
+/// ([parseStoryCssColor]); не задан — `null`, слайд на Background/Card кита.
 Color? storySlideColor(StorySlide slide) =>
-    parseStoryColor(slide.backgroundColor);
+    parseStoryCssColor(slide.backgroundColor);
 
-/// Цвет полей вокруг вписанного медиа: `background_color` слайда, без него чёрный. Это
-/// единственное место, где цвет админки идёт в дело: слайд без медиа всегда на
-/// Background/Card.
-Color storyLetterbox(StorySlide slide) =>
-    parseStoryColor(slide.backgroundColor) ?? const Color(0xFF000000);
+/// Цвет полей вокруг вписанного медиа: `background_color` слайда, без него чёрный. У
+/// старой ленты это единственное место, где цвет админки идёт в дело: слайд без медиа
+/// всегда на Background/Card. Новая лента ([newFeed]) читает цвет, как веб.
+Color storyLetterbox(StorySlide slide, {bool newFeed = false}) =>
+    (newFeed
+        ? parseStoryCssColor(slide.backgroundColor)
+        : parseStoryColor(slide.backgroundColor)) ??
+    const Color(0xFF000000);
 
 /// Текстовые блоки, которые рисуются: пустые и из одних пробелов пропускаются.
 List<StoryTextBlockElement> storyTextBlocks(StorySlide slide) =>
@@ -339,8 +359,12 @@ PersonalizationStoryTextBlock storyTextBlock(
     lineHeight: element.lineSpacing > 0
         ? element.lineSpacing
         : PersonalizationStoryTextBlock.presetLineHeight(fontSize),
-    color: parseStoryColor(element.textColor),
-    background: element.backgroundOpacity > 0
+    color: newFeed
+        ? parseStoryCssColor(element.textColor)
+        : parseStoryColor(element.textColor),
+    background: newFeed
+        ? _newFeedBackground(element)
+        : element.backgroundOpacity > 0
         ? parseStoryColor(
             element.backgroundColor,
             opacity: element.backgroundOpacity,
@@ -352,6 +376,14 @@ PersonalizationStoryTextBlock storyTextBlock(
     fontFamily: family,
     fontFamilyFallback: fallback,
   );
+}
+
+/// Фон текстового блока новой ленты: цвет ([parseStoryCssColor]) с непрозрачностью
+/// элемента; у цвета со своей альфой (`#RRGGBBAA`, `rgba()`) — его альфа, как в вебе.
+Color? _newFeedBackground(StoryTextBlockElement element) {
+  final color = parseStoryCssColor(element.backgroundColor);
+  if (color == null || color.a < 1) return color;
+  return color.withValues(alpha: element.backgroundOpacity.clamp(0, 1));
 }
 
 /// Сторис, которые можно показать: со слайдами (C16) и без повторов id — сервер иногда

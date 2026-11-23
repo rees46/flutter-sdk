@@ -15,6 +15,7 @@ import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_slide_view.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_sound.dart';
+import 'package:rees46_sdk/src/ui/widgets/stories_support.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String _code = 'block';
@@ -385,6 +386,62 @@ void main() {
       // An image slide with no URL: media (its letterbox colour), nothing to load.
       expect(slideColor(tester), const Color(0xFF445566));
       expect(find.text('Retry'), findsNothing);
+    });
+
+    test('one colour parser: #RGB, #RRGGBB, #RRGGBBAA, rgb() and rgba()', () {
+      expect(parseStoryCssColor('#123'), const Color(0xFF112233));
+      expect(parseStoryCssColor(' #112233 '), const Color(0xFF112233));
+      expect(parseStoryCssColor('#11223380'), const Color(0x80112233));
+      expect(parseStoryCssColor('rgb(17, 34, 51)'), const Color(0xFF112233));
+      expect(
+        parseStoryCssColor('rgba(17, 34, 51, 0.5)'),
+        const Color.fromARGB(128, 17, 34, 51),
+      );
+      for (final bad in <String>[
+        '',
+        'red',
+        '#1234',
+        '#12345',
+        'hsl(0,0%,0%)',
+      ]) {
+        expect(parseStoryCssColor(bad), isNull, reason: bad);
+      }
+    });
+
+    testWidgets('the slide colour picks the kit text by WCAG contrast', (
+      tester,
+    ) async {
+      Brightness? brightness(String text) => tester
+          .widget<PersonalizationBrightness>(
+            find
+                .ancestor(
+                  of: find.text(text),
+                  matching: find.byType(PersonalizationBrightness),
+                )
+                .first,
+          )
+          .brightness;
+      stories.addAll(<Map<String, dynamic>>[
+        // Red: luminance 0.21 — black text contrasts more (5.3 against 4.0).
+        _story(1, <Map<String, dynamic>>[
+          _slide('10', type: '', color: '#FF0000', elements: [_product('a')]),
+        ]),
+        _story(2, <Map<String, dynamic>>[
+          _slide(
+            '20',
+            type: '',
+            color: 'rgb(0, 0, 128)',
+            elements: [_product('b')],
+          ),
+        ]),
+      ]);
+      await bar(tester);
+      await open(tester, 'Story 1');
+      expect(brightness('Product a'), Brightness.light);
+      await close(tester);
+      await open(tester, 'Story 2');
+      expect(slideColor(tester, 'Product b'), const Color(0xFF000080));
+      expect(brightness('Product b'), Brightness.dark);
     });
 
     testWidgets('the old feed keeps the kit card colour', (tester) async {

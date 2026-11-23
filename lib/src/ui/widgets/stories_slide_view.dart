@@ -168,7 +168,8 @@ class StorySlideView extends StatelessWidget {
     final media = _media(slide) != StoryMedia.none;
     final body = Builder(builder: (context) => _body(context, slide, media));
     // Слайды с медиа — тёмные токены кита: текст и кнопки лежат на фото или видео. Свой
-    // цвет слайда без медиа — токены по его яркости.
+    // цвет слайда без медиа — токены кита, у которых основной текст контрастнее с ним по
+    // WCAG.
     final color = media ? null : _slideColor(slide);
     if (media) {
       return PersonalizationBrightness(
@@ -178,9 +179,7 @@ class StorySlideView extends StatelessWidget {
     }
     if (color == null) return body;
     return PersonalizationBrightness(
-      brightness: color.computeLuminance() > 0.5
-          ? Brightness.light
-          : Brightness.dark,
+      brightness: PersonalizationBrightness.on(color.withValues(alpha: 1)),
       child: body,
     );
   }
@@ -203,7 +202,7 @@ class StorySlideView extends StatelessWidget {
           width: constraints.maxWidth,
           child: ColoredBox(
             color: media
-                ? storyLetterbox(slide)
+                ? storyLetterbox(slide, newFeed: v3)
                 : _slideColor(slide) ?? colors.backgroundCard,
             child: Stack(
               fit: StackFit.expand,
