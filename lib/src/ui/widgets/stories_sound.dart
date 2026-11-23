@@ -99,10 +99,15 @@ class StoriesSound implements pigeon.PersonalizationStoriesFlutterApi {
     }
   }
 
-  /// Есть ли звук у видео [source] (адрес или файл кэша); не прочитать — `null`.
+  /// Сколько ждать ответа платформы о звуке видео: мост сам сдаётся раньше (Android —
+  /// 5 с), это — последняя граница.
+  static const Duration probeTimeout = Duration(seconds: 6);
+
+  /// Есть ли звук у видео [source] (адрес или файл кэша); не прочитать или нет ответа за
+  /// [probeTimeout] — `null`.
   Future<bool?> hasAudio(String source) async {
     try {
-      return await api.storiesVideoHasAudio(source);
+      return await api.storiesVideoHasAudio(source).timeout(probeTimeout);
     } catch (error) {
       debugPrint('PersonalizationStories: audio of $source — $error');
       return null;

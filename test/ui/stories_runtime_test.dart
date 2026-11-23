@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,6 +47,7 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Future<bool?> storiesVideoHasAudio(String source) async {
     probed.add(source);
     if (source.endsWith('broken.mp4')) throw PlatformException(code: 'x');
+    if (source.endsWith('hang.mp4')) return Completer<bool?>().future;
     return source.endsWith('sound.mp4');
   }
 
@@ -167,6 +170,26 @@ void main() {
       ]);
     },
   );
+
+  testWidgets('no answer from the platform in time: unknown, the button '
+      'stays', (tester) async {
+    StoriesSound.api = _FakeHostApi();
+    bool? answer = true;
+    var done = false;
+    unawaited(
+      StoriesSound.instance.hasAudio('https://cdn.example/hang.mp4').then((
+        value,
+      ) {
+        answer = value;
+        done = true;
+      }),
+    );
+    await tester.pump(StoriesSound.probeTimeout - const Duration(seconds: 1));
+    expect(done, isFalse);
+    await tester.pump(const Duration(seconds: 1));
+    expect(done, isTrue);
+    expect(answer, isNull);
+  });
 
   test('share hands the link and the button frame to the platform', () async {
     final api = _FakeHostApi();

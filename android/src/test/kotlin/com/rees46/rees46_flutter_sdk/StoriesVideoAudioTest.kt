@@ -30,6 +30,7 @@ internal class StoriesVideoAudioTest {
             probe = { probed += it; true },
             worker = worker,
             main = { main.execute(it) },
+            schedule = { _, _ -> },
         )
         val answers = mutableListOf<Result<Boolean?>>()
         audio.hasAudio("https://cdn.example/v.mp4") { answers += it }
@@ -45,16 +46,56 @@ internal class StoriesVideoAudioTest {
     fun noAudioIsFalseAndAFailedReadIsNull() {
         val direct = Executor { it.run() }
         val answers = mutableListOf<Boolean?>()
-        StoriesVideoAudio(probe = { false }, worker = direct, main = { it.run() })
+        val never: (Long, Runnable) -> Unit = { _, _ -> }
+        StoriesVideoAudio(probe = { false }, worker = direct, main = { it.run() }, schedule = never)
             .hasAudio("/cache/v.mp4") { answers += it.getOrThrow() }
         StoriesVideoAudio(
             probe = { throw IllegalStateException("broken") },
             worker = direct,
             main = { it.run() },
+            schedule = never,
         ).hasAudio("/cache/v.mp4") { answers += it.getOrThrow() }
-        StoriesVideoAudio(probe = { null }, worker = direct, main = { it.run() })
+        StoriesVideoAudio(probe = { null }, worker = direct, main = { it.run() }, schedule = never)
             .hasAudio("x") { answers += it.getOrThrow() }
         assertEquals(listOf<Boolean?>(false, null, null), answers)
+    }
+
+    @Test
+    fun aReadNotDoneInTimeIsInconclusiveAndAnsweredOnce() {
+        val worker = Queue()
+        val timers = mutableListOf<Pair<Long, Runnable>>()
+        val answers = mutableListOf<Boolean?>()
+        StoriesVideoAudio(
+            probe = { false },
+            worker = worker,
+            main = { it.run() },
+            schedule = { delay, task -> timers += delay to task },
+        ).hasAudio("https://cdn.example/slow.mp4") { answers += it.getOrThrow() }
+        assertEquals(listOf(StoriesVideoAudio.TIMEOUT_MS), timers.map { it.first })
+        timers.single().second.run()
+        assertEquals(listOf<Boolean?>(null), answers, "the time is up: the button stays")
+        worker.run()
+        assertEquals(listOf<Boolean?>(null), answers, "the late read is dropped")
+    }
+
+    @Test
+    fun aHangingReadDoesNotHoldTheNextOne() {
+        val release = java.util.concurrent.CountDownLatch(1)
+        val done = java.util.concurrent.CountDownLatch(1)
+        val answers = java.util.Collections.synchronizedList(mutableListOf<Boolean?>())
+        val audio = StoriesVideoAudio(
+            probe = { source ->
+                if (source == "hang") release.await()
+                true
+            },
+            main = { it.run() },
+            schedule = { _, _ -> },
+        )
+        audio.hasAudio("hang") { }
+        audio.hasAudio("next") { answers += it.getOrThrow(); done.countDown() }
+        assertTrue(done.await(5, java.util.concurrent.TimeUnit.SECONDS))
+        assertEquals(listOf<Boolean?>(true), answers)
+        release.countDown()
     }
 
     @Test
@@ -72,6 +113,7 @@ internal class StoriesVideoAudioTest {
             probe = { it.endsWith("sound.mp4") },
             worker = { it.run() },
             main = { it.run() },
+            schedule = { _, _ -> },
         )
         val answers = mutableListOf<Boolean?>()
         plugin.storiesVideoHasAudio("https://cdn.example/sound.mp4") { answers += it.getOrThrow() }

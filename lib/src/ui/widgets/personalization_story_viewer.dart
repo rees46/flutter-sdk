@@ -694,10 +694,21 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   /// Новая лента: у видео живого слайда есть звук (или его не прочитать) — кнопка звука.
   bool _videoSound = false;
 
-  /// Звук видео захода [generation] из файла кэша [file] или по адресу [url]: кнопка
-  /// звука новой ленты — только у видео со звуком, как в вебе; не прочитать — есть.
+  /// Звук видео захода [generation]: из файла кэша [file], а не было его — из файла, если
+  /// кэш уже заполнился, иначе по адресу [url]. Кнопки звука новой ленты нет, только
+  /// когда платформа подтвердила, что дорожки звука нет; не прочитать или не успели за
+  /// [StoriesSound.probeTimeout] — кнопка есть.
   Future<void> _probeSound(String url, String? file, int generation) async {
-    final sound = await StoriesSound.instance.hasAudio(file ?? url);
+    var source = file;
+    if (source == null) {
+      try {
+        source = (await StoriesMediaCache.instance.cached(url))?.path;
+      } catch (_) {
+        // Кэша нет — по адресу.
+      }
+    }
+    if (!_current(generation)) return;
+    final sound = await StoriesSound.instance.hasAudio(source ?? url);
     if (!_current(generation) || _videoSound == (sound ?? true)) return;
     setState(() => _videoSound = sound ?? true);
   }
