@@ -35,10 +35,11 @@ import 'stories_v3_scope.dart';
 ///   с нуля, без перезагрузки (у новой ленты, как в вебе, закрывает просмотр); вперёд на
 ///   последнем слайде последней — закрывает просмотр;
 /// - свайп вбок листает сторис (у новой ленты свайп назад на первой сторис дальше 100,
-///   как в вебе, закрывает просмотр); заход на сторис (просмотр слайда, трекинг `view`) —
-///   только когда страница осела, подглядывание соседней не считается. Свайп вниз дальше
-///   120 или быстрее 800 в секунду закрывает, иначе слайд пружинит назад; пока тянут —
-///   пауза;
+///   как в вебе, закрывает просмотр, а вперёд на последней — отмечает её просмотренной и
+///   закрывает); заход на сторис (просмотр слайда, трекинг `view`) — только когда страница
+///   осела, подглядывание соседней не считается. Свайп вниз дальше 120 или быстрее 800 в
+///   секунду закрывает (у новой ленты, как в вебе, — вверх или вниз дальше 100), иначе
+///   слайд пружинит назад; пока тянут — пауза;
 /// - раскрытая шторка товаров ставит паузу и блокирует листание; тап мимо неё и системное
 ///   «назад» её закрывают; смена слайда её сбрасывает;
 /// - пауза и когда приложение свёрнуто или потеряло фокус, и когда просмотр закрыт другим
@@ -942,61 +943,104 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   // --- Сборка -------------------------------------------------------------------------
 
-  /// Сколько палец протянул назад за край первой сторис в текущем свайпе.
-  double _backPull = 0;
+  /// Свайп у новой ленты, как в вебе (`swipeLength`): путь пальца от касания до
+  /// отпускания дальше этого. Назад на первой сторис (`i <= 0` — `close()`) и вперёд на
+  /// последней (`next` — просмотрена и `close()`) закрывают просмотр; вертикальный свайп
+  /// вверх или вниз — тоже.
+  static const double _swipe = 100;
 
-  /// Свайп назад на первой сторис, как в вебе (`i <= 0` — `close()`): у новой ленты
-  /// закрывает просмотр, когда палец ушёл за край дальше этого.
-  static const double _backSwipe = 100;
+  /// Палец текущего свайпа: где коснулся и где сейчас (путь — как в вебе, от касания,
+  /// вместе с порогом распознавания жеста).
+  int? _finger;
+  Offset _fingerDown = Offset.zero;
+  Offset _fingerAt = Offset.zero;
+
+  /// В текущем свайпе лента упиралась в начало (первая страница) или в конец.
+  bool _atStart = false;
+  bool _atEnd = false;
+
+  /// Путь пальца с касания.
+  Offset get _swiped => _fingerAt - _fingerDown;
+
+  void _onPointerDown(PointerDownEvent event) {
+    if (_finger != null) return;
+    _finger = event.pointer;
+    _fingerDown = _fingerAt = event.position;
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (event.pointer == _finger) _fingerAt = event.position;
+  }
+
+  void _onPointerUp(PointerEvent event) {
+    if (event.pointer != _finger) return;
+    _fingerAt = event.position;
+    _finger = null;
+  }
 
   bool _onScroll(ScrollNotification notification) {
     if (notification.depth != 0) return false;
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
-      _backPull = 0;
+      _atStart = _atEnd = false;
       _setPaused(StoriesPauseReason.drag, true);
     } else if (notification is ScrollUpdateNotification) {
-      _pullBack(notification.metrics, notification.dragDetails);
+      _edge(notification.metrics, notification.dragDetails);
     } else if (notification is OverscrollNotification) {
-      _pullBack(notification.metrics, notification.dragDetails);
+      _edge(notification.metrics, notification.dragDetails);
     } else if (notification is ScrollEndNotification && _pages.hasClients) {
-      if (_closeOnBackSwipe()) return false;
+      if (_closeOnEdgeSwipe()) return false;
       _settled(_pages.page?.round() ?? _playback.storyIndex);
     }
     return false;
   }
 
-  /// Палец тянет назад за край первой страницы: копится путь пальца ([_backPull]).
-  /// Палец отпустили (дальше пружина без него) — решается, закрыть ли просмотр.
-  void _pullBack(ScrollMetrics metrics, DragUpdateDetails? drag) {
+  /// Палец тянет ленту, упёртую в край, — запоминается край. Палец отпустили (дальше
+  /// пружина без него) — решается, закрыть ли просмотр.
+  void _edge(ScrollMetrics metrics, DragUpdateDetails? drag) {
     if (drag == null) {
-      _closeOnBackSwipe();
+      _closeOnEdgeSwipe();
       return;
     }
-    final delta = drag.primaryDelta;
-    if (delta == null || metrics.pixels > metrics.minScrollExtent) return;
-    // Назад — палец по оси к началу ленты: вправо в LTR, влево в RTL.
-    final back = metrics.axisDirection == AxisDirection.left ? -delta : delta;
-    _backPull = math.max(0, _backPull + back);
+    if (metrics.pixels <= metrics.minScrollExtent) _atStart = true;
+    if (metrics.pixels >= metrics.maxScrollExtent) _atEnd = true;
   }
 
-  /// Свайп назад на первой сторис новой ленты закрывает просмотр, как в вебе; `true` —
+  /// Свайп за край ленты у новой ленты, как в вебе: назад на первой сторис закрывает
+  /// просмотр, вперёд на последней — отмечает её просмотренной и закрывает; `true` —
   /// закрыт.
-  bool _closeOnBackSwipe() {
-    final back = _backPull;
-    _backPull = 0;
-    if (back < _backSwipe ||
-        !_playback.serverStart ||
-        !_playback.entered ||
-        _playback.storyIndex != 0) {
-      return false;
+  bool _closeOnEdgeSwipe() {
+    final atStart = _atStart;
+    final atEnd = _atEnd;
+    _atStart = _atEnd = false;
+    if (!_playback.serverStart || !_playback.entered) return false;
+    final swiped = _swiped;
+    if (swiped.dx.abs() <= swiped.dy.abs()) return false;
+    // Назад — палец к началу ленты: вправо в LTR, влево в RTL.
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final back = rtl ? -swiped.dx : swiped.dx;
+    final index = _playback.storyIndex;
+    if (atStart && back > _swipe && index == 0) {
+      _close();
+      return true;
     }
-    _close();
-    return true;
+    if (atEnd && -back > _swipe && index == _playback.stories.length - 1) {
+      _playback.leaveForward();
+      _close();
+      return true;
+    }
+    return false;
   }
 
+  /// Конец вертикального свайпа: у новой ленты, как в вебе, путь пальца дальше
+  /// [_swipe] вверх или вниз (вертикальнее, чем вбок) закрывает просмотр; у старой —
+  /// вниз дальше 120 или быстрее 800 в секунду.
   void _dragEnd(double velocity) {
-    if (_drag.value > _closeDistance || velocity > _closeVelocity) {
+    final swiped = _swiped;
+    final close = _playback.serverStart
+        ? swiped.dy.abs() > _swipe && swiped.dy.abs() > swiped.dx.abs()
+        : _drag.value > _closeDistance || velocity > _closeVelocity;
+    if (close) {
       _close();
       return;
     }
@@ -1019,34 +1063,41 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       // приложения — с жёлтым подчёркиванием.
       child: DefaultTextStyle(
         style: const TextStyle(),
-        child: GestureDetector(
-          onVerticalDragStart: sheet
-              ? null
-              : (_) => _setPaused(StoriesPauseReason.drag, true),
-          onVerticalDragUpdate: sheet
-              ? null
-              : (details) =>
-                    _drag.value = math.max(0, _drag.value + details.delta.dy),
-          onVerticalDragEnd: sheet
-              ? null
-              : (details) => _dragEnd(details.primaryVelocity ?? 0),
-          onVerticalDragCancel: sheet ? null : () => _dragEnd(0),
-          child: ValueListenableBuilder<double>(
-            valueListenable: _drag,
-            builder: (context, drag, child) => Transform.translate(
-              offset: Offset(0, drag),
-              child: Transform.scale(
-                scale: 1 - math.min(drag / 2000, 0.1),
-                child: child,
+        // Путь пальца свайпа — от касания, как в вебе.
+        child: Listener(
+          onPointerDown: _onPointerDown,
+          onPointerMove: _onPointerMove,
+          onPointerUp: _onPointerUp,
+          onPointerCancel: _onPointerUp,
+          child: GestureDetector(
+            onVerticalDragStart: sheet
+                ? null
+                : (_) => _setPaused(StoriesPauseReason.drag, true),
+            onVerticalDragUpdate: sheet
+                ? null
+                : (details) =>
+                      _drag.value = math.max(0, _drag.value + details.delta.dy),
+            onVerticalDragEnd: sheet
+                ? null
+                : (details) => _dragEnd(details.primaryVelocity ?? 0),
+            onVerticalDragCancel: sheet ? null : () => _dragEnd(0),
+            child: ValueListenableBuilder<double>(
+              valueListenable: _drag,
+              builder: (context, drag, child) => Transform.translate(
+                offset: Offset(0, drag),
+                child: Transform.scale(
+                  scale: 1 - math.min(drag / 2000, 0.1),
+                  child: child,
+                ),
               ),
-            ),
-            child: NotificationListener<ScrollNotification>(
-              onNotification: _onScroll,
-              child: PageView.builder(
-                controller: _pages,
-                physics: sheet ? const NeverScrollableScrollPhysics() : null,
-                itemCount: _playback.stories.length,
-                itemBuilder: _page,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _onScroll,
+                child: PageView.builder(
+                  controller: _pages,
+                  physics: sheet ? const NeverScrollableScrollPhysics() : null,
+                  itemCount: _playback.stories.length,
+                  itemBuilder: _page,
+                ),
               ),
             ),
           ),

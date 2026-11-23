@@ -260,6 +260,18 @@ void main() {
       expect(StoriesServerProgress.viewedOf(x), isTrue);
     });
 
+    test('leaving forward past the last story marks it viewed', () {
+      final a = _feedStory('a', 'mm');
+      final playback = _open(feed(<Story>[a]));
+      playback.leaveForward();
+      expect(StoriesServerProgress.viewedOf(a), isTrue);
+      expect(StoriesServerProgress.startOf(a), 0, reason: 'not finished');
+
+      final legacy = _story('l', 1);
+      _open(StoriesPlayback(stories: <Story>[legacy])).leaveForward();
+      expect(StoriesServerProgress.viewedOf(legacy), isFalse);
+    });
+
     test('a link slide only sets the first open', () {
       final a = _feedStory('a', 'mmm');
       final playback = _open(feed(<Story>[a], slide: 1));

@@ -424,6 +424,14 @@ class StoriesPlayback {
     return StoriesStep.turn;
   }
 
+  /// Свайп вперёд с последней сторис новой ленты, как `next` веба: она просмотрена
+  /// (просмотр закрывается).
+  void leaveForward() {
+    if (serverStart && _entered && !isEmpty) {
+      StoriesServerProgress.leftForward(story);
+    }
+  }
+
   void _turnTo(int index) {
     _turnTarget = index;
     _reasons.add(StoriesPauseReason.drag);

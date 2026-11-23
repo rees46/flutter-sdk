@@ -942,6 +942,111 @@ void main() {
     });
   });
 
+  group('a forward swipe on the last story marks it viewed and closes the '
+      'viewer, as the web', () {
+    Future<void> swipeForward(WidgetTester tester, {double by = 250}) async {
+      await tester.drag(
+        find.byType(PersonalizationStoryViewer),
+        Offset(-by, 0),
+      );
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    for (final platform in <TargetPlatform>[
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    ]) {
+      testWidgets('${platform.name}: closes, viewed; a short pull does not', (
+        tester,
+      ) async {
+        debugDefaultTargetPlatformOverride = platform;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        stories.addAll(<Map<String, dynamic>>[
+          _story(1, <Map<String, dynamic>>[_slide('10', duration: 30)]),
+          _story(2, <Map<String, dynamic>>[
+            _slide('20', duration: 30),
+            _slide('21', duration: 30),
+          ]),
+        ]);
+        await bar(tester);
+        await open(tester, 'Story 2');
+        await swipeForward(tester, by: 60);
+        expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+        await swipeForward(tester);
+        expect(find.byType(PersonalizationStoryViewer), findsNothing);
+        expect(cover(tester, 1), PersonalizationStoryCoverState.viewed);
+        expect(cover(tester, 0), PersonalizationStoryCoverState.unviewed);
+        debugDefaultTargetPlatformOverride = null;
+      });
+    }
+
+    testWidgets('the old feed stays open', (tester) async {
+      stories.add(
+        _story(1, <Map<String, dynamic>>[_slide('10', duration: 30)]),
+      );
+      await bar(tester, v3: false);
+      await open(tester, 'Story 1');
+      await swipeForward(tester);
+      expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+    });
+  });
+
+  group(
+    'a vertical swipe over 100, up or down, closes the viewer, as the web',
+    () {
+      Future<void> swipe(WidgetTester tester, double dy) async {
+        await tester.drag(
+          find.byType(PersonalizationStoryViewer),
+          Offset(0, dy),
+        );
+        await settle(tester);
+      }
+
+      testWidgets('up and down close; 80 does not', (tester) async {
+        stories.add(
+          _story(1, <Map<String, dynamic>>[_slide('10', duration: 30)]),
+        );
+        await bar(tester);
+        await open(tester, 'Story 1');
+        await swipe(tester, 80);
+        expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+        await swipe(tester, -80);
+        expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+        await swipe(tester, -150);
+        expect(
+          find.byType(PersonalizationStoryViewer),
+          findsNothing,
+          reason: 'up',
+        );
+        await open(tester, 'Story 1');
+        await swipe(tester, 150);
+        expect(
+          find.byType(PersonalizationStoryViewer),
+          findsNothing,
+          reason: 'down',
+        );
+      });
+
+      testWidgets('the old feed: up does nothing, down over 120 closes', (
+        tester,
+      ) async {
+        stories.add(
+          _story(1, <Map<String, dynamic>>[_slide('10', duration: 30)]),
+        );
+        await bar(tester, v3: false);
+        await open(tester, 'Story 1');
+        await swipe(tester, -200);
+        expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+        await swipe(tester, 110);
+        expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+        await swipe(tester, 200);
+        expect(find.byType(PersonalizationStoryViewer), findsNothing);
+      });
+    },
+  );
+
   group('a slide with no media and no product is skipped, as the web', () {
     Map<String, dynamic> skipped(String id) =>
         _slide(id, type: '', duration: 30, color: '#112233');
