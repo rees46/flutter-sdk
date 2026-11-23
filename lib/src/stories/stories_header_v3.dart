@@ -49,9 +49,14 @@ class StoryHeaderElement extends StoryElement {
 /// Text blocks over API v3, as the web SDK reads them: `bold` (else the old `text_bold`)
 /// and `italic` (else `text_italic`) take `true`, `1` and `"true"`; the background
 /// opacity is percents as calculateOpacity reads them (`"0.5"` — 0.5 %, `"50"` and `"50%"`
-/// — 50 %), and a background colour without an opacity is opaque; `font_type` is read
+/// — 50 %), a background colour without an opacity is opaque, and a valid opacity
+/// replaces the alpha of a colour that has its own; `font_type` is read
 /// regardless of case, `monospace` too. Behind the v3 gate, not the kit's.
 extension StoryTextBlockV3 on StoryTextBlockElement {
   /// The server sent `font_size`; without it API v3 takes the kit's body text size.
   bool get hasFontSize => _hasFontSize;
+
+  /// A valid `text_background_color_opacity` came: it replaces the alpha of a colour that
+  /// has its own (`#RRGGBBAA`, `rgba()`); without it such a colour keeps its alpha.
+  bool get hasBackgroundOpacity => _hasOpacity;
 }

@@ -340,6 +340,9 @@ class StoryTextBlockElement extends StoryElement {
   // The server sent `font_size`: behind the v3 gate, read through [StoryTextBlockV3].
   final bool _hasFontSize;
 
+  // API v3 sent a valid background opacity: read through [StoryTextBlockV3].
+  final bool _hasOpacity;
+
   const StoryTextBlockElement({
     required this.text,
     this.fontSize = defaultFontSize,
@@ -353,10 +356,12 @@ class StoryTextBlockElement extends StoryElement {
     this.lineSpacing = 0,
     this.yOffset = 0,
     this.promocode,
-  }) : _hasFontSize = true;
+  }) : _hasFontSize = true,
+       _hasOpacity = false;
 
   const StoryTextBlockElement._json(
-    this._hasFontSize, {
+    this._hasFontSize,
+    this._hasOpacity, {
     required this.text,
     required this.fontSize,
     required this.fontType,
@@ -382,8 +387,12 @@ class StoryTextBlockElement extends StoryElement {
   }) {
     final promocode = json['promocode'];
     final fontSize = toDoubleOrNull(json['font_size']);
+    final opacity = v3
+        ? _cssOpacity(json['text_background_color_opacity'])
+        : null;
     return StoryTextBlockElement._json(
       fontSize != null,
+      opacity != null,
       text: json['text_input'] as String? ?? '',
       fontSize: fontSize ?? defaultFontSize,
       fontType: json['font_type'] as String? ?? '',
@@ -397,7 +406,7 @@ class StoryTextBlockElement extends StoryElement {
       textColor: json['text_color'] as String? ?? '',
       backgroundColor: json['text_background_color'] as String? ?? '',
       backgroundOpacity: v3
-          ? _cssOpacity(json['text_background_color_opacity'])
+          ? opacity ?? 1
           : parseStoryOpacity(json['text_background_color_opacity']),
       lineSpacing: toDoubleOrNull(json['text_line_spacing']) ?? 0,
       yOffset: toDoubleOrNull(json['y_offset']) ?? 0,
@@ -514,9 +523,9 @@ final RegExp _leadingNumber = RegExp(
 // The opacity of a text block's background over API v3, as the web's calculateOpacity
 // reads it: the number (or the number a string starts with, as parseFloat) is percents —
 // `"0.5"` is 0.5 %, `"50"` and `"50%"` are 50 %; nothing (`null`, `""`, `0`, `false`), not
-// a number or out of 0…100 — the colour as it is, opaque.
-double _cssOpacity(Object? value) {
-  if (value == null || value == false || value == '' || value == 0) return 1;
+// a number or out of 0…100 — `null`: no opacity, the colour as it is.
+double? _cssOpacity(Object? value) {
+  if (value == null || value == false || value == '' || value == 0) return null;
   final double? percent = switch (value) {
     final num number => number.toDouble(),
     final String text => switch (_leadingNumber.firstMatch(text)) {
@@ -526,7 +535,7 @@ double _cssOpacity(Object? value) {
     _ => null,
   };
   if (percent == null || percent.isNaN || percent < 0 || percent > 100) {
-    return 1;
+    return null;
   }
   return percent / 100;
 }

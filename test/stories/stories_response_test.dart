@@ -357,6 +357,22 @@ void main() {
         reason: 'no opacity — opaque',
       );
 
+      expect(
+        v3(<String, dynamic>{
+          'text_background_color_opacity': '50%',
+        }).hasBackgroundOpacity,
+        isTrue,
+      );
+      for (final none in <Object?>[null, '', 0, 'abc', '110']) {
+        expect(
+          v3(<String, dynamic>{
+            'text_background_color_opacity': none,
+          }).hasBackgroundOpacity,
+          isFalse,
+          reason: '$none',
+        );
+      }
+
       final legacy = StoryTextBlockElement.fromJson(const <String, dynamic>{
         'type': 'text_block',
         'bold': 1,

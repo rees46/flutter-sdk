@@ -169,8 +169,8 @@ class StorySlideView extends StatelessWidget {
     final media = _media(slide) != StoryMedia.none;
     final body = Builder(builder: (context) => _body(context, slide, media));
     // Слайды с медиа — тёмные токены кита: текст и кнопки лежат на фото или видео. Свой
-    // цвет слайда без медиа — токены кита, у которых основной текст контрастнее с ним по
-    // WCAG.
+    // цвет слайда без медиа (уже на чёрном фоне просмотра) — токены кита, у которых
+    // основной текст контрастнее с ним по WCAG.
     final color = media ? null : _slideColor(slide);
     if (media) {
       return PersonalizationBrightness(
@@ -180,7 +180,7 @@ class StorySlideView extends StatelessWidget {
     }
     if (color == null) return body;
     return PersonalizationBrightness(
-      brightness: PersonalizationBrightness.on(color.withValues(alpha: 1)),
+      brightness: PersonalizationBrightness.on(color),
       child: body,
     );
   }

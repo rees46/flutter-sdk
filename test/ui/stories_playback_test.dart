@@ -242,6 +242,24 @@ void main() {
       expect(back.settle(0), StoriesStep.close, reason: 'nothing before it');
     });
 
+    test('back over such a story marks it viewed, as forward does; nothing '
+        'before it — close', () {
+      final a = _feedStory('a', 'm');
+      final b = _feedStory('b', 'ss');
+      final c = _feedStory('c', 'm');
+      final playback = _open(feed(<Story>[a, b, c], initial: 2));
+      expect(playback.story, c);
+      expect(playback.previous(), StoriesStep.turn);
+      expect(playback.turnTarget, 0);
+      expect(StoriesServerProgress.viewedOf(b), isTrue);
+      expect(StoriesServerProgress.viewedOf(a), isFalse);
+
+      final x = _feedStory('x', 's');
+      final first = _open(feed(<Story>[x, _feedStory('y', 'm')], initial: 1));
+      expect(first.previous(), StoriesStep.close);
+      expect(StoriesServerProgress.viewedOf(x), isTrue);
+    });
+
     test('a link slide only sets the first open', () {
       final a = _feedStory('a', 'mmm');
       final playback = _open(feed(<Story>[a], slide: 1));

@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -444,6 +445,79 @@ void main() {
       expect(brightness('Product b'), Brightness.dark);
     });
 
+    testWidgets('a translucent slide colour lies over the black of the viewer, '
+        'also for the text scheme', (tester) async {
+      Brightness? brightness(String text) => tester
+          .widget<PersonalizationBrightness>(
+            find
+                .ancestor(
+                  of: find.text(text),
+                  matching: find.byType(PersonalizationBrightness),
+                )
+                .first,
+          )
+          .brightness;
+      stories.add(
+        _story(1, <Map<String, dynamic>>[
+          _slide(
+            '10',
+            type: '',
+            color: 'rgba(255, 255, 255, 0.2)',
+            elements: [_product('a')],
+          ),
+        ]),
+      );
+      await bar(tester);
+      await open(tester, 'Story 1');
+      expect(slideColor(tester, 'Product a'), const Color(0xFF333333));
+      expect(
+        brightness('Product a'),
+        Brightness.dark,
+        reason: 'white at 20 % over black is dark: the light text',
+      );
+    });
+
+    testWidgets('a valid opacity replaces the alpha of #RRGGBBAA; without one '
+        'the colour keeps its own', (tester) async {
+      stories.add(
+        _story(1, <Map<String, dynamic>>[
+          _slide(
+            '10',
+            elements: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'type': 'text_block',
+                'text_input': 'Replaced',
+                'text_background_color': '#11223380',
+                'text_background_color_opacity': '25%',
+                'y_offset': 30,
+              },
+              <String, dynamic>{
+                'type': 'text_block',
+                'text_input': 'Own',
+                'text_background_color': 'rgba(17, 34, 51, 0.5)',
+                'y_offset': 50,
+              },
+            ],
+          ),
+        ]),
+      );
+      await bar(tester);
+      await open(tester, 'Story 1');
+      Color? background(String text) => tester
+          .widget<PersonalizationStoryTextBlock>(
+            find.ancestor(
+              of: find.text(text),
+              matching: find.byType(PersonalizationStoryTextBlock),
+            ),
+          )
+          .background;
+      expect(
+        background('Replaced'),
+        const Color(0xFF112233).withValues(alpha: 0.25),
+      );
+      expect(background('Own'), const Color.fromARGB(128, 17, 34, 51));
+    });
+
     testWidgets('the old feed keeps the kit card colour', (tester) async {
       stories.add(
         _story(1, <Map<String, dynamic>>[
@@ -800,6 +874,74 @@ void main() {
       await tester.pump(const Duration(seconds: 3));
     });
   });
+  group('a back swipe on the first story closes the viewer, as the web', () {
+    Future<void> swipeBack(WidgetTester tester) async {
+      await tester.drag(
+        find.byType(PersonalizationStoryViewer),
+        const Offset(250, 0),
+      );
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    for (final platform in <TargetPlatform>[
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    ]) {
+      testWidgets('${platform.name}: closes; a short pull does not', (
+        tester,
+      ) async {
+        debugDefaultTargetPlatformOverride = platform;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        stories.addAll(<Map<String, dynamic>>[
+          _story(1, <Map<String, dynamic>>[_slide('10', duration: 30)]),
+          _story(2, <Map<String, dynamic>>[_slide('20', duration: 30)]),
+        ]);
+        await bar(tester);
+        await open(tester, 'Story 1');
+        await tester.drag(
+          find.byType(PersonalizationStoryViewer),
+          const Offset(40, 0),
+        );
+        await settle(tester);
+        expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+        await swipeBack(tester);
+        expect(find.byType(PersonalizationStoryViewer), findsNothing);
+        debugDefaultTargetPlatformOverride = null;
+      });
+    }
+
+    testWidgets('not on the second story: back to the first', (tester) async {
+      stories.addAll(<Map<String, dynamic>>[
+        _story(1, <Map<String, dynamic>>[_slide('10', duration: 30)]),
+        _story(2, <Map<String, dynamic>>[_slide('20', duration: 30)]),
+      ]);
+      await bar(tester);
+      await open(tester, 'Story 2');
+      await tester.fling(
+        find.byType(PersonalizationStoryViewer),
+        const Offset(500, 0),
+        1500,
+      );
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Slide 10'), findsOneWidget);
+      expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+    });
+
+    testWidgets('the old feed stays open', (tester) async {
+      stories.add(
+        _story(1, <Map<String, dynamic>>[_slide('10', duration: 30)]),
+      );
+      await bar(tester, v3: false);
+      await open(tester, 'Story 1');
+      await swipeBack(tester);
+      expect(find.byType(PersonalizationStoryViewer), findsOneWidget);
+    });
+  });
+
   group('a slide with no media and no product is skipped, as the web', () {
     Map<String, dynamic> skipped(String id) =>
         _slide(id, type: '', duration: 30, color: '#112233');

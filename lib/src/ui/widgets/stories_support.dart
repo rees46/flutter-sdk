@@ -85,9 +85,14 @@ StoryMedia storyMediaOf(StorySlide slide, {bool byType = false}) {
 }
 
 /// Цвет слайда новой ленты без медиа: `background_color`, как в вебе
-/// ([parseStoryCssColor]); не задан — `null`, слайд на Background/Card кита.
-Color? storySlideColor(StorySlide slide) =>
-    parseStoryCssColor(slide.backgroundColor);
+/// ([parseStoryCssColor]), положенный на чёрный фон просмотра — полупрозрачный тоже;
+/// по нему же выбирается схема текста. Не задан — `null`, слайд на Background/Card кита.
+Color? storySlideColor(StorySlide slide) {
+  final color = parseStoryCssColor(slide.backgroundColor);
+  return color == null
+      ? null
+      : Color.alphaBlend(color, const Color(0xFF000000));
+}
 
 /// Цвет полей вокруг вписанного медиа: `background_color` слайда, без него чёрный. У
 /// старой ленты это единственное место, где цвет админки идёт в дело: слайд без медиа
@@ -379,10 +384,12 @@ PersonalizationStoryTextBlock storyTextBlock(
 }
 
 /// Фон текстового блока новой ленты: цвет ([parseStoryCssColor]) с непрозрачностью
-/// элемента; у цвета со своей альфой (`#RRGGBBAA`, `rgba()`) — его альфа, как в вебе.
+/// элемента — она заменяет и альфу цвета (`#RRGGBBAA`, `rgba()`); без неё цвет со своей
+/// альфой остаётся как есть, а без альфы — непрозрачен.
 Color? _newFeedBackground(StoryTextBlockElement element) {
   final color = parseStoryCssColor(element.backgroundColor);
-  if (color == null || color.a < 1) return color;
+  if (color == null) return null;
+  if (!element.hasBackgroundOpacity) return color;
   return color.withValues(alpha: element.backgroundOpacity.clamp(0, 1));
 }
 

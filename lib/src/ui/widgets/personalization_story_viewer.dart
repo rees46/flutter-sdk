@@ -34,9 +34,11 @@ import 'stories_v3_scope.dart';
 ///   листает. Назад на первом слайде первой сторис перезапускает слайд — прогресс и видео
 ///   с нуля, без перезагрузки (у новой ленты, как в вебе, закрывает просмотр); вперёд на
 ///   последнем слайде последней — закрывает просмотр;
-/// - свайп вбок листает сторис; заход на сторис (просмотр слайда, трекинг `view`) — только
-///   когда страница осела, подглядывание соседней не считается. Свайп вниз дальше 120 или
-///   быстрее 800 в секунду закрывает, иначе слайд пружинит назад; пока тянут — пауза;
+/// - свайп вбок листает сторис (у новой ленты свайп назад на первой сторис дальше 100,
+///   как в вебе, закрывает просмотр); заход на сторис (просмотр слайда, трекинг `view`) —
+///   только когда страница осела, подглядывание соседней не считается. Свайп вниз дальше
+///   120 или быстрее 800 в секунду закрывает, иначе слайд пружинит назад; пока тянут —
+///   пауза;
 /// - раскрытая шторка товаров ставит паузу и блокирует листание; тап мимо неё и системное
 ///   «назад» её закрывают; смена слайда её сбрасывает;
 /// - пауза и когда приложение свёрнуто или потеряло фокус, и когда просмотр закрыт другим
@@ -940,15 +942,57 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   // --- Сборка -------------------------------------------------------------------------
 
+  /// Сколько палец протянул назад за край первой сторис в текущем свайпе.
+  double _backPull = 0;
+
+  /// Свайп назад на первой сторис, как в вебе (`i <= 0` — `close()`): у новой ленты
+  /// закрывает просмотр, когда палец ушёл за край дальше этого.
+  static const double _backSwipe = 100;
+
   bool _onScroll(ScrollNotification notification) {
     if (notification.depth != 0) return false;
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
+      _backPull = 0;
       _setPaused(StoriesPauseReason.drag, true);
+    } else if (notification is ScrollUpdateNotification) {
+      _pullBack(notification.metrics, notification.dragDetails);
+    } else if (notification is OverscrollNotification) {
+      _pullBack(notification.metrics, notification.dragDetails);
     } else if (notification is ScrollEndNotification && _pages.hasClients) {
+      if (_closeOnBackSwipe()) return false;
       _settled(_pages.page?.round() ?? _playback.storyIndex);
     }
     return false;
+  }
+
+  /// Палец тянет назад за край первой страницы: копится путь пальца ([_backPull]).
+  /// Палец отпустили (дальше пружина без него) — решается, закрыть ли просмотр.
+  void _pullBack(ScrollMetrics metrics, DragUpdateDetails? drag) {
+    if (drag == null) {
+      _closeOnBackSwipe();
+      return;
+    }
+    final delta = drag.primaryDelta;
+    if (delta == null || metrics.pixels > metrics.minScrollExtent) return;
+    // Назад — палец по оси к началу ленты: вправо в LTR, влево в RTL.
+    final back = metrics.axisDirection == AxisDirection.left ? -delta : delta;
+    _backPull = math.max(0, _backPull + back);
+  }
+
+  /// Свайп назад на первой сторис новой ленты закрывает просмотр, как в вебе; `true` —
+  /// закрыт.
+  bool _closeOnBackSwipe() {
+    final back = _backPull;
+    _backPull = 0;
+    if (back < _backSwipe ||
+        !_playback.serverStart ||
+        !_playback.entered ||
+        _playback.storyIndex != 0) {
+      return false;
+    }
+    _close();
+    return true;
   }
 
   void _dragEnd(double velocity) {
