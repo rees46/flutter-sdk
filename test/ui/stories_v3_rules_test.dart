@@ -466,8 +466,14 @@ void main() {
                 'type': 'text_block',
                 'text_input': 'Plain',
                 'text_italic': true,
-                'font_type': 'monospace',
+                'font_type': 'MonoSpace',
                 'y_offset': 20,
+              },
+              <String, dynamic>{
+                'type': 'text_block',
+                'text_input': 'Framed',
+                'text_background_color': '#112233',
+                'y_offset': 40,
               },
             ],
           ),
@@ -479,6 +485,18 @@ void main() {
       expect(style.fontSize, PersonalizationTypography.baseDefault.fontSize);
       expect(style.fontStyle, FontStyle.italic);
       expect(style.fontFamily, 'monospace');
+      PersonalizationStoryTextBlock block(String text) =>
+          tester.widget<PersonalizationStoryTextBlock>(
+            find.ancestor(
+              of: find.text(text),
+              matching: find.byType(PersonalizationStoryTextBlock),
+            ),
+          );
+      expect(
+        block('Framed').background,
+        const Color(0xFF112233),
+        reason: 'a colour without an opacity is opaque, as the web',
+      );
       await close(tester);
 
       await bar(tester, v3: false);
@@ -495,6 +513,11 @@ void main() {
         reason: 'no text_italic',
       );
       expect(legacy.fontFamily, isNot('monospace'), reason: 'monospaced only');
+      expect(
+        block('Framed').background,
+        isNull,
+        reason: 'the old feed: no opacity, no frame',
+      );
     });
   });
 

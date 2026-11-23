@@ -387,14 +387,18 @@ class StoryTextBlockElement extends StoryElement {
       text: json['text_input'] as String? ?? '',
       fontSize: fontSize ?? defaultFontSize,
       fontType: json['font_type'] as String? ?? '',
-      bold: json['bold'] == true || json['text_bold'] == true,
-      italic: json['italic'] == true || (v3 && json['text_italic'] == true),
+      bold: v3
+          ? _firstFlag(json, 'bold', 'text_bold')
+          : json['bold'] == true || json['text_bold'] == true,
+      italic: v3
+          ? _firstFlag(json, 'italic', 'text_italic')
+          : json['italic'] == true,
       textAlign: json['text_align'] as String? ?? '',
       textColor: json['text_color'] as String? ?? '',
       backgroundColor: json['text_background_color'] as String? ?? '',
-      backgroundOpacity: parseStoryOpacity(
-        json['text_background_color_opacity'],
-      ),
+      backgroundOpacity: v3
+          ? _cssOpacity(json['text_background_color_opacity'])
+          : parseStoryOpacity(json['text_background_color_opacity']),
       lineSpacing: toDoubleOrNull(json['text_line_spacing']) ?? 0,
       yOffset: toDoubleOrNull(json['y_offset']) ?? 0,
       promocode: promocode is String && promocode.isNotEmpty ? promocode : null,
@@ -496,6 +500,35 @@ double parseStoryOpacity(dynamic value) {
   if (number == null || number <= 0) return 0;
   final fraction = isText || number > 1 ? number / 100 : number;
   return fraction.clamp(0, 1).toDouble();
+}
+
+// A flag of API v3 under [key], or under its old name [legacy] when [key] is not sent:
+// true is `true`, `1` or `"true"` ([_flag]).
+bool _firstFlag(Map<String, dynamic> json, String key, String legacy) =>
+    _flag(json[key] ?? json[legacy]);
+
+final RegExp _leadingNumber = RegExp(
+  r'^\s*[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?',
+);
+
+// The opacity of a text block's background over API v3, as the web's calculateOpacity
+// reads it: the number (or the number a string starts with, as parseFloat) is percents —
+// `"0.5"` is 0.5 %, `"50"` and `"50%"` are 50 %; nothing (`null`, `""`, `0`, `false`), not
+// a number or out of 0…100 — the colour as it is, opaque.
+double _cssOpacity(Object? value) {
+  if (value == null || value == false || value == '' || value == 0) return 1;
+  final double? percent = switch (value) {
+    final num number => number.toDouble(),
+    final String text => switch (_leadingNumber.firstMatch(text)) {
+      final match? => double.tryParse(match.group(0)!.trim()),
+      null => null,
+    },
+    _ => null,
+  };
+  if (percent == null || percent.isNaN || percent < 0 || percent > 100) {
+    return 1;
+  }
+  return percent / 100;
 }
 
 // A string field; JSON `null` (API v3 sends it for empty fields) and other types are empty.
