@@ -120,10 +120,13 @@ void main() {
     () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final sound = StoriesSound.instance;
-      addTearDown(() => sound.muted.value = true);
+      addTearDown(() {
+        sound.muted.value = true;
+        sound.mutedV3.value = true;
+      });
       await sound.restore('shop-a');
-      expect(sound.muted.value, isTrue, reason: 'muted by default');
-      sound.toggle(rememberFor: 'shop-a');
+      expect(sound.mutedV3.value, isTrue, reason: 'muted by default');
+      sound.toggleV3('shop-a');
       await Future<void>.delayed(Duration.zero);
       final preferences = await SharedPreferences.getInstance();
       expect(
@@ -131,13 +134,13 @@ void main() {
         'personalization.stories.muted.shop-a',
       );
       expect(preferences.getBool(StoriesSound.mutedKey('shop-a')), isFalse);
-      sound.muted.value = true;
+      sound.mutedV3.value = true;
       await sound.restore('shop-a');
-      expect(sound.muted.value, isFalse, reason: 'the stored choice');
+      expect(sound.mutedV3.value, isFalse, reason: 'the stored choice');
 
       await sound.restore('shop-b');
       expect(
-        sound.muted.value,
+        sound.mutedV3.value,
         isTrue,
         reason: 'another shop has its own choice: none — muted, as the web',
       );
@@ -153,6 +156,63 @@ void main() {
       expect(preferences.getBool(StoriesSound.mutedKey('shop-a')), isFalse);
     },
   );
+
+  test('the new feed has its own sound: the old feed\'s stays as it was; '
+      'volume up unmutes the top viewer and is not stored', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final api = _FakeHostApi();
+    StoriesSound.api = api;
+    final sound = StoriesSound.instance;
+    addTearDown(() {
+      sound.muted.value = true;
+      sound.mutedV3.value = true;
+    });
+    // The test before leaves volume up pressed.
+    HardwareKeyboard.instance.clearState();
+    sound.muted.value = false;
+    await sound.restore('shop-a');
+    expect(sound.mutedV3.value, isTrue);
+    expect(sound.muted.value, isFalse, reason: 'restore leaves the old feed');
+
+    sound.attach();
+    sound.attach(v3: true);
+    await sound.beforeVideo();
+    await sound.afterVideo();
+    await simulateKeyDownEvent(LogicalKeyboardKey.audioVolumeUp);
+    await simulateKeyUpEvent(LogicalKeyboardKey.audioVolumeUp);
+    expect(sound.mutedV3.value, isFalse);
+    sound.onStoriesVolumeUp();
+    sound.toggleV3('shop-a');
+    expect(sound.mutedV3.value, isTrue);
+    expect(sound.muted.value, isFalse, reason: 'the old viewer untouched');
+    await Future<void>.delayed(Duration.zero);
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getBool(StoriesSound.mutedKey('shop-a')),
+      isTrue,
+      reason: 'only the button choice is stored',
+    );
+    sound.mutedV3.value = false;
+    await Future<void>.delayed(Duration.zero);
+    expect(
+      preferences.getBool(StoriesSound.mutedKey('shop-a')),
+      isTrue,
+      reason: 'a change that is not the button is not stored',
+    );
+
+    sound.detach(v3: true);
+    sound.detach();
+    await Future<void>.delayed(Duration.zero);
+    expect(api.audio, <String>[
+      'begin',
+      'muted',
+      'sound',
+      'muted',
+      'sound',
+      'sound',
+      'end',
+    ]);
+  });
 
   test(
     'the audio of a video: the platform answers, a failure is unknown',

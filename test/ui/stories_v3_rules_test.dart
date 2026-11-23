@@ -485,7 +485,7 @@ void main() {
       tester,
     ) async {
       final sound = StoriesSound.instance;
-      addTearDown(() => sound.muted.value = true);
+      addTearDown(() => sound.mutedV3.value = true);
       stories.add(_story(1, <Map<String, dynamic>>[_slide('10')]));
 
       SharedPreferences.setMockInitialValues(<String, Object>{
@@ -493,7 +493,8 @@ void main() {
       });
       await bar(tester);
       await open(tester, 'Story 1');
-      expect(sound.muted.value, isFalse, reason: 'saved for this shop');
+      expect(sound.mutedV3.value, isFalse, reason: 'saved for this shop');
+      expect(sound.muted.value, isTrue, reason: 'the old feed keeps its own');
       await close(tester);
 
       SharedPreferences.setMockInitialValues(<String, Object>{
@@ -501,7 +502,7 @@ void main() {
       });
       await open(tester, 'Story 1');
       expect(
-        sound.muted.value,
+        sound.mutedV3.value,
         isTrue,
         reason: 'nothing saved for this shop: muted, as the web',
       );

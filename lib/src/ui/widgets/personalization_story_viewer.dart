@@ -233,6 +233,13 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   final ValueNotifier<double> _drag = ValueNotifier<double>(0);
 
   StreamSubscription<int>? _requests;
+
+  /// Звук этого просмотра: у новой ленты — свой, у старой — общий процесса.
+  ValueNotifier<bool> get _sound =>
+      StoriesSound.instance.of(v3: _playback.serverStart);
+
+  /// Выбор кнопки звука магазина взят с устройства (новая лента).
+  Future<void> _soundRestored = Future<void>.value();
   VideoPlayerController? _video;
   bool _videoReady = false;
   bool _videoPlaying = false;
@@ -273,12 +280,12 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    StoriesSound.instance.attach();
-    // Новая лента, как веб, берёт выбор кнопки звука с устройства.
-    if (_playback.serverStart) {
-      unawaited(StoriesSound.instance.restore(_shopId));
+    StoriesSound.instance.attach(v3: _playback.serverStart);
+    // Новая лента, как веб, берёт выбор кнопки звука с устройства — свой у магазина.
+    if (_playback.serverStart && _shopId.isNotEmpty) {
+      _soundRestored = StoriesSound.instance.restore(_shopId);
     }
-    StoriesSound.instance.muted.addListener(_onMuted);
+    _sound.addListener(_onMuted);
     widget.paused?.addListener(_onHostPause);
     _onHostPause();
     _requests = widget.storyRequests?.listen(_onStoryRequest);
@@ -335,13 +342,13 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     WidgetsBinding.instance.removeObserver(this);
     widget.paused?.removeListener(_onHostPause);
     _requests?.cancel();
-    StoriesSound.instance.muted.removeListener(_onMuted);
+    _sound.removeListener(_onMuted);
     _timeout?.cancel();
     _autoRetry?.cancel();
     _ticker.dispose();
     _disposeVideo();
     _disposeGif();
-    StoriesSound.instance.detach();
+    StoriesSound.instance.detach(v3: _playback.serverStart);
     _pages.dispose();
     _progress.dispose();
     _drag.dispose();
@@ -731,7 +738,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       await video.initialize();
       if (!_current(generation) || _video != video) return;
       await video.setLooping(false);
-      await video.setVolume(StoriesSound.instance.muted.value ? 0 : 1);
+      await _soundRestored;
+      if (!_current(generation) || _video != video) return;
+      await video.setVolume(_sound.value ? 0 : 1);
       await StoriesSound.instance.afterVideo();
       if (!_current(generation) || _video != video) return;
       video.addListener(_onVideo);
@@ -813,7 +822,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   }
 
   void _onMuted() {
-    _video?.setVolume(StoriesSound.instance.muted.value ? 0 : 1);
+    _video?.setVolume(_sound.value ? 0 : 1);
     if (mounted) setState(() {});
   }
 
@@ -1009,7 +1018,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       progress: live ? _progress : null,
       video: live && _videoReady ? _video : null,
       gif: live ? _gif : null,
-      muted: StoriesSound.instance.muted.value,
+      muted: _sound.value,
       sheetOpen: live && _playback.sheetOpen,
       failed: live && _playback.pausedBy(StoriesPauseReason.error),
       onTap: _tap,
@@ -1017,8 +1026,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onClose: _close,
       onShare: _v3Code == null ? null : _share,
       shareLabel: _v3?.shareLabel ?? 'Share',
-      onToggleMute: () =>
-          StoriesSound.instance.toggle(rememberFor: _byType ? _shopId : null),
+      onToggleMute: () => _playback.serverStart
+          ? StoriesSound.instance.toggleV3(_shopId)
+          : StoriesSound.instance.toggle(),
       onSheet: _sheet,
       onButton: _button,
       onProduct: _product,
