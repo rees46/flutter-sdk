@@ -441,24 +441,32 @@ class StorySlideView extends StatelessWidget {
     final buttons = storyButtons(slide);
     final bottom =
         (_hasRow(slide) ? 64 : 16) + buttons.length * _buttonSpace(context);
+    final header = _storyHeader(context, slide);
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        for (final text in texts)
-          Positioned.fill(
-            child: CustomSingleChildLayout(
-              delegate: _blockLayout(context, text.yOffset, bottom: bottom),
-              child: _textBlock(context, text),
-            ),
+        // Шапка `header` и текстовые блоки — в одной раскладке: блоки встают под шапку,
+        // `y_offset` у них, как у опроса, — от всего слайда.
+        Positioned.fill(
+          child: CustomMultiChildLayout(
+            delegate: _BodyLayout(<_SlideBlockLayout>[
+              for (final text in texts)
+                _blockLayout(context, text.yOffset, bottom: bottom),
+            ]),
+            children: <Widget>[
+              for (final (index, text) in texts.indexed)
+                LayoutId(id: index, child: _textBlock(context, text)),
+              if (header != null)
+                LayoutId(id: _BodyLayout.header, child: header),
+            ],
           ),
+        ),
         Positioned(
           left: 16,
           right: 16,
           bottom: _hasRow(slide) ? 64 : 16,
           child: _primaryButtons(buttons),
         ),
-        if (_storyHeader(context, slide) case final header?)
-          Positioned(left: 16, right: 16, top: _blockTop, child: header),
         ..._poll(context, slide, bottom: bottom),
         ..._bottomRow(slide),
         _header(),
@@ -466,8 +474,9 @@ class StorySlideView extends StatelessWidget {
     );
   }
 
-  /// Шапка `header` слайда новой ленты: иконка в круге, заголовок и подзаголовок кита;
-  /// нажатие — [onHeader]. Нечего показать или не новая лента — `null`.
+  /// Шапка `header` слайда новой ленты под строкой крестика: иконка 40 в круге, зазор
+  /// 12, заголовок (SM полужирный) и подзаголовок (XS) кита; нажатие — [onHeader].
+  /// Нечего показать или не новая лента — `null`.
   Widget? _storyHeader(BuildContext context, StorySlide slide) {
     final header = v3 ? storyHeaderOf(slide) : null;
     if (header == null) return null;
@@ -492,7 +501,7 @@ class StorySlideView extends StatelessWidget {
             if (icon != null) ...<Widget>[
               ClipOval(
                 child: SizedBox.square(
-                  dimension: 32,
+                  dimension: _headerIcon,
                   child: Image(
                     image: icon,
                     fit: BoxFit.cover,
@@ -501,7 +510,7 @@ class StorySlideView extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: _headerGap),
             ],
             Expanded(
               child: Column(
@@ -679,6 +688,10 @@ class StorySlideView extends StatelessWidget {
 
   // --- Опрос и место блоков ------------------------------------------------------------
 
+  /// Иконка шапки `header` и зазор от неё до текста.
+  static const double _headerIcon = 40;
+  static const double _headerGap = 12;
+
   /// Высота нижней строки слайда: звук, «Используемые товары».
   static const double _rowHeight = 64;
 
@@ -850,6 +863,18 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
   /// Высота видимой нижней строки слайда; нет её — 0.
   final double row;
 
+  /// Та же раскладка, но не выше [top] (под шапкой `header`).
+  _SlideBlockLayout from(double top) => _SlideBlockLayout(
+    yOffset: yOffset,
+    above: above,
+    below: below,
+    top: top,
+    bottom: bottom,
+    keyboard: keyboard,
+    poll: poll,
+    row: row,
+  );
+
   static const double _aboveKeyboard = 16;
 
   /// Зазор карточки опроса до нижней строки или низа SafeArea.
@@ -905,6 +930,55 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
       oldDelegate.keyboard != keyboard ||
       oldDelegate.poll != poll ||
       oldDelegate.row != row;
+}
+
+/// Шапка `header` и текстовые блоки медиа-слайда: шапка — под строкой крестика
+/// ([StorySlideView._blockTop]) во всю ширину с полями 16; блоки — по своим
+/// [_SlideBlockLayout] (`y_offset` от всего слайда), но не выше низа шапки с зазором 8:
+/// шапка их не накрывает.
+class _BodyLayout extends MultiChildLayoutDelegate {
+  _BodyLayout(this.blocks);
+
+  /// Раскладки текстовых блоков; блок [i] — ребёнок с id `i`.
+  final List<_SlideBlockLayout> blocks;
+
+  /// Id шапки.
+  static const Object header = 'header';
+
+  static const double _edge = 16;
+  static const double _gap = 8;
+
+  @override
+  void performLayout(Size size) {
+    var top = StorySlideView._blockTop;
+    if (hasChild(header)) {
+      final height = layoutChild(
+        header,
+        BoxConstraints.tightFor(width: math.max(0, size.width - 2 * _edge)),
+      ).height;
+      positionChild(header, Offset(_edge, top));
+      top += height + _gap;
+    }
+    for (var i = 0; i < blocks.length; i++) {
+      if (!hasChild(i)) continue;
+      final base = blocks[i];
+      final block = top > base.top ? base.from(top) : base;
+      final child = layoutChild(
+        i,
+        block.getConstraintsForChild(BoxConstraints.tight(size)),
+      );
+      positionChild(i, block.getPositionForChild(size, child));
+    }
+  }
+
+  @override
+  bool shouldRelayout(_BodyLayout oldDelegate) {
+    if (oldDelegate.blocks.length != blocks.length) return true;
+    for (var i = 0; i < blocks.length; i++) {
+      if (blocks[i].shouldRelayout(oldDelegate.blocks[i])) return true;
+    }
+    return false;
+  }
 }
 
 /// Касание слайда по третям; касания карточки опроса и подложки клавиатуры

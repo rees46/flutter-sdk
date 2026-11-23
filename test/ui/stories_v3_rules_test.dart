@@ -628,6 +628,68 @@ void main() {
       expect(find.byType(PersonalizationStoryViewer), findsNothing);
     });
 
+    testWidgets(
+      'the header: icon 40, 12 to the text, under the cross row; text '
+      'blocks stand below it',
+      (tester) async {
+        stories.add(
+          _story(1, <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': '10',
+              'type': 'image',
+              'background': '',
+              'duration': 30,
+              'elements': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'type': 'header',
+                  'icon': 'https://cdn.example/icon.png',
+                  'title': 'Brand',
+                  'subtitle': 'Since 1990',
+                },
+                <String, dynamic>{
+                  'type': 'text_block',
+                  'text_input': 'On top',
+                  'y_offset': 0,
+                },
+              ],
+            },
+          ]),
+        );
+        await bar(tester);
+        await open(tester, 'Story 1');
+        final icon = tester.getRect(
+          find
+              .descendant(
+                of: find.byType(ClipOval),
+                matching: find.byType(SizedBox),
+              )
+              .first,
+        );
+        expect(icon.size, const Size(40, 40));
+        final title = tester.getRect(find.text('Brand'));
+        expect(title.left - icon.right, 12);
+        final cross = tester.getRect(
+          find.byKey(const ValueKey<String>(PersonalizationIcons.cross)),
+        );
+        expect(icon.top, greaterThan(cross.bottom));
+        final header = tester.getRect(
+          find
+              .ancestor(of: find.text('Brand'), matching: find.byType(Row))
+              .first,
+        );
+        final text = tester.getRect(
+          find
+              .ancestor(
+                of: find.text('On top'),
+                matching: find.byType(PersonalizationStoryTextBlock),
+              )
+              .first,
+        );
+        expect(text.top, greaterThanOrEqualTo(header.bottom + 8));
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
+
     testWidgets('the old feed draws no header', (tester) async {
       stories.add(
         _story(1, <Map<String, dynamic>>[
