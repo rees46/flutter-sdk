@@ -224,7 +224,8 @@ class StoryPollStore {
   }
 
   /// Ответ [state] опроса [poll] отправлен: он заменяет ответ этого элемента ленты в
-  /// процессе и пишется на устройство (без `did` — только в процессе).
+  /// процессе и пишется на устройство (без `did` — только в процессе). Не бросает:
+  /// запись, которую не сохранить, остаётся только в процессе.
   void write(
     StoryPollElement poll,
     StoryPollPlace place,
@@ -233,11 +234,17 @@ class StoryPollStore {
     _sent[poll] = state;
     final key = keyOf(poll, place);
     if (key == null) return;
-    final record = jsonEncode(<String, Object?>{
-      'answer': (state.answer ?? const StoryPollAnswer()).toJson(),
-      'results': state.results?.toJson(),
-      'saved_at': _clock().millisecondsSinceEpoch,
-    });
+    final String record;
+    try {
+      record = jsonEncode(<String, Object?>{
+        'answer': (state.answer ?? const StoryPollAnswer()).toJson(),
+        'results': state.results?.toJson(),
+        'saved_at': _clock().millisecondsSinceEpoch,
+      });
+    } catch (error) {
+      debugPrint('PersonalizationStories: poll answer not saved — $error');
+      return;
+    }
     unawaited(_save(key, record));
   }
 
@@ -567,20 +574,9 @@ class StoryPollController extends ChangeNotifier {
     _sending = true;
     _failed = false;
     _changed();
+    final StoryPollReply reply;
     try {
-      final reply = await request();
-      // У шкалы ответ — сама оценка (и комментарий), итогов нет.
-      final StoryPollState state = scale
-          ? (answer: sent, results: null)
-          : (answer: reply.answer ?? sent, results: reply.results);
-      _store.write(poll, _place, state);
-      if (_disposed) return;
-      _answer = state.answer;
-      _results = state.results;
-      _answered = true;
-      _sending = false;
-      _text = '';
-      _changed();
+      reply = await request();
     } catch (_) {
       // Лог ошибки — забота транспорта.
       if (_disposed) return;
@@ -588,6 +584,26 @@ class StoryPollController extends ChangeNotifier {
       _failed = true;
       rollback?.call();
       _changed();
+      return;
+    }
+    // Сервер ответ принял: сначала карточка, потом хранилище — сбой хранилища ответ не
+    // откатывает.
+    // У шкалы ответ — сама оценка (и комментарий), итогов нет.
+    final StoryPollState state = scale
+        ? (answer: sent, results: null)
+        : (answer: reply.answer ?? sent, results: reply.results);
+    if (!_disposed) {
+      _answer = state.answer;
+      _results = state.results;
+      _answered = true;
+      _sending = false;
+      _text = '';
+      _changed();
+    }
+    try {
+      _store.write(poll, _place, state);
+    } catch (error) {
+      debugPrint('PersonalizationStories: poll answer not saved — $error');
     }
   }
 

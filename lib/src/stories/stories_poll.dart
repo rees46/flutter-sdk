@@ -110,12 +110,13 @@ class StoryPollAnswer {
     );
   }
 
-  /// Ответ в JSON, как его читает [tryParse]: пустые поля не пишутся.
+  /// Ответ в JSON, как его читает [tryParse]: пустые поля не пишутся, не конечная оценка
+  /// — тоже (JSON её не держит).
   Map<String, Object> toJson() => <String, Object>{
     'id': ?id,
     'option_ids': ?optionIds,
     'text': ?text,
-    'rate': ?rate,
+    'rate': ?(rate?.isFinite ?? false ? rate : null),
     'comment': ?comment,
   };
 }
@@ -142,13 +143,22 @@ class StoryPollResults {
     return 0;
   }
 
-  /// Итоги в JSON, как их читает [tryParse].
+  /// Итоги в JSON, как их читает [tryParse]. Не конечный процент (сервер прислал,
+  /// например, `1e400`) JSON не держит: он пишется так, как его показывает [percentOf] —
+  /// NaN нулём, бесконечность краем 0…100.
   Map<String, Object> toJson() => <String, Object>{
     'total': total,
     if (options case final options?)
       'options': <Map<String, Object>>[
         for (final option in options)
-          <String, Object>{'id': option.id, 'percent': option.percent},
+          <String, Object>{
+            'id': option.id,
+            'percent': option.percent.isFinite
+                ? option.percent
+                : option.percent.isNaN
+                ? 0
+                : option.percent.clamp(0, 100),
+          },
       ],
   };
 

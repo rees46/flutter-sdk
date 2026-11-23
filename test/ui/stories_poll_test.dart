@@ -35,6 +35,18 @@ class _Transport implements StoryPollsTransport {
   }
 }
 
+/// A store whose write throws, as a broken storage would.
+class _FailingStore extends StoryPollStore {
+  _FailingStore({super.clock});
+
+  @override
+  void write(
+    StoryPollElement poll,
+    StoryPollPlace place,
+    StoryPollState state,
+  ) => throw StateError('storage is broken');
+}
+
 /// A mini poll like the web fixtures: «Кому выбираете подарок?» with three options.
 StoryPollElement _mini(
   StoryMiniPollKind kind, {
@@ -1044,6 +1056,52 @@ void main() {
         expect(poll.answer!.text, 'a');
       },
     );
+
+    test(
+      'a reply that cannot be saved keeps the answer the server took',
+      () async {
+        final poll = mountAt(_mini(StoryMiniPollKind.singleChoice));
+        poll.choose(2);
+        // `1e400` of JSON is infinity: a percent JSON cannot write back.
+        await reply(
+          0,
+          const StoryPollReply(
+            results: StoryPollResults(
+              total: 3,
+              options: <({int id, double percent})>[
+                (id: 1, percent: double.nan),
+                (id: 2, percent: double.infinity),
+                (id: 3, percent: double.negativeInfinity),
+              ],
+            ),
+          ),
+        );
+        expect(poll.failed, isFalse);
+        expect(poll.answered, isTrue);
+        expect(poll.selected, <int>{2});
+        expect(poll.results!.percentOf(2), 100);
+        final saved = jsonDecode(
+          (await SharedPreferences.getInstance()).getString(key)!,
+        );
+        expect((saved as Map)['results']['options'], <Map<String, dynamic>>[
+          <String, dynamic>{'id': 1, 'percent': 0},
+          <String, dynamic>{'id': 2, 'percent': 100.0},
+          <String, dynamic>{'id': 3, 'percent': 0.0},
+        ]);
+      },
+    );
+
+    test('a store that fails to write keeps the answer too', () async {
+      store = StoryPollStore.instance = _FailingStore(clock: () => now);
+      final poll = mountAt(_mini(StoryMiniPollKind.text));
+      poll
+        ..text = 'Книга'
+        ..submitText();
+      await reply(0);
+      expect(poll.failed, isFalse);
+      expect(poll.answered, isTrue);
+      expect(poll.answer!.text, 'Книга');
+    });
 
     test(
       'a reply after the card is gone: only the store, no hold change',
