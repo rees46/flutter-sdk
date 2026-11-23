@@ -136,7 +136,8 @@ abstract final class _Poll {
 ///   полос (Danger, Warning, зелёный опроса), после ответа выбранная оценка, остальные
 ///   приглушены и не нажимаются; дальше вопрос полосы с полем комментария (до 5000, со
 ///   счётчиком) или её `success`. Вид — токены кита.
-/// - Встроенные тексты — по языку устройства ([StoryPollTexts]).
+/// - Встроенные тексты — английские константы веба ([StoryPollTexts]), `labels` опроса и
+///   его `submit_label` важнее.
 /// - RTL: поля, полоски итогов и шкала зеркалятся.
 class PersonalizationStoryPoll extends StatefulWidget {
   const PersonalizationStoryPoll({
@@ -234,12 +235,6 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
         state == AppLifecycleState.hidden) {
       _focus.unfocus();
     }
-  }
-
-  @override
-  void didChangeLocales(List<Locale>? locales) {
-    // Встроенные тексты — по языку устройства.
-    if (mounted) setState(() {});
   }
 
   @override
@@ -414,10 +409,8 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
 
 /// Содержимое карточки по виду и состоянию: строки и зазор перед каждой.
 extension on _PersonalizationStoryPollState {
-  /// Тексты карточки: `labels`, хост, встроенные по языку устройства.
-  StoryPollTexts get _texts => _poll.textsFor(
-    WidgetsBinding.instance.platformDispatcher.locale.languageCode,
-  );
+  /// Тексты карточки: `labels`, хост, английские умолчания веба.
+  StoryPollTexts get _texts => _poll.texts;
 
   List<(Widget, double)> _body(
     PersonalizationTheme theme,

@@ -814,7 +814,8 @@ void main() {
       expect(find.text('31%'), findsOneWidget, reason: 'the same rows');
     });
 
-    testWidgets('built-in texts follow the device language', (tester) async {
+    testWidgets('built-in texts are the web\'s English ones, also in a Russian '
+        'UI; submit_label and labels win', (tester) async {
       tester.platformDispatcher.localeTestValue = const Locale('ru', 'RU');
       addTearDown(tester.platformDispatcher.clearLocaleTestValue);
       await tester.pumpWidget(
@@ -826,7 +827,22 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Отправить'), findsOneWidget);
+      expect(find.text('Send'), findsOneWidget);
+      await tester.pumpWidget(
+        alone(
+          _poll(
+            'mini_poll',
+            kind: 'text',
+            fields: <String, dynamic>{'submit_label': 'Отправить идею'},
+            labels: <String, dynamic>{'submit': 'Отправить'},
+          ),
+        ),
+      );
+      expect(
+        find.text('Отправить идею'),
+        findsOneWidget,
+        reason: 'submit_label',
+      );
       await tester.pumpWidget(
         alone(
           _poll(
@@ -839,7 +855,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Ответить заново'), findsOneWidget);
+      expect(find.text('Answer again'), findsOneWidget);
     });
 
     testWidgets('sizes: left-aligned text, rows 56 and 8 apart, the track, '
@@ -1034,7 +1050,7 @@ void main() {
     expect(find.text('Что улучшить?'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('0/5000'), findsOneWidget);
-    expect(find.text('Отправить'), findsOneWidget, reason: 'localized');
+    expect(find.text('Send'), findsOneWidget, reason: 'the web default');
     expect(find.text('Band thanks'), findsNothing);
     await tester.enterText(find.byType(TextField), ' Быстрее ');
     await tester.pump();
@@ -1042,7 +1058,7 @@ void main() {
     // Focused: the slide waits.
     await _wait(tester, const Duration(seconds: 12));
     expect(find.text('Slide 1'), findsOneWidget);
-    await tester.tap(find.text('Отправить'));
+    await tester.tap(find.text('Send'));
     await tester.pump();
     expect(transport.bodies.last, <String, Object>{
       'channel': 'stories',

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,28 +7,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../stories/stories_response.dart';
 import 'stories_polls_api.dart';
 
-/// Тексты карточки опроса: `labels` элемента < тексты хоста < встроенные по языку
-/// устройства (русские для `ru`, остальные — английские). Пустой текст хоста — не задан.
+/// Тексты карточки опроса, как в вебе: `labels` элемента > тексты хоста > умолчания —
+/// английские константы веба, на любом языке устройства и приложения. Пустой текст хоста
+/// — не задан.
 @immutable
 class StoryPollTexts {
-  const StoryPollTexts({this.reanswer = '', this.error = '', this.submit = ''});
+  const StoryPollTexts({
+    this.reanswer = defaultReanswer,
+    this.error = defaultError,
+    this.submit = defaultSubmit,
+  });
 
-  /// Встроенные русские.
-  static const StoryPollTexts ru = StoryPollTexts(
-    reanswer: 'Ответить заново',
-    error: 'Не удалось отправить ответ. Попробуйте еще раз',
-    submit: 'Отправить',
-  );
-
-  /// Встроенные английские.
-  static const StoryPollTexts en = StoryPollTexts(
-    reanswer: 'Answer again',
-    error: 'Failed to send the answer. Please try again',
-    submit: 'Send',
-  );
-
-  /// Встроенные для кода языка [language]: `ru` — русские, остальные — английские.
-  static StoryPollTexts builtIn(String language) => language == 'ru' ? ru : en;
+  static const String defaultReanswer = 'Answer again';
+  static const String defaultError =
+      'Failed to send the answer. Please try again';
+  static const String defaultSubmit = 'Send';
 
   /// Ссылка «Ответить заново» у отвеченного опроса с `allow_reanswer`.
   final String reanswer;
@@ -42,17 +34,14 @@ class StoryPollTexts {
   final String submit;
 
   /// Тексты для [poll]: непустые `labels` сервера, иначе непустые тексты хоста, иначе
-  /// встроенные языка [language] (по умолчанию — устройства).
-  StoryPollTexts forPoll(StoryPollElement poll, {String? language}) {
-    final builtIn = StoryPollTexts.builtIn(
-      language ?? ui.PlatformDispatcher.instance.locale.languageCode,
-    );
+  /// умолчания.
+  StoryPollTexts forPoll(StoryPollElement poll) {
     String pick(String? label, String host, String fallback) =>
         label ?? (host.isNotEmpty ? host : fallback);
     return StoryPollTexts(
-      reanswer: pick(poll.labels.reanswer, reanswer, builtIn.reanswer),
-      error: pick(poll.labels.error, error, builtIn.error),
-      submit: pick(poll.labels.submit, submit, builtIn.submit),
+      reanswer: pick(poll.labels.reanswer, reanswer, defaultReanswer),
+      error: pick(poll.labels.error, error, defaultError),
+      submit: pick(poll.labels.submit, submit, defaultSubmit),
     );
   }
 
@@ -380,11 +369,8 @@ class StoryPollController extends ChangeNotifier {
   StoryPollPlace get _place =>
       (shopId: shopId, did: did, storyId: storyId, slideId: slideId);
 
-  /// Тексты с учётом `labels` опроса — языка устройства или [language].
-  StoryPollTexts textsFor([String? language]) =>
-      hostTexts.forPoll(poll, language: language);
-
-  StoryPollTexts get texts => textsFor();
+  /// Тексты с учётом `labels` опроса.
+  StoryPollTexts get texts => hostTexts.forPoll(poll);
 
   StoryPollAnswer? get answer => _answer;
   StoryPollResults? get results => _results;

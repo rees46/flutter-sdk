@@ -779,7 +779,8 @@ void main() {
   });
 
   group('texts', () {
-    test('labels of the element > texts of the host > built-in', () {
+    test('labels of the element > texts of the host > the web defaults, in '
+        'English whatever the language', () {
       const host = StoryPollTexts(
         reanswer: 'Answer again',
         error: 'Ошибка',
@@ -790,40 +791,24 @@ void main() {
           StoryMiniPollKind.singleChoice,
           labels: const StoryPollLabels(reanswer: 'Ещё раз'),
         ),
-        language: 'en',
       );
       expect(texts.reanswer, 'Ещё раз');
       expect(texts.error, 'Ошибка');
-      expect(texts.submit, 'Send', reason: 'an empty host text — built-in');
-      final en = const StoryPollTexts().forPoll(
+      expect(texts.submit, 'Send', reason: 'an empty host text — the default');
+      final defaults = const StoryPollTexts().forPoll(
         _scale(StoryPollType.nps),
-        language: 'de',
       );
-      expect(en, StoryPollTexts.en);
       expect(
-        (en.reanswer, en.error, en.submit),
+        (defaults.reanswer, defaults.error, defaults.submit),
         ('Answer again', 'Failed to send the answer. Please try again', 'Send'),
       );
-      final ru = const StoryPollTexts().forPoll(
-        _scale(StoryPollType.nps),
-        language: 'ru',
-      );
       expect(
-        (ru.reanswer, ru.error, ru.submit),
-        (
-          'Ответить заново',
-          'Не удалось отправить ответ. Попробуйте еще раз',
-          'Отправить',
-        ),
-      );
-      expect(
-        mount(_mini(StoryMiniPollKind.text), texts: host).textsFor('ru').error,
+        mount(_mini(StoryMiniPollKind.text), texts: host).texts.error,
         'Ошибка',
       );
       expect(
-        mount(_mini(StoryMiniPollKind.text), texts: host).textsFor('ru').submit,
-        'Отправить',
-        reason: 'no untranslated fallback in a Russian UI',
+        mount(_mini(StoryMiniPollKind.text), texts: host).texts.submit,
+        'Send',
       );
     });
 

@@ -43,9 +43,9 @@ class PersonalizationStoriesV3 extends StatelessWidget {
     this.shareLabel = 'Share',
     this.shareUrlTransform,
     this.pollsTransport,
-    this.pollReanswerText,
-    this.pollSubmitText,
-    this.pollErrorText,
+    this.pollReanswerText = 'Answer again',
+    this.pollSubmitText = 'Send',
+    this.pollErrorText = 'Failed to send the answer. Please try again',
     required this.child,
   }) : ownApiV3Domain = apiV3Domain;
 
@@ -67,11 +67,10 @@ class PersonalizationStoriesV3 extends StatelessWidget {
 
   /// Тексты карточки опроса: ссылка «Ответить заново», кнопка отправки без своей подписи
   /// опроса (и кнопка комментария к оценке шкалы) и ошибка отправки. Непустые `labels`
-  /// опроса от сервера важнее; `null` или пусто — встроенные по языку устройства
-  /// (русские или английские).
-  final String? pollReanswerText;
-  final String? pollSubmitText;
-  final String? pollErrorText;
+  /// опроса от сервера важнее; пусто — английские умолчания веба, на любом языке.
+  final String pollReanswerText;
+  final String pollSubmitText;
+  final String pollErrorText;
 
   /// Поддерево в режиме v3.
   final Widget child;
@@ -93,9 +92,9 @@ class PersonalizationStoriesV3 extends StatelessWidget {
       shareUrlTransform: shareUrlTransform,
       pollsTransport: pollsTransport,
       pollTexts: StoryPollTexts(
-        reanswer: pollReanswerText ?? '',
-        error: pollErrorText ?? '',
-        submit: pollSubmitText ?? '',
+        reanswer: pollReanswerText,
+        error: pollErrorText,
+        submit: pollSubmitText,
       ),
     ),
     child: child,
@@ -147,9 +146,9 @@ class PersonalizationStoriesV3 extends StatelessWidget {
     iconBuilder,
     String Function(String url)? shareUrlTransform,
     StoryPollsTransport? pollsTransport,
-    String? pollReanswerText,
-    String? pollSubmitText,
-    String? pollErrorText,
+    String pollReanswerText = 'Answer again',
+    String pollSubmitText = 'Send',
+    String pollErrorText = 'Failed to send the answer. Please try again',
     String? apiV3Domain,
   }) {
     final link = parseStoriesShareLink(url);
@@ -186,9 +185,9 @@ class PersonalizationStoriesV3 extends StatelessWidget {
       shareUrlTransform: shareUrlTransform,
       pollsTransport: pollsTransport,
       pollTexts: StoryPollTexts(
-        reanswer: pollReanswerText ?? '',
-        error: pollErrorText ?? '',
-        submit: pollSubmitText ?? '',
+        reanswer: pollReanswerText,
+        error: pollErrorText,
+        submit: pollSubmitText,
       ),
     );
     unawaited(
