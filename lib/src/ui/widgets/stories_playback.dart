@@ -383,7 +383,8 @@ class StoriesPlayback {
   }
 
   /// Назад: предыдущий слайд, предыдущая сторис или перезапуск первого слайда. Новая
-  /// лента перешагивает сторис, которую не открыть.
+  /// лента перешагивает сторис, которую не открыть, а на первом показываемом слайде
+  /// первой сторис, как веб, закрывает просмотр.
   StoriesStep previous() {
     if (!_entered || _sheet || _turnTarget != null) return StoriesStep.none;
     if (_nearest(story, _slide - 1, -1) case final before?) {
@@ -395,6 +396,7 @@ class StoriesPlayback {
       _turnTo(before);
       return StoriesStep.turn;
     }
+    if (serverStart) return StoriesStep.close;
     _elapsed = Duration.zero;
     return StoriesStep.restart;
   }

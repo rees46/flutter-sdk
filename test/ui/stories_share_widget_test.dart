@@ -278,15 +278,39 @@ void main() {
     });
   });
 
-  testWidgets('back on the first slide restarts it and sends view again', (
+  testWidgets('back on the first slide of the first story closes the viewer, '
+      'as the web; back from the next story opens it where it was left', (
     tester,
   ) async {
     await bar(tester);
     await open(tester, 'Products');
     final viewer = tester.getRect(find.byType(PersonalizationStoryViewer));
-    await tester.tapAt(Offset(viewer.left + 10, viewer.center.dy));
-    await tester.pump();
-    expect(server.events, <String>['view 39/39_0', 'view 39/39_0']);
+    final left = Offset(viewer.left + 10, viewer.center.dy);
+    final right = Offset(viewer.right - 10, viewer.center.dy);
+    // A turn of the page is idle a frame after its last step.
+    Future<void> tap(Offset at) async {
+      await tester.tapAt(at);
+      await _settle(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    await tap(right);
+    await tap(right);
+    expect(find.text('Product 37'), findsOneWidget);
+    await tap(left);
+    expect(
+      find.text('Product 39_0'),
+      findsOneWidget,
+      reason: 'finished: from 0',
+    );
+    await tap(left);
+    expect(find.byType(PersonalizationStoryViewer), findsNothing);
+    expect(server.events, <String>[
+      'view 39/39_0',
+      'view 39/39_1',
+      'view 40/37',
+      'view 39/39_0',
+    ]);
   });
 
   testWidgets('share: the campaign link, a pause until the sheet closes', (
