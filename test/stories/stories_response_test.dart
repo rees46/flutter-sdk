@@ -231,12 +231,9 @@ void main() {
       expect(product.image, 'https://pictures.example/180/135478.jpg');
     });
 
-    test('products, text block; header parsed for the new feed', () {
+    test('products, text block; header dropped', () {
       final elements = block.stories[1].slides[1].elements;
-      expect(elements, hasLength(4));
-      final header = elements.whereType<StoryHeaderElement>().single;
-      expect(header.title, 'dropped');
-      expect((header.icon, header.subtitle, header.link), ('', '', ''));
+      expect(elements, hasLength(3), reason: 'header is not drawn by the kit');
 
       final products = elements.whereType<StoryProductsElement>().single;
       expect(products.showLabel, 'Товары для геймеров');
@@ -255,6 +252,45 @@ void main() {
       expect(text.lineSpacing, closeTo(1.2, 1e-9));
       expect(text.yOffset, 12);
       expect(text.promocode, 'SALE10');
+    });
+
+    test('only API v3 reads a header and the text block rules of API v3', () {
+      final v3 = parseStoriesBlockV3(_block).stories[1].slides[1].elements;
+      expect(v3, hasLength(4));
+      final header = v3.whereType<StoryHeaderElement>().single;
+      expect(header.title, 'dropped');
+      expect((header.icon, header.subtitle, header.link), ('', '', ''));
+
+      const italic = <String, dynamic>{
+        'type': 'text_block',
+        'text_input': 'x',
+        'text_italic': true,
+      };
+      expect(StoryTextBlockElement.fromJson(italic).italic, isFalse);
+      final slide = <String, dynamic>{
+        'id': '1',
+        'type': 'image',
+        'elements': <Map<String, dynamic>>[italic],
+      };
+      final feed = <String, dynamic>{
+        'id': 1,
+        'stories': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 1,
+            'slides': <Map<String, dynamic>>[slide],
+          },
+        ],
+      };
+      StoryTextBlockElement text(StoriesBlock block) => block
+          .stories
+          .single
+          .slides
+          .single
+          .elements
+          .whereType<StoryTextBlockElement>()
+          .single;
+      expect(text(StoriesBlock.fromJson(feed)).italic, isFalse);
+      expect(text(parseStoriesBlockV3(feed)).italic, isTrue);
     });
 
     test('a text block without fields takes the native defaults', () {
@@ -288,6 +324,11 @@ void main() {
       ('115bd0b67cf5989a1b60c841790b2af6', 'shop-a'),
     ]);
     expect(block.stories, hasLength(2));
+    expect(
+      block.stories[1].slides[1].elements.whereType<StoryHeaderElement>(),
+      isEmpty,
+      reason: 'the public getStories keeps the model of the old feed',
+    );
     expect(() => sdk.getStories(''), throwsArgumentError);
   });
 

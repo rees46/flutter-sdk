@@ -538,7 +538,7 @@ class StorySlideView extends StatelessWidget {
   }
 
   Widget _textBlock(BuildContext context, StoryTextBlockElement element) {
-    final block = storyTextBlock(element, bodySize: v3);
+    final block = storyTextBlock(element, newFeed: v3);
     final code = element.promocode;
     if (code == null || !live) return block;
     // Блок с промокодом копирует его: тост сверху и `click` в трекинг.

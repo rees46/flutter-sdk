@@ -157,6 +157,8 @@ void main() {
   ];
 
   Future<void> bar(WidgetTester tester, {bool v3 = true}) async {
+    // A bar of its own: the one before keeps the stories it loaded.
+    await tester.pumpWidget(const SizedBox());
     if (!v3) {
       StoriesApiV3.domain = null;
       api.bridgeFeed = jsonEncode(<String, dynamic>{
@@ -429,6 +431,13 @@ void main() {
         StoryTextBlockElement.defaultFontSize,
         reason: 'the old feed keeps 14',
       );
+      final legacy = tester.widget<Text>(find.text('Plain')).style!;
+      expect(
+        legacy.fontStyle,
+        isNot(FontStyle.italic),
+        reason: 'no text_italic',
+      );
+      expect(legacy.fontFamily, isNot('monospace'), reason: 'monospaced only');
     });
   });
 

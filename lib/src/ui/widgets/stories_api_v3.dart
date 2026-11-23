@@ -370,14 +370,15 @@ abstract final class StoriesApiV3 {
   }
 
   /// Ответ GET: `{"status":"success","payload":{id, settings, stories}}` — `payload` тем
-  /// же разбором, что и старая лента. HTTP не 2xx, не JSON, `status` не `success` или
+  /// же разбором, что и старая лента, плюс то, что есть только у API v3
+  /// ([parseStoriesBlockV3]). HTTP не 2xx, не JSON, `status` не `success` или
   /// нет `payload` — [StoriesV3Exception].
   static StoriesBlock parseResponse(StoriesV3Response response) {
     final json = _decode(response);
     if (json['status'] != 'success' || json['payload'] is! Map) {
       throw StoriesV3Exception('unexpected response: ${_short(response)}');
     }
-    return StoriesBlock.fromJson(
+    return parseStoriesBlockV3(
       Map<String, dynamic>.from(json['payload'] as Map),
     );
   }

@@ -1,5 +1,11 @@
 part of 'stories_response.dart';
 
+/// The `payload` of API v3 (`/api/v3/storefront/stories/{code}`): the keys of the old
+/// feed plus what only API v3 has — the `header` element and its text block rules. Behind
+/// the v3 gate; the old feed ([StoriesBlock.fromJson]) reads none of it.
+StoriesBlock parseStoriesBlockV3(Map<String, dynamic> json) =>
+    StoriesBlock._parse(json, v3: true);
+
 /// `header` of a slide (API v3): the icon, the title and the subtitle of the shop or the
 /// campaign over the slide, with a link. Behind the v3 gate (`src/v3/personalization_v3.dart`),
 /// not the kit's; the old feed draws none.

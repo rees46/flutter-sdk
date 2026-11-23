@@ -23,10 +23,17 @@ class StoriesBlock {
 
   const StoriesBlock({required this.id, required this.stories});
 
-  factory StoriesBlock.fromJson(Map<String, dynamic> json) {
+  factory StoriesBlock.fromJson(Map<String, dynamic> json) =>
+      StoriesBlock._parse(json, v3: false);
+
+  // [v3] — `payload` of API v3: its own elements (`header`) and text block rules, behind
+  // the v3 gate ([parseStoriesBlockV3]); the old feed reads none of them.
+  factory StoriesBlock._parse(Map<String, dynamic> json, {required bool v3}) {
     return StoriesBlock(
       id: json['id']?.toString() ?? '',
-      stories: _maps(json['stories']).map(Story.fromJson).toList(),
+      stories: _maps(
+        json['stories'],
+      ).map((story) => Story._parse(story, v3: v3)).toList(),
     );
   }
 }
@@ -76,7 +83,10 @@ class Story {
     required this.slides,
   });
 
-  factory Story.fromJson(Map<String, dynamic> json) {
+  factory Story.fromJson(Map<String, dynamic> json) =>
+      Story._parse(json, v3: false);
+
+  factory Story._parse(Map<String, dynamic> json, {required bool v3}) {
     return Story._json(
       json['shareable'] != false,
       _text(json['share_url']),
@@ -86,7 +96,9 @@ class Story {
       viewed: json['viewed'] == true,
       pinned: json['pinned'] == true,
       startPosition: toIntOrNull(json['start_position']) ?? 0,
-      slides: _maps(json['slides']).map(StorySlide.fromJson).toList(),
+      slides: _maps(
+        json['slides'],
+      ).map((slide) => StorySlide._parse(slide, v3: v3)).toList(),
     );
   }
 }
@@ -150,7 +162,10 @@ class StorySlide {
     required this.elements,
   });
 
-  factory StorySlide.fromJson(Map<String, dynamic> json) {
+  factory StorySlide.fromJson(Map<String, dynamic> json) =>
+      StorySlide._parse(json, v3: false);
+
+  factory StorySlide._parse(Map<String, dynamic> json, {required bool v3}) {
     final seconds = toIntOrNull(json['duration']);
     return StorySlide._json(
       _text(json['share_url']),
@@ -168,9 +183,10 @@ class StorySlide {
             ? defaultDurationSeconds
             : seconds,
       ),
-      elements: _maps(
-        json['elements'],
-      ).map(StoryElement.fromJson).whereType<StoryElement>().toList(),
+      elements: _maps(json['elements'])
+          .map((element) => StoryElement._parse(element, v3: v3))
+          .whereType<StoryElement>()
+          .toList(),
     );
   }
 
@@ -183,20 +199,24 @@ class StorySlide {
   }
 }
 
-/// An element placed on a slide. Unknown types are dropped while parsing, and so is a
-/// `poll` of a kind the kit does not draw.
+/// An element placed on a slide. Unknown types and `header` (not drawn by the kit) are
+/// dropped while parsing, and so is a `poll` of a kind the kit does not draw.
 sealed class StoryElement {
   const StoryElement();
 
   /// The element for [json], or `null` for a type the kit does not draw.
-  static StoryElement? fromJson(Map<String, dynamic> json) {
+  static StoryElement? fromJson(Map<String, dynamic> json) =>
+      _parse(json, v3: false);
+
+  // [v3] adds `header` and the text block rules of API v3.
+  static StoryElement? _parse(Map<String, dynamic> json, {required bool v3}) {
     return switch (json['type']) {
       'button' => StoryButtonElement.fromJson(json),
       'product' => StoryProductElement.fromJson(json),
       'products' => StoryProductsElement.fromJson(json),
-      'text_block' => StoryTextBlockElement.fromJson(json),
+      'text_block' => StoryTextBlockElement._parse(json, v3: v3),
       'poll' => StoryPollElement.tryParse(json),
-      'header' => StoryHeaderElement.fromJson(json),
+      'header' when v3 => StoryHeaderElement.fromJson(json),
       _ => null,
     };
   }
@@ -289,7 +309,7 @@ class StoryTextBlockElement extends StoryElement {
   /// Font size in logical pixels; 14 when not set, as in the native SDKs.
   final double fontSize;
 
-  /// `serif`, `sans-serif`, `monospace` (or `monospaced`) or empty.
+  /// `serif`, `sans-serif`, `monospaced` or empty.
   final String fontType;
   final bool bold;
   final bool italic;
@@ -351,7 +371,15 @@ class StoryTextBlockElement extends StoryElement {
     required this.promocode,
   });
 
-  factory StoryTextBlockElement.fromJson(Map<String, dynamic> json) {
+  factory StoryTextBlockElement.fromJson(Map<String, dynamic> json) =>
+      StoryTextBlockElement._parse(json, v3: false);
+
+  // [v3] — the text block rules of API v3 ([StoryTextBlockV3]); the old feed reads the
+  // fields as before.
+  factory StoryTextBlockElement._parse(
+    Map<String, dynamic> json, {
+    required bool v3,
+  }) {
     final promocode = json['promocode'];
     final fontSize = toDoubleOrNull(json['font_size']);
     return StoryTextBlockElement._json(
@@ -360,7 +388,7 @@ class StoryTextBlockElement extends StoryElement {
       fontSize: fontSize ?? defaultFontSize,
       fontType: json['font_type'] as String? ?? '',
       bold: json['bold'] == true || json['text_bold'] == true,
-      italic: json['italic'] == true || json['text_italic'] == true,
+      italic: json['italic'] == true || (v3 && json['text_italic'] == true),
       textAlign: json['text_align'] as String? ?? '',
       textColor: json['text_color'] as String? ?? '',
       backgroundColor: json['text_background_color'] as String? ?? '',

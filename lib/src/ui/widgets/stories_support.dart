@@ -308,23 +308,29 @@ TextAlign storyTextAlign(String value) => switch (value.trim().toLowerCase()) {
 
 /// Текстовый блок сервера → [PersonalizationStoryTextBlock].
 ///
-/// Шрифт `serif` / `monospace` (и `monospaced`) — системные семейства с запасными для
-/// iOS, где имён `serif` и `monospace` нет; `sans-serif` и пусто — шрифт темы.
-/// Межстрочный не задан — заготовка макета для этого кегля
-/// ([PersonalizationStoryTextBlock.presetLineHeight]). С [bodySize] (новая лента) без
+/// Шрифт `serif` / `monospaced` — системные семейства с запасными для iOS, где имён
+/// `serif` и `monospace` нет; `sans-serif` и пусто — шрифт темы. Межстрочный не задан —
+/// заготовка макета для этого кегля ([PersonalizationStoryTextBlock.presetLineHeight]).
+/// Новая лента ([newFeed]): `font_type` без учёта регистра и `monospace` тоже; без
 /// `font_size` — кегль основного текста кита ([PersonalizationTypography.baseDefault]), а
 /// не 14.
 PersonalizationStoryTextBlock storyTextBlock(
   StoryTextBlockElement element, {
-  bool bodySize = false,
+  bool newFeed = false,
 }) {
-  final (family, fallback) = switch (element.fontType.trim().toLowerCase()) {
+  final type = newFeed
+      ? element.fontType.trim().toLowerCase()
+      : element.fontType;
+  final (family, fallback) = switch (type) {
     'serif' => ('serif', const <String>['Georgia', 'Times New Roman']),
-    'monospace' ||
     'monospaced' => ('monospace', const <String>['Menlo', 'Courier']),
+    'monospace' when newFeed => (
+      'monospace',
+      const <String>['Menlo', 'Courier'],
+    ),
     _ => (null, null),
   };
-  final fontSize = bodySize && !element.hasFontSize
+  final fontSize = newFeed && !element.hasFontSize
       ? PersonalizationTypography.baseDefault.fontSize!
       : element.fontSize;
   return PersonalizationStoryTextBlock(
