@@ -54,7 +54,7 @@ abstract final class _Poll {
 
   // Размеры.
   static const double maxWidth = 420;
-  static const double edge = PersonalizationSpacing.lg;
+  static const double edge = PersonalizationSpacing.xl;
   static const double radius = PersonalizationRadius.xl6;
   static const double padding = PersonalizationSpacing.xl2;
   static const double blur = 20;
@@ -166,7 +166,7 @@ class PersonalizationStoryPoll extends StatefulWidget {
   final bool live;
   final ValueChanged<bool>? onHold;
 
-  /// Ширина карточки на слайде шириной [width]: по 12 от краёв, не шире 420.
+  /// Ширина карточки на слайде шириной [width]: по 16 от краёв, не шире 420.
   static double widthFor(double width) =>
       (width - 2 * _Poll.edge).clamp(0, _Poll.maxWidth).toDouble();
 

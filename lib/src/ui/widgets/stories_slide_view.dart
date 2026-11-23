@@ -679,6 +679,9 @@ class StorySlideView extends StatelessWidget {
 
   // --- Опрос и место блоков ------------------------------------------------------------
 
+  /// Высота нижней строки слайда: звук, «Используемые товары».
+  static const double _rowHeight = 64;
+
   /// Верх места блоков слайда (опрос, текстовые блоки): под шапкой, с зазором 8.
   static const double _blockTop =
       16 + PersonalizationStoryNavigation.height + 8;
@@ -696,6 +699,7 @@ class StorySlideView extends StatelessWidget {
     required double bottom,
     double keyboard = 0,
     bool poll = false,
+    double row = 0,
   }) => _SlideBlockLayout(
     yOffset: yOffset,
     // Отступы SafeArea слайда (снизу — системный и при клавиатуре).
@@ -705,6 +709,7 @@ class StorySlideView extends StatelessWidget {
     bottom: bottom,
     keyboard: keyboard,
     poll: poll,
+    row: row,
   );
 
   /// Опросы, которые рисуются: есть элементы и транспорт.
@@ -746,6 +751,8 @@ class StorySlideView extends StatelessWidget {
                 bottom: bottom,
                 keyboard: keyboard,
                 poll: true,
+                // Нижняя строка (звук, «Используемые товары») видна — карточка над ней.
+                row: _hasRow(slide) ? _rowHeight : 0,
               ),
               child: IgnorePointer(
                 ignoring: !live,
@@ -811,10 +818,12 @@ class StorySlideView extends StatelessWidget {
 /// и местом нижних кнопок [bottom]; выше этого места — от его верха.
 ///
 /// Карточка опроса ([poll]) — как в вебе: по центру, шириной
-/// [PersonalizationStoryPoll.widthFor], верх на [yOffset]%, а не влезает — поднимается,
-/// чтобы низ был на 16 выше низа слайда, но не выше его верха; шапку и нижние кнопки
-/// она может накрыть. Выше слайда — ниже высотой, прокрутка внутри. Клавиатура
-/// перекрывает слайд снизу на [keyboard] — карточка поднимается над ней на 16.
+/// [PersonalizationStoryPoll.widthFor], верх на [yOffset]% всего слайда (не выше верха
+/// SafeArea), а не влезает — поднимается, чтобы низ был на 16 выше нижней строки [row]
+/// (звук, «Используемые товары»), когда она видна, иначе на 16 выше низа SafeArea, но не
+/// выше её верха; шапку и кнопки слайда она может накрыть. Выше слайда — ниже высотой,
+/// прокрутка внутри. Клавиатура перекрывает слайд снизу на [keyboard] — карточка
+/// поднимается над ней на 16.
 /// Текстовый блок — во всю ширину с полями 16, своей высоты.
 ///
 /// Раскладка — в области SafeArea: [above] и [below] — отступы её от краёв слайда.
@@ -827,6 +836,7 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
     required this.bottom,
     this.keyboard = 0,
     this.poll = false,
+    this.row = 0,
   });
 
   final double yOffset;
@@ -837,9 +847,12 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
   final double keyboard;
   final bool poll;
 
+  /// Высота видимой нижней строки слайда; нет её — 0.
+  final double row;
+
   static const double _aboveKeyboard = 16;
 
-  /// Зазор карточки опроса до низа слайда.
+  /// Зазор карточки опроса до нижней строки или низа SafeArea.
   static const double _pollMargin = 16;
 
   /// Поля текстового блока слева и справа.
@@ -850,7 +863,7 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
 
   /// Ниже этого низ блока не опускается.
   double _limit(Size size) {
-    var limit = poll ? size.height - _pollMargin : size.height - bottom;
+    var limit = poll ? size.height - row - _pollMargin : size.height - bottom;
     if (keyboard > 0) {
       limit = math.min(limit, size.height - keyboard - _aboveKeyboard);
     }
@@ -890,7 +903,8 @@ class _SlideBlockLayout extends SingleChildLayoutDelegate {
       oldDelegate.top != top ||
       oldDelegate.bottom != bottom ||
       oldDelegate.keyboard != keyboard ||
-      oldDelegate.poll != poll;
+      oldDelegate.poll != poll ||
+      oldDelegate.row != row;
 }
 
 /// Касание слайда по третям; касания карточки опроса и подложки клавиатуры

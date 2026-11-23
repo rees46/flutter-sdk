@@ -213,10 +213,10 @@ void main() {
     await open(tester, stories);
     expect(card, findsOneWidget);
     expect(find.text('Q mini_poll single_choice'), findsOneWidget);
-    // y_offset 50 of the slide, 12 from the edges, centred.
+    // y_offset 50 of the slide, 16 from the edges, centred.
     final rect = tester.getRect(card);
     expect(rect.top, _screen.height / 2);
-    expect((rect.left, rect.right), (12, _screen.width - 12));
+    expect((rect.left, rect.right), (16, _screen.width - 16));
   });
 
   testWidgets('every poll of a slide is drawn at its own y_offset; the slide '
@@ -1171,6 +1171,29 @@ void main() {
     );
     expect(rects[4].bottom, _screen.height - 16);
     expect(rects[5], rects[4]);
+  });
+
+  testWidgets('a visible bottom row: the card stays 16 above it', (
+    tester,
+  ) async {
+    await open(
+      tester,
+      _stories(<List<Map<String, dynamic>>>[
+        <Map<String, dynamic>>[
+          _slide('1', <Map<String, dynamic>>[
+            _poll('nps', yOffset: 150),
+            <String, dynamic>{
+              'type': 'products',
+              'products': <Map<String, dynamic>>[
+                <String, dynamic>{'id': 'p1', 'name': 'Product', 'price': 1},
+              ],
+            },
+          ]),
+        ],
+      ]),
+    );
+    expect(find.text('Used products'), findsOneWidget);
+    expect(tester.getRect(card).bottom, _screen.height - 64 - 16);
   });
 
   group('PersonalizationStories', () {
