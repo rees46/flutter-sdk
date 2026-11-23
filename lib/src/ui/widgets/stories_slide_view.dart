@@ -43,9 +43,9 @@ import 'stories_support.dart';
 /// - Медиа не загрузилось — по центру кнопка кита [PersonalizationStoryViewer.retryText].
 /// - У слайда есть ссылка «Поделиться» ([storySlideShareUrl]) и задан [onShare] — в шапке
 ///   кнопка слева от крестика.
-/// - Опрос слайда ([storyPollOf]) при заданном [pollsTransport] — карточка
-///   [PersonalizationStoryPoll] на `y_offset`% высоты всего слайда, и на товарном слайде
-///   тоже, но целиком между шапкой и нижними кнопками; не влезает — прокрутка в ней.
+/// - Опросы слайда ([storyPollsOf]) при заданном [pollsTransport] — каждый своей
+///   карточкой [PersonalizationStoryPoll] на своём `y_offset`% высоты всего слайда, и на
+///   товарном слайде тоже; не влезает — прокрутка в ней.
 ///   Открыта клавиатура — карточка над ней (+16), слайд не сжимается, тап мимо
 ///   карточки только прячет клавиатуру.
 ///
@@ -140,8 +140,9 @@ class StorySlideView extends StatelessWidget {
   final String pollShopId;
   final String pollDid;
 
-  /// Опрос держит слайд (`true`) или отпускает.
-  final ValueChanged<bool>? onPollHold;
+  /// Карточка опроса [card] держит слайд (`true`) или отпускает: у слайда их может быть
+  /// несколько, слайд стоит, пока держит хоть одна.
+  final void Function(Object card, bool held)? onPollHold;
 
   /// Слайд новой ленты (API v3): правила веба, см. описание класса.
   final bool v3;
@@ -706,9 +707,9 @@ class StorySlideView extends StatelessWidget {
     poll: poll,
   );
 
-  /// Опрос, который рисуется: есть элемент и транспорт.
-  StoryPollElement? _pollOf(StorySlide slide) =>
-      pollsTransport == null ? null : storyPollOf(slide);
+  /// Опросы, которые рисуются: есть элементы и транспорт.
+  List<StoryPollElement> _pollsOf(StorySlide slide) =>
+      pollsTransport == null ? const <StoryPollElement>[] : storyPollsOf(slide);
 
   /// Открыта клавиатура (поле опроса живого слайда).
   bool _keyboardOpen(BuildContext context) =>
@@ -723,20 +724,13 @@ class StorySlideView extends StatelessWidget {
     StorySlide slide, {
     required double bottom,
   }) {
-    final poll = _pollOf(slide);
+    final polls = _pollsOf(slide);
     final transport = pollsTransport;
-    if (poll == null || transport == null) return const <Widget>[];
+    if (polls.isEmpty || transport == null) return const <Widget>[];
     final safeBottom = MediaQuery.viewPaddingOf(outer).bottom;
-    return <Widget>[
-      Positioned.fill(
-        child: Builder(
-          builder: (context) => IgnorePointer(
-            ignoring: !_keyboardOpen(context),
-            child: _keyboardBarrier(),
-          ),
-        ),
-      ),
-      Positioned.fill(
+    Widget card(int index, StoryPollElement poll) {
+      final key = 'poll-${slide.id}-$index';
+      return Positioned.fill(
         child: Builder(
           builder: (context) {
             final keyboard = live
@@ -756,7 +750,7 @@ class StorySlideView extends StatelessWidget {
               child: IgnorePointer(
                 ignoring: !live,
                 child: PersonalizationStoryPoll(
-                  key: ValueKey<String>('poll-${slide.id}'),
+                  key: ValueKey<String>(key),
                   poll: poll,
                   storyId: story.id,
                   slideId: slide.id,
@@ -765,13 +759,25 @@ class StorySlideView extends StatelessWidget {
                   did: pollDid,
                   texts: pollTexts,
                   live: live,
-                  onHold: onPollHold,
+                  onHold: (held) => onPollHold?.call(key, held),
                 ),
               ),
             );
           },
         ),
+      );
+    }
+
+    return <Widget>[
+      Positioned.fill(
+        child: Builder(
+          builder: (context) => IgnorePointer(
+            ignoring: !_keyboardOpen(context),
+            child: _keyboardBarrier(),
+          ),
+        ),
       ),
+      for (var i = 0; i < polls.length; i++) card(i, polls[i]),
     ];
   }
 
@@ -792,7 +798,7 @@ class StorySlideView extends StatelessWidget {
   /// Шапка и нижняя строка слайда с опросом при открытой клавиатуре не нажимаются: тап
   /// по ним достаётся подложке и только прячет клавиатуру.
   Widget _keyboardShield(Widget child) {
-    if (_pollOf(slide) == null) return child;
+    if (_pollsOf(slide).isEmpty) return child;
     return Builder(
       builder: (context) =>
           IgnorePointer(ignoring: _keyboardOpen(context), child: child),

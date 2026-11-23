@@ -219,6 +219,42 @@ void main() {
     expect((rect.left, rect.right), (12, _screen.width - 12));
   });
 
+  testWidgets('every poll of a slide is drawn at its own y_offset; the slide '
+      'stands while any card holds it', (tester) async {
+    final top = _poll('mini_poll', kind: 'single_choice', yOffset: 10);
+    final bottom = _poll('nps', yOffset: 60);
+    await open(
+      tester,
+      _stories(<List<Map<String, dynamic>>>[
+        <Map<String, dynamic>>[
+          _slide('1', <Map<String, dynamic>>[top, bottom]),
+          _slide('2'),
+        ],
+      ]),
+    );
+    expect(card, findsNWidgets(2));
+    final first = tester.getRect(card.first);
+    final second = tester.getRect(card.last);
+    expect(first.top, closeTo(_screen.height * 0.1, 0.5));
+    expect(second.top, closeTo(_screen.height * 0.6, 0.5));
+
+    // A finger on the first card, the second sends and lets go: still held.
+    final finger = await tester.startGesture(
+      tester.getCenter(find.text('Q mini_poll single_choice')),
+    );
+    await tester.pump();
+    await tester.tap(find.text('7'));
+    await tester.pump();
+    expect(transport.bodies.single['rate'], 7);
+    transport.pending.single.complete(const StoryPollReply());
+    await _replied(tester);
+    await _wait(tester, const Duration(milliseconds: 1500));
+    expect(find.text('Slide 1'), findsOneWidget, reason: 'the first one holds');
+    await finger.up();
+    await _wait(tester, const Duration(milliseconds: 1500));
+    expect(find.text('Slide 2'), findsOneWidget);
+  });
+
   testWidgets('taps, holds and swipes on the card stay on it', (tester) async {
     await open(
       tester,

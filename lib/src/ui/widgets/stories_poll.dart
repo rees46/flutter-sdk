@@ -654,10 +654,6 @@ class StoryPollController extends ChangeNotifier {
   }
 }
 
-/// Опрос слайда — первый элемент `poll`; нет — `null`.
-StoryPollElement? storyPollOf(StorySlide slide) {
-  for (final element in slide.elements) {
-    if (element is StoryPollElement) return element;
-  }
-  return null;
-}
+/// Опросы слайда — все элементы `poll` по порядку, как их рисует веб.
+List<StoryPollElement> storyPollsOf(StorySlide slide) =>
+    slide.elements.whereType<StoryPollElement>().toList();

@@ -496,6 +496,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   /// Новый заход на слайд: прогресс с нуля, медиа, просмотренное, трекинг, хост.
   void _entered() {
+    // Заход снимает паузу опросов: карточки прошлого слайда её больше не держат.
+    _pollHolds.clear();
     final story = _playback.story;
     final slide = _playback.slide;
     final index = _playback.slideIndex;
@@ -581,6 +583,14 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   }
 
   StoriesPollsApi? _pollsApi;
+
+  /// Карточки опросов, которые держат слайд: их может быть несколько на слайде.
+  final Set<Object> _pollHolds = <Object>{};
+
+  void _pollHold(Object card, bool held) {
+    held ? _pollHolds.add(card) : _pollHolds.remove(card);
+    if (mounted) _setPaused(StoriesPauseReason.poll, _pollHolds.isNotEmpty);
+  }
 
   // Куда отправлять ответы опросов: транспорт режима v3, иначе HTTP API v3 хоста
   // просмотра; без транспорта, API v3 или [PersonalizationStoryViewer.sdk] — `null`,
@@ -1038,9 +1048,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       pollTexts: _v3?.pollTexts ?? const StoryPollTexts(),
       pollShopId: _shopId,
       pollDid: widget.sdk == null ? '' : StoriesApiV3.knownDid(widget.sdk!),
-      onPollHold: (held) {
-        if (mounted) _setPaused(StoriesPauseReason.poll, held);
-      },
+      onPollHold: _pollHold,
       v3: _byType,
       hasAudio: live && _videoSound,
       onHeader: _header,
