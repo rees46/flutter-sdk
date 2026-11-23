@@ -204,6 +204,12 @@ void main() {
     await settle(tester);
   }
 
+  PersonalizationStoryPreview preview(WidgetTester tester, int index) => tester
+      .widgetList<PersonalizationStoryPreview>(
+        find.byType(PersonalizationStoryPreview),
+      )
+      .elementAt(index);
+
   PersonalizationStoryCoverState cover(WidgetTester tester, int index) => tester
       .widgetList<PersonalizationStoryPreview>(
         find.byType(PersonalizationStoryPreview),
@@ -293,6 +299,27 @@ void main() {
       expect(cover(tester, 1), PersonalizationStoryCoverState.unviewed);
       await open(tester, 'Story 1');
       expect(find.text('Slide 10'), findsOneWidget, reason: 'its slide');
+    });
+
+    testWidgets('the ring lights no segment before start_position; viewed — '
+        'all', (tester) async {
+      stories.addAll(<Map<String, dynamic>>[
+        _story(1, <Map<String, dynamic>>[
+          _slide('10', duration: 30),
+          _slide('11', duration: 30),
+          _slide('12', duration: 30),
+        ], start: 2),
+        _story(2, <Map<String, dynamic>>[
+          _slide('20', duration: 30),
+          _slide('21', duration: 30),
+        ], viewed: true),
+      ]);
+      await bar(tester);
+      expect(preview(tester, 0).seenSegments, isEmpty);
+      expect(preview(tester, 1).seenSegments, <int>{0, 1});
+      await open(tester, 'Story 1');
+      await close(tester);
+      expect(preview(tester, 0).seenSegments, isEmpty, reason: 'left in it');
     });
 
     testWidgets('the old feed keeps the first unseen slide', (tester) async {

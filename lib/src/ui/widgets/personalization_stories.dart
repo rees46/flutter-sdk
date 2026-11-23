@@ -726,10 +726,10 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
   }
 
   /// Сторис новой ленты: просмотрена, как в вебе, по `viewed` сервера или когда с неё
-  /// ушли вперёд; дуги горят до слайда, с которого она откроется.
+  /// ушли вперёд. Дуги горят все у просмотренной, иначе ни одна: `start_position` — с
+  /// чего её открыть, а не что видели.
   PersonalizationStoryItem _serverItem(Story story) {
     final viewed = StoriesServerProgress.viewedOf(story);
-    final start = StoriesServerProgress.startOf(story);
     return PersonalizationStoryItem(
       id: story.id,
       label: story.name,
@@ -738,8 +738,8 @@ class _PersonalizationStoriesState extends State<PersonalizationStories> {
       viewed: viewed,
       segments: story.slides.length,
       seenSegments: <int>{
-        for (var i = 0; i < story.slides.length; i++)
-          if (viewed || i < start) i,
+        if (viewed)
+          for (var i = 0; i < story.slides.length; i++) i,
       },
     );
   }
