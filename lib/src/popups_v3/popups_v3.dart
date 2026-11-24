@@ -70,6 +70,11 @@ class PopupsV3 with WidgetsBindingObserver implements PopupsV3Listener {
     return popups;
   }
 
+  /// Тестовый режим попапов магазина [sdk] ([testMode]) без создания попапов: их ещё
+  /// нет — выключен. Его же берут запросы сторис и опросов API v3.
+  static bool testModeOf(PersonalizationSdk sdk) =>
+      _byShop[_shopOf(sdk)]?.testMode ?? false;
+
   static String _shopOf(PersonalizationSdk sdk) {
     final own = sdk.shopId;
     if (own != null && own.isNotEmpty) return own;
@@ -125,7 +130,8 @@ class PopupsV3 with WidgetsBindingObserver implements PopupsV3Listener {
     if (active) unawaited(engine.refresh(force: true));
   }
 
-  /// Тестовый режим: попапы со статусом «Тест», показы не пишутся в частоту.
+  /// Тестовый режим: попапы со статусом «Тест», показы не пишутся в частоту. Им же
+  /// лента, события и опросы сторис API v3 шлют `testmode=true`.
   bool get testMode => engine.testMode;
 
   set testMode(bool value) {
@@ -304,6 +310,10 @@ class _SdkPlatform implements PopupsV3Platform {
       'ces' => StoryPollType.ces,
       _ => StoryPollType.nps,
     };
-    await StoriesPollsApi(_sdk, _popups.appHost).review(type, body);
+    await StoriesPollsApi(
+      _sdk,
+      _popups.appHost,
+      streamAndTestMode: false,
+    ).review(type, body);
   }
 }

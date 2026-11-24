@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
+import 'package:rees46_sdk/src/core/native_events.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
+import 'package:rees46_sdk/src/popups_v3/popups_v3_hooks.dart';
 import 'package:rees46_sdk/src/v3/personalization_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_api_v3.dart';
 import 'package:rees46_sdk/src/ui/widgets/stories_seen_store.dart';
@@ -86,6 +88,9 @@ class _FakeHostApi extends pigeon.PersonalizationHostApi {
   Future<String?> getDid(String? shopId) async => 'did-1';
 
   @override
+  Future<String> getSid(String? shopId) async => 'sid-1';
+
+  @override
   Future<String> legacyGetStories(String code, String? shopId) async =>
       bridgeFeed ?? (throw StateError('the bridge feed is off with API v3'));
 
@@ -144,6 +149,9 @@ class _Server {
   final List<String> gets = <String>[];
   final List<String> events = <String>[];
 
+  /// Bodies of the events, in order.
+  final List<Map<String, dynamic>> bodies = <Map<String, dynamic>>[];
+
   /// Hosts of all requests, in order.
   final List<String> hosts = <String>[];
 
@@ -155,6 +163,7 @@ class _Server {
       expect(event['shop_id'], 'shop');
       expect(event['did'], 'did-1');
       events.add('${event['event']} ${event['story_id']}/${event['slide_id']}');
+      bodies.add(event);
       return (status: 200, body: '{"status":"success"}');
     }
     gets.add('${uri.path}?${uri.query}');
@@ -230,13 +239,78 @@ void main() {
   ) async {
     await bar(tester);
     expect(server.gets, <String>[
-      '/api/v3/storefront/stories/$_code?shop_id=shop&did=did-1',
+      '/api/v3/storefront/stories/$_code?shop_id=shop&did=did-1&sid=sid-1&segment=&stream=flutter',
     ]);
     await open(tester, 'Products');
     expect(find.text('Product 39_0'), findsOneWidget);
     expect(server.events, <String>['view 39/39_0']);
     expect(api.bridge, isEmpty, reason: 'nothing through the old tracking');
     expect(api.sources, <String>['stories/$_code']);
+  });
+
+  testWidgets('the feed and the events carry sid, segment, stream, testmode', (
+    tester,
+  ) async {
+    PopupsV3Hooks.initialized(
+      sdk.tracking,
+      const SdkInitConfig(shopId: 'shop', stream: 'qa'),
+    );
+    sdk.popups.testMode = true;
+    addTearDown(PopupsV3.reset);
+    NativeEvents.instance.shop('shop').segment = 'B';
+    addTearDown(() => NativeEvents.instance.shop('shop').segment = null);
+    await bar(tester);
+    expect(server.gets, <String>[
+      '/api/v3/storefront/stories/$_code'
+          '?shop_id=shop&did=did-1&sid=sid-1&segment=B&stream=qa&testmode=true',
+    ]);
+    await open(tester, 'Media');
+    expect(server.bodies.single, <String, dynamic>{
+      'shop_id': 'shop',
+      'did': 'did-1',
+      'sid': 'sid-1',
+      'segment': 'B',
+      'stream': 'qa',
+      'testmode': true,
+      'event': 'view',
+      'story_id': 40,
+      'slide_id': '37',
+    });
+  });
+
+  testWidgets('back on the first slide of the first story closes the viewer, '
+      'as the web; back from the next story opens it where it was left', (
+    tester,
+  ) async {
+    await bar(tester);
+    await open(tester, 'Products');
+    final viewer = tester.getRect(find.byType(PersonalizationStoryViewer));
+    final left = Offset(viewer.left + 10, viewer.center.dy);
+    final right = Offset(viewer.right - 10, viewer.center.dy);
+    // A turn of the page is idle a frame after its last step.
+    Future<void> tap(Offset at) async {
+      await tester.tapAt(at);
+      await _settle(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    await tap(right);
+    await tap(right);
+    expect(find.text('Product 37'), findsOneWidget);
+    await tap(left);
+    expect(
+      find.text('Product 39_0'),
+      findsOneWidget,
+      reason: 'finished: from 0',
+    );
+    await tap(left);
+    expect(find.byType(PersonalizationStoryViewer), findsNothing);
+    expect(server.events, <String>[
+      'view 39/39_0',
+      'view 39/39_1',
+      'view 40/37',
+      'view 39/39_0',
+    ]);
   });
 
   testWidgets('share: the campaign link, a pause until the sheet closes', (
@@ -253,7 +327,7 @@ void main() {
 
     await tester.tap(_share);
     await tester.pump();
-    expect(api.shared, <String>['$_link39&r46_slide=39_0']);
+    expect(api.shared, <String>[_link39]);
     expect(api.anchors.single, share);
     expect(server.events, <String>['view 39/39_0', 'share 39/39_0']);
     await tester.tap(_share);
@@ -287,9 +361,7 @@ void main() {
     await open(tester, 'Products');
     await tester.tap(_share);
     await tester.pump();
-    expect(api.shared, <String>[
-      'demoapp://shop.example/?r46_story=39&r46_slide=39_0',
-    ]);
+    expect(api.shared, <String>['demoapp://shop.example/?r46_story=39']);
     expect(server.events, <String>['view 39/39_0', 'share 39/39_0']);
   });
 
@@ -302,7 +374,7 @@ void main() {
     await gesture.up();
     await tester.pump();
     expect(api.shared, <String>[
-      '$_link39&r46_slide=39_1',
+      _link39,
     ], reason: 'a long press is a press, on the slide it is on');
   });
 
@@ -492,7 +564,7 @@ void main() {
       await _settle(tester);
       expect(server.gets, <String>[
         '/api/v3/storefront/stories/$_code/story/40'
-            '?shop_id=shop&did=did-1&slide_id=38',
+            '?shop_id=shop&did=did-1&sid=sid-1&segment=&stream=flutter&slide_id=38',
       ]);
       expect(find.text('Product 38'), findsOneWidget, reason: 'start_position');
       expect(server.events, <String>['view 40/38', 'shared_open 40/38']);
@@ -543,7 +615,7 @@ void main() {
       // Its "Share" carries the slide again.
       await tester.tap(_share);
       await tester.pump();
-      expect(api.shared, <String>['$_link39&r46_slide=39_1']);
+      expect(api.shared, <String>[_link39]);
     });
 
     testWidgets('a link slide missing from the answer — start_position', (

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rees46_sdk/rees46_sdk.dart';
 import 'package:rees46_sdk/src/pigeon/personalization_api.g.dart' as pigeon;
 import 'package:rees46_sdk/src/ui/components/personalization_story_poll.dart';
@@ -137,6 +138,7 @@ void main() {
   late StreamController<int> requests;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
     StoryPollStore.instance = StoryPollStore();
     transport = _Transport();
     requests = StreamController<int>.broadcast();
@@ -211,10 +213,46 @@ void main() {
     await open(tester, stories);
     expect(card, findsOneWidget);
     expect(find.text('Q mini_poll single_choice'), findsOneWidget);
-    // y_offset 50 of the slide, 12 from the edges, centred.
+    // y_offset 50 of the slide, 16 from the edges, centred.
     final rect = tester.getRect(card);
     expect(rect.top, _screen.height / 2);
-    expect((rect.left, rect.right), (12, _screen.width - 12));
+    expect((rect.left, rect.right), (16, _screen.width - 16));
+  });
+
+  testWidgets('every poll of a slide is drawn at its own y_offset; the slide '
+      'stands while any card holds it', (tester) async {
+    final top = _poll('mini_poll', kind: 'single_choice', yOffset: 10);
+    final bottom = _poll('nps', yOffset: 60);
+    await open(
+      tester,
+      _stories(<List<Map<String, dynamic>>>[
+        <Map<String, dynamic>>[
+          _slide('1', <Map<String, dynamic>>[top, bottom]),
+          _slide('2'),
+        ],
+      ]),
+    );
+    expect(card, findsNWidgets(2));
+    final first = tester.getRect(card.first);
+    final second = tester.getRect(card.last);
+    expect(first.top, closeTo(_screen.height * 0.1, 0.5));
+    expect(second.top, closeTo(_screen.height * 0.6, 0.5));
+
+    // A finger on the first card, the second sends and lets go: still held.
+    final finger = await tester.startGesture(
+      tester.getCenter(find.text('Q mini_poll single_choice')),
+    );
+    await tester.pump();
+    await tester.tap(find.text('7'));
+    await tester.pump();
+    expect(transport.bodies.single['rate'], 7);
+    transport.pending.single.complete(const StoryPollReply());
+    await _replied(tester);
+    await _wait(tester, const Duration(milliseconds: 1500));
+    expect(find.text('Slide 1'), findsOneWidget, reason: 'the first one holds');
+    await finger.up();
+    await _wait(tester, const Duration(milliseconds: 1500));
+    expect(find.text('Slide 2'), findsOneWidget);
   });
 
   testWidgets('taps, holds and swipes on the card stay on it', (tester) async {
@@ -310,7 +348,8 @@ void main() {
 
   group('text', () {
     final text = _poll('mini_poll', kind: 'text', maxLength: 10);
-    final stories = _stories(<List<Map<String, dynamic>>>[
+    // New story objects for each test: the session of the new feed is theirs.
+    List<Story> stories() => _stories(<List<Map<String, dynamic>>>[
       <Map<String, dynamic>>[
         _slide('1', <Map<String, dynamic>>[text]),
         _slide('2'),
@@ -327,7 +366,7 @@ void main() {
     testWidgets(
       'keyboard: the card above it, the slide stays; limit, error, retry',
       (tester) async {
-        await open(tester, stories);
+        await open(tester, stories());
         final slideText = tester.getRect(find.text('Slide 1'));
         final down = tester.getRect(card);
         await tester.tap(find.byType(TextField));
@@ -380,7 +419,7 @@ void main() {
     testWidgets('a tap past the card with the keyboard only hides it', (
       tester,
     ) async {
-      await open(tester, stories);
+      await open(tester, stories());
       await tester.tap(find.byType(TextField));
       await tester.pump();
       await showKeyboard(tester);
@@ -534,6 +573,9 @@ void main() {
         'channel': 'stories',
         'category': 'code_nps',
         'rate': 9,
+        'source_type': 'stories',
+        'source_id': '1',
+        'source_item_id': '39_0',
       });
       transport.pending.single.complete(const StoryPollReply());
       await _replied(tester);
@@ -746,74 +788,74 @@ void main() {
       fields: <String, dynamic>{'thanks_text': thanks},
     );
 
-    testWidgets('an answered choice: the results header, my answer checked, '
-        '«Thank you! Vote counted» and the votes', (tester) async {
+    testWidgets('an answered choice, as the web: my answer checked, '
+        'percents, then thanks_text only', (tester) async {
       await tester.pumpWidget(alone(answered()));
       await tester.pumpAndSettle();
-      expect(find.text('RESULTS'), findsOneWidget);
       expect(find.text('A'), findsOneWidget);
       expect(find.text('B'), findsNothing, reason: 'a check instead');
       expect(find.text('C'), findsOneWidget);
-      expect(find.text('Thank you! Vote counted'), findsOneWidget);
-      expect(find.text('1,248 votes'), findsOneWidget);
-      // The header is above the question, the votes on the right of the thanks.
-      final question = tester.getRect(find.text('Q mini_poll single_choice'));
-      expect(
-        tester.getRect(find.text('RESULTS')).bottom,
-        lessThan(question.top),
-      );
-      expect(
-        tester.getRect(find.text('1,248 votes')).right,
-        tester.getRect(card).right - 20,
-      );
+      expect(find.text('31%'), findsOneWidget);
+      expect(find.textContaining('RESULTS'), findsNothing);
+      expect(find.textContaining('Vote counted'), findsNothing);
+      expect(find.textContaining('vote'), findsNothing);
 
-      // Its own thanks replaces the pair; no total — no votes.
-      await tester.pumpWidget(
-        alone(answered(thanks: 'Спасибо за ответ!', total: 0)),
-      );
+      await tester.pumpWidget(alone(answered(thanks: 'Спасибо за ответ!')));
       await tester.pumpAndSettle();
       expect(find.text('Спасибо за ответ!'), findsOneWidget);
-      expect(find.text('Thank you! Vote counted'), findsNothing);
-      expect(find.textContaining('vote'), findsNothing);
+      expect(
+        tester.getRect(find.text('Спасибо за ответ!')).top,
+        greaterThan(tester.getRect(find.text('31%')).bottom),
+        reason: 'below the rows',
+      );
 
       await tester.pumpWidget(alone(answered(kind: 'multiple_choice')));
       await tester.pumpAndSettle();
-      expect(find.text('RESULTS'), findsOneWidget);
+      expect(find.text('31%'), findsOneWidget, reason: 'the same rows');
     });
 
-    testWidgets('the results texts follow the device language', (tester) async {
+    testWidgets('built-in texts are the web\'s English ones, also in a Russian '
+        'UI; submit_label and labels win', (tester) async {
       tester.platformDispatcher.localeTestValue = const Locale('ru', 'RU');
       addTearDown(tester.platformDispatcher.clearLocaleTestValue);
-      await tester.pumpWidget(alone(answered(total: 21)));
-      await tester.pumpAndSettle();
-      expect(find.text('РЕЗУЛЬТАТЫ'), findsOneWidget);
-      expect(find.text('Спасибо! Голос учтён'), findsOneWidget);
-      expect(find.text('21 голос'), findsOneWidget);
-    });
-
-    testWidgets('no results header in a form, on a scale or a text', (
-      tester,
-    ) async {
-      for (final json in <Map<String, dynamic>>[
-        _poll('mini_poll', kind: 'single_choice'),
-        _poll('mini_poll', kind: 'multiple_choice'),
-        _poll('nps', answer: <String, dynamic>{'rate': 9}),
-        _poll(
-          'mini_poll',
-          kind: 'text',
-          answer: <String, dynamic>{'text': 'x'},
+      await tester.pumpWidget(
+        alone(
+          _poll(
+            'mini_poll',
+            kind: 'text',
+            fields: <String, dynamic>{'submit_label': ''},
+          ),
         ),
-      ]) {
-        await tester.pumpWidget(alone(json));
-        await tester.pumpAndSettle();
-        expect(find.text('RESULTS'), findsNothing, reason: '$json');
-        expect(find.textContaining('Vote counted'), findsNothing);
-      }
-      await tester.pumpWidget(alone(_poll('mini_poll', kind: 'single_choice')));
-      expect(
-        <String>['A', 'B', 'C'].map((letter) => find.text(letter)),
-        everyElement(findsOneWidget),
       );
+      expect(find.text('Send'), findsOneWidget);
+      await tester.pumpWidget(
+        alone(
+          _poll(
+            'mini_poll',
+            kind: 'text',
+            fields: <String, dynamic>{'submit_label': 'Отправить идею'},
+            labels: <String, dynamic>{'submit': 'Отправить'},
+          ),
+        ),
+      );
+      expect(
+        find.text('Отправить идею'),
+        findsOneWidget,
+        reason: 'submit_label',
+      );
+      await tester.pumpWidget(
+        alone(
+          _poll(
+            'mini_poll',
+            kind: 'single_choice',
+            allowReanswer: true,
+            answer: <String, dynamic>{
+              'option_ids': <int>[2],
+            },
+          ),
+        ),
+      );
+      expect(find.text('Answer again'), findsOneWidget);
     });
 
     testWidgets('sizes: left-aligned text, rows 56 and 8 apart, the track, '
@@ -921,11 +963,9 @@ void main() {
       expect(bar('Себе'), const Color(0x14000000));
     });
 
-    testWidgets('the scale: the chosen digit in a capsule of its band colour, '
-        'the accent without bands; the rest dimmed once answered', (
-      tester,
-    ) async {
-      Color? capsule(String digit) {
+    testWidgets('the scale: digits in the kit tones, the chosen one filled; '
+        'the rest dimmed once answered', (tester) async {
+      Color? cell(String digit) {
         final decoration =
             tester
                     .widget<DecoratedBox>(
@@ -949,11 +989,13 @@ void main() {
           )
           .opacity;
 
+      const colors = PersonalizationColors.light;
       await tester.pumpWidget(
         alone(_poll('nps', answer: <String, dynamic>{'rate': 9})),
       );
-      expect(capsule('9'), storyPollScaleColor(StoryPollType.nps, 9, 0, 10));
-      expect(capsule('5'), isNull);
+      expect(cell('9'), const Color(0xFF22C55E), reason: 'green, filled');
+      expect(cell('5'), colors.semanticDanger.withValues(alpha: 0.2));
+      expect(cell('7'), colors.semanticWarning.withValues(alpha: 0.2));
       expect((opacity('9'), opacity('5')), (1.0, 0.55));
       expect(
         tester.widget<Text>(find.text('9')).style!.color,
@@ -965,13 +1007,72 @@ void main() {
         alone(
           _poll(
             'csat',
-            answer: <String, dynamic>{'rate': 3},
+            answer: <String, dynamic>{'rate': 1},
             fields: <String, dynamic>{'bands': <Object>[]},
           ),
         ),
       );
-      expect(capsule('3'), const Color(0xFF22C55E));
+      expect(cell('1'), colors.semanticDanger, reason: 'tones without bands');
     });
+  });
+
+  testWidgets('a band question after the rate: the comment with the same '
+      'rate, a counter to 5000, then success', (tester) async {
+    tester.platformDispatcher.localeTestValue = const Locale('ru', 'RU');
+    addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+    await open(
+      tester,
+      _stories(<List<Map<String, dynamic>>>[
+        <Map<String, dynamic>>[
+          _slide('1', <Map<String, dynamic>>[
+            _poll(
+              'nps',
+              fields: <String, dynamic>{
+                'bands': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'from': 0,
+                    'to': 10,
+                    'question': 'Что улучшить?',
+                    'success': 'Band thanks',
+                  },
+                ],
+              },
+            ),
+          ]),
+          _slide('2'),
+        ],
+      ]),
+    );
+    await tester.tap(find.descendant(of: card, matching: find.text('4')));
+    await tester.pump();
+    transport.pending.single.complete(const StoryPollReply());
+    await _replied(tester);
+    expect(find.text('Что улучшить?'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('0/5000'), findsOneWidget);
+    expect(find.text('Send'), findsOneWidget, reason: 'the web default');
+    expect(find.text('Band thanks'), findsNothing);
+    await tester.enterText(find.byType(TextField), ' Быстрее ');
+    await tester.pump();
+    expect(find.text('9/5000'), findsOneWidget);
+    // Focused: the slide waits.
+    await _wait(tester, const Duration(seconds: 12));
+    expect(find.text('Slide 1'), findsOneWidget);
+    await tester.tap(find.text('Send'));
+    await tester.pump();
+    expect(transport.bodies.last, <String, Object>{
+      'channel': 'stories',
+      'category': 'code_nps',
+      'rate': 4,
+      'comment': 'Быстрее',
+      'source_type': 'stories',
+      'source_id': '1',
+      'source_item_id': '1',
+    });
+    transport.pending.last.complete(const StoryPollReply());
+    await _replied(tester);
+    expect(find.text('Band thanks'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
   });
 
   testWidgets('text re-answer: an empty field in focus, the slide held', (
@@ -1039,13 +1140,24 @@ void main() {
     expect(find.text('Slide 2'), findsOneWidget);
     expect(
       tester.getRect(card).top,
-      greaterThan(50 + 16),
-      reason: 'moved under the header',
+      50,
+      reason:
+          'the top of the slide under the status bar, over the header, '
+          'as the web',
     );
+    // The close cross stays above the card and still closes.
+    await tester.pump(const Duration(milliseconds: 500));
+    // The button around the icon takes the tap.
+    await tester.tap(
+      find.byKey(const ValueKey<String>(PersonalizationIcons.cross)),
+      warnIfMissed: false,
+    );
+    await _settle(tester);
+    expect(find.byType(PersonalizationStoryViewer), findsNothing);
   });
 
-  testWidgets('y_offset: none, below 0 or not a number — right under the '
-      'header; over 100 — down to the bottom', (tester) async {
+  testWidgets('y_offset: none, below 0 or not a number — the top of the slide; '
+      'over 100 — 16 above its bottom, as the web', (tester) async {
     final offsets = <Object?>[0, null, -20, 'NaN', 100, 150];
     await open(
       tester,
@@ -1068,13 +1180,36 @@ void main() {
       expect(find.text('Slide ${offsets[index]}'), findsOneWidget);
       rects.add(tester.getRect(card));
     }
-    expect(rects.first.top, greaterThan(16), reason: 'under the header');
+    expect(rects.first.top, 0, reason: 'the top of the slide');
     expect(
       rects.sublist(1, 4).map((rect) => rect.top),
       everyElement(rects.first.top),
     );
     expect(rects[4].bottom, _screen.height - 16);
     expect(rects[5], rects[4]);
+  });
+
+  testWidgets('a visible bottom row: the card stays 16 above it', (
+    tester,
+  ) async {
+    await open(
+      tester,
+      _stories(<List<Map<String, dynamic>>>[
+        <Map<String, dynamic>>[
+          _slide('1', <Map<String, dynamic>>[
+            _poll('nps', yOffset: 150),
+            <String, dynamic>{
+              'type': 'products',
+              'products': <Map<String, dynamic>>[
+                <String, dynamic>{'id': 'p1', 'name': 'Product', 'price': 1},
+              ],
+            },
+          ]),
+        ],
+      ]),
+    );
+    expect(find.text('Used products'), findsOneWidget);
+    expect(tester.getRect(card).bottom, _screen.height - 64 - 16);
   });
 
   group('PersonalizationStories', () {
@@ -1194,6 +1329,35 @@ void main() {
       await closeViewer(tester);
     });
 
+    testWidgets('the answer is saved on the device by did and shown by a '
+        'new feed without one', (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      await StoryPollStore.instance.load();
+      await openBlock(tester, apiV3Domain: 'app.example', own: false);
+      await tester.tap(find.text('Маме'));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump();
+      }
+      final preferences = await SharedPreferences.getInstance();
+      const key =
+          'personalization.storiesPolls.shop.stories_poll_did-1_mini_poll_'
+          'code_mini_pollsingle_choice_1_1';
+      expect(preferences.getKeys(), <String>{key});
+      expect(
+        (jsonDecode(preferences.getString(key)!) as Map)['answer'],
+        <String, dynamic>{
+          'option_ids': <int>[2],
+        },
+      );
+      await closeViewer(tester);
+      // A new block loads a new feed without an answer: the saved one is shown.
+      StoriesSeenStore.instance = StoriesSeenStore();
+      await openBlock(tester, apiV3Domain: 'app.example', own: false);
+      expect(find.text('Slide 1'), findsOneWidget);
+      expect(find.text('Спасибо!'), findsOneWidget);
+      await closeViewer(tester);
+    });
+
     testWidgets('without its own transport — HTTP to the host of the block', (
       tester,
     ) async {
@@ -1210,9 +1374,11 @@ void main() {
         'shop_id': 'shop',
         'did': 'did-1',
         'sid': 'sid-1',
+        'stream': 'flutter',
         'option_ids': <int>[2],
-        'story_id': 1,
-        'slide_id': '1',
+        'source_type': 'stories',
+        'source_id': '1',
+        'source_item_id': '1',
       });
       expect(find.text('Спасибо!'), findsOneWidget);
       await closeViewer(tester);

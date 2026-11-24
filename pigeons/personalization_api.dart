@@ -2232,6 +2232,14 @@ abstract class PersonalizationHostApi {
   /// watching the volume. iOS only; a no-op on Android.
   void endStoriesAudio();
 
+  /// Whether the video at [source] — an `http(s)` URL or a file path of the stories'
+  /// video cache — has an audio track: the stories viewer shows its sound button only
+  /// then, as the web SDK does. Read off the main thread from the container's track
+  /// list (Android `MediaMetadataRetriever`, iOS `AVURLAsset`); null when it cannot be
+  /// read.
+  @async
+  bool? storiesVideoHasAudio(String source);
+
   /// Opens the system settings where the user turns notifications on for the app: the
   /// app's notification settings on Android, the app's page in Settings on iOS. What the
   /// native popups do for their push-subscription button.

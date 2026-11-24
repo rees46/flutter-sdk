@@ -20,6 +20,23 @@ Story _story(String id, int count, {bool viewed = false, int start = 0}) =>
       ],
     );
 
+/// A story of the new feed: `m` — a media slide, `s` — a skipped one (no media, no
+/// product), in [kinds] order; ids `<id>0`, `<id>1`, …
+Story _feedStory(String id, String kinds, {int start = 0}) => Story(
+  id: id,
+  name: id,
+  avatar: '',
+  startPosition: start,
+  slides: <StorySlide>[
+    for (var i = 0; i < kinds.length; i++)
+      StorySlide(
+        id: '$id$i',
+        type: kinds[i] == 'm' ? StorySlideType.image : StorySlideType.product,
+        duration: const Duration(seconds: 5),
+      ),
+  ],
+);
+
 /// Opens [playback] the way the viewer does: the first page settles, media is ready.
 StoriesPlayback _open(StoriesPlayback playback) {
   playback.settle(playback.storyIndex);
@@ -73,7 +90,7 @@ void main() {
         reason: 'not entered before settle',
       );
 
-      expect(playback.settle(1), isTrue);
+      expect(playback.settle(1), StoriesStep.slide);
       expect(playback.slide.id, 'b0');
       expect(playback.seenOf('b'), {'b0'});
       playback.mediaReady(playback.generation);
@@ -116,7 +133,7 @@ void main() {
         StoriesPlayback(stories: [_story('a', 1), _story('b', 1)]),
       );
       playback.pause(StoriesPauseReason.drag);
-      expect(playback.settle(0), isFalse);
+      expect(playback.settle(0), StoriesStep.none);
       expect(playback.running, isTrue);
       expect(playback.seenOf('b'), isEmpty);
     });
@@ -129,6 +146,143 @@ void main() {
       expect(playback.stories.map((story) => story.id), ['a', 'b']);
       expect(playback.storyIndex, 1);
       expect(StoriesPlayback(stories: [_story('x', 0)]).isEmpty, isTrue);
+    });
+  });
+
+  group('the new feed: slides with nothing to show are skipped', () {
+    StoriesPlayback feed(List<Story> stories, {int initial = 0, int? slide}) =>
+        StoriesPlayback(
+          stories: stories,
+          initialStory: initial,
+          initialSlide: slide,
+          serverStart: true,
+        );
+
+    test('forward passes them, back steps over them', () {
+      final playback = _open(feed(<Story>[_feedStory('a', 'msm')]));
+      expect(playback.slide.id, 'a0');
+      expect(playback.next(), StoriesStep.slide);
+      expect(playback.slide.id, 'a2');
+      playback.mediaReady(playback.generation);
+      expect(playback.previous(), StoriesStep.slide);
+      expect(playback.slide.id, 'a0', reason: 'not bounced forward');
+      expect(playback.seenOf('a'), {'a0', 'a2'}, reason: 'no entry on a1');
+    });
+
+    test('start_position on a skipped slide opens the next shown one', () {
+      final playback = _open(feed(<Story>[_feedStory('a', 'msm', start: 1)]));
+      expect(playback.slide.id, 'a2');
+    });
+
+    test('nothing shown after the start: finished, viewed, the next story', () {
+      final a = _feedStory('a', 'ms', start: 1);
+      final b = _feedStory('b', 'm');
+      final playback = _open(feed(<Story>[a, b]));
+      expect(playback.storyIndex, 1);
+      expect(playback.slide.id, 'b0');
+      expect(StoriesServerProgress.viewedOf(a), isTrue);
+      expect(StoriesServerProgress.startOf(a), 0, reason: 'starts over');
+    });
+
+    test('a story of skipped slides only stays in the feed; opening it opens '
+        'the next one and marks it viewed', () {
+      final a = _feedStory('a', 'ss');
+      final b = _feedStory('b', 'm');
+      final playback = feed(<Story>[a, b]);
+      expect(playback.stories, <Story>[a, b]);
+      _open(playback);
+      expect(playback.story, b);
+      expect(StoriesServerProgress.viewedOf(a), isTrue);
+      expect(StoriesServerProgress.viewedOf(b), isFalse);
+    });
+
+    test('the last one: nothing to show, the viewer is empty', () {
+      final a = _feedStory('a', 'm');
+      final b = _feedStory('b', 's');
+      final playback = feed(<Story>[a, b], initial: 1);
+      expect(playback.isEmpty, isTrue);
+      expect(StoriesServerProgress.viewedOf(b), isTrue);
+      expect(StoriesServerProgress.viewedOf(a), isFalse);
+    });
+
+    test(
+      'forward over such a story marks it viewed; past the last — close',
+      () {
+        final a = _feedStory('a', 'm');
+        final b = _feedStory('b', 'ss');
+        final c = _feedStory('c', 'm');
+        final playback = _open(feed(<Story>[a, b, c]));
+        expect(playback.next(), StoriesStep.turn);
+        expect(playback.turnTarget, 2);
+        expect(StoriesServerProgress.viewedOf(b), isTrue);
+        expect(playback.settle(2), StoriesStep.slide);
+        expect(playback.story, c);
+
+        final last = _open(
+          feed(<Story>[_feedStory('x', 'm'), _feedStory('y', 's')]),
+        );
+        expect(last.next(), StoriesStep.close);
+      },
+    );
+
+    test('a swipe onto such a story turns on to the next one, or closes', () {
+      final a = _feedStory('a', 'm');
+      final b = _feedStory('b', 's');
+      final c = _feedStory('c', 'm');
+      final playback = _open(feed(<Story>[a, b, c]));
+      expect(playback.settle(1), StoriesStep.turn);
+      expect(playback.turnTarget, 2);
+      expect(StoriesServerProgress.viewedOf(a), isTrue, reason: 'left forward');
+      expect(StoriesServerProgress.viewedOf(b), isTrue);
+
+      final back = _open(
+        feed(<Story>[_feedStory('x', 's'), _feedStory('y', 'm')]),
+      );
+      expect(back.story.id, 'y');
+      expect(back.settle(0), StoriesStep.close, reason: 'nothing before it');
+    });
+
+    test('back over such a story marks it viewed, as forward does; nothing '
+        'before it — close', () {
+      final a = _feedStory('a', 'm');
+      final b = _feedStory('b', 'ss');
+      final c = _feedStory('c', 'm');
+      final playback = _open(feed(<Story>[a, b, c], initial: 2));
+      expect(playback.story, c);
+      expect(playback.previous(), StoriesStep.turn);
+      expect(playback.turnTarget, 0);
+      expect(StoriesServerProgress.viewedOf(b), isTrue);
+      expect(StoriesServerProgress.viewedOf(a), isFalse);
+
+      final x = _feedStory('x', 's');
+      final first = _open(feed(<Story>[x, _feedStory('y', 'm')], initial: 1));
+      expect(first.previous(), StoriesStep.close);
+      expect(StoriesServerProgress.viewedOf(x), isTrue);
+    });
+
+    test('leaving forward past the last story marks it viewed', () {
+      final a = _feedStory('a', 'mm');
+      final playback = _open(feed(<Story>[a]));
+      playback.leaveForward();
+      expect(StoriesServerProgress.viewedOf(a), isTrue);
+      expect(StoriesServerProgress.startOf(a), 0, reason: 'not finished');
+
+      final legacy = _story('l', 1);
+      _open(StoriesPlayback(stories: <Story>[legacy])).leaveForward();
+      expect(StoriesServerProgress.viewedOf(legacy), isFalse);
+    });
+
+    test('a link slide only sets the first open', () {
+      final a = _feedStory('a', 'mmm');
+      final playback = _open(feed(<Story>[a], slide: 1));
+      expect(playback.slide.id, 'a1');
+      expect(StoriesServerProgress.startOf(a), 1);
+      playback.mediaReady(playback.generation);
+      playback.next();
+      expect(StoriesServerProgress.startOf(a), 2, reason: 'where it was left');
+
+      final skipped = _feedStory('b', 'msm');
+      expect(_open(feed(<Story>[skipped], slide: 1)).slide.id, 'b2');
     });
   });
 

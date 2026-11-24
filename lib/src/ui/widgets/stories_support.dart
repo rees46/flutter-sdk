@@ -5,6 +5,8 @@ import '../../stories/stories_response.dart';
 import '../components/personalization_product.dart';
 import '../components/personalization_story_price.dart';
 import '../components/personalization_story_text_block.dart';
+import '../personalization_typography.dart';
+import '../popups_v3/css_color.dart';
 import 'stories_image.dart';
 
 /// Как получить картинку по адресу из данных сторис. Не задан — свой загрузчик SDK: качает
@@ -37,6 +39,22 @@ Color? parseStoryColor(String value, {double opacity = 1}) {
   return color.withValues(alpha: color.a * opacity.clamp(0, 1));
 }
 
+/// Цвет новой ленты — одним разбором для слайда и текстовых блоков, как его читает CSS
+/// веба: `#RGB`, `#RRGGBB`, `#RRGGBBAA` (альфа в конце) и `rgb()` / `rgba()`; остальное —
+/// `null`.
+Color? parseStoryCssColor(String value) {
+  final text = value.trim().toLowerCase();
+  if (text.startsWith('#')) {
+    final digits = text.length - 1;
+    if (digits != 3 && digits != 6 && digits != 8) return null;
+    return parseCssColor(text);
+  }
+  if (text.startsWith('rgb(') || text.startsWith('rgba(')) {
+    return parseCssColor(text);
+  }
+  return null;
+}
+
 /// Что слайд показывает фоном.
 enum StoryMedia {
   /// Ничего: фон Background/Card темы приложения.
@@ -49,20 +67,41 @@ enum StoryMedia {
   video,
 }
 
-/// Медиа слайда решает непустой `background`, а не тип слайда: товарный слайд с фото —
-/// тоже медиа-слайд, а `image` без адреса — нет.
-StoryMedia storyMediaOf(StorySlide slide) {
+/// Медиа слайда. Старая лента: решает непустой `background`, а не тип слайда — товарный
+/// слайд с фото тоже медиа-слайд, а `image` без адреса — нет. Новая лента ([byType]): как
+/// в вебе, решает тип — `image` и `video` медиа, товарный слайд — нет.
+StoryMedia storyMediaOf(StorySlide slide, {bool byType = false}) {
+  if (byType) {
+    return switch (slide.type) {
+      StorySlideType.image => StoryMedia.image,
+      StorySlideType.video => StoryMedia.video,
+      StorySlideType.product => StoryMedia.none,
+    };
+  }
   if (slide.background.trim().isEmpty) return StoryMedia.none;
   return slide.type == StorySlideType.video
       ? StoryMedia.video
       : StoryMedia.image;
 }
 
-/// Цвет полей вокруг вписанного медиа: `background_color` слайда, без него чёрный. Это
-/// единственное место, где цвет админки идёт в дело: слайд без медиа всегда на
-/// Background/Card.
-Color storyLetterbox(StorySlide slide) =>
-    parseStoryColor(slide.backgroundColor) ?? const Color(0xFF000000);
+/// Цвет слайда новой ленты без медиа: `background_color`, как в вебе
+/// ([parseStoryCssColor]), положенный на чёрный фон просмотра — полупрозрачный тоже;
+/// по нему же выбирается схема текста. Не задан — `null`, слайд на Background/Card кита.
+Color? storySlideColor(StorySlide slide) {
+  final color = parseStoryCssColor(slide.backgroundColor);
+  return color == null
+      ? null
+      : Color.alphaBlend(color, const Color(0xFF000000));
+}
+
+/// Цвет полей вокруг вписанного медиа: `background_color` слайда, без него чёрный. У
+/// старой ленты это единственное место, где цвет админки идёт в дело: слайд без медиа
+/// всегда на Background/Card. Новая лента ([newFeed]) читает цвет, как веб.
+Color storyLetterbox(StorySlide slide, {bool newFeed = false}) =>
+    (newFeed
+        ? parseStoryCssColor(slide.backgroundColor)
+        : parseStoryColor(slide.backgroundColor)) ??
+    const Color(0xFF000000);
 
 /// Текстовые блоки, которые рисуются: пустые и из одних пробелов пропускаются.
 List<StoryTextBlockElement> storyTextBlocks(StorySlide slide) =>
@@ -99,8 +138,8 @@ StoryProductsElement? storyProducts(StorySlide slide) {
 
 /// Плотность затемнения сверху и снизу. Оно есть на каждом слайде: 50% — только у
 /// медиа без товара и без непустых текстов (голое фото или видео), иначе 30%.
-double storyScrimOpacity(StorySlide slide) =>
-    storyMediaOf(slide) != StoryMedia.none &&
+double storyScrimOpacity(StorySlide slide, {bool byType = false}) =>
+    storyMediaOf(slide, byType: byType) != StoryMedia.none &&
         storyProductElement(slide) == null &&
         storyTextBlocks(slide).isEmpty
     ? 0.5
@@ -258,6 +297,24 @@ String storyProductLink(StoryProduct product) {
   return own.isNotEmpty ? own : product.url;
 }
 
+/// Ссылка шапки слайда для текущей платформы: своя, иначе общая `link`.
+String storyHeaderLink(StoryHeaderElement header) {
+  final own = switch (defaultTargetPlatform) {
+    TargetPlatform.android => header.linkAndroid,
+    TargetPlatform.iOS => header.linkIos,
+    _ => '',
+  };
+  return own.isNotEmpty ? own : header.link;
+}
+
+/// Шапка слайда новой ленты (`header`), если ей есть что показать; нет — `null`.
+StoryHeaderElement? storyHeaderOf(StorySlide slide) {
+  for (final element in slide.elements) {
+    if (element is StoryHeaderElement && element.isNotEmpty) return element;
+  }
+  return null;
+}
+
 /// Куда ведёт кнопка товарного слайда: своя ссылка кнопки (платформенная, затем общая),
 /// без неё — товар слайда (диплинк, затем `url`).
 String storySlideButtonLink(StoryButtonElement button, StoryProduct? product) {
@@ -279,20 +336,40 @@ TextAlign storyTextAlign(String value) => switch (value.trim().toLowerCase()) {
 /// Шрифт `serif` / `monospaced` — системные семейства с запасными для iOS, где имён
 /// `serif` и `monospace` нет; `sans-serif` и пусто — шрифт темы. Межстрочный не задан —
 /// заготовка макета для этого кегля ([PersonalizationStoryTextBlock.presetLineHeight]).
-PersonalizationStoryTextBlock storyTextBlock(StoryTextBlockElement element) {
-  final (family, fallback) = switch (element.fontType) {
+/// Новая лента ([newFeed]): `font_type` без учёта регистра и `monospace` тоже; без
+/// `font_size` — кегль основного текста кита ([PersonalizationTypography.baseDefault]), а
+/// не 14.
+PersonalizationStoryTextBlock storyTextBlock(
+  StoryTextBlockElement element, {
+  bool newFeed = false,
+}) {
+  final type = newFeed
+      ? element.fontType.trim().toLowerCase()
+      : element.fontType;
+  final (family, fallback) = switch (type) {
     'serif' => ('serif', const <String>['Georgia', 'Times New Roman']),
     'monospaced' => ('monospace', const <String>['Menlo', 'Courier']),
+    'monospace' when newFeed => (
+      'monospace',
+      const <String>['Menlo', 'Courier'],
+    ),
     _ => (null, null),
   };
+  final fontSize = newFeed && !element.hasFontSize
+      ? PersonalizationTypography.baseDefault.fontSize!
+      : element.fontSize;
   return PersonalizationStoryTextBlock(
     text: element.text,
-    fontSize: element.fontSize,
+    fontSize: fontSize,
     lineHeight: element.lineSpacing > 0
         ? element.lineSpacing
-        : PersonalizationStoryTextBlock.presetLineHeight(element.fontSize),
-    color: parseStoryColor(element.textColor),
-    background: element.backgroundOpacity > 0
+        : PersonalizationStoryTextBlock.presetLineHeight(fontSize),
+    color: newFeed
+        ? parseStoryCssColor(element.textColor)
+        : parseStoryColor(element.textColor),
+    background: newFeed
+        ? _newFeedBackground(element)
+        : element.backgroundOpacity > 0
         ? parseStoryColor(
             element.backgroundColor,
             opacity: element.backgroundOpacity,
@@ -304,6 +381,16 @@ PersonalizationStoryTextBlock storyTextBlock(StoryTextBlockElement element) {
     fontFamily: family,
     fontFamilyFallback: fallback,
   );
+}
+
+/// Фон текстового блока новой ленты: цвет ([parseStoryCssColor]) с непрозрачностью
+/// элемента — она заменяет и альфу цвета (`#RRGGBBAA`, `rgba()`); без неё цвет со своей
+/// альфой остаётся как есть, а без альфы — непрозрачен.
+Color? _newFeedBackground(StoryTextBlockElement element) {
+  final color = parseStoryCssColor(element.backgroundColor);
+  if (color == null) return null;
+  if (!element.hasBackgroundOpacity) return color;
+  return color.withValues(alpha: element.backgroundOpacity.clamp(0, 1));
 }
 
 /// Сторис, которые можно показать: со слайдами (C16) и без повторов id — сервер иногда

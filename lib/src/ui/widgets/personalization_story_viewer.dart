@@ -32,11 +32,14 @@ import 'stories_v3_scope.dart';
 /// - касание левой трети — назад, правой — вперёд, середина ничего не делает; в RTL края
 ///   меняются местами. Удержание от 200 мс — пауза, отпускание её снимает и никуда не
 ///   листает. Назад на первом слайде первой сторис перезапускает слайд — прогресс и видео
-///   с нуля, без перезагрузки и повторного `view`; вперёд на последнем слайде последней —
-///   закрывает просмотр;
-/// - свайп вбок листает сторис; заход на сторис (просмотр слайда, трекинг `view`) — только
-///   когда страница осела, подглядывание соседней не считается. Свайп вниз дальше 120 или
-///   быстрее 800 в секунду закрывает, иначе слайд пружинит назад; пока тянут — пауза;
+///   с нуля, без перезагрузки (у новой ленты, как в вебе, закрывает просмотр); вперёд на
+///   последнем слайде последней — закрывает просмотр;
+/// - свайп вбок листает сторис (у новой ленты свайп назад на первой сторис дальше 100,
+///   как в вебе, закрывает просмотр, а вперёд на последней — отмечает её просмотренной и
+///   закрывает); заход на сторис (просмотр слайда, трекинг `view`) — только когда страница
+///   осела, подглядывание соседней не считается. Свайп вниз дальше 120 или быстрее 800 в
+///   секунду закрывает (у новой ленты, как в вебе, — вверх или вниз дальше 100), иначе
+///   слайд пружинит назад; пока тянут — пауза;
 /// - раскрытая шторка товаров ставит паузу и блокирует листание; тап мимо неё и системное
 ///   «назад» её закрывают; смена слайда её сбрасывает;
 /// - пауза и когда приложение свёрнуто или потеряло фокус, и когда просмотр закрыт другим
@@ -102,7 +105,8 @@ class PersonalizationStoryViewer extends StatefulWidget {
   final int initialStory;
 
   /// Слайд начальной сторис в обход правила «первый непросмотренный»; `null` — по
-  /// правилам. Так ссылка «Поделиться» открывает свой слайд.
+  /// правилам. Так ссылка «Поделиться» открывает свой слайд. У новой ленты — только слайд
+  /// первого открытия: дальше сторис открывается по её правилам.
   final int? initialSlide;
 
   /// Уже просмотренные слайды: id слайдов по id сторис. По ним выбирается стартовый слайд
@@ -138,7 +142,8 @@ class PersonalizationStoryViewer extends StatefulWidget {
   /// Промокод скопирован.
   final ValueChanged<String>? onPromoCopied;
 
-  /// Подпись кнопки товарного слайда, когда у слайда своих кнопок нет.
+  /// Подпись кнопки товарного слайда старой ленты, когда у слайда своих кнопок нет; у
+  /// новой ленты, как в вебе, такой кнопки нет.
   final String productButtonText;
 
   /// Подпись над промокодом, когда в админке у товара нет своей.
@@ -205,7 +210,7 @@ class PersonalizationStoryViewer extends StatefulWidget {
 //   без него — на хост API v3 просмотра ([StoriesPollsApi], нужен `sdk`); нет ни того ни
 //   другого — опросы не рисуются. Свой транспорт рисует их и без API v3. Пока карточку
 //   держат пальцем, в фокусе её поле или идёт отправка — пауза; касания карточки слайд не
-//   листают. Ответы помнятся до конца процесса ([StoryPollStore]).
+//   листают. Ответы помнятся на устройстве по did 90 дней ([StoryPollStore]).
 class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final StoriesPlayback _playback = StoriesPlayback(
@@ -213,6 +218,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     initialStory: widget.initialStory,
     initialSlide: widget.initialSlide,
     seen: _initialSeen(),
+    // Новая лента — стартовый слайд и просмотренность по серверу, как в вебе. Режим —
+    // без подписки: создаётся до didChangeDependencies.
+    serverStart:
+        StoriesApiV3.host(StoriesV3Scope.peek(context)?.apiV3Domain) != null,
   );
   late final PageController _pages = PageController(
     initialPage: _playback.storyIndex,
@@ -227,6 +236,13 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   final ValueNotifier<double> _drag = ValueNotifier<double>(0);
 
   StreamSubscription<int>? _requests;
+
+  /// Звук этого просмотра: у новой ленты — свой, у старой — общий процесса.
+  ValueNotifier<bool> get _sound =>
+      StoriesSound.instance.of(v3: _playback.serverStart);
+
+  /// Выбор кнопки звука магазина взят с устройства (новая лента).
+  Future<void> _soundRestored = Future<void>.value();
   VideoPlayerController? _video;
   bool _videoReady = false;
   bool _videoPlaying = false;
@@ -267,15 +283,22 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    StoriesSound.instance.attach();
-    StoriesSound.instance.muted.addListener(_onMuted);
+    StoriesSound.instance.attach(v3: _playback.serverStart);
+    // Новая лента, как веб, берёт выбор кнопки звука с устройства — свой у магазина.
+    if (_playback.serverStart && _shopId.isNotEmpty) {
+      _soundRestored = StoriesSound.instance.restore(_shopId);
+    }
+    _sound.addListener(_onMuted);
     widget.paused?.addListener(_onHostPause);
     _onHostPause();
     _requests = widget.storyRequests?.listen(_onStoryRequest);
     _onLifecycle(WidgetsBinding.instance.lifecycleState);
     // Первая страница осела сразу: заход после кадра — загрузка картинки читает контекст.
+    // Показать нечего (у новой ленты все сторис с начальной досмотрены) — просмотр
+    // закрывается, пустым он не стоит.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_playback.isEmpty) _settled(_playback.storyIndex);
+      if (!mounted) return;
+      _playback.isEmpty ? _close() : _settled(_playback.storyIndex);
     });
   }
 
@@ -322,13 +345,13 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     WidgetsBinding.instance.removeObserver(this);
     widget.paused?.removeListener(_onHostPause);
     _requests?.cancel();
-    StoriesSound.instance.muted.removeListener(_onMuted);
+    _sound.removeListener(_onMuted);
     _timeout?.cancel();
     _autoRetry?.cancel();
     _ticker.dispose();
     _disposeVideo();
     _disposeGif();
-    StoriesSound.instance.detach();
+    StoriesSound.instance.detach(v3: _playback.serverStart);
     _pages.dispose();
     _progress.dispose();
     _drag.dispose();
@@ -397,12 +420,19 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   // --- Навигация ----------------------------------------------------------------------
 
-  /// Страница осела на [index]: заход на сторис или просто конец листания.
+  /// Страница осела на [index]: заход на сторис, просто конец листания или — у новой
+  /// ленты на сторис, которую не открыть, — листание дальше или закрытие.
   void _settled(int index) {
-    if (_playback.settle(index)) {
-      _entered();
-    } else {
-      _sync();
+    switch (_playback.settle(index)) {
+      case StoriesStep.slide:
+        _entered();
+      case StoriesStep.none:
+        _sync();
+      case final step:
+        // Не посреди уведомления прокрутки: листание и закрытие — следом.
+        scheduleMicrotask(() {
+          if (mounted) _step(step);
+        });
     }
     setState(() {});
   }
@@ -415,7 +445,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       case StoriesStep.slide:
         _entered();
       case StoriesStep.restart:
-        // Тот же заход: медиа не перезагружается, `view` не повторяется.
+        // Тот же заход: медиа не перезагружается, `view` не повторяется. Только у старой
+        // ленты: новая, как веб, здесь закрывает просмотр.
         _progress.value = 0;
         if (_videoReady) _video?.seekTo(Duration.zero);
         _gif?.restart();
@@ -468,6 +499,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   /// Новый заход на слайд: прогресс с нуля, медиа, просмотренное, трекинг, хост.
   void _entered() {
+    // Заход снимает паузу опросов: карточки прошлого слайда её больше не держат.
+    _pollHolds.clear();
     final story = _playback.story;
     final slide = _playback.slide;
     final index = _playback.slideIndex;
@@ -476,7 +509,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _load(generation);
     final sdk = widget.sdk;
     if (sdk != null) {
-      StoriesSeenStore.instance.mark(sdk, story.id, slide.id);
+      // Новой ленте просмотренное устройства не нужно: её ведёт сервер.
+      if (!_playback.serverStart) {
+        StoriesSeenStore.instance.mark(sdk, story.id, slide.id);
+      }
       if (_v3Code != null) {
         _trackV3(StoriesV3Event.view, story, slide);
       } else if (storyTrackableId(story.id) && storyTrackableId(slide.id)) {
@@ -518,6 +554,12 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   // Хост API v3 просмотра: режима над ним, без него — глобальный; `null` — старый API.
   String? get _v3Host => StoriesApiV3.host(_v3?.apiV3Domain);
 
+  // Сторис новой ленты: правила веба — медиа по типу слайда, кнопка без ссылки ничего не
+  // открывает, копирование промокода без `click`, шапка `header`.
+  bool get _byType => _v3Host != null;
+
+  StoryMedia _mediaOf(StorySlide slide) => storyMediaOf(slide, byType: _byType);
+
   // Код блока для событий v3: у просмотра есть хост API v3, SDK и код; иначе `null` —
   // старый трекинг через мост.
   String? get _v3Code {
@@ -544,6 +586,14 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   }
 
   StoriesPollsApi? _pollsApi;
+
+  /// Карточки опросов, которые держат слайд: их может быть несколько на слайде.
+  final Set<Object> _pollHolds = <Object>{};
+
+  void _pollHold(Object card, bool held) {
+    held ? _pollHolds.add(card) : _pollHolds.remove(card);
+    if (mounted) _setPaused(StoriesPauseReason.poll, _pollHolds.isNotEmpty);
+  }
 
   // Куда отправлять ответы опросов: транспорт режима v3, иначе HTTP API v3 хоста
   // просмотра; без транспорта, API v3 или [PersonalizationStoryViewer.sdk] — `null`,
@@ -602,7 +652,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _disposeGif();
     _sync();
     final slide = _playback.slide;
-    switch (storyMediaOf(slide)) {
+    // Новая лента решает медиа по типу: у слайда без адреса грузить нечего.
+    if (slide.background.trim().isEmpty) return _ready(generation);
+    switch (_mediaOf(slide)) {
       case StoryMedia.none:
         _ready(generation);
       case StoryMedia.image:
@@ -659,6 +711,28 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   /// Видео из кэша, а нет файла — сразу по сети, пока кэш заполняется в фоне: загрузка
   /// целиком не ждётся. Готово — когда плеер готов играть.
+  /// Новая лента: у видео живого слайда есть звук (или его не прочитать) — кнопка звука.
+  bool _videoSound = false;
+
+  /// Звук видео захода [generation]: из файла кэша [file], а не было его — из файла, если
+  /// кэш уже заполнился, иначе по адресу [url]. Кнопки звука новой ленты нет, только
+  /// когда платформа подтвердила, что дорожки звука нет; не прочитать или не успели за
+  /// [StoriesSound.probeTimeout] — кнопка есть.
+  Future<void> _probeSound(String url, String? file, int generation) async {
+    var source = file;
+    if (source == null) {
+      try {
+        source = (await StoriesMediaCache.instance.cached(url))?.path;
+      } catch (_) {
+        // Кэша нет — по адресу.
+      }
+    }
+    if (!_current(generation)) return;
+    final sound = await StoriesSound.instance.hasAudio(source ?? url);
+    if (!_current(generation) || _videoSound == (sound ?? true)) return;
+    setState(() => _videoSound = sound ?? true);
+  }
+
   Future<void> _loadVideo(String url, int generation) async {
     try {
       await StoriesSound.instance.beforeVideo();
@@ -677,13 +751,16 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       await video.initialize();
       if (!_current(generation) || _video != video) return;
       await video.setLooping(false);
-      await video.setVolume(StoriesSound.instance.muted.value ? 0 : 1);
+      await _soundRestored;
+      if (!_current(generation) || _video != video) return;
+      await video.setVolume(_sound.value ? 0 : 1);
       await StoriesSound.instance.afterVideo();
       if (!_current(generation) || _video != video) return;
       video.addListener(_onVideo);
       _playback.useVideoDuration(video.value.duration);
       _videoReady = true;
       _videoPlaying = false;
+      if (_byType) unawaited(_probeSound(url, file?.path, generation));
       _ready(generation);
     } catch (error) {
       debugPrint('PersonalizationStoryViewer: video $url — $error');
@@ -710,7 +787,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _timeout?.cancel();
     _playback.mediaFailed(generation);
     _sync();
-    if (storyMediaOf(_playback.slide) == StoryMedia.video) {
+    if (_mediaOf(_playback.slide) == StoryMedia.video) {
       // Видео повторяет загрузку и само.
       _autoRetry?.cancel();
       _autoRetry = _timer(_videoRetry, _retry);
@@ -720,7 +797,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   void _retry() {
     final slide = _playback.slide;
-    if (storyMediaOf(slide) == StoryMedia.image) {
+    if (_mediaOf(slide) == StoryMedia.image) {
       storyImage(slide.background, widget.imageProvider)?.evict();
       StoriesImageBytes.instance.evict(slide.background);
     }
@@ -751,13 +828,14 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _video = null;
     _videoReady = false;
     _videoPlaying = false;
+    _videoSound = false;
     if (video == null) return;
     video.removeListener(_onVideo);
     video.dispose();
   }
 
   void _onMuted() {
-    _video?.setVolume(StoriesSound.instance.muted.value ? 0 : 1);
+    _video?.setVolume(_sound.value ? 0 : 1);
     if (mounted) setState(() {});
   }
 
@@ -773,7 +851,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     } else {
       return;
     }
-    switch (storyMediaOf(next)) {
+    if (next.background.trim().isEmpty) return;
+    switch (_mediaOf(next)) {
       case StoryMedia.none:
         break;
       case StoryMedia.image:
@@ -813,13 +892,21 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
   }
 
   /// Кнопка слайда: своя ссылка, у товарного слайда без неё — товар. Кнопка без ссылки на
-  /// медиа-слайде — только `click`: просмотр остаётся открытым.
+  /// медиа-слайде — только `click`: просмотр остаётся открытым. У новой ленты, как в
+  /// вебе, кнопка без ссылки — только `click` и на товарном слайде.
   void _button(StoryButtonElement button) {
     _clicked();
     final product = storyProductElement(_playback.slide)?.item;
     final own = storyButtonLink(button);
     if (own.isNotEmpty) return _closeThen(() => _openLink(own));
-    if (product != null) _closeThen(() => _goTo(product));
+    if (product != null && !_byType) _closeThen(() => _goTo(product));
+  }
+
+  /// Шапка слайда новой ленты: `click`, потом её ссылка, если она есть.
+  void _header(StoryHeaderElement header) {
+    _clicked();
+    final link = storyHeaderLink(header);
+    if (link.isNotEmpty) _closeThen(() => _openLink(link));
   }
 
   void _product(StoryProduct product) {
@@ -827,8 +914,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
     _closeThen(() => _goTo(product));
   }
 
+  /// Промокод скопирован: хосту; старая лента ещё и шлёт `click`, новая, как веб, — нет.
   void _promo(String code) {
-    _clicked();
+    if (!_byType) _clicked();
     widget.onPromoCopied?.call(code);
   }
 
@@ -855,19 +943,104 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   // --- Сборка -------------------------------------------------------------------------
 
+  /// Свайп у новой ленты, как в вебе (`swipeLength`): путь пальца от касания до
+  /// отпускания дальше этого. Назад на первой сторис (`i <= 0` — `close()`) и вперёд на
+  /// последней (`next` — просмотрена и `close()`) закрывают просмотр; вертикальный свайп
+  /// вверх или вниз — тоже.
+  static const double _swipe = 100;
+
+  /// Палец текущего свайпа: где коснулся и где сейчас (путь — как в вебе, от касания,
+  /// вместе с порогом распознавания жеста).
+  int? _finger;
+  Offset _fingerDown = Offset.zero;
+  Offset _fingerAt = Offset.zero;
+
+  /// В текущем свайпе лента упиралась в начало (первая страница) или в конец.
+  bool _atStart = false;
+  bool _atEnd = false;
+
+  /// Путь пальца с касания.
+  Offset get _swiped => _fingerAt - _fingerDown;
+
+  void _onPointerDown(PointerDownEvent event) {
+    if (_finger != null) return;
+    _finger = event.pointer;
+    _fingerDown = _fingerAt = event.position;
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (event.pointer == _finger) _fingerAt = event.position;
+  }
+
+  void _onPointerUp(PointerEvent event) {
+    if (event.pointer != _finger) return;
+    _fingerAt = event.position;
+    _finger = null;
+  }
+
   bool _onScroll(ScrollNotification notification) {
     if (notification.depth != 0) return false;
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
+      _atStart = _atEnd = false;
       _setPaused(StoriesPauseReason.drag, true);
+    } else if (notification is ScrollUpdateNotification) {
+      _edge(notification.metrics, notification.dragDetails);
+    } else if (notification is OverscrollNotification) {
+      _edge(notification.metrics, notification.dragDetails);
     } else if (notification is ScrollEndNotification && _pages.hasClients) {
+      if (_closeOnEdgeSwipe()) return false;
       _settled(_pages.page?.round() ?? _playback.storyIndex);
     }
     return false;
   }
 
+  /// Палец тянет ленту, упёртую в край, — запоминается край. Палец отпустили (дальше
+  /// пружина без него) — решается, закрыть ли просмотр.
+  void _edge(ScrollMetrics metrics, DragUpdateDetails? drag) {
+    if (drag == null) {
+      _closeOnEdgeSwipe();
+      return;
+    }
+    if (metrics.pixels <= metrics.minScrollExtent) _atStart = true;
+    if (metrics.pixels >= metrics.maxScrollExtent) _atEnd = true;
+  }
+
+  /// Свайп за край ленты у новой ленты, как в вебе: назад на первой сторис закрывает
+  /// просмотр, вперёд на последней — отмечает её просмотренной и закрывает; `true` —
+  /// закрыт.
+  bool _closeOnEdgeSwipe() {
+    final atStart = _atStart;
+    final atEnd = _atEnd;
+    _atStart = _atEnd = false;
+    if (!_playback.serverStart || !_playback.entered) return false;
+    final swiped = _swiped;
+    if (swiped.dx.abs() <= swiped.dy.abs()) return false;
+    // Назад — палец к началу ленты: вправо в LTR, влево в RTL.
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final back = rtl ? -swiped.dx : swiped.dx;
+    final index = _playback.storyIndex;
+    if (atStart && back > _swipe && index == 0) {
+      _close();
+      return true;
+    }
+    if (atEnd && -back > _swipe && index == _playback.stories.length - 1) {
+      _playback.leaveForward();
+      _close();
+      return true;
+    }
+    return false;
+  }
+
+  /// Конец вертикального свайпа: у новой ленты, как в вебе, путь пальца дальше
+  /// [_swipe] вверх или вниз (вертикальнее, чем вбок) закрывает просмотр; у старой —
+  /// вниз дальше 120 или быстрее 800 в секунду.
   void _dragEnd(double velocity) {
-    if (_drag.value > _closeDistance || velocity > _closeVelocity) {
+    final swiped = _swiped;
+    final close = _playback.serverStart
+        ? swiped.dy.abs() > _swipe && swiped.dy.abs() > swiped.dx.abs()
+        : _drag.value > _closeDistance || velocity > _closeVelocity;
+    if (close) {
       _close();
       return;
     }
@@ -877,7 +1050,8 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
 
   @override
   Widget build(BuildContext context) {
-    if (_playback.isEmpty) return const ColoredBox(color: Color(0xFF000000));
+    // Показать нечего — просмотр закрывается после кадра; пустого экрана нет.
+    if (_playback.isEmpty) return const SizedBox.shrink();
     final sheet = _playback.sheetOpen;
     return PopScope(
       // Системное «назад» сперва сворачивает шторку товаров.
@@ -889,34 +1063,41 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       // приложения — с жёлтым подчёркиванием.
       child: DefaultTextStyle(
         style: const TextStyle(),
-        child: GestureDetector(
-          onVerticalDragStart: sheet
-              ? null
-              : (_) => _setPaused(StoriesPauseReason.drag, true),
-          onVerticalDragUpdate: sheet
-              ? null
-              : (details) =>
-                    _drag.value = math.max(0, _drag.value + details.delta.dy),
-          onVerticalDragEnd: sheet
-              ? null
-              : (details) => _dragEnd(details.primaryVelocity ?? 0),
-          onVerticalDragCancel: sheet ? null : () => _dragEnd(0),
-          child: ValueListenableBuilder<double>(
-            valueListenable: _drag,
-            builder: (context, drag, child) => Transform.translate(
-              offset: Offset(0, drag),
-              child: Transform.scale(
-                scale: 1 - math.min(drag / 2000, 0.1),
-                child: child,
+        // Путь пальца свайпа — от касания, как в вебе.
+        child: Listener(
+          onPointerDown: _onPointerDown,
+          onPointerMove: _onPointerMove,
+          onPointerUp: _onPointerUp,
+          onPointerCancel: _onPointerUp,
+          child: GestureDetector(
+            onVerticalDragStart: sheet
+                ? null
+                : (_) => _setPaused(StoriesPauseReason.drag, true),
+            onVerticalDragUpdate: sheet
+                ? null
+                : (details) =>
+                      _drag.value = math.max(0, _drag.value + details.delta.dy),
+            onVerticalDragEnd: sheet
+                ? null
+                : (details) => _dragEnd(details.primaryVelocity ?? 0),
+            onVerticalDragCancel: sheet ? null : () => _dragEnd(0),
+            child: ValueListenableBuilder<double>(
+              valueListenable: _drag,
+              builder: (context, drag, child) => Transform.translate(
+                offset: Offset(0, drag),
+                child: Transform.scale(
+                  scale: 1 - math.min(drag / 2000, 0.1),
+                  child: child,
+                ),
               ),
-            ),
-            child: NotificationListener<ScrollNotification>(
-              onNotification: _onScroll,
-              child: PageView.builder(
-                controller: _pages,
-                physics: sheet ? const NeverScrollableScrollPhysics() : null,
-                itemCount: _playback.stories.length,
-                itemBuilder: _page,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _onScroll,
+                child: PageView.builder(
+                  controller: _pages,
+                  physics: sheet ? const NeverScrollableScrollPhysics() : null,
+                  itemCount: _playback.stories.length,
+                  itemBuilder: _page,
+                ),
               ),
             ),
           ),
@@ -924,6 +1105,10 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       ),
     );
   }
+
+  /// Магазин просмотра (`''` — без SDK): его ответы опросов и выбор кнопки звука.
+  String get _shopId =>
+      widget.sdk == null ? '' : StoriesSeenStore.shopOf(widget.sdk!);
 
   Widget _page(BuildContext context, int index) {
     final story = _playback.stories[index];
@@ -938,7 +1123,7 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       progress: live ? _progress : null,
       video: live && _videoReady ? _video : null,
       gif: live ? _gif : null,
-      muted: StoriesSound.instance.muted.value,
+      muted: _sound.value,
       sheetOpen: live && _playback.sheetOpen,
       failed: live && _playback.pausedBy(StoriesPauseReason.error),
       onTap: _tap,
@@ -946,7 +1131,9 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onClose: _close,
       onShare: _v3Code == null ? null : _share,
       shareLabel: _v3?.shareLabel ?? 'Share',
-      onToggleMute: StoriesSound.instance.toggle,
+      onToggleMute: () => _playback.serverStart
+          ? StoriesSound.instance.toggleV3(_shopId)
+          : StoriesSound.instance.toggle(),
       onSheet: _sheet,
       onButton: _button,
       onProduct: _product,
@@ -954,12 +1141,12 @@ class _PersonalizationStoryViewerState extends State<PersonalizationStoryViewer>
       onRetry: _retry,
       pollsTransport: _polls,
       pollTexts: _v3?.pollTexts ?? const StoryPollTexts(),
-      pollShopId: widget.sdk == null
-          ? ''
-          : StoriesSeenStore.shopOf(widget.sdk!),
-      onPollHold: (held) {
-        if (mounted) _setPaused(StoriesPauseReason.poll, held);
-      },
+      pollShopId: _shopId,
+      pollDid: widget.sdk == null ? '' : StoriesApiV3.knownDid(widget.sdk!),
+      onPollHold: _pollHold,
+      v3: _byType,
+      hasAudio: live && _videoSound,
+      onHeader: _header,
     );
   }
 }

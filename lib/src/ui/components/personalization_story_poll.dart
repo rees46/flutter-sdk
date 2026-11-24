@@ -26,7 +26,7 @@ import '../widgets/stories_polls_api.dart';
 /// в ките есть токен с тем же значением, взят токен.
 abstract final class _Poll {
   // Цвета.
-  /// Акцент: выбор, основная кнопка, точка шапки итогов.
+  /// Акцент: выбор, основная кнопка, зелёная треть шкалы (в ките нет токена успеха).
   static const Color accent = Color(0xFF22C55E);
 
   /// Заливка выбранного варианта до отправки — акцент 20 %.
@@ -54,16 +54,11 @@ abstract final class _Poll {
 
   // Размеры.
   static const double maxWidth = 420;
-  static const double edge = PersonalizationSpacing.lg;
+  static const double edge = PersonalizationSpacing.xl;
   static const double radius = PersonalizationRadius.xl6;
   static const double padding = PersonalizationSpacing.xl2;
   static const double blur = 20;
   static const double cardBorderWidth = 1;
-  static const double dot = 6;
-  static const double dotGap = PersonalizationSpacing.md;
-
-  /// От шапки итогов до вопроса.
-  static const double headerGap = PersonalizationSpacing.lg;
 
   /// От вопроса до содержимого, от содержимого до подвала, кнопки и текста полосы.
   static const double gap = PersonalizationSpacing.xl;
@@ -101,16 +96,18 @@ abstract final class _Poll {
   );
   static const double checkStroke = 2.5;
   static const double dimmed = 0.55;
+
+  /// Заливка невыбранной цифры шкалы — её цвет на 20 %.
+  static const double tint = 0.2;
+
+  /// Зазор между цифрами шкалы.
+  static const double cellGap = PersonalizationSpacing.xs;
   static const double sendingOpacity = 0.85;
   static const double linkPadding = PersonalizationSpacing.sm;
   static const Duration fillDuration = Duration(milliseconds: 600);
   static const Curve fillCurve = Cubic(0.2, 0.8, 0.2, 1);
 
   // Шрифт — кегли кита.
-  static const TextStyle header = PersonalizationTypography.xsEmphasized;
-
-  /// Разрядка шапки итогов — 0,08 em.
-  static const double headerTracking = 0.08;
   static const TextStyle question = PersonalizationTypography.lgEmphasized;
 
   /// Межстрочный вопроса.
@@ -133,7 +130,14 @@ abstract final class _Poll {
 ///   хоста (как у `PersonalizationInputField`). Свернули приложение — клавиатура уходит;
 ///   система убрала клавиатуру («назад» на Android) — поле отпускает фокус.
 /// - Карточка матовая: размывает слайд под собой.
-/// - Тексты итогов выбора — по языку устройства ([StoryPollResultTexts]).
+/// - Что на карточке — как в вебе: вопрос; у выбора — варианты, после ответа с
+///   подсвеченным ответом и процентами, если сервер вернул итоги, и `thanks_text`; у
+///   текста после ответа — галочка, `thanks_text` и сам ответ; шкала — цифры цветов
+///   полос (Danger, Warning, зелёный опроса), после ответа выбранная оценка, остальные
+///   приглушены и не нажимаются; дальше вопрос полосы с полем комментария (до 5000, со
+///   счётчиком) или её `success`. Вид — токены кита.
+/// - Встроенные тексты — английские константы веба ([StoryPollTexts]), `labels` опроса и
+///   его `submit_label` важнее.
 /// - RTL: поля, полоски итогов и шкала зеркалятся.
 class PersonalizationStoryPoll extends StatefulWidget {
   const PersonalizationStoryPoll({
@@ -143,6 +147,7 @@ class PersonalizationStoryPoll extends StatefulWidget {
     required this.slideId,
     required this.transport,
     this.shopId = '',
+    this.did = '',
     this.texts = const StoryPollTexts(),
     this.live = true,
     this.onHold,
@@ -153,15 +158,16 @@ class PersonalizationStoryPoll extends StatefulWidget {
   final String slideId;
   final StoryPollsTransport transport;
 
-  /// Магазин — ключ хранилища ответов сессии.
+  /// Магазин и устройство — ключ сохранённых ответов ([StoryPollStore]).
   final String shopId;
+  final String did;
 
   /// Тексты хоста; `labels` опроса важнее.
   final StoryPollTexts texts;
   final bool live;
   final ValueChanged<bool>? onHold;
 
-  /// Ширина карточки на слайде шириной [width]: по 12 от краёв, не шире 420.
+  /// Ширина карточки на слайде шириной [width]: по 16 от краёв, не шире 420.
   static double widthFor(double width) =>
       (width - 2 * _Poll.edge).clamp(0, _Poll.maxWidth).toDouble();
 
@@ -178,6 +184,7 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
     slideId: widget.slideId,
     transport: widget.transport,
     shopId: widget.shopId,
+    did: widget.did,
     texts: widget.texts,
     active: widget.live,
     onHold: (held) => widget.onHold?.call(held),
@@ -188,6 +195,7 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
   /// Пальцы на карточке.
   final Set<int> _pointers = <int>{};
   bool _wasAnswered = false;
+  String? _wasFollowUp;
 
   /// Высота клавиатуры в прошлый раз.
   double _keyboard = 0;
@@ -197,6 +205,7 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _wasAnswered = _poll.answered;
+    _wasFollowUp = _poll.followUp;
     _poll.addListener(_onPoll);
     _focus.addListener(_onFocus);
   }
@@ -229,12 +238,6 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
   }
 
   @override
-  void didChangeLocales(List<Locale>? locales) {
-    // Тексты итогов — по языку устройства.
-    if (mounted) setState(() {});
-  }
-
-  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pointers.forEach(StoryPollPointers.release);
@@ -253,7 +256,11 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
       _input.clear();
       _focus.requestFocus();
     }
+    // Вопрос полосы после оценки — пустое поле, без фокуса, как в вебе.
+    final followUp = _poll.followUp;
+    if (followUp != null && _wasFollowUp == null) _input.clear();
     _wasAnswered = _poll.answered;
+    _wasFollowUp = followUp;
     setState(() {});
   }
 
@@ -271,28 +278,13 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
     _poll.pressed = _pointers.isNotEmpty;
   }
 
-  /// Тексты итогов у отвеченного выбора; у остального — `null`.
-  StoryPollResultTexts? get _summary {
-    final choice = switch (widget.poll.kind) {
-      StoryMiniPollKind.singleChoice ||
-      StoryMiniPollKind.multipleChoice => true,
-      _ => false,
-    };
-    if (!choice || !_poll.answered) return null;
-    return StoryPollResultTexts.of(
-      WidgetsBinding.instance.platformDispatcher.locale.languageCode,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = PersonalizationTheme.of(context);
     final poll = _poll;
-    final texts = poll.texts;
+    final texts = _texts;
     final element = widget.poll;
-    final summary = _summary;
     final rows = <(Widget, double)>[
-      if (summary != null) (_header(theme, summary.results), 0),
       if (element.question.isNotEmpty)
         (
           Text(
@@ -303,9 +295,9 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
               height: _Poll.questionLine / _Poll.question.fontSize!,
             ),
           ),
-          _Poll.headerGap,
+          0,
         ),
-      ..._body(theme, summary),
+      ..._body(theme, texts),
       if (poll.answered && element.allowReanswer)
         (
           Align(
@@ -417,61 +409,86 @@ class _PersonalizationStoryPollState extends State<PersonalizationStoryPoll>
 
 /// Содержимое карточки по виду и состоянию: строки и зазор перед каждой.
 extension on _PersonalizationStoryPollState {
+  /// Тексты карточки: `labels`, хост, английские умолчания веба.
+  StoryPollTexts get _texts => _poll.texts;
+
   List<(Widget, double)> _body(
     PersonalizationTheme theme,
-    StoryPollResultTexts? summary,
+    StoryPollTexts texts,
   ) {
     final poll = _poll;
     final element = widget.poll;
     if (element.pollType.isScale) {
-      final band = poll.answered
+      final followUp = poll.followUp;
+      final band = poll.answered && followUp == null
           ? storyPollBandText(element, poll.answer?.rate)
           : null;
       return <(Widget, double)>[
         (_scale(theme), _Poll.gap),
+        if (followUp != null) ...<(Widget, double)>[
+          (Text(followUp, style: _style(theme, _Poll.smallStrong)), _Poll.gap),
+          ..._fieldRows(theme, texts.submit, poll.submitComment),
+        ],
         if (band != null && band.isNotEmpty)
           (Text(band, style: _style(theme, _Poll.small)), _Poll.gap),
       ];
     }
+    final thanks = element.thanksText;
     switch (element.kind) {
       case StoryMiniPollKind.singleChoice || StoryMiniPollKind.multipleChoice
-          when summary != null:
+          when poll.answered:
         return <(Widget, double)>[
           (_answeredOptions(theme), _Poll.gap),
-          (_footer(theme, summary), _Poll.gap),
+          if (thanks.isNotEmpty)
+            (Text(thanks, style: _style(theme, _Poll.smallStrong)), _Poll.gap),
         ];
       case StoryMiniPollKind.singleChoice:
         return <(Widget, double)>[(_choiceOptions(theme), _Poll.gap)];
       case StoryMiniPollKind.multipleChoice:
         return <(Widget, double)>[
           (_choiceOptions(theme, multiple: true), _Poll.gap),
-          (_submit(theme, poll.submitChoices), _Poll.gap),
+          (_submit(theme, _submitLabel(texts), poll.submitChoices), _Poll.gap),
         ];
       case StoryMiniPollKind.text when poll.answered:
         return <(Widget, double)>[(_done(theme), _Poll.gap)];
       case StoryMiniPollKind.text:
-        final limit = element.maxLength;
-        return <(Widget, double)>[
-          (_field(theme), _Poll.gap),
-          if (limit != null)
-            (
-              Text(
-                '${poll.text.length}/$limit',
-                textAlign: TextAlign.end,
-                style: _style(
-                  theme,
-                  _Poll.note,
-                  color: theme.colors.textDarkSecondary,
-                  tabular: true,
-                ),
-              ),
-              _Poll.counterGap,
-            ),
-          (_submit(theme, poll.submitText), _Poll.fieldGap),
-        ];
+        return _fieldRows(theme, _submitLabel(texts), poll.submitText);
       case null:
         return const <(Widget, double)>[];
     }
+  }
+
+  /// Подпись кнопки мини-опроса: `submit_label`, без неё — текст карточки.
+  String _submitLabel(StoryPollTexts texts) =>
+      widget.poll.submitLabel.isNotEmpty
+      ? widget.poll.submitLabel
+      : texts.submit;
+
+  /// Поле, счётчик при пределе длины и кнопка [label], которая зовёт [send].
+  List<(Widget, double)> _fieldRows(
+    PersonalizationTheme theme,
+    String label,
+    VoidCallback send,
+  ) {
+    final limit = _poll.fieldLimit;
+    return <(Widget, double)>[
+      (_field(theme), _Poll.gap),
+      if (limit != null)
+        (
+          Text(
+            '${_poll.text.length}/$limit',
+            textAlign: TextAlign.end,
+            style: _style(
+              theme,
+              _Poll.note,
+              color: theme.colors.textDarkSecondary,
+              tabular: true,
+            ),
+          ),
+          _Poll.counterGap,
+        ),
+      (_submit(theme, label, send), _Poll.fieldGap),
+    ];
   }
 
   Widget _list(List<Widget> children) => Column(
@@ -519,72 +536,7 @@ extension on _PersonalizationStoryPollState {
     ]);
   }
 
-  /// Шапка итогов: точка акцента и «РЕЗУЛЬТАТЫ».
-  Widget _header(PersonalizationTheme theme, String text) => Row(
-    children: <Widget>[
-      const SizedBox.square(
-        dimension: _Poll.dot,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: _Poll.accent,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-      const SizedBox(width: _Poll.dotGap),
-      Flexible(
-        child: Text(
-          text.toUpperCase(),
-          semanticsLabel: text,
-          style: _style(
-            theme,
-            _Poll.header,
-            color: theme.colors.textDarkSecondary,
-            tracking: _Poll.headerTracking * _Poll.header.fontSize!,
-          ),
-        ),
-      ),
-    ],
-  );
-
-  /// Подвал итогов: благодарность опроса или «Спасибо! Голос учтён»; справа — число
-  /// голосов, если оно есть.
-  Widget _footer(PersonalizationTheme theme, StoryPollResultTexts texts) {
-    final thanks = widget.poll.thanksText;
-    final total = _poll.results?.total ?? 0;
-    final strong = _style(theme, _Poll.smallStrong);
-    final muted = _style(
-      theme,
-      _Poll.small,
-      color: theme.colors.textDarkSecondary,
-    );
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(
-          child: thanks.isNotEmpty
-              ? Text(thanks, style: strong)
-              : Text.rich(
-                  TextSpan(
-                    children: <TextSpan>[
-                      TextSpan(text: texts.thanks, style: strong),
-                      TextSpan(text: ' ${texts.counted}', style: muted),
-                    ],
-                  ),
-                ),
-        ),
-        if (total > 0) ...<Widget>[
-          const SizedBox(width: _Poll.letterGap),
-          Text(texts.votes(total), style: muted),
-        ],
-      ],
-    );
-  }
-
-  Widget _submit(PersonalizationTheme theme, VoidCallback send) {
-    final label = widget.poll.submitLabel.isNotEmpty
-        ? widget.poll.submitLabel
-        : _poll.texts.submit;
+  Widget _submit(PersonalizationTheme theme, String label, VoidCallback send) {
     final enabled = _poll.canSubmit;
     return Semantics(
       button: true,
@@ -618,11 +570,12 @@ extension on _PersonalizationStoryPollState {
 
 /// Поле, отвеченный текст и шкала.
 extension on _PersonalizationStoryPollState {
-  /// Поле ввода: растёт до [_Poll.fieldLines] строк; предел `max_length` обрезает
-  /// ввод; пока идёт отправка, текст не меняется, а клавиатура остаётся.
+  /// Поле ввода: растёт до [_Poll.fieldLines] строк; предел (`max_length`, у
+  /// комментария — 5000) обрезает ввод; пока идёт отправка, текст не меняется, а
+  /// клавиатура остаётся. Подсказка `placeholder` — только у текстового опроса.
   Widget _field(PersonalizationTheme theme) {
     final style = _style(theme, _Poll.body);
-    final placeholder = widget.poll.placeholder;
+    final placeholder = _poll.followUp == null ? widget.poll.placeholder : '';
     return Container(
       constraints: const BoxConstraints(minHeight: _Poll.field),
       padding: _Poll.fieldPadding,
@@ -649,7 +602,7 @@ extension on _PersonalizationStoryPollState {
           style: style,
           inputFormatters: <TextInputFormatter>[
             _PollInputFormatter(
-              limit: widget.poll.maxLength,
+              limit: _poll.fieldLimit,
               frozen: () => _poll.sending,
             ),
           ],
@@ -696,17 +649,19 @@ extension on _PersonalizationStoryPollState {
     );
   }
 
-  /// Шкала — дорожка, цифры поровну. В форме нажатие отправляет; выбранная — капсула
-  /// цвета её полосы, у отвеченной остальные приглушены.
+  /// Шкала — дорожка, цифры поровну, каждая — в цвете своей трети: Danger, Warning и
+  /// зелёный опроса (у NPS 0–6, 7–8 и 9–10). В форме нажатие отправляет; выбранная —
+  /// залита цветом, у отвеченной остальные приглушены и не нажимаются.
   Widget _scale(PersonalizationTheme theme) {
     final element = widget.poll;
     final values = storyPollScaleRange(element);
     if (values.isEmpty) return const SizedBox.shrink();
     final answered = _poll.answered;
     final highlighted = _poll.rateValue;
+    final colors = theme.colors;
     return Container(
       constraints: const BoxConstraints(minHeight: _Poll.track),
-      padding: const EdgeInsets.symmetric(horizontal: _Poll.trackPadding),
+      padding: const EdgeInsets.all(_Poll.trackPadding),
       decoration: const BoxDecoration(
         color: _Poll.well,
         borderRadius: BorderRadius.all(
@@ -722,15 +677,16 @@ extension on _PersonalizationStoryPollState {
                 child: _ScaleCell(
                   theme: theme,
                   value: value,
-                  // Без полос — акцент.
-                  color: element.bands.isEmpty
-                      ? _Poll.accent
-                      : storyPollScaleColor(
-                          element.pollType,
-                          value,
-                          values.first,
-                          values.last,
-                        ),
+                  color: switch (storyPollScaleTone(
+                    element.pollType,
+                    value,
+                    values.first,
+                    values.last,
+                  )) {
+                    StoryPollScaleTone.danger => colors.semanticDanger,
+                    StoryPollScaleTone.warning => colors.semanticWarning,
+                    StoryPollScaleTone.success => _Poll.accent,
+                  },
                   selected: value == highlighted,
                   dimmed: answered && value != highlighted,
                   onTap: answered || _poll.sending
@@ -1030,30 +986,31 @@ class _ScaleCell extends StatelessWidget {
     selected: selected,
     child: _Tap(
       onTap: onTap,
-      child: DecoratedBox(
-        decoration: selected
-            ? BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(
-                  PersonalizationRadius.rounded,
-                ),
-              )
-            : const BoxDecoration(),
-        child: Center(
-          child: Opacity(
-            opacity: dimmed ? _Poll.dimmed : 1,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                '$value',
-                maxLines: 1,
-                style: _style(
-                  theme,
-                  _Poll.bodyStrong,
-                  color: selected
-                      ? _onFill(color, theme.colors.textDarkPrimary)
-                      : theme.colors.textDarkPrimary,
-                  tabular: true,
+      child: Opacity(
+        opacity: dimmed ? _Poll.dimmed : 1,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: _Poll.cellGap / 2),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: selected ? color : color.withValues(alpha: _Poll.tint),
+              borderRadius: BorderRadius.circular(
+                PersonalizationRadius.rounded,
+              ),
+            ),
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '$value',
+                  maxLines: 1,
+                  style: _style(
+                    theme,
+                    _Poll.bodyStrong,
+                    color: selected
+                        ? _onFill(color, theme.colors.textDarkPrimary)
+                        : theme.colors.textDarkPrimary,
+                    tabular: true,
+                  ),
                 ),
               ),
             ),

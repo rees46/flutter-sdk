@@ -49,20 +49,35 @@ class StoryPollOption {
   final String label;
 }
 
-/// Полоса шкалы `from..to` и текст благодарности за оценку из неё.
+/// Полоса шкалы `from..to`: вопрос после оценки из неё и текст благодарности.
 class StoryPollBand {
-  const StoryPollBand({required this.from, required this.to, this.success});
+  const StoryPollBand({
+    required this.from,
+    required this.to,
+    this.question,
+    this.success,
+  });
 
   final double from;
   final double to;
+
+  /// Вопрос после оценки из полосы: ответ на него уходит комментарием к той же оценке;
+  /// `null` — не задан.
+  final String? question;
 
   /// Текст под отвеченной шкалой; `null` — не задан.
   final String? success;
 }
 
-/// Ответ посетителя: варианты, текст или оценка.
+/// Ответ посетителя: варианты, текст или оценка (с комментарием).
 class StoryPollAnswer {
-  const StoryPollAnswer({this.id, this.optionIds, this.text, this.rate});
+  const StoryPollAnswer({
+    this.id,
+    this.optionIds,
+    this.text,
+    this.rate,
+    this.comment,
+  });
 
   final int? id;
   final List<int>? optionIds;
@@ -71,7 +86,10 @@ class StoryPollAnswer {
   /// Оценка шкалы. Дробная тоже ответ, но ни одну ячейку не подсвечивает.
   final num? rate;
 
-  /// Ответ есть: непустые варианты, непустой текст или оценка.
+  /// Ответ на вопрос полосы оценки; `null` — его не давали.
+  final String? comment;
+
+  /// Ответ есть, как `hasAnswer` веба: непустые варианты, непустой текст или оценка.
   bool get isAnswered =>
       (optionIds?.isNotEmpty ?? false) ||
       (text?.isNotEmpty ?? false) ||
@@ -82,13 +100,25 @@ class StoryPollAnswer {
     if (json is! Map) return null;
     final ids = json['option_ids'];
     final text = json['text'];
+    final comment = json['comment'];
     return StoryPollAnswer(
       id: toIntOrNull(json['id']),
       optionIds: ids is List ? <int>[for (final id in ids) ?_whole(id)] : null,
       text: text is String ? text : null,
       rate: _number(json['rate']),
+      comment: comment is String ? comment : null,
     );
   }
+
+  /// Ответ в JSON, как его читает [tryParse]: пустые поля не пишутся, не конечная оценка
+  /// — тоже (JSON её не держит).
+  Map<String, Object> toJson() => <String, Object>{
+    'id': ?id,
+    'option_ids': ?optionIds,
+    'text': ?text,
+    'rate': ?(rate?.isFinite ?? false ? rate : null),
+    'comment': ?comment,
+  };
 }
 
 /// Итоги мини-опроса (`results`, только при `show_results`).
@@ -112,6 +142,25 @@ class StoryPollResults {
     }
     return 0;
   }
+
+  /// Итоги в JSON, как их читает [tryParse]. Не конечный процент (сервер прислал,
+  /// например, `1e400`) JSON не держит: он пишется так, как его показывает [percentOf] —
+  /// NaN нулём, бесконечность краем 0…100.
+  Map<String, Object> toJson() => <String, Object>{
+    'total': total,
+    if (options case final options?)
+      'options': <Map<String, Object>>[
+        for (final option in options)
+          <String, Object>{
+            'id': option.id,
+            'percent': option.percent.isFinite
+                ? option.percent
+                : option.percent.isNaN
+                ? 0
+                : option.percent.clamp(0, 100),
+          },
+      ],
+  };
 
   /// Итоги из JSON; не объект — `null`.
   static StoryPollResults? tryParse(Object? json) {
@@ -277,6 +326,7 @@ class StoryPollElement extends StoryElement {
             StoryPollBand(
               from: from,
               to: to,
+              question: toNonEmptyStringOrNull(band['question']),
               success: toNonEmptyStringOrNull(band['success']),
             ),
       ],

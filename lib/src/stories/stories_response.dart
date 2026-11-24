@@ -4,6 +4,7 @@ import '../json_number.dart';
 
 part 'stories_poll.dart';
 part 'stories_share_v3.dart';
+part 'stories_header_v3.dart';
 
 // The `payload` of API v3 (`/api/v3/storefront/stories/{code}`) has the same keys and
 // is parsed here too.
@@ -22,10 +23,17 @@ class StoriesBlock {
 
   const StoriesBlock({required this.id, required this.stories});
 
-  factory StoriesBlock.fromJson(Map<String, dynamic> json) {
+  factory StoriesBlock.fromJson(Map<String, dynamic> json) =>
+      StoriesBlock._parse(json, v3: false);
+
+  // [v3] — `payload` of API v3: its own elements (`header`) and text block rules, behind
+  // the v3 gate ([parseStoriesBlockV3]); the old feed reads none of them.
+  factory StoriesBlock._parse(Map<String, dynamic> json, {required bool v3}) {
     return StoriesBlock(
       id: json['id']?.toString() ?? '',
-      stories: _maps(json['stories']).map(Story.fromJson).toList(),
+      stories: _maps(
+        json['stories'],
+      ).map((story) => Story._parse(story, v3: v3)).toList(),
     );
   }
 }
@@ -75,7 +83,10 @@ class Story {
     required this.slides,
   });
 
-  factory Story.fromJson(Map<String, dynamic> json) {
+  factory Story.fromJson(Map<String, dynamic> json) =>
+      Story._parse(json, v3: false);
+
+  factory Story._parse(Map<String, dynamic> json, {required bool v3}) {
     return Story._json(
       json['shareable'] != false,
       _text(json['share_url']),
@@ -85,7 +96,9 @@ class Story {
       viewed: json['viewed'] == true,
       pinned: json['pinned'] == true,
       startPosition: toIntOrNull(json['start_position']) ?? 0,
-      slides: _maps(json['slides']).map(StorySlide.fromJson).toList(),
+      slides: _maps(
+        json['slides'],
+      ).map((slide) => StorySlide._parse(slide, v3: v3)).toList(),
     );
   }
 }
@@ -149,7 +162,10 @@ class StorySlide {
     required this.elements,
   });
 
-  factory StorySlide.fromJson(Map<String, dynamic> json) {
+  factory StorySlide.fromJson(Map<String, dynamic> json) =>
+      StorySlide._parse(json, v3: false);
+
+  factory StorySlide._parse(Map<String, dynamic> json, {required bool v3}) {
     final seconds = toIntOrNull(json['duration']);
     return StorySlide._json(
       _text(json['share_url']),
@@ -167,9 +183,10 @@ class StorySlide {
             ? defaultDurationSeconds
             : seconds,
       ),
-      elements: _maps(
-        json['elements'],
-      ).map(StoryElement.fromJson).whereType<StoryElement>().toList(),
+      elements: _maps(json['elements'])
+          .map((element) => StoryElement._parse(element, v3: v3))
+          .whereType<StoryElement>()
+          .toList(),
     );
   }
 
@@ -188,13 +205,18 @@ sealed class StoryElement {
   const StoryElement();
 
   /// The element for [json], or `null` for a type the kit does not draw.
-  static StoryElement? fromJson(Map<String, dynamic> json) {
+  static StoryElement? fromJson(Map<String, dynamic> json) =>
+      _parse(json, v3: false);
+
+  // [v3] adds `header` and the text block rules of API v3.
+  static StoryElement? _parse(Map<String, dynamic> json, {required bool v3}) {
     return switch (json['type']) {
       'button' => StoryButtonElement.fromJson(json),
       'product' => StoryProductElement.fromJson(json),
       'products' => StoryProductsElement.fromJson(json),
-      'text_block' => StoryTextBlockElement.fromJson(json),
+      'text_block' => StoryTextBlockElement._parse(json, v3: v3),
       'poll' => StoryPollElement.tryParse(json),
+      'header' when v3 => StoryHeaderElement.fromJson(json),
       _ => null,
     };
   }
@@ -315,6 +337,12 @@ class StoryTextBlockElement extends StoryElement {
 
   static const double defaultFontSize = 14;
 
+  // The server sent `font_size`: behind the v3 gate, read through [StoryTextBlockV3].
+  final bool _hasFontSize;
+
+  // API v3 sent a valid background opacity: read through [StoryTextBlockV3].
+  final bool _hasOpacity;
+
   const StoryTextBlockElement({
     required this.text,
     this.fontSize = defaultFontSize,
@@ -328,22 +356,58 @@ class StoryTextBlockElement extends StoryElement {
     this.lineSpacing = 0,
     this.yOffset = 0,
     this.promocode,
+  }) : _hasFontSize = true,
+       _hasOpacity = false;
+
+  const StoryTextBlockElement._json(
+    this._hasFontSize,
+    this._hasOpacity, {
+    required this.text,
+    required this.fontSize,
+    required this.fontType,
+    required this.bold,
+    required this.italic,
+    required this.textAlign,
+    required this.textColor,
+    required this.backgroundColor,
+    required this.backgroundOpacity,
+    required this.lineSpacing,
+    required this.yOffset,
+    required this.promocode,
   });
 
-  factory StoryTextBlockElement.fromJson(Map<String, dynamic> json) {
+  factory StoryTextBlockElement.fromJson(Map<String, dynamic> json) =>
+      StoryTextBlockElement._parse(json, v3: false);
+
+  // [v3] — the text block rules of API v3 ([StoryTextBlockV3]); the old feed reads the
+  // fields as before.
+  factory StoryTextBlockElement._parse(
+    Map<String, dynamic> json, {
+    required bool v3,
+  }) {
     final promocode = json['promocode'];
-    return StoryTextBlockElement(
+    final fontSize = toDoubleOrNull(json['font_size']);
+    final opacity = v3
+        ? _cssOpacity(json['text_background_color_opacity'])
+        : null;
+    return StoryTextBlockElement._json(
+      fontSize != null,
+      opacity != null,
       text: json['text_input'] as String? ?? '',
-      fontSize: toDoubleOrNull(json['font_size']) ?? defaultFontSize,
+      fontSize: fontSize ?? defaultFontSize,
       fontType: json['font_type'] as String? ?? '',
-      bold: json['bold'] == true || json['text_bold'] == true,
-      italic: json['italic'] == true,
+      bold: v3
+          ? _firstFlag(json, 'bold', 'text_bold')
+          : json['bold'] == true || json['text_bold'] == true,
+      italic: v3
+          ? _firstFlag(json, 'italic', 'text_italic')
+          : json['italic'] == true,
       textAlign: json['text_align'] as String? ?? '',
       textColor: json['text_color'] as String? ?? '',
       backgroundColor: json['text_background_color'] as String? ?? '',
-      backgroundOpacity: parseStoryOpacity(
-        json['text_background_color_opacity'],
-      ),
+      backgroundOpacity: v3
+          ? opacity ?? 1
+          : parseStoryOpacity(json['text_background_color_opacity']),
       lineSpacing: toDoubleOrNull(json['text_line_spacing']) ?? 0,
       yOffset: toDoubleOrNull(json['y_offset']) ?? 0,
       promocode: promocode is String && promocode.isNotEmpty ? promocode : null,
@@ -445,6 +509,35 @@ double parseStoryOpacity(dynamic value) {
   if (number == null || number <= 0) return 0;
   final fraction = isText || number > 1 ? number / 100 : number;
   return fraction.clamp(0, 1).toDouble();
+}
+
+// A flag of API v3 under [key], or under its old name [legacy] when [key] is not sent:
+// true is `true`, `1` or `"true"` ([_flag]).
+bool _firstFlag(Map<String, dynamic> json, String key, String legacy) =>
+    _flag(json[key] ?? json[legacy]);
+
+final RegExp _leadingNumber = RegExp(
+  r'^\s*[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?',
+);
+
+// The opacity of a text block's background over API v3, as the web's calculateOpacity
+// reads it: the number (or the number a string starts with, as parseFloat) is percents —
+// `"0.5"` is 0.5 %, `"50"` and `"50%"` are 50 %; nothing (`null`, `""`, `0`, `false`), not
+// a number or out of 0…100 — `null`: no opacity, the colour as it is.
+double? _cssOpacity(Object? value) {
+  if (value == null || value == false || value == '' || value == 0) return null;
+  final double? percent = switch (value) {
+    final num number => number.toDouble(),
+    final String text => switch (_leadingNumber.firstMatch(text)) {
+      final match? => double.tryParse(match.group(0)!.trim()),
+      null => null,
+    },
+    _ => null,
+  };
+  if (percent == null || percent.isNaN || percent < 0 || percent > 100) {
+    return null;
+  }
+  return percent / 100;
 }
 
 // A string field; JSON `null` (API v3 sends it for empty fields) and other types are empty.

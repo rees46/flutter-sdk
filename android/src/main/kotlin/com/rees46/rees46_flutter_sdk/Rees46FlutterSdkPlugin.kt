@@ -103,6 +103,9 @@ class Rees46FlutterSdkPlugin :
     /** Which tokens Dart's `onToken` hears. */
     private val tokenReports = TokenReports()
 
+    /** Whether a stories video has sound: the viewer's sound button. */
+    internal var storiesVideoAudio = StoriesVideoAudio()
+
     /** This engine's Dart side of the native log, while Dart has a log handler. */
     private val logSink: (SdkLogMessage) -> Unit = { message ->
         onMain { runCatching { stateApi?.onLog(message.toWire()) { } } }
@@ -1015,6 +1018,9 @@ class Rees46FlutterSdkPlugin :
     override fun updateStoriesAudio(muted: Boolean) = Unit
 
     override fun endStoriesAudio() = Unit
+
+    override fun storiesVideoHasAudio(source: String, callback: (Result<Boolean?>) -> Unit) =
+        storiesVideoAudio.hasAudio(source, callback)
 
     // endregion
 

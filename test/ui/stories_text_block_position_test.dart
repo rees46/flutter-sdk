@@ -161,7 +161,9 @@ void main() {
   testWidgets('a text block and a poll with one y_offset stand at one height', (
     tester,
   ) async {
-    for (final offset in <Object?>[5, 30, 50]) {
+    // Near the top they part: the card goes up to the top of the slide, as the web,
+    // the text block stays under the header.
+    for (final offset in <Object?>[30, 50]) {
       await _open(
         tester,
         _stories(<Map<String, dynamic>>[_text('text', offset), _poll(offset)]),

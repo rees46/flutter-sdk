@@ -254,6 +254,135 @@ void main() {
       expect(text.promocode, 'SALE10');
     });
 
+    test('only API v3 reads a header and the text block rules of API v3', () {
+      final v3 = parseStoriesBlockV3(_block).stories[1].slides[1].elements;
+      expect(v3, hasLength(4));
+      final header = v3.whereType<StoryHeaderElement>().single;
+      expect(header.title, 'dropped');
+      expect((header.icon, header.subtitle, header.link), ('', '', ''));
+
+      const italic = <String, dynamic>{
+        'type': 'text_block',
+        'text_input': 'x',
+        'text_italic': true,
+      };
+      expect(StoryTextBlockElement.fromJson(italic).italic, isFalse);
+      final slide = <String, dynamic>{
+        'id': '1',
+        'type': 'image',
+        'elements': <Map<String, dynamic>>[italic],
+      };
+      final feed = <String, dynamic>{
+        'id': 1,
+        'stories': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 1,
+            'slides': <Map<String, dynamic>>[slide],
+          },
+        ],
+      };
+      StoryTextBlockElement text(StoriesBlock block) => block
+          .stories
+          .single
+          .slides
+          .single
+          .elements
+          .whereType<StoryTextBlockElement>()
+          .single;
+      expect(text(StoriesBlock.fromJson(feed)).italic, isFalse);
+      expect(text(parseStoriesBlockV3(feed)).italic, isTrue);
+    });
+
+    test('API v3 text blocks: bold and italic first, the old names else; the '
+        'opacity as the web calculateOpacity', () {
+      StoryTextBlockElement v3(Map<String, dynamic> fields) =>
+          parseStoriesBlockV3(<String, dynamic>{
+                'stories': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'id': 1,
+                    'slides': <Map<String, dynamic>>[
+                      <String, dynamic>{
+                        'id': '1',
+                        'type': 'image',
+                        'elements': <Map<String, dynamic>>[
+                          <String, dynamic>{'type': 'text_block', ...fields},
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              }).stories.single.slides.single.elements
+              .whereType<StoryTextBlockElement>()
+              .single;
+
+      for (final yes in <Object>[true, 1, 'true']) {
+        expect(v3(<String, dynamic>{'bold': yes}).bold, isTrue, reason: '$yes');
+        expect(v3(<String, dynamic>{'italic': yes}).italic, isTrue);
+        expect(v3(<String, dynamic>{'text_bold': yes}).bold, isTrue);
+        expect(v3(<String, dynamic>{'text_italic': yes}).italic, isTrue);
+      }
+      for (final no in <Object>[false, 0, 'false', '1', 'yes']) {
+        expect(v3(<String, dynamic>{'bold': no}).bold, isFalse, reason: '$no');
+      }
+      expect(
+        v3(<String, dynamic>{'bold': false, 'text_bold': true}).bold,
+        isFalse,
+        reason: 'bold comes first',
+      );
+      expect(
+        v3(<String, dynamic>{'italic': false, 'text_italic': true}).italic,
+        isFalse,
+      );
+
+      double opacity(Object? value) => v3(<String, dynamic>{
+        'text_background_color': '#112233',
+        'text_background_color_opacity': value,
+      }).backgroundOpacity;
+      expect(opacity('50%'), closeTo(0.5, 1e-9));
+      expect(opacity('50'), closeTo(0.5, 1e-9));
+      expect(opacity(' 25% '), closeTo(0.25, 1e-9));
+      expect(opacity('0.5'), closeTo(0.005, 1e-9), reason: 'a percent');
+      expect(opacity(80), closeTo(0.8, 1e-9));
+      expect(opacity(0.3), closeTo(0.003, 1e-9));
+      expect(opacity('0%'), 0);
+      expect(opacity('0'), 0);
+      for (final opaque in <Object?>[null, '', 0, 'abc', '-10', '110', true]) {
+        expect(opacity(opaque), 1, reason: '$opaque: the colour as it is');
+      }
+      expect(
+        v3(<String, dynamic>{
+          'text_background_color': '#112233',
+        }).backgroundOpacity,
+        1,
+        reason: 'no opacity — opaque',
+      );
+
+      expect(
+        v3(<String, dynamic>{
+          'text_background_color_opacity': '50%',
+        }).hasBackgroundOpacity,
+        isTrue,
+      );
+      for (final none in <Object?>[null, '', 0, 'abc', '110']) {
+        expect(
+          v3(<String, dynamic>{
+            'text_background_color_opacity': none,
+          }).hasBackgroundOpacity,
+          isFalse,
+          reason: '$none',
+        );
+      }
+
+      final legacy = StoryTextBlockElement.fromJson(const <String, dynamic>{
+        'type': 'text_block',
+        'bold': 1,
+        'italic': 'true',
+        'text_background_color_opacity': '0.5',
+      });
+      expect((legacy.bold, legacy.italic), (false, false), reason: 'master');
+      expect(legacy.backgroundOpacity, closeTo(0.005, 1e-9));
+    });
+
     test('a text block without fields takes the native defaults', () {
       final text = StoryTextBlockElement.fromJson(const <String, dynamic>{
         'type': 'text_block',
@@ -285,6 +414,11 @@ void main() {
       ('115bd0b67cf5989a1b60c841790b2af6', 'shop-a'),
     ]);
     expect(block.stories, hasLength(2));
+    expect(
+      block.stories[1].slides[1].elements.whereType<StoryHeaderElement>(),
+      isEmpty,
+      reason: 'the public getStories keeps the model of the old feed',
+    );
     expect(() => sdk.getStories(''), throwsArgumentError);
   });
 
